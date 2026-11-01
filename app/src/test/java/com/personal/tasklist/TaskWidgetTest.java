@@ -156,6 +156,58 @@ public class TaskWidgetTest {
         assertTrue(new org.json.JSONObject(reference.readState()).getJSONObject("completed").getBoolean(key));
     }
 
+    @Test public void widgetSupportsFullyTransparentBackgroundAndKeepsItsTextVisible() {
+        store.add("Visible task", "Personal", "");
+        AppWidgetManager manager = AppWidgetManager.getInstance(context);
+        int id = Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class, R.layout.widget_tasks);
+        for (int opacity : new int[] {0, 50, 100}) {
+            TaskWidgetProvider.preferences(context, id).edit().putInt("opacity", opacity).commit();
+            TaskWidgetProvider.update(context, manager, id);
+            android.view.View view = Shadows.shadowOf(manager).getViewFor(id);
+            assertEquals(Math.round(255 * opacity / 100f), ((android.widget.ImageView) view.findViewById(R.id.widget_background)).getImageAlpha());
+            assertEquals(1f, view.findViewById(R.id.widget_title).getAlpha(), 0f);
+            assertEquals(1f, view.findViewById(R.id.widget_check).getAlpha(), 0f);
+        }
+    }
+
+    @Test public void widgetConfigurationSavesZeroOpacityAcrossRecreation() {
+        int id = 73;
+        android.appwidget.AppWidgetProviderInfo info = new android.appwidget.AppWidgetProviderInfo();
+        info.provider = new android.content.ComponentName(context, TaskWidgetProvider.class);
+        Shadows.shadowOf(AppWidgetManager.getInstance(context)).addBoundWidget(id, info);
+        TaskWidgetProvider.preferences(context, id).edit().putInt("opacity", 60).commit();
+        Intent intent = new Intent(context, WidgetConfigActivity.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
+        ActivityController<WidgetConfigActivity> controller = Robolectric.buildActivity(WidgetConfigActivity.class, intent).setup();
+        assertFalse(controller.get().isFinishing());
+        android.widget.SeekBar slider = findSlider(controller.get().getWindow().getDecorView());
+        assertEquals(100, slider.getMax()); assertEquals(60, slider.getProgress());
+        slider.setProgress(0);
+        controller.recreate();
+        slider = findSlider(controller.get().getWindow().getDecorView());
+        assertEquals(0, slider.getProgress());
+        findButton(controller.get().getWindow().getDecorView(), "Save widget").performClick();
+        assertEquals(0, TaskWidgetProvider.preferences(context, id).getInt("opacity", -1));
+        controller.pause().stop().destroy();
+    }
+
+    private static android.widget.SeekBar findSlider(android.view.View view) {
+        if (view instanceof android.widget.SeekBar) return (android.widget.SeekBar) view;
+        if (view instanceof android.view.ViewGroup) for (int i = 0; i < ((android.view.ViewGroup) view).getChildCount(); i++) {
+            android.widget.SeekBar found = findSlider(((android.view.ViewGroup) view).getChildAt(i));
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private static android.widget.Button findButton(android.view.View view, String text) {
+        if (view instanceof android.widget.Button && text.contentEquals(((android.widget.Button) view).getText())) return (android.widget.Button) view;
+        if (view instanceof android.view.ViewGroup) for (int i = 0; i < ((android.view.ViewGroup) view).getChildCount(); i++) {
+            android.widget.Button found = findButton(((android.view.ViewGroup) view).getChildAt(i), text);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
     private static List<String> titles(List<TaskStore.Task> tasks) {
         List<String> titles = new ArrayList<>();
         for (TaskStore.Task task : tasks) titles.add(task.title);

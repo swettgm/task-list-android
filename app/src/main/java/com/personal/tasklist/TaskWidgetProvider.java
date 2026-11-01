@@ -119,7 +119,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         String label = prefs.getString("label", "");
         boolean today = prefs.getBoolean("today", false);
         boolean dark = prefs.getBoolean("dark", true);
-        int opacity = Math.max(25, Math.min(100, prefs.getInt("opacity", 100)));
+        int opacity = Math.max(0, Math.min(100, prefs.getInt("opacity", 100)));
         int foreground = Color.parseColor(dark ? "#F3F7FC" : "#1F2B40");
         int secondary = Color.parseColor(dark ? "#BAC9D9" : "#56677F");
         int accent = Color.parseColor(dark ? "#8FC6E7" : "#195B7E");

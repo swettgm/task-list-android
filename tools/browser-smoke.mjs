@@ -83,9 +83,11 @@ const result = await page.evaluate(async () => {
   const parentId=parent.dataset.taskId,parentDate=parent.dataset.stateDate;
   parent.querySelector('.tm-progress-control').click();await tick();
   rowFor(parentId,parentDate).querySelector(':scope > .form-check > input').click();await tick();
-  check(!rowFor(parentId,parentDate),'Checking a parent saves and hides it immediately');
+  check(!!rowFor(parentId,parentDate)&&rowFor(parentId,parentDate).classList.contains('tm-completing'),'Checking a parent leaves a short completion confirmation before hiding');
   check(__nativeQA.snapshot.some(row=>row.id==='html:'+parentId+':'+parentDate&&row.done),'Automatic completion reaches the widget snapshot');
   check(TaskListApp.debugSummary().active===null,'Completing the active parent clears Do now');
+  await new Promise(resolve=>setTimeout(resolve,500));
+  check(!rowFor(parentId,parentDate),'Completed parent disappears after the short delay');
   TaskListApp.reloadFromNative();await tick();
   check(!rowFor(parentId,parentDate),'Completion survives reload');
   document.querySelector('#pt-toggle-hidden').click();await tick();
@@ -143,7 +145,7 @@ const result = await page.evaluate(async () => {
   dialog.querySelector('.tl-unlink').click();clickText(dialog,'Save task');await tick();TaskListApp.reloadFromNative();await tick();
   check([...created().querySelectorAll('.tl-context-badge')].some(b=>b.textContent==='On the road'),'Contexts can be edited through the gear');
   check(!created().querySelector('.tm-pair-note')&&!(__nativeQA.getState().manualLinks['custom-native-qa']||[]).includes(createdId),'Unlink removes both sides and survives reload');
-  created().querySelector(':scope > .form-check > input').click();await tick();
+  created().querySelector(':scope > .form-check > input').click();await new Promise(resolve=>setTimeout(resolve,500));
   check(!created()&&!!rowFor('custom-native-qa'),'Completion affects only the checked task');
   document.querySelector('#pt-upcoming-tab').click();check(!document.querySelector('#pt-upcoming').hidden&&document.querySelector('#pt-today').hidden,'Upcoming tab works');
   check(document.querySelectorAll('#pt-future-list .tm-day').length>0,'Upcoming remains grouped by date');
@@ -198,6 +200,26 @@ const result = await page.evaluate(async () => {
   check(__nativeQA.getState().uiTheme.accent==='#112233'&&getComputedStyle(document.body).backgroundColor==='rgb(255, 255, 255)','Short hex input expands and light backgrounds are supported');
   clickText(dialog,'Reset colors');check(__nativeQA.getState().uiTheme.accent==='#68b7ff'&&__nativeQA.getState().uiTheme.background==='#10151f','Default colors can be restored');
   clickText(dialog,'Close');
+  // Rapid completions and undo have independent presentation timers, while saving immediately.
+  for(const title of ['Delay task A','Delay task B']){
+    TaskListApp.quickAddTask();const quickDialog=document.querySelector('dialog');quickDialog.querySelector('input').value=title;clickText(quickDialog,'Add');await tick();
+  }
+  const byTitle=title=>rows().find(row=>row.querySelector('.tm-title').textContent===title);
+  byTitle('Delay task A').querySelector(':scope > .form-check > input').click();await tick();
+  byTitle('Delay task B').querySelector(':scope > .form-check > input').click();await tick();
+  check(byTitle('Delay task A')?.classList.contains('tm-completing')&&byTitle('Delay task B')?.classList.contains('tm-completing'),'Rapidly completed tasks both remain briefly visible');
+  const delayBId=byTitle('Delay task B').dataset.taskId;
+  check(__nativeQA.snapshot.some(row=>row.id.startsWith('html:'+delayBId+':')&&row.done),'Delayed disappearance does not delay widget completion');
+  byTitle('Delay task A').querySelector(':scope > .form-check > input').click();await tick();
+  check(byTitle('Delay task A')&&!byTitle('Delay task A').classList.contains('tm-completing'),'Unchecking during the delay cancels disappearance');
+  await new Promise(resolve=>setTimeout(resolve,500));
+  check(!!byTitle('Delay task A')&&!byTitle('Delay task B'),'Undo stays visible while the other completed task disappears');
+  TaskListApp.addTask();dialog=document.querySelector('dialog');dialog.querySelector('input[type=text]').value='Delay checklist QA';
+  dialog.querySelector('textarea[placeholder="One step per line"]').value='One\nTwo';clickText(dialog,'Save task');await tick();
+  byTitle('Delay checklist QA').querySelectorAll('.tm-child-item input')[0].click();await tick();
+  byTitle('Delay checklist QA').querySelectorAll('.tm-child-item input')[1].click();await tick();
+  check(byTitle('Delay checklist QA')?.classList.contains('tm-completing'),'Finishing the last checklist step also delays parent disappearance');
+  await new Promise(resolve=>setTimeout(resolve,500));check(!byTitle('Delay checklist QA'),'Finished checklist disappears after the confirmation delay');
   return {checks};
 });
 // Check real geometry, including expanded content and long task text, without masking overflow.

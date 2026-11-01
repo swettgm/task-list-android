@@ -2818,12 +2818,21 @@ main{max-width:100%;margin:0;padding:0}
       return button;
     };
     const openChecklists=new Set();
+    const completing=new Map();
+    const isCompleting=(task,date)=>completing.has(progressKey(task,date))&&isDone(task,date,saved);
+    const withCompleting=(items,place,date)=>{
+      const result=new Map(items.map(item=>[progressKey(item.task,item.stateDate),item]));
+      completing.forEach(entry=>entry[place].filter(item=>!date||item.date===date).forEach(item=>{
+        if(isCompleting(item.task,item.stateDate))result.set(progressKey(item.task,item.stateDate),item);
+      }));
+      return Array.from(result.values());
+    };
     const completedItems=()=>{
       const items=new Map();
       Object.keys(saved).filter(key=>saved[key]).forEach(key=>{
         const [id,date]=key.split(':');
         const task=tasks.find(candidate=>candidate.id===id);
-        if(!task || task.retired || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !isDone(task,date,saved))return;
+        if(!task || task.retired || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !isDone(task,date,saved) || isCompleting(task,date))return;
         if(!window.TaskListBridge.contextMatches(task))return;
         const item=instance(task,today,date,date<today,Boolean(movedTo[occurrenceId(task,date)]));
         items.set(progressKey(task,date),item);
@@ -2832,6 +2841,10 @@ main{max-width:100%;margin:0;padding:0}
     };
     const saveCompletion=(task,date)=>{
       const previousSaved=saved,previousRollover={...rolloverCompletedOn},previousActive=inProgress;
+      const key=progressKey(task,date),wasDone=isDone(task,date,saved);
+      const matches=item=>item.task.id===task.id&&item.stateDate===date;
+      const presentation={today:dueToday().filter(matches),overdue:overdue().filter(matches),future:[]};
+      if(!wasDone&&isDone(task,date,draft))for(let day=1;day<=14;day++)presentation.future.push(...onDate(addDays(today,day)).filter(matches));
       const id=occurrenceId(task,date);
       if(isDone(task,date,draft) && date!==today)rolloverCompletedOn[id]=today;
       else if(!isDone(task,date,draft))delete rolloverCompletedOn[id];
@@ -2841,6 +2854,14 @@ main{max-width:100%;margin:0;padding:0}
         if(!storageAvailable)throw new Error('Storage unavailable');
         localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,updatedAt:new Date().toISOString()}));
         find('pt-status').textContent='';
+        if(completing.has(key)){clearTimeout(completing.get(key).timer);completing.delete(key);}
+        if(!wasDone&&isDone(task,date,saved)){
+          const entry={...presentation,timer:setTimeout(()=>{
+            if(completing.get(key)!==entry)return;
+            completing.delete(key);renderToday();renderFuture();
+          },450)};
+          completing.set(key,entry);
+        }
       }catch(error){
         saved=previousSaved;draft={...saved};rolloverCompletedOn=previousRollover;inProgress=previousActive;
         find('pt-status').textContent='Couldn’t save this change. Please try again.';
@@ -2901,6 +2922,7 @@ main{max-width:100%;margin:0;padding:0}
     const row=(item,completed=false,number)=>{
       const {task,stateDate}=item;
       const wrapper=el('div','tm-task-item');
+      if(!completed&&isCompleting(task,stateDate))wrapper.classList.add('tm-completing');
       const active=inProgress===progressKey(task,stateDate);
       if(active)wrapper.classList.add('tm-in-progress-item');
       const linkedActive=!completed&&!isDone(task,stateDate,draft)&&linkedInProgress(task,item.date);
@@ -2942,12 +2964,13 @@ main{max-width:100%;margin:0;padding:0}
         input.addEventListener('change',()=>{draft[occurrenceKey(task,stateDate)]=input.checked;saveCompletion(task,stateDate);});
       }
       window.TaskListBridge.decorateRow(wrapper,task,item,completed);
+      if(wrapper.classList.contains('tm-completing'))wrapper.querySelectorAll('button').forEach(button=>button.disabled=true);
       return wrapper;
     };
     const renderToday=()=>{
       find('pt-date').textContent=labelDate(today,true);
-      const items=dueToday().filter(i=>window.TaskListBridge.contextMatches(i.task)),pending=items.filter(i=>!isDone(i.task,i.stateDate,draft)),done=items.filter(i=>isDone(i.task,i.stateDate,draft));
-      const activeItems=items.filter(i=>!isDone(i.task,i.stateDate,saved)),savedDone=items.filter(i=>isDone(i.task,i.stateDate,saved));
+      const items=withCompleting(dueToday(),'today').filter(i=>window.TaskListBridge.contextMatches(i.task)),pending=items.filter(i=>!isDone(i.task,i.stateDate,draft)),done=items.filter(i=>isDone(i.task,i.stateDate,draft));
+      const activeItems=items.filter(i=>!isDone(i.task,i.stateDate,saved)||isCompleting(i.task,i.stateDate)),savedDone=items.filter(i=>isDone(i.task,i.stateDate,saved));
       const activeNumbers=new Map(),completedNumbers=new Map();
       groups.forEach(([priority])=>activeItems.filter(i=>i.task.priority===priority).forEach(i=>activeNumbers.set(progressKey(i.task,i.stateDate),activeNumbers.size+1)));
       savedDone.forEach((i,index)=>completedNumbers.set(progressKey(i.task,i.stateDate),index+1));
@@ -2977,7 +3000,7 @@ main{max-width:100%;margin:0;padding:0}
         message.setAttribute('role','status');
         list.append(message);
       }
-      const overdueBox=find('pt-overdue');overdueBox.replaceChildren();const old=overdue().filter(i=>window.TaskListBridge.contextMatches(i.task));
+      const overdueBox=find('pt-overdue');overdueBox.replaceChildren();const old=withCompleting(overdue(),'overdue').filter(i=>window.TaskListBridge.contextMatches(i.task));
       if(old.length){
         const details=el('details');details.append(el('summary','cursor-interaction','Overdue: '+old.length+' · separate from today’s total'));
         old.forEach((i,index)=>{details.append(el('div','text-small text-muted',labelDate(i.stateDate)));details.append(row(i,false,index+1));});overdueBox.append(details);
@@ -2992,7 +3015,7 @@ main{max-width:100%;margin:0;padding:0}
     const renderFuture=()=>{
       const container=find('pt-future-list');container.replaceChildren();
       for(let offset=1;offset<=14;offset++){
-        const date=addDays(today,offset),items=onDate(date).filter(i=>!isDone(i.task,i.stateDate,saved)&&window.TaskListBridge.contextMatches(i.task));if(!items.length)continue;
+        const date=addDays(today,offset),items=withCompleting(onDate(date),'future',date).filter(i=>(!isDone(i.task,i.stateDate,saved)||isCompleting(i.task,i.stateDate))&&window.TaskListBridge.contextMatches(i.task));if(!items.length)continue;
         const taskNumbers=new Map();
         groups.forEach(([priority])=>items.filter(i=>i.task.priority===priority).forEach(i=>taskNumbers.set(progressKey(i.task,i.stateDate),taskNumbers.size+1)));
         const section=el('section','tm-day');section.append(el('div','tm-group',labelDate(date,true)));
@@ -3002,6 +3025,7 @@ main{max-width:100%;margin:0;padding:0}
           const rows=el('div','tm-list');
           matching.forEach(i=>{
             const card=el('div','tm-future-card');
+            if(isCompleting(i.task,i.stateDate))card.classList.add('tm-completing');
             const line=el('div','tm-task-item tm-future');
             const active=inProgress===progressKey(i.task,i.stateDate);
             if(active)line.classList.add('tm-in-progress-item');
@@ -3026,6 +3050,7 @@ main{max-width:100%;margin:0;padding:0}
             card.append(line);
             if(hasSubtasks(i.task))card.append(checklistDetails(i.task,i.stateDate,null,null));
             window.TaskListBridge.decorateRow(card,i.task,i,false);
+            if(card.classList.contains('tm-completing'))card.querySelectorAll('button').forEach(button=>button.disabled=true);
             rows.append(card);
           });
           section.append(rows);
@@ -3168,4 +3193,8 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 .tl-quick-form .tl-field{margin:6px 0}
 .tl-quick-form .tl-form-error:empty,.tl-settings-form .tl-form-error:empty{display:none}
 
+#today-task-list-20261023 .tm-completing{animation:task-completed 450ms ease-out both}
+#today-task-list-20261023 .tm-completing>.form-check .tm-title{ text-decoration:line-through }
+@keyframes task-completed{0%,45%{opacity:1}100%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){#today-task-list-20261023 .tm-completing{animation:none}}
 </style></body></html>

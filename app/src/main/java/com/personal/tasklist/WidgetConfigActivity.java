@@ -135,7 +135,8 @@ public final class WidgetConfigActivity extends Activity {
         label(content, "Tasks to show"); viewInput = spinner(java.util.Arrays.asList("All open tasks", "Today and overdue")); viewInput.setSelection(prefs.getBoolean("today", false) ? 1 : 0); content.addView(viewInput);
         label(content, "Colors"); colorInput = spinner(java.util.Arrays.asList("Paper — white and navy", "Night — navy and light blue")); colorInput.setSelection(prefs.getBoolean("dark", true) ? 1 : 0); content.addView(colorInput);
         opacityLabel = text("", 14, FOREGROUND); opacityLabel.setPadding(0, dp(20), 0, dp(5)); content.addView(opacityLabel);
-        opacityInput = new SeekBar(this); opacityInput.setMax(75); opacityInput.setProgress(prefs.getInt("opacity",100) - 25); content.addView(opacityInput, new LinearLayout.LayoutParams(-1, dp(48)));
+        opacityInput = new SeekBar(this); opacityInput.setMax(100); opacityInput.setProgress(prefs.getInt("opacity",100)); content.addView(opacityInput, new LinearLayout.LayoutParams(-1, dp(48)));
+        opacityInput.setContentDescription("Background opacity");
         opacityInput.setProgressTintList(android.content.res.ColorStateList.valueOf(ACCENT));
         opacityInput.setThumbTintList(android.content.res.ColorStateList.valueOf(ACCENT));
         TextView transparencyNote = text("Text stays readable while the background becomes more transparent.", 12, MUTED);
@@ -167,7 +168,7 @@ public final class WidgetConfigActivity extends Activity {
             labelInput.setSelection(Math.max(0, contexts.indexOf(state.getString("label", ""))));
             viewInput.setSelection(state.getBoolean("today",false) ? 1 : 0);
             colorInput.setSelection(state.getBoolean("dark",true) ? 1 : 0);
-            opacityInput.setProgress(state.getInt("opacity",100) - 25);
+            opacityInput.setProgress(state.getInt("opacity",100));
         }
         updatePreview();
     }
@@ -175,8 +176,8 @@ public final class WidgetConfigActivity extends Activity {
     private void updatePreview() {
         if (!ready) return;
         boolean dark = colorInput.getSelectedItemPosition() == 1;
-        int opacity = 25 + opacityInput.getProgress();
-        opacityLabel.setText("Background opacity · " + opacity + "%");
+        int opacity = opacityInput.getProgress();
+        opacityLabel.setText("Background opacity · " + opacity + "%" + (opacity == 0 ? " · Fully transparent" : ""));
         String title = titleInput.getText().toString().trim();
         previewTitle.setText(title.isEmpty() ? "My checklist" : title);
         previewTitle.setTextColor(dark ? Color.rgb(243,247,252) : NAVY);
@@ -198,7 +199,7 @@ public final class WidgetConfigActivity extends Activity {
         GradientDrawable background = new GradientDrawable(); background.setCornerRadius(dp(18));
         int color = dark ? NAVY : Color.WHITE;
         background.setColor((Math.round(255 * opacity / 100f) << 24) | (color & 0x00FFFFFF));
-        background.setStroke(dp(1), dark ? Color.rgb(53,70,95) : Color.rgb(220,229,237));
+        background.setStroke(dp(1), (Math.round(255 * opacity / 100f) << 24) | ((dark ? Color.rgb(53,70,95) : Color.rgb(220,229,237)) & 0x00FFFFFF));
         preview.setBackground(background);
     }
 
@@ -211,7 +212,7 @@ public final class WidgetConfigActivity extends Activity {
                 .putString("label", contexts.get(labelInput.getSelectedItemPosition()))
                 .putBoolean("today", viewInput.getSelectedItemPosition() == 1)
                 .putBoolean("dark", colorInput.getSelectedItemPosition() == 1)
-                .putInt("opacity", 25 + opacityInput.getProgress())
+                .putInt("opacity", opacityInput.getProgress())
                 .putBoolean("configured", true).apply();
         TaskWidgetProvider.update(this, AppWidgetManager.getInstance(this), widgetId);
         setResult(RESULT_OK, new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId));
@@ -226,7 +227,7 @@ public final class WidgetConfigActivity extends Activity {
         state.putString("label", contexts.get(labelInput.getSelectedItemPosition()));
         state.putBoolean("today", viewInput.getSelectedItemPosition() == 1);
         state.putBoolean("dark", colorInput.getSelectedItemPosition() == 1);
-        state.putInt("opacity", 25 + opacityInput.getProgress());
+        state.putInt("opacity", opacityInput.getProgress());
     }
 
     private Spinner spinner(List<String> values) {
