@@ -1759,57 +1759,73 @@ main{max-width:100%;margin:0;padding:0}
     const field = node(type === 'textarea' ? 'textarea' : 'input', 'form-control');
     if (type !== 'textarea') field.type = type;
     field.value = value === undefined || value === null ? '' : String(value);
-    if (type === 'textarea') field.rows = 3;
+    if (type === 'textarea') field.rows = 2;
     wrap.append(field); form.append(wrap); return field;
   }
+  function choiceField(form, label, choices, selected) {
+    const group = node('fieldset', 'tl-choice-options'); group.dataset.field = label.toLowerCase();
+    group.append(node('legend', '', label));
+    const grid = node('div', 'tl-choice-grid');
+    const name = 'tl-' + label.toLowerCase() + '-' + Math.random().toString(36).slice(2);
+    const inputs = choices.map(([value, text]) => {
+      const row = node('label', 'tl-choice'); const input = node('input');
+      input.type = 'radio'; input.name = name; input.value = value; input.checked = value === selected;
+      row.append(input, node('span', '', text)); grid.append(row); return input;
+    });
+    Object.defineProperty(group, 'value', {
+      get() { return inputs.find(input => input.checked)?.value || ''; },
+      set(value) { inputs.forEach(input => { input.checked = input.value === value; }); }
+    });
+    group.append(grid); form.append(group); return group;
+  }
   function contextsField(form, selected) {
-    const group = node('fieldset', 'tl-context-options'); group.append(node('legend', '', 'Contexts'));
+    const group = node('fieldset', 'tl-context-options tl-context-grid'); group.append(node('legend', '', 'Contexts'));
     const choices = [...new Set([...allContexts(), ...(selected || [])])];
+    const grid = node('div', 'tl-choice-grid');
     const inputs = choices.map(label => {
       const row = node('label', 'tl-context-choice'); const check = node('input'); check.type = 'checkbox';
-      check.checked = (selected || []).includes(label); row.append(check, node('span', '', label)); group.append(row);
+      check.checked = (selected || []).includes(label); row.append(check, node('span', '', label)); grid.append(row);
       return { label, check };
     });
+    group.append(grid);
+    const custom = node('input', 'form-control tl-other-contexts'); custom.type = 'text';
+    custom.placeholder = 'Other contexts, separated by commas'; custom.setAttribute('aria-label', 'Other contexts'); group.append(custom);
     form.append(group);
-    const custom = inputField(form, 'Other contexts (comma separated)', 'text', '');
     return () => [...new Set([...inputs.filter(x => x.check.checked).map(x => x.label), ...custom.value.split(',').map(x => x.trim()).filter(Boolean)])];
   }
   function editTask(task, item, prefill) {
     if (!scope) return;
     const isNew = !task; const original = task ? clone(task) : {};
     const { form, close } = modal(isNew ? 'Add task' : 'Edit task');
-    const title = inputField(form, 'Task', 'text', original.title || ''); title.required = true;
-    const priorityWrap = node('label', 'tl-field'); priorityWrap.append(node('span', '', 'Priority'));
-    const priority = node('select', 'form-control');
-    scope.groups.forEach(([key, label]) => { const option = node('option', '', label); option.value = key; priority.append(option); });
-    priority.value = original.priority || 'UNSET'; priorityWrap.append(priority); form.append(priorityWrap);
+    form.classList.add('tl-task-form');
+    const title = inputField(form, 'Task', 'text', original.title || ''); title.required = true; title.placeholder = 'What needs doing?';
+    const priority = choiceField(form, 'Priority', scope.groups.map(([key, label]) => [key, key === 'UNSET' ? 'None' : label.replace(' priority', '')]), original.priority || 'UNSET');
+    const schedule = node('div', 'tl-schedule-grid'); form.append(schedule);
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
-    const date = inputField(form, isNew ? 'Date / recurrence start' : 'Move this occurrence to date', 'date', initialDate);
-    date.required = true;
-    const duration = inputField(form, 'Duration in minutes (blank means unknown)', 'number', original.minutes);
-    duration.min = '1'; duration.step = '1';
-    const time = inputField(form, 'Time (blank means Any time)', 'text', original.time || '');
-    const recurrenceWrap = node('label', 'tl-field'); recurrenceWrap.append(node('span', '', 'Repeat'));
-    const recurrence = node('select', 'form-control');
-    [['once','One-time'],['daily','Daily'],['weekdays','Selected weekdays'],['interval','Every N days'],['weekends','Every other Saturday and Sunday']].forEach(([key, label]) => { const o = node('option', '', label); o.value = key; recurrence.append(o); });
+    const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
+    const time = inputField(schedule, 'Time', 'text', original.time || ''); time.placeholder = 'Any time';
+    const duration = inputField(schedule, 'Duration', 'number', original.minutes); duration.placeholder = 'Minutes'; duration.min = '1'; duration.step = '1';
+    const urgentWrap = node('label', 'tl-context-choice tl-urgent'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
+    urgentWrap.append(urgent, node('span', '', 'Urgent')); schedule.append(urgentWrap);
     const oldMode = original.weekendCycleStart ? 'weekends' : original.intervalDays ? 'interval' : original.days && original.days.length ? (original.days.length === 7 ? 'daily' : 'weekdays') : 'once';
-    recurrence.value = oldMode; recurrenceWrap.append(recurrence); form.append(recurrenceWrap);
-    const repeatOptions = node('div', 'tl-repeat-options'); const week = node('fieldset', 'tl-context-options'); week.append(node('legend', '', 'Weekdays'));
+    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['daily','Daily'],['weekdays','Weekdays'],['interval','Every N days'],['weekends','Alternate weekends']], oldMode);
+    const week = node('div', 'tl-weekdays');
     const weekChecks = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((name, index) => {
       const label = node('label', 'tl-context-choice'), check = node('input'); check.type = 'checkbox'; check.checked = (original.days || []).includes(index);
-      label.append(check, node('span', '', name)); week.append(label); return check;
-    }); repeatOptions.append(week); form.append(repeatOptions);
-    const interval = inputField(form, 'Repeat every N days', 'number', original.intervalDays || 2); interval.min = '1'; interval.step = '1';
-    const toggleRepeat = () => { repeatOptions.hidden = recurrence.value !== 'weekdays'; interval.closest('label').hidden = recurrence.value !== 'interval'; };
+      check.setAttribute('aria-label', name); label.append(check, node('span', '', name.slice(0, 3))); week.append(label); return check;
+    }); recurrence.append(week);
+    const interval = inputField(recurrence, 'Every', 'number', original.intervalDays || 2); interval.placeholder = 'Days'; interval.min = '1'; interval.step = '1';
+    const toggleRepeat = () => { week.hidden = recurrence.value !== 'weekdays'; interval.closest('label').hidden = recurrence.value !== 'interval'; };
     recurrence.addEventListener('change', toggleRepeat); toggleRepeat();
     const selected = task ? derivedContexts(task) : (prefill && (prefill.labels || [prefill.label || prefill.widget_label].filter(Boolean))) || (selectedContext ? [selectedContext] : []);
     const readContexts = contextsField(form, selected);
     const readLinks = linkedTasksField(form, task);
-    const notes = inputField(form, 'Notes', 'textarea', original.notes || '');
-    const urgentWrap = node('label', 'tl-context-choice'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
-    urgentWrap.append(urgent, node('span', '', 'Urgent')); form.append(urgentWrap);
-    const steps = isNew ? inputField(form, 'Checklist steps, one per line (optional)', 'textarea', '') : null;
-    if (!isNew && scope.hasSubtasks(task)) form.append(node('p', 'text-muted', 'Existing checklist paths and completion history are retained. Use the task’s checklist to complete or reopen individual steps.'));
+    const extra = node('details', 'tl-extra-fields'); extra.append(node('summary', '', 'Notes & checklist')); extra.open = !!original.notes;
+    const extraGrid = node('div', 'tl-notes-grid'); extra.append(extraGrid); form.append(extra);
+    const notes = inputField(extraGrid, 'Notes', 'textarea', original.notes || ''); notes.placeholder = 'Add notes';
+    const steps = isNew ? inputField(extraGrid, 'Checklist', 'textarea', '') : null;
+    if (steps) steps.placeholder = 'One step per line';
+    if (!isNew && scope.hasSubtasks(task)) extraGrid.append(node('p', 'text-muted', 'Check or reopen steps on the task.'));
     const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
     const buttons = node('div', 'tl-dialog-actions');
     buttons.append(action('Cancel', close), action('Save task', () => {
@@ -1824,7 +1840,8 @@ main{max-width:100%;margin:0;padding:0}
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
       delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
-      if (isNew || recurrence.value !== oldMode) {
+      const changedSchedule = recurrence.value !== oldMode || (recurrence.value === 'weekdays' && JSON.stringify(weekChecks.flatMap((check, i) => check.checked ? [i] : [])) !== JSON.stringify(original.days || [])) || (recurrence.value === 'interval' && Number(interval.value) !== original.intervalDays);
+      if (isNew || changedSchedule) {
         ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence'].forEach(key => delete next[key]);
         if (recurrence.value === 'once') next.due = date.value;
         if (recurrence.value === 'daily') { next.days = [0,1,2,3,4,5,6]; next.recurrence = 'Daily'; }
@@ -1887,14 +1904,21 @@ main{max-width:100%;margin:0;padding:0}
     const snapshot = Array.from(rows.values()); global.TaskListBridge.lastSnapshot = snapshot;
     if (native && native.updateSnapshot) { try { native.updateSnapshot(JSON.stringify(snapshot)); } catch (error) { console.error('Could not update the home widget', error); } }
   }
+  function showSettings() {
+    const { form, close } = modal('Settings');
+    if (native && native.showWidgetSettings) {
+      form.append(action('Add home-screen widget', () => { close(); native.showWidgetSettings(); }, 'btn tl-widget-settings'));
+    }
+    const actions = node('div', 'tl-dialog-actions'); actions.append(action('Close', close, 'btn')); form.append(actions);
+  }
   function addToolbar() {
     const root = scope.root; if (root.querySelector('#tl-tools')) return;
     const toolbar = node('div', 'tl-tools'); toolbar.id = 'tl-tools';
     const select = node('select', 'form-control'); select.id = 'tl-context-filter'; select.setAttribute('aria-label', 'Filter tasks by context');
     select.addEventListener('change', () => global.TaskListApp.setContextFilter(select.value)); toolbar.append(select);
-    toolbar.append(action('+ Task', () => editTask(null, null, {}), 'btn tl-add-task'));
-    if (native && native.showWidgetSettings) toolbar.append(action('Widget', () => native.showWidgetSettings(), 'btn tl-widget'));
-    root.querySelector('.tm-top').after(toolbar); updateContextOptions();
+    const settings = action('⚙', showSettings, 'btn tl-settings'); settings.setAttribute('aria-label', 'Settings'); settings.title = 'Settings'; toolbar.append(settings);
+    const add = action('+', () => editTask(null, null, {}), 'btn tl-add-task'); add.setAttribute('aria-label', 'Add task'); add.title = 'Add task';
+    root.querySelector('.tm-top').after(toolbar); root.append(add); updateContextOptions();
   }
   global.TaskListBridge = {
     contextsFor: derivedContexts, contextMatches: matches, decorateRow, queueSnapshot, lastSnapshot: [],
@@ -2996,4 +3020,51 @@ main,#today-task-list-20261023{width:100%;min-width:0;max-width:100%;box-sizing:
 .tl-linked-task{display:flex;min-width:0;align-items:center;gap:8px;margin-top:8px}
 .tl-linked-task>span{flex:1;min-width:0;overflow-wrap:anywhere}
 .tl-linked-task .tl-unlink{flex:none;min-width:32px}
+/* Consistent controls and compact mobile editing. */
+html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
+#today-task-list-20261023 .tm-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+#pt-date{min-width:0;font-size:clamp(14px,4.3vw,18px);line-height:1.3}
+#today-task-list-20261023 .nav{padding:0;gap:0;height:48px;overflow:hidden}
+#today-task-list-20261023 .nav-link{height:48px;min-height:48px;padding:0 10px;border-radius:0;font-size:13px;box-sizing:border-box}
+#today-task-list-20261023 .tl-tools{display:flex;align-items:stretch;gap:8px;margin:10px 0 12px}
+#today-task-list-20261023 #tl-context-filter{flex:1;min-width:0;width:1px;height:48px;min-height:48px;padding:0 12px;font-size:14px!important}
+#today-task-list-20261023 .tl-settings{width:48px;height:48px;min-height:48px;flex:none;font-size:21px;padding:0;display:grid;place-items:center}
+#today-task-list-20261023 .tl-add-task{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:56px;height:56px;min-height:56px;min-width:56px;border-radius:50%;background:#68b7ff;color:#0c1c2e;font-size:36px;font-weight:400;line-height:1;padding:0;display:grid;place-items:center;border:0;box-shadow:0 3px 16px #0007;z-index:10}
+#today-task-list-20261023 .tm-progress-control,#today-task-list-20261023 .tm-move-control{height:32px;min-height:32px;box-sizing:border-box;margin-top:0;display:inline-flex;align-items:center;justify-content:center}
+.tl-dialog{padding:14px;max-height:calc(100dvh - 24px)}
+.tl-dialog h2{font-size:19px;margin:0 0 10px}
+.tl-task-form{margin:0;display:flex;flex-direction:column;gap:10px;min-width:0}
+.tl-task-form .tl-field{gap:3px;margin:0;font-size:12px}
+.tl-task-form .form-control{min-height:38px;padding:7px 8px;font-size:14px}
+.tl-task-form input.form-control,.tl-task-form select.form-control{height:38px}
+.tl-task-form textarea.form-control{resize:vertical;min-height:64px}
+.tl-dialog fieldset{min-inline-size:0}
+.tl-task-form .tl-choice-options,.tl-task-form .tl-context-options{padding:6px 8px 8px;margin:0;border:1px solid #354965;border-radius:7px;min-width:0}
+.tl-task-form legend{font-size:12px;color:#a7bfdc;padding:0 4px}
+.tl-choice-grid{display:flex;flex-wrap:wrap;gap:5px}
+.tl-choice{display:flex;align-items:center;gap:5px;min-height:30px;padding:4px 7px;border:1px solid #344760;border-radius:5px;color:#dbe7f5;font-size:12px;cursor:pointer}
+.tl-choice:has(input:checked){border-color:#68b7ff;background:#1e3a55;color:#d6ebff}
+.tl-choice input{margin:0;width:14px;height:14px;accent-color:#68b7ff;flex:none}
+.tl-schedule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;min-width:0}
+.tl-task-form .tl-urgent{align-self:end;min-height:38px;margin:0;padding:0 8px;font-size:13px}
+.tl-task-form .tl-context-grid .tl-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 8px}
+.tl-task-form .tl-context-choice{font-size:12px;min-height:28px;gap:6px;margin:0}
+.tl-task-form .tl-context-choice input{width:15px;height:15px;margin:0}
+.tl-task-form .tl-other-contexts{margin-top:5px;height:34px!important;min-height:34px}
+.tl-weekdays{display:flex;flex-wrap:wrap;gap:4px 9px;margin-top:6px}
+.tl-task-form .tl-weekdays .tl-context-choice{gap:3px}
+.tl-task-form .tl-choice-options>.tl-field{margin-top:6px;max-width:140px}
+.tl-task-form .tl-link-picker{gap:6px}
+.tl-task-form .tl-link-picker .btn{height:38px;min-height:38px;padding:4px 8px;font-size:12px}
+.tl-task-form .tl-linked-task{margin-top:4px;font-size:12px}
+.tl-task-form .tl-unlink{height:30px;min-height:30px}
+.tl-extra-fields{border:0;margin:0;min-width:0}
+.tl-extra-fields summary{font-size:12px;min-height:28px;color:#a7bfdc;cursor:pointer}
+.tl-notes-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
+.tl-task-form .tl-form-error:empty{display:none}
+.tl-task-form .tl-form-error{font-size:12px;margin:0}
+.tl-task-form .tl-dialog-actions{position:sticky;bottom:-14px;margin:0 -2px -2px;padding:8px 2px 2px;background:#172131;gap:8px;z-index:2}
+.tl-dialog .tl-dialog-actions .btn{height:42px;min-height:42px;padding:6px 14px}
+@media(max-width:350px){#today-task-list-20261023 .nav-link{padding:0 8px;font-size:12px}.tl-dialog{padding:12px}.tl-choice{padding:4px 5px}}
+
 </style></body></html>

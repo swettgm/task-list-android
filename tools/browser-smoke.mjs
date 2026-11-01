@@ -18,19 +18,22 @@ await page.addInitScript(initial => {
   let canonical = JSON.parse(JSON.stringify(initial));
   // Simulate an upgrade with old suggested pairs still in saved data.
   canonical.pairOverrides = { credit:['fix-credit'] };
-  window.__nativeQA = { snapshot: [], failWrites:false,
+  window.__nativeQA = { snapshot: [], failWrites:false, widgetOpened:false,
     setState(value) { canonical = JSON.parse(JSON.stringify(value)); },
     getState() { return JSON.parse(JSON.stringify(canonical)); } };
   window.TaskListNative = {
     readState() { return JSON.stringify(canonical); },
     writeState(text) { if (__nativeQA.failWrites) throw Error('Simulated storage failure'); canonical = JSON.parse(text); },
     updateSnapshot(text) { window.__nativeQA.snapshot = JSON.parse(text); },
-    showWidgetSettings() {}
+    showWidgetSettings() { window.__nativeQA.widgetOpened=true; }
   };
 }, seed);
 await page.goto(pathToFileURL(documentPath).href);
 await page.waitForFunction(() => !!window.TaskListApp && window.__nativeQA.snapshot.length > 0);
 await page.screenshot({ path: path.join(output, 'today-dark.png'), fullPage: false });
+await page.getByRole('button',{name:'Add task',exact:true}).click();
+await page.screenshot({path:path.join(output,'compact-editor.png'),fullPage:false});
+await page.getByRole('button',{name:'Cancel',exact:true}).click();
 const result = await page.evaluate(async () => {
   const checks = [];
   function check(condition, label) { if (!condition) throw new Error(label); checks.push(label); }
@@ -39,6 +42,15 @@ const result = await page.evaluate(async () => {
   const rowFor = (id, date) => rows().find(row => row.dataset.taskId === id && (!date || row.dataset.stateDate === date));
   const clickText = (root, text) => { const button=[...root.querySelectorAll('button')].find(b=>b.textContent===text);check(!!button,'Control exists: '+text);button.click(); };
   const original = TaskListApp.debugSummary();
+  const topControls=[document.querySelector('#tl-context-filter'),document.querySelector('.tl-settings'),...document.querySelectorAll('.nav-link')];
+  check(topControls.every(control=>Math.abs(control.getBoundingClientRect().height-48)<1),'Header dropdown and buttons have matching 48px heights');
+  check(document.querySelector('#tl-tools').children.length===2&&!document.querySelector('.tl-widget'),'Top bar contains only the larger context dropdown and Settings');
+  const add=document.querySelector('.tl-add-task');
+  check(add.textContent==='+'&&getComputedStyle(add).position==='fixed'&&add.getBoundingClientRect().height===56,'Add task is a large corner plus button');
+  document.querySelector('.tl-settings').click();
+  check(document.querySelector('dialog h2').textContent==='Settings','Settings opens from the gear');
+  clickText(document.querySelector('dialog'),'Add home-screen widget');
+  check(__nativeQA.widgetOpened&&!document.querySelector('dialog'),'Widget setup is available inside Settings');
   check(original.definitions === 102 && original.savedKeys >= 304 && original.moves >= 26, 'Original tasks, saved history, and moves retained');
   check(!!document.querySelector('#pt-date').textContent.trim() && !document.querySelector('h1'), 'Date-only heading');
   check(getComputedStyle(document.body).backgroundColor === 'rgb(16, 21, 31)', 'Dark page background');
@@ -100,7 +112,17 @@ const result = await page.evaluate(async () => {
   TaskListApp.addTask({labels:['On the computer']});
   let dialog=document.querySelector('dialog');check(dialog.open,'Creation editor opens');
   check(!dialog.textContent.includes('Useful help note'),'AI recommendation field is removed');
+  check(dialog.querySelectorAll('[data-field=priority] input[type=radio]').length===6&&dialog.querySelectorAll('[data-field=repeat] input[type=radio]').length===5,'Priority and repeat use compact single-choice rows');
+  check(![...dialog.querySelectorAll('legend,label>span')].some(label=>/[()]/.test(label.textContent)),'Editor labels contain no parenthetical instructions');
+  check(dialog.querySelector('input[placeholder="Any time"]')&&dialog.querySelector('input[placeholder="Minutes"]'),'Time and duration use short placeholders');
   dialog.querySelector('input[type=text]').value='Browser-created task';
+  dialog.querySelector('[data-field=priority] input[value=HIGH]').click();
+  dialog.querySelector('input[placeholder="Minutes"]').value='17';
+  dialog.querySelector('input[placeholder="Any time"]').value='9:00 AM';
+  dialog.querySelector('.tl-extra-fields').open=true;
+  dialog.querySelector('textarea[placeholder="Add notes"]').value='Preserve these notes';
+  dialog.querySelector('textarea[placeholder="One step per line"]').value='First step\nSecond step';
+  check(dialog.querySelectorAll('.tl-schedule-grid .tl-field').length===3,'Date, time, and duration remain available together');
   const picker=dialog.querySelector('[aria-label="Choose a task to link"]');
   check(picker.options.length===104,'Creation dropdown lists every existing task');
   picker.value='custom-native-qa';picker.dispatchEvent(new Event('change'));clickText(dialog,'Link task');
@@ -108,10 +130,13 @@ const result = await page.evaluate(async () => {
   let created=()=>rows().find(row=>row.querySelector('.tm-title').textContent==='Browser-created task');
   check(!!created()&&created().querySelector('.tm-pair-note')?.textContent.includes('Native popup task'),'Manually linked task appears on the saved row');
   const createdId=created().dataset.taskId;
+  const stored=__nativeQA.getState().customTasks.find(task=>task.id===createdId);
+  check(stored.priority==='HIGH'&&stored.minutes===17&&stored.time==='9:00 AM'&&stored.notes==='Preserve these notes'&&stored.steps.length===2,'Compact editor preserves priority, duration, time, notes, and checklist steps');
   check(__nativeQA.getState().manualLinks['custom-native-qa'].includes(createdId),'Manual linking is bidirectional');
   TaskListApp.reloadFromNative();await tick();check(created().querySelector('.tm-pair-note')?.textContent.includes('Native popup task'),'Manual links survive reload');
   created().querySelector('.tl-edit-button').click();dialog=document.querySelector('dialog');
   check(![...dialog.querySelectorAll('option')].some(o=>o.value===createdId),'Task cannot link to itself');
+  check(dialog.querySelector('[data-field=priority] input[value=HIGH]').checked&&dialog.querySelector('input[placeholder="Minutes"]').value==='17'&&dialog.querySelector('input[placeholder="Any time"]').value==='9:00 AM','Saved values repopulate the compact editor');
   [...dialog.querySelectorAll('label.tl-context-choice')].find(l=>l.textContent==='On the road').querySelector('input').click();
   dialog.querySelector('.tl-unlink').click();clickText(dialog,'Save task');await tick();TaskListApp.reloadFromNative();await tick();
   check([...created().querySelectorAll('.tl-context-badge')].some(b=>b.textContent==='On the road'),'Contexts can be edited through the gear');
@@ -121,6 +146,24 @@ const result = await page.evaluate(async () => {
   document.querySelector('#pt-upcoming-tab').click();check(!document.querySelector('#pt-upcoming').hidden&&document.querySelector('#pt-today').hidden,'Upcoming tab works');
   check(document.querySelectorAll('#pt-future-list .tm-day').length>0,'Upcoming remains grouped by date');
   document.querySelector('#pt-today-tab').click();
+  TaskListApp.addTask();dialog=document.querySelector('dialog');
+  dialog.querySelector('input[type=text]').value='Repeat choice QA';
+  dialog.querySelector('[data-field=repeat] input[value=weekdays]').click();
+  check(!dialog.querySelector('.tl-weekdays').hidden,'Weekday checkboxes appear only for weekday repeating');
+  dialog.querySelector('input[aria-label=Monday]').click();dialog.querySelector('input[aria-label=Friday]').click();
+  clickText(dialog,'Save task');await tick();
+  let repeat=__nativeQA.getState().customTasks.find(task=>task.title==='Repeat choice QA');
+  check(JSON.stringify(repeat.days)==='[1,5]','Weekday choices save the chosen repeat days');
+  TaskListApp.addTask();dialog=document.querySelector('dialog');dialog.querySelector('input[type=text]').value='Interval choice QA';
+  dialog.querySelector('[data-field=repeat] input[value=interval]').click();
+  const every=dialog.querySelector('input[placeholder=Days]');check(!every.closest('label').hidden&&dialog.querySelector('.tl-weekdays').hidden,'Interval input replaces weekday choices');every.value='4';
+  clickText(dialog,'Save task');await tick();
+  repeat=__nativeQA.getState().customTasks.find(task=>task.title==='Interval choice QA');
+  check(repeat.intervalDays===4&&!!repeat.intervalStart,'Every N days remains available');
+  TaskListApp.addTask();dialog=document.querySelector('dialog');dialog.querySelector('input[type=text]').value='Alternate weekends QA';
+  dialog.querySelector('[data-field=repeat] input[value=weekends]').click();dialog.querySelector('.tl-urgent input').click();
+  clickText(dialog,'Save task');await tick();repeat=__nativeQA.getState().customTasks.find(task=>task.title==='Alternate weekends QA');
+  check(!!repeat.weekendCycleStart&&repeat.urgent&&repeat.priority==='HIGHEST','Alternate weekends and urgent options remain available');
   return {checks};
 });
 // Check real geometry, including expanded content and long task text, without masking overflow.

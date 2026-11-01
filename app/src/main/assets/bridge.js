@@ -187,57 +187,73 @@
     const field = node(type === 'textarea' ? 'textarea' : 'input', 'form-control');
     if (type !== 'textarea') field.type = type;
     field.value = value === undefined || value === null ? '' : String(value);
-    if (type === 'textarea') field.rows = 3;
+    if (type === 'textarea') field.rows = 2;
     wrap.append(field); form.append(wrap); return field;
   }
+  function choiceField(form, label, choices, selected) {
+    const group = node('fieldset', 'tl-choice-options'); group.dataset.field = label.toLowerCase();
+    group.append(node('legend', '', label));
+    const grid = node('div', 'tl-choice-grid');
+    const name = 'tl-' + label.toLowerCase() + '-' + Math.random().toString(36).slice(2);
+    const inputs = choices.map(([value, text]) => {
+      const row = node('label', 'tl-choice'); const input = node('input');
+      input.type = 'radio'; input.name = name; input.value = value; input.checked = value === selected;
+      row.append(input, node('span', '', text)); grid.append(row); return input;
+    });
+    Object.defineProperty(group, 'value', {
+      get() { return inputs.find(input => input.checked)?.value || ''; },
+      set(value) { inputs.forEach(input => { input.checked = input.value === value; }); }
+    });
+    group.append(grid); form.append(group); return group;
+  }
   function contextsField(form, selected) {
-    const group = node('fieldset', 'tl-context-options'); group.append(node('legend', '', 'Contexts'));
+    const group = node('fieldset', 'tl-context-options tl-context-grid'); group.append(node('legend', '', 'Contexts'));
     const choices = [...new Set([...allContexts(), ...(selected || [])])];
+    const grid = node('div', 'tl-choice-grid');
     const inputs = choices.map(label => {
       const row = node('label', 'tl-context-choice'); const check = node('input'); check.type = 'checkbox';
-      check.checked = (selected || []).includes(label); row.append(check, node('span', '', label)); group.append(row);
+      check.checked = (selected || []).includes(label); row.append(check, node('span', '', label)); grid.append(row);
       return { label, check };
     });
+    group.append(grid);
+    const custom = node('input', 'form-control tl-other-contexts'); custom.type = 'text';
+    custom.placeholder = 'Other contexts, separated by commas'; custom.setAttribute('aria-label', 'Other contexts'); group.append(custom);
     form.append(group);
-    const custom = inputField(form, 'Other contexts (comma separated)', 'text', '');
     return () => [...new Set([...inputs.filter(x => x.check.checked).map(x => x.label), ...custom.value.split(',').map(x => x.trim()).filter(Boolean)])];
   }
   function editTask(task, item, prefill) {
     if (!scope) return;
     const isNew = !task; const original = task ? clone(task) : {};
     const { form, close } = modal(isNew ? 'Add task' : 'Edit task');
-    const title = inputField(form, 'Task', 'text', original.title || ''); title.required = true;
-    const priorityWrap = node('label', 'tl-field'); priorityWrap.append(node('span', '', 'Priority'));
-    const priority = node('select', 'form-control');
-    scope.groups.forEach(([key, label]) => { const option = node('option', '', label); option.value = key; priority.append(option); });
-    priority.value = original.priority || 'UNSET'; priorityWrap.append(priority); form.append(priorityWrap);
+    form.classList.add('tl-task-form');
+    const title = inputField(form, 'Task', 'text', original.title || ''); title.required = true; title.placeholder = 'What needs doing?';
+    const priority = choiceField(form, 'Priority', scope.groups.map(([key, label]) => [key, key === 'UNSET' ? 'None' : label.replace(' priority', '')]), original.priority || 'UNSET');
+    const schedule = node('div', 'tl-schedule-grid'); form.append(schedule);
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
-    const date = inputField(form, isNew ? 'Date / recurrence start' : 'Move this occurrence to date', 'date', initialDate);
-    date.required = true;
-    const duration = inputField(form, 'Duration in minutes (blank means unknown)', 'number', original.minutes);
-    duration.min = '1'; duration.step = '1';
-    const time = inputField(form, 'Time (blank means Any time)', 'text', original.time || '');
-    const recurrenceWrap = node('label', 'tl-field'); recurrenceWrap.append(node('span', '', 'Repeat'));
-    const recurrence = node('select', 'form-control');
-    [['once','One-time'],['daily','Daily'],['weekdays','Selected weekdays'],['interval','Every N days'],['weekends','Every other Saturday and Sunday']].forEach(([key, label]) => { const o = node('option', '', label); o.value = key; recurrence.append(o); });
+    const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
+    const time = inputField(schedule, 'Time', 'text', original.time || ''); time.placeholder = 'Any time';
+    const duration = inputField(schedule, 'Duration', 'number', original.minutes); duration.placeholder = 'Minutes'; duration.min = '1'; duration.step = '1';
+    const urgentWrap = node('label', 'tl-context-choice tl-urgent'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
+    urgentWrap.append(urgent, node('span', '', 'Urgent')); schedule.append(urgentWrap);
     const oldMode = original.weekendCycleStart ? 'weekends' : original.intervalDays ? 'interval' : original.days && original.days.length ? (original.days.length === 7 ? 'daily' : 'weekdays') : 'once';
-    recurrence.value = oldMode; recurrenceWrap.append(recurrence); form.append(recurrenceWrap);
-    const repeatOptions = node('div', 'tl-repeat-options'); const week = node('fieldset', 'tl-context-options'); week.append(node('legend', '', 'Weekdays'));
+    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['daily','Daily'],['weekdays','Weekdays'],['interval','Every N days'],['weekends','Alternate weekends']], oldMode);
+    const week = node('div', 'tl-weekdays');
     const weekChecks = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((name, index) => {
       const label = node('label', 'tl-context-choice'), check = node('input'); check.type = 'checkbox'; check.checked = (original.days || []).includes(index);
-      label.append(check, node('span', '', name)); week.append(label); return check;
-    }); repeatOptions.append(week); form.append(repeatOptions);
-    const interval = inputField(form, 'Repeat every N days', 'number', original.intervalDays || 2); interval.min = '1'; interval.step = '1';
-    const toggleRepeat = () => { repeatOptions.hidden = recurrence.value !== 'weekdays'; interval.closest('label').hidden = recurrence.value !== 'interval'; };
+      check.setAttribute('aria-label', name); label.append(check, node('span', '', name.slice(0, 3))); week.append(label); return check;
+    }); recurrence.append(week);
+    const interval = inputField(recurrence, 'Every', 'number', original.intervalDays || 2); interval.placeholder = 'Days'; interval.min = '1'; interval.step = '1';
+    const toggleRepeat = () => { week.hidden = recurrence.value !== 'weekdays'; interval.closest('label').hidden = recurrence.value !== 'interval'; };
     recurrence.addEventListener('change', toggleRepeat); toggleRepeat();
     const selected = task ? derivedContexts(task) : (prefill && (prefill.labels || [prefill.label || prefill.widget_label].filter(Boolean))) || (selectedContext ? [selectedContext] : []);
     const readContexts = contextsField(form, selected);
     const readLinks = linkedTasksField(form, task);
-    const notes = inputField(form, 'Notes', 'textarea', original.notes || '');
-    const urgentWrap = node('label', 'tl-context-choice'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
-    urgentWrap.append(urgent, node('span', '', 'Urgent')); form.append(urgentWrap);
-    const steps = isNew ? inputField(form, 'Checklist steps, one per line (optional)', 'textarea', '') : null;
-    if (!isNew && scope.hasSubtasks(task)) form.append(node('p', 'text-muted', 'Existing checklist paths and completion history are retained. Use the task’s checklist to complete or reopen individual steps.'));
+    const extra = node('details', 'tl-extra-fields'); extra.append(node('summary', '', 'Notes & checklist')); extra.open = !!original.notes;
+    const extraGrid = node('div', 'tl-notes-grid'); extra.append(extraGrid); form.append(extra);
+    const notes = inputField(extraGrid, 'Notes', 'textarea', original.notes || ''); notes.placeholder = 'Add notes';
+    const steps = isNew ? inputField(extraGrid, 'Checklist', 'textarea', '') : null;
+    if (steps) steps.placeholder = 'One step per line';
+    if (!isNew && scope.hasSubtasks(task)) extraGrid.append(node('p', 'text-muted', 'Check or reopen steps on the task.'));
     const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
     const buttons = node('div', 'tl-dialog-actions');
     buttons.append(action('Cancel', close), action('Save task', () => {
@@ -252,7 +268,8 @@
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
       delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
-      if (isNew || recurrence.value !== oldMode) {
+      const changedSchedule = recurrence.value !== oldMode || (recurrence.value === 'weekdays' && JSON.stringify(weekChecks.flatMap((check, i) => check.checked ? [i] : [])) !== JSON.stringify(original.days || [])) || (recurrence.value === 'interval' && Number(interval.value) !== original.intervalDays);
+      if (isNew || changedSchedule) {
         ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence'].forEach(key => delete next[key]);
         if (recurrence.value === 'once') next.due = date.value;
         if (recurrence.value === 'daily') { next.days = [0,1,2,3,4,5,6]; next.recurrence = 'Daily'; }
@@ -315,14 +332,21 @@
     const snapshot = Array.from(rows.values()); global.TaskListBridge.lastSnapshot = snapshot;
     if (native && native.updateSnapshot) { try { native.updateSnapshot(JSON.stringify(snapshot)); } catch (error) { console.error('Could not update the home widget', error); } }
   }
+  function showSettings() {
+    const { form, close } = modal('Settings');
+    if (native && native.showWidgetSettings) {
+      form.append(action('Add home-screen widget', () => { close(); native.showWidgetSettings(); }, 'btn tl-widget-settings'));
+    }
+    const actions = node('div', 'tl-dialog-actions'); actions.append(action('Close', close, 'btn')); form.append(actions);
+  }
   function addToolbar() {
     const root = scope.root; if (root.querySelector('#tl-tools')) return;
     const toolbar = node('div', 'tl-tools'); toolbar.id = 'tl-tools';
     const select = node('select', 'form-control'); select.id = 'tl-context-filter'; select.setAttribute('aria-label', 'Filter tasks by context');
     select.addEventListener('change', () => global.TaskListApp.setContextFilter(select.value)); toolbar.append(select);
-    toolbar.append(action('+ Task', () => editTask(null, null, {}), 'btn tl-add-task'));
-    if (native && native.showWidgetSettings) toolbar.append(action('Widget', () => native.showWidgetSettings(), 'btn tl-widget'));
-    root.querySelector('.tm-top').after(toolbar); updateContextOptions();
+    const settings = action('⚙', showSettings, 'btn tl-settings'); settings.setAttribute('aria-label', 'Settings'); settings.title = 'Settings'; toolbar.append(settings);
+    const add = action('+', () => editTask(null, null, {}), 'btn tl-add-task'); add.setAttribute('aria-label', 'Add task'); add.title = 'Add task';
+    root.querySelector('.tm-top').after(toolbar); root.append(add); updateContextOptions();
   }
   global.TaskListBridge = {
     contextsFor: derivedContexts, contextMatches: matches, decorateRow, queueSnapshot, lastSnapshot: [],
