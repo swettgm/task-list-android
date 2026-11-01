@@ -1,15 +1,12 @@
 package com.personal.tasklist;
 
 import static org.junit.Assert.*;
-
-import android.app.AlertDialog;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Looper;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,108 +16,43 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
 import org.robolectric.android.controller.ActivityController;
-import org.robolectric.shadows.ShadowAlertDialog;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 28)
 public class MainActivityTest {
-    @Before public void clearTasks() {
-        RuntimeEnvironment.getApplication().getSharedPreferences("tasks", Context.MODE_PRIVATE).edit().clear().commit();
+    private Context context;
+    @Before public void reset() {
+        context = RuntimeEnvironment.getApplication();
+        context.getSharedPreferences("tasks", Context.MODE_PRIVATE).edit().clear().commit();
+        context.getSharedPreferences("reference_state", Context.MODE_PRIVATE).edit().clear().commit();
     }
-
-    @Test public void taskCanBeCreatedThroughNativeEditorAndSurvivesReopen() {
-        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
-        MainActivity activity = controller.get();
-        Button add = findButton(activity.getWindow().getDecorView(), "+  Add task");
-        assertNotNull(add);
-        add.performClick();
-        idleMainLooper();
-        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
-        assertNotNull(dialog);
-        EditText title = findFirstEditor(dialog.getWindow().getDecorView());
-        assertNotNull(title);
-        title.setText("Prepare for work");
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-        idleMainLooper();
-        assertFalse(dialog.isShowing());
-        TaskStore store = new TaskStore(activity);
-        assertEquals(1, store.all().size());
-        assertEquals("Prepare for work", store.all().get(0).title);
-        controller.pause().stop().destroy();
-
+    @Test public void nativeStateSurvivesActivityRecreation() throws Exception {
+        ActivityController<MainActivity> first = Robolectric.buildActivity(MainActivity.class).setup();
+        JSONObject state = new JSONObject().put("version", 1).put("completed",
+                new JSONObject().put("task:2026-11-01", true)).put("customTasks", new JSONArray());
+        first.get().taskBridgeForTests().writeState(state.toString());
+        first.pause().stop().destroy();
         ActivityController<MainActivity> reopened = Robolectric.buildActivity(MainActivity.class).setup();
-        assertEquals("Prepare for work", new TaskStore(reopened.get()).all().get(0).title);
+        JSONObject restored = new JSONObject(reopened.get().taskBridgeForTests().readState());
+        assertTrue(restored.getJSONObject("completed").getBoolean("task:2026-11-01"));
+        assertTrue(restored.has("customTasks"));
         reopened.pause().stop().destroy();
     }
-
-    @Test public void widgetAddShortcutUsesItsChecklistWhenAppIsAlreadyOpen() {
-        Context context = RuntimeEnvironment.getApplication();
-        TaskStore store = new TaskStore(context);
-        store.add("Existing work task", "Work", "");
-        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
-        controller.newIntent(new Intent(context, MainActivity.class)
-                .putExtra("widget_list", "Work").putExtra("add_task", true));
-        idleMainLooper();
-        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
-        assertNotNull("The widget's plus shortcut must open the task editor", dialog);
-        EditText title = findFirstEditor(dialog.getWindow().getDecorView());
-        title.setText("Added from widget");
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-        idleMainLooper();
-        TaskStore.Task added = null;
-        for (TaskStore.Task task : store.all()) if (task.title.equals("Added from widget")) added = task;
-        assertNotNull(added);
-        assertEquals("Work", added.listName);
-        controller.pause().stop().destroy();
-    }
-
-    @Test public void widgetAddShortcutPreservesItsChecklistAfterLastTaskWasDeleted() {
-        Context context = RuntimeEnvironment.getApplication();
-        TaskStore store = new TaskStore(context);
-        store.add("Old work task", "Work", "");
-        store.delete(store.all().get(0).id);
-        assertFalse("Deleted lists are currently absent from the store's derived names", store.lists().contains("Work"));
-        Intent shortcut = new Intent(context, MainActivity.class)
-                .putExtra("widget_list", "Work").putExtra("add_task", true);
-        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class, shortcut).setup();
-        idleMainLooper();
-        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
-        assertNotNull(dialog);
-        EditText title = findFirstEditor(dialog.getWindow().getDecorView());
-        title.setText("First task back in Work");
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-        idleMainLooper();
-        assertEquals(1, store.all().size());
-        assertEquals("Work", store.all().get(0).listName);
-        controller.pause().stop().destroy();
-    }
-
-    private static void idleMainLooper() {
-        // Dialog.show() queues OnShow callbacks; let that UI turn finish before user input.
+    @Test public void progressCopyUsesTheAndroidClipboard() {
+        ActivityController<MainActivity> activity = Robolectric.buildActivity(MainActivity.class).setup();
+        activity.get().taskBridgeForTests().copyText("A saved progress update");
         Shadows.shadowOf(Looper.getMainLooper()).idle();
+        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+        assertEquals("A saved progress update", clipboard.getPrimaryClip().getItemAt(0).getText().toString());
+        activity.pause().stop().destroy();
     }
-
-    private static Button findButton(View view, String text) {
-        if (view instanceof Button && text.contentEquals(((Button) view).getText())) return (Button) view;
-        if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                Button found = findButton(group.getChildAt(i), text);
-                if (found != null) return found;
-            }
-        }
-        return null;
-    }
-
-    private static EditText findFirstEditor(View view) {
-        if (view instanceof EditText) return (EditText) view;
-        if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                EditText found = findFirstEditor(group.getChildAt(i));
-                if (found != null) return found;
-            }
-        }
-        return null;
+    @Test public void widgetShortcutCanResumeTheOfflineTaskScreen() {
+        Intent intent = new Intent(context, MainActivity.class).putExtra("widget_label", "At home")
+                .putExtra("widget_list", "My tasks").putExtra("add_task", true);
+        ActivityController<MainActivity> activity = Robolectric.buildActivity(MainActivity.class, intent).setup();
+        activity.newIntent(new Intent(context, MainActivity.class).putExtra("widget_label", "On the phone"));
+        assertFalse(activity.get().isFinishing());
+        assertEquals("On the phone", activity.get().getIntent().getStringExtra("widget_label"));
+        activity.pause().stop().destroy();
     }
 }

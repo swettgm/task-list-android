@@ -9,6 +9,7 @@ on:
       - '*.gradle'
       - 'gradle.properties'
       - '.github/workflows/build-apk.yml'
+      - '.github/build-encryption-cert.pem'
 
 permissions:
   contents: read
@@ -59,6 +60,11 @@ jobs:
       - name: Build APK, run unit tests, and run lint
         run: gradle --no-daemon --console=plain --stacktrace :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 
+      - name: Check the complete task workflow in Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          node tools/browser-smoke.mjs
+
       - name: Verify APK signature and record checksum
         shell: bash
         run: |
@@ -78,6 +84,41 @@ jobs:
             cat app-debug.apk.sha256
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prepare encrypted signing key and offline personalization tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          TASK_SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          TASK_BUILD_TOOLS="$TASK_SDK_DIR/build-tools/35.0.0"
+          TASK_TOOLS_DIR="$RUNNER_TEMP/task-list-personalization-tools"
+          mkdir -p "$TASK_TOOLS_DIR"
+          test -s "$HOME/.android/debug.keystore"
+          test -s .github/build-encryption-cert.pem
+          # Only the public encryption certificate is in this repository.
+          # The decryption private key and personalized assets stay local.
+          openssl cms -encrypt -binary -aes-256-cbc \
+            -in "$HOME/.android/debug.keystore" -outform DER \
+            -out "$TASK_TOOLS_DIR/encrypted-debug-keystore.p7m" \
+            .github/build-encryption-cert.pem
+          cp "$TASK_BUILD_TOOLS/lib/apksigner.jar" "$TASK_TOOLS_DIR/apksigner.jar"
+          cp "$TASK_BUILD_TOOLS/zipalign" "$TASK_TOOLS_DIR/zipalign"
+          if [[ -d "$TASK_BUILD_TOOLS/lib64" ]]; then
+            cp -a "$TASK_BUILD_TOOLS/lib64" "$TASK_TOOLS_DIR/lib64"
+          fi
+          if [[ -f "$TASK_BUILD_TOOLS/NOTICE.txt" ]]; then
+            cp "$TASK_BUILD_TOOLS/NOTICE.txt" "$TASK_TOOLS_DIR/NOTICE.txt"
+          fi
+          ldd "$TASK_BUILD_TOOLS/zipalign" > "$TASK_TOOLS_DIR/zipalign-dependencies.txt"
+          printf 'TASK_PERSONALIZATION_TOOLS=%s\n' "$TASK_TOOLS_DIR" >> "$GITHUB_ENV"
+
+      - name: Upload encrypted signing key and personalization tools
+        uses: actions/upload-artifact@v4
+        with:
+          name: Task-List-Personalization-Tools
+          path: ${{ env.TASK_PERSONALIZATION_TOOLS }}/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload APK and verification files
         uses: actions/upload-artifact@v4
@@ -99,5 +140,6 @@ jobs:
             app/build/reports/tests/
             app/build/test-results/
             app/build/reports/lint-results-debug.*
+            build/browser-qa/
           if-no-files-found: warn
           retention-days: 14

@@ -85,19 +85,27 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
 
     private Bundle restoredOptions() {
         Bundle result = new Bundle();
-        result.putBoolean(AppWidgetManager.OPTION_APPWIDGET_RESTORE_COMPLETED, true);
+        if (android.os.Build.VERSION.SDK_INT >= 30)
+            result.putBoolean(AppWidgetManager.OPTION_APPWIDGET_RESTORE_COMPLETED, true);
         return result;
     }
 
     static List<TaskStore.Task> selectedTasks(Context context, String listName, boolean today) {
+        return selectedTasks(context, listName, today, "");
+    }
+
+    static List<TaskStore.Task> selectedTasks(Context context, String listName, boolean today, String label) {
         List<TaskStore.Task> tasks = new ArrayList<>();
-        String date = LocalDate.now().toString();
+        LocalDate date = LocalDate.now(java.time.ZoneId.of("America/New_York"));
         for (TaskStore.Task task : new TaskStore(context).all()) {
             if (task.done || (!listName.isEmpty() && !listName.equals(task.listName))) continue;
-            if (today && (task.dueDate == null || task.dueDate.isEmpty() || task.dueDate.compareTo(date) > 0)) continue;
+            if (!label.isEmpty() && !task.labels.contains(label)) continue;
+            if (today && !TaskStore.isForToday(task, date)) continue;
             tasks.add(task);
         }
-        tasks.sort(Comparator.comparing((TaskStore.Task t) -> t.dueDate == null || t.dueDate.isEmpty() ? "9999-99-99" : t.dueDate)
+        tasks.sort(Comparator.comparing((TaskStore.Task t) -> !TaskStore.IN_PROGRESS.equals(t.status))
+                .thenComparingInt(t -> TaskStore.PRIORITIES.indexOf(t.priority))
+                .thenComparing(t -> effectiveDate(t).isEmpty() ? "9999-99-99" : effectiveDate(t))
                 .thenComparingLong(t -> t.createdAt));
         return tasks;
     }
@@ -106,15 +114,16 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         SharedPreferences prefs = preferences(context, id);
         String title = prefs.getString("title", "My checklist");
         String listName = prefs.getString("list", "");
+        String label = prefs.getString("label", "");
         boolean today = prefs.getBoolean("today", false);
-        boolean dark = prefs.getBoolean("dark", false);
+        boolean dark = prefs.getBoolean("dark", true);
         int opacity = Math.max(25, Math.min(100, prefs.getInt("opacity", 100)));
         int foreground = Color.parseColor(dark ? "#F3F7FC" : "#1F2B40");
         int secondary = Color.parseColor(dark ? "#BAC9D9" : "#56677F");
         int accent = Color.parseColor(dark ? "#8FC6E7" : "#195B7E");
         List<TaskStore.Task> tasks;
         boolean unavailable = false;
-        try { tasks = selectedTasks(context, listName, today); }
+        try { tasks = selectedTasks(context, listName, today, label); }
         catch (RuntimeException cannotReadTasks) { tasks = new ArrayList<>(); unavailable = true; }
 
         Bundle options = manager.getAppWidgetOptions(id);
@@ -134,7 +143,8 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         views.setTextColor(R.id.widget_empty, secondary);
         views.setTextColor(R.id.widget_open, accent);
         views.setTextColor(R.id.widget_add, accent);
-        views.setTextViewText(R.id.widget_summary, unavailable ? "Checklist unavailable" : tasks.size() + (tasks.size() == 1 ? " open task" : " open tasks")
+        views.setTextViewText(R.id.widget_summary, unavailable ? "Checklist unavailable" : tasks.size() + " open"
+                + (label.isEmpty() ? "" : " · " + label)
                 + (today ? " · Today + overdue" : " · " + (listName.isEmpty() ? "All lists" : listName)));
         views.setViewVisibility(R.id.widget_empty, tasks.isEmpty() ? View.VISIBLE : View.GONE);
         views.setTextViewText(R.id.widget_empty, unavailable ? "Open the app to check your saved tasks." : today ? "Nothing due. Add a due date in the app." : "No open tasks. Add one in the app.");
@@ -144,27 +154,31 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         for (int i = 0; i < displayed; i++) {
             TaskStore.Task task = tasks.get(i);
             RemoteViews row = new RemoteViews(context.getPackageName(), R.layout.widget_task_row);
-            row.setTextViewText(R.id.widget_task_title, task.title);
+            boolean active = TaskStore.IN_PROGRESS.equals(task.status);
+            row.setTextViewText(R.id.widget_task_title, (active ? "▶ " : "") + task.title);
+            row.setContentDescription(R.id.widget_task_title, task.title + ", " + task.status
+                    + (task.labels.isEmpty() ? "" : ", " + android.text.TextUtils.join(", ", task.labels)));
             row.setTextColor(R.id.widget_task_title, foreground);
             row.setTextColor(R.id.widget_check, accent);
             row.setTextColor(R.id.widget_due, secondary);
             row.setContentDescription(R.id.widget_check, "Complete " + task.title);
-            row.setTextViewText(R.id.widget_due, dueLabel(task.dueDate));
-            row.setViewVisibility(R.id.widget_due, compact || task.dueDate == null || task.dueDate.isEmpty() ? View.GONE : View.VISIBLE);
+            String detail = taskDetail(task);
+            row.setTextViewText(R.id.widget_due, detail);
+            row.setViewVisibility(R.id.widget_due, compact || detail.isEmpty() ? View.GONE : View.VISIBLE);
             Intent complete = new Intent(context, TaskWidgetProvider.class).setAction(ACTION_COMPLETE)
                     .setData(Uri.parse("tasklist-widget://complete/" + id + "/" + Uri.encode(task.id)))
                     .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id).putExtra(EXTRA_TASK_ID, task.id);
             row.setOnClickPendingIntent(R.id.widget_check, PendingIntent.getBroadcast(context, 0, complete,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-            row.setOnClickPendingIntent(R.id.widget_task_title, openApp(context, id, listName, false));
+            row.setOnClickPendingIntent(R.id.widget_task_title, openApp(context, id, listName, label, false));
             views.addView(R.id.widget_rows, row);
         }
 
         views.setTextViewText(R.id.widget_open, tasks.size() > displayed ? "+" + (tasks.size() - displayed) + " more · Open app ›" : "Open app ›");
-        views.setOnClickPendingIntent(R.id.widget_title, openApp(context, id, listName, false));
-        views.setOnClickPendingIntent(R.id.widget_empty, openApp(context, id, listName, false));
-        views.setOnClickPendingIntent(R.id.widget_open, openApp(context, id, listName, false));
-        views.setOnClickPendingIntent(R.id.widget_add, openApp(context, id, listName, true));
+        views.setOnClickPendingIntent(R.id.widget_title, openApp(context, id, listName, label, false));
+        views.setOnClickPendingIntent(R.id.widget_empty, openApp(context, id, listName, label, false));
+        views.setOnClickPendingIntent(R.id.widget_open, openApp(context, id, listName, label, false));
+        views.setOnClickPendingIntent(R.id.widget_add, openApp(context, id, listName, label, true));
         Intent configure = new Intent(context, WidgetConfigActivity.class)
                 .setData(Uri.parse("tasklist-widget://configure/" + id))
                 .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
@@ -174,20 +188,32 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         manager.updateAppWidget(id, views);
     }
 
-    private static PendingIntent openApp(Context context, int widgetId, String listName, boolean add) {
-        Intent intent = new Intent(context, MainActivity.class)
+    private static PendingIntent openApp(Context context, int widgetId, String listName, String label, boolean add) {
+        Intent intent = new Intent(context, add ? QuickAddActivity.class : MainActivity.class)
                 .setData(Uri.parse("tasklist-widget://" + (add ? "add/" : "open/") + widgetId))
-                .putExtra("widget_list", listName).putExtra("add_task", add)
+                .putExtra("widget_list", listName).putExtra("widget_label", label).putExtra("add_task", add)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         return PendingIntent.getActivity(context, widgetId, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private static String effectiveDate(TaskStore.Task task) {
+        return task.plannedDate.isEmpty() ? task.dueDate : task.plannedDate;
+    }
+
+    private static String taskDetail(TaskStore.Task task) {
+        String date = effectiveDate(task);
+        if (!date.isEmpty()) return dueLabel(date);
+        if (TaskStore.IN_PROGRESS.equals(task.status)) return "Now";
+        if (TaskStore.WAITING.equals(task.status) || TaskStore.SOMEDAY.equals(task.status)) return task.status;
+        return "";
     }
 
     private static String dueLabel(String date) {
         if (date == null || date.isEmpty()) return "";
         try {
             LocalDate due = LocalDate.parse(date);
-            LocalDate today = LocalDate.now();
+            LocalDate today = LocalDate.now(java.time.ZoneId.of("America/New_York"));
             if (due.equals(today)) return "Today";
             if (due.isBefore(today)) return "Overdue";
             if (due.equals(today.plusDays(1))) return "Tomorrow";

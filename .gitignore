@@ -7,3 +7,5 @@ app/build/
 .DS_Store
 *.log
 .gradle-bootstrap/
+
+node_modules/

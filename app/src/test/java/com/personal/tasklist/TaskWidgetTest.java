@@ -9,6 +9,7 @@ import android.content.Intent;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,7 +48,7 @@ public class TaskWidgetTest {
     }
 
     @Test public void todayViewIncludesOverdueButExcludesFutureUndatedAndDone() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("America/New_York"));
         store.add("Overdue", "Work", today.minusDays(2).toString());
         store.add("Due today", "Work", today.toString());
         store.add("Tomorrow", "Work", today.plusDays(1).toString());
@@ -57,15 +58,66 @@ public class TaskWidgetTest {
         assertEquals(Arrays.asList("Overdue", "Due today"), titles(TaskWidgetProvider.selectedTasks(context, "Work", true)));
     }
 
+    @Test public void contextFilterCombinesChecklistAndOpenStateWithoutChangingOtherContexts() {
+        task("Call supplier", "Work", "", "", TaskStore.NEXT, "On the phone", "On the road");
+        task("Call family", "Personal", "", "", TaskStore.NEXT, "On the phone");
+        task("Write report", "Work", "", "", TaskStore.NEXT, "On the computer");
+        task("Finished call", "Work", "", "", TaskStore.DONE, "On the phone");
+
+        assertEquals(Arrays.asList("Call supplier"),
+                titles(TaskWidgetProvider.selectedTasks(context, "Work", false, "On the phone")));
+        assertEquals(new HashSet<>(Arrays.asList("Call supplier", "Call family")),
+                new HashSet<>(titles(TaskWidgetProvider.selectedTasks(context, "", false, "On the phone"))));
+        assertEquals(titles(TaskWidgetProvider.selectedTasks(context, "", false)),
+                titles(TaskWidgetProvider.selectedTasks(context, "", false, "")));
+        assertTrue(TaskWidgetProvider.selectedTasks(context, "", false, "At home").isEmpty());
+    }
+
+    @Test public void todayViewUsesPlannedDayBeforeDeadlineAndExcludesWaitingOrSomeday() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("America/New_York"));
+        task("Planned tomorrow", "Work", today.minusDays(1).toString(), today.plusDays(1).toString(),
+                TaskStore.NEXT, "On the computer");
+        task("Planned today", "Work", today.plusDays(7).toString(), today.toString(),
+                TaskStore.NEXT, "On the computer");
+        task("Unfinished plan", "Work", "", today.minusDays(1).toString(),
+                TaskStore.NEXT, "On the computer");
+        task("Waiting for reply", "Work", today.toString(), today.toString(),
+                TaskStore.WAITING, "On the computer");
+        task("Someday project", "Work", today.toString(), today.toString(),
+                TaskStore.SOMEDAY, "On the computer");
+        task("Completed plan", "Work", today.toString(), today.toString(),
+                TaskStore.DONE, "On the computer");
+        task("Working now", "Work", "", "", TaskStore.IN_PROGRESS, "On the computer");
+
+        assertEquals(new HashSet<>(Arrays.asList("Planned today", "Unfinished plan", "Working now")),
+                new HashSet<>(titles(TaskWidgetProvider.selectedTasks(context, "Work", true, "On the computer"))));
+        TaskStore.Task postponed = null;
+        for (TaskStore.Task item : store.all()) if (item.title.equals("Planned tomorrow")) postponed = item;
+        assertNotNull(postponed);
+        assertEquals("Filtering must not rewrite the original deadline", today.minusDays(1).toString(), postponed.dueDate);
+    }
+
+    @Test public void allOpenContextViewStillIncludesFutureWaitingAndSomedayTasks() {
+        String tomorrow = LocalDate.now(java.time.ZoneId.of("America/New_York")).plusDays(1).toString();
+        task("Tomorrow call", "Work", "", tomorrow, TaskStore.NEXT, "On the phone");
+        task("Waiting call", "Work", "", "", TaskStore.WAITING, "On the phone");
+        task("Someday call", "Work", "", "", TaskStore.SOMEDAY, "On the phone");
+        assertEquals(new HashSet<>(Arrays.asList("Tomorrow call", "Waiting call", "Someday call")),
+                new HashSet<>(titles(TaskWidgetProvider.selectedTasks(context, "Work", false, "On the phone"))));
+    }
+
     @Test public void eachWidgetKeepsItsOwnSettingsAndDeletionDoesNotAffectOthers() {
-        TaskWidgetProvider.preferences(context, 17).edit().putString("title", "Work checklist").putString("list", "Work").putBoolean("dark", true).commit();
-        TaskWidgetProvider.preferences(context, 29).edit().putString("title", "Personal").putString("list", "Personal").putInt("opacity", 60).commit();
+        TaskWidgetProvider.preferences(context, 17).edit().putString("title", "Work checklist").putString("list", "Work").putString("label", "On the phone").putBoolean("dark", true).commit();
+        TaskWidgetProvider.preferences(context, 29).edit().putString("title", "Personal").putString("list", "Personal").putString("label", "At home").putBoolean("dark", false).putInt("opacity", 60).commit();
         assertEquals("Work checklist", TaskWidgetProvider.preferences(context, 17).getString("title", ""));
         assertFalse(TaskWidgetProvider.preferences(context, 29).getBoolean("dark", false));
         assertEquals(60, TaskWidgetProvider.preferences(context, 29).getInt("opacity", 100));
+        assertEquals("On the phone", TaskWidgetProvider.preferences(context, 17).getString("label", ""));
+        assertEquals("At home", TaskWidgetProvider.preferences(context, 29).getString("label", ""));
         new TaskWidgetProvider().onDeleted(context, new int[] {17});
         assertTrue(TaskWidgetProvider.preferences(context, 17).getAll().isEmpty());
         assertEquals("Personal", TaskWidgetProvider.preferences(context, 29).getString("title", ""));
+        assertEquals("At home", TaskWidgetProvider.preferences(context, 29).getString("label", ""));
     }
 
     @Test public void configurationWithoutWidgetIdCancelsSafely() {
@@ -89,5 +141,10 @@ public class TaskWidgetTest {
         List<String> titles = new ArrayList<>();
         for (TaskStore.Task task : tasks) titles.add(task.title);
         return titles;
+    }
+
+    private void task(String title, String listName, String dueDate, String plannedDate,
+                      String status, String... labels) {
+        store.add(title, listName, dueDate, Arrays.asList(labels), status, plannedDate, "UNSET", 0);
     }
 }

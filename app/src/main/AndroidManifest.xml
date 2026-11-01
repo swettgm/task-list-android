@@ -18,6 +18,10 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+        <activity android:name=".QuickAddActivity" android:exported="false"
+            android:theme="@style/QuickAddTheme" android:taskAffinity=""
+            android:excludeFromRecents="true" android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize" />
         <receiver android:name=".TaskWidgetProvider" android:exported="false" android:label="@string/widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

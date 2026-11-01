@@ -32,14 +32,20 @@ import java.util.List;
 public final class WidgetConfigActivity extends Activity {
     private int widgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
     private EditText titleInput;
-    private Spinner listInput, viewInput, colorInput;
+    private Spinner listInput, labelInput, viewInput, colorInput;
     private SeekBar opacityInput;
     private TextView opacityLabel, previewTitle, previewSummary, previewTask;
     private LinearLayout preview;
     private final List<String> lists = new ArrayList<>();
+    private final List<String> contexts = new ArrayList<>();
     private boolean ready;
     private static final int NAVY = Color.rgb(31, 43, 64);
     private static final int BLUE = Color.rgb(25, 91, 126);
+    private static final int BACKGROUND = Color.rgb(16, 21, 31);
+    private static final int SURFACE = Color.rgb(24, 33, 50);
+    private static final int FOREGROUND = Color.rgb(230, 237, 247);
+    private static final int MUTED = Color.rgb(167, 182, 200);
+    private static final int ACCENT = Color.rgb(104, 183, 255);
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -53,7 +59,7 @@ public final class WidgetConfigActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.WHITE);
+        root.setBackgroundColor(BACKGROUND);
         root.setPadding(dp(22), dp(12), dp(22), dp(12));
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             int top, bottom;
@@ -68,10 +74,10 @@ public final class WidgetConfigActivity extends Activity {
 
         LinearLayout heading = new LinearLayout(this);
         heading.setGravity(Gravity.CENTER_VERTICAL);
-        TextView title = text("Customize widget", 24, NAVY);
+        TextView title = text("Customize widget", 24, FOREGROUND);
         title.setTypeface(null, Typeface.BOLD);
         heading.addView(title, new LinearLayout.LayoutParams(0, dp(52), 1));
-        Button cancel = new Button(this); cancel.setText("Cancel"); cancel.setOnClickListener(v -> finish());
+        Button cancel = new Button(this); cancel.setText("Cancel"); cancel.setTextColor(ACCENT); cancel.setOnClickListener(v -> finish());
         heading.addView(cancel);
         root.addView(heading);
 
@@ -80,7 +86,7 @@ public final class WidgetConfigActivity extends Activity {
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);
         scroll.addView(content);
-        TextView intro = text("Choose what appears on this home-screen widget. Each widget can have different settings.", 14, Color.rgb(86,103,127));
+        TextView intro = text("Choose what appears on this home-screen widget. Each widget can have different settings.", 14, MUTED);
         intro.setPadding(0, dp(8), 0, dp(14)); content.addView(intro);
 
         preview = new LinearLayout(this); preview.setOrientation(LinearLayout.VERTICAL); preview.setPadding(dp(18), dp(14), dp(18), dp(14));
@@ -90,36 +96,52 @@ public final class WidgetConfigActivity extends Activity {
         preview.addView(previewTitle); preview.addView(previewSummary); preview.addView(previewTask);
         LinearLayout previewBackdrop = new LinearLayout(this);
         previewBackdrop.setPadding(dp(12), dp(12), dp(12), dp(12));
-        previewBackdrop.setBackgroundColor(Color.rgb(228,235,243));
+        previewBackdrop.setBackgroundColor(SURFACE);
         previewBackdrop.addView(preview, new LinearLayout.LayoutParams(-1, -2));
         content.addView(previewBackdrop);
-        TextView previewNote = text("Preview · Resize on your home screen to show more tasks.", 11, Color.rgb(86,103,127));
+        TextView previewNote = text("Preview · Resize on your home screen to show more tasks.", 11, MUTED);
         previewNote.setPadding(0,dp(6),0,dp(8)); content.addView(previewNote);
 
         label(content, "Widget title");
-        titleInput = new EditText(this); titleInput.setSingleLine(true); titleInput.setTextColor(NAVY);
+        titleInput = new EditText(this); titleInput.setSingleLine(true); titleInput.setTextColor(FOREGROUND);
+        titleInput.setHintTextColor(MUTED);
+        titleInput.setBackgroundTintList(android.content.res.ColorStateList.valueOf(ACCENT));
         titleInput.setFilters(new InputFilter[] { new InputFilter.LengthFilter(40) });
         titleInput.setText(prefs.getString("title", "My checklist")); titleInput.setHint("My checklist");
         content.addView(titleInput, new LinearLayout.LayoutParams(-1, dp(52)));
 
-        lists.add("");
-        try { lists.addAll(new TaskStore(this).lists()); }
+        lists.add(""); contexts.add("");
+        try {
+            TaskStore store = new TaskStore(this);
+            lists.addAll(store.lists());
+            contexts.addAll(store.labels());
+        }
         catch (RuntimeException unavailable) {
-            TextView warning = text("Your saved checklists are unavailable. Open the app to check your data.", 13, BLUE);
+            TextView warning = text("Your saved checklists are unavailable. Open the app to check your data.", 13, ACCENT);
             warning.setPadding(0,dp(12),0,dp(4)); content.addView(warning);
         }
         String selectedList = prefs.getString("list", "");
         if (!selectedList.isEmpty() && !lists.contains(selectedList)) lists.add(selectedList);
         List<String> displayedLists = new ArrayList<>(lists); displayedLists.set(0, "All lists");
         label(content, "Checklist"); listInput = spinner(displayedLists); listInput.setSelection(Math.max(0, lists.indexOf(selectedList))); content.addView(listInput);
+        listInput.setContentDescription("Choose the widget checklist");
+        String selectedContext = prefs.getString("label", "");
+        if (!selectedContext.isEmpty() && !contexts.contains(selectedContext)) contexts.add(selectedContext);
+        List<String> displayedContexts = new ArrayList<>(contexts); displayedContexts.set(0, "All contexts");
+        label(content, "Context label"); labelInput = spinner(displayedContexts);
+        labelInput.setSelection(Math.max(0, contexts.indexOf(selectedContext)));
+        labelInput.setContentDescription("Filter widget tasks by context label");
+        content.addView(labelInput);
         label(content, "Tasks to show"); viewInput = spinner(java.util.Arrays.asList("All open tasks", "Today and overdue")); viewInput.setSelection(prefs.getBoolean("today", false) ? 1 : 0); content.addView(viewInput);
-        label(content, "Colors"); colorInput = spinner(java.util.Arrays.asList("Paper — white and navy", "Night — navy and light blue")); colorInput.setSelection(prefs.getBoolean("dark", false) ? 1 : 0); content.addView(colorInput);
-        opacityLabel = text("", 14, NAVY); opacityLabel.setPadding(0, dp(20), 0, dp(5)); content.addView(opacityLabel);
+        label(content, "Colors"); colorInput = spinner(java.util.Arrays.asList("Paper — white and navy", "Night — navy and light blue")); colorInput.setSelection(prefs.getBoolean("dark", true) ? 1 : 0); content.addView(colorInput);
+        opacityLabel = text("", 14, FOREGROUND); opacityLabel.setPadding(0, dp(20), 0, dp(5)); content.addView(opacityLabel);
         opacityInput = new SeekBar(this); opacityInput.setMax(75); opacityInput.setProgress(prefs.getInt("opacity",100) - 25); content.addView(opacityInput, new LinearLayout.LayoutParams(-1, dp(48)));
-        TextView transparencyNote = text("Text stays readable while the background becomes more transparent.", 12, Color.rgb(86,103,127));
+        opacityInput.setProgressTintList(android.content.res.ColorStateList.valueOf(ACCENT));
+        opacityInput.setThumbTintList(android.content.res.ColorStateList.valueOf(ACCENT));
+        TextView transparencyNote = text("Text stays readable while the background becomes more transparent.", 12, MUTED);
         transparencyNote.setPadding(0,0,0,dp(20)); content.addView(transparencyNote);
 
-        Button save = new Button(this); save.setText("Save widget"); save.setTextColor(Color.WHITE); save.setBackgroundTintList(android.content.res.ColorStateList.valueOf(BLUE));
+        Button save = new Button(this); save.setText("Save widget"); save.setTextColor(BACKGROUND); save.setBackgroundTintList(android.content.res.ColorStateList.valueOf(ACCENT));
         root.addView(save, new LinearLayout.LayoutParams(-1, dp(54)));
         save.setOnClickListener(v -> save());
         titleInput.addTextChangedListener(new TextWatcher() {
@@ -131,7 +153,7 @@ public final class WidgetConfigActivity extends Activity {
             @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) { updatePreview(); }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         };
-        listInput.setOnItemSelectedListener(changed); viewInput.setOnItemSelectedListener(changed); colorInput.setOnItemSelectedListener(changed);
+        listInput.setOnItemSelectedListener(changed); labelInput.setOnItemSelectedListener(changed); viewInput.setOnItemSelectedListener(changed); colorInput.setOnItemSelectedListener(changed);
         opacityInput.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int value, boolean user) { updatePreview(); }
             @Override public void onStartTrackingTouch(SeekBar bar) { }
@@ -142,8 +164,9 @@ public final class WidgetConfigActivity extends Activity {
             titleInput.setText(state.getString("title", "My checklist"));
             String savedList = state.getString("list", "");
             listInput.setSelection(Math.max(0, lists.indexOf(savedList)));
+            labelInput.setSelection(Math.max(0, contexts.indexOf(state.getString("label", ""))));
             viewInput.setSelection(state.getBoolean("today",false) ? 1 : 0);
-            colorInput.setSelection(state.getBoolean("dark",false) ? 1 : 0);
+            colorInput.setSelection(state.getBoolean("dark",true) ? 1 : 0);
             opacityInput.setProgress(state.getInt("opacity",100) - 25);
         }
         updatePreview();
@@ -160,11 +183,14 @@ public final class WidgetConfigActivity extends Activity {
         previewSummary.setTextColor(dark ? Color.rgb(186,201,217) : BLUE);
         previewTask.setTextColor(dark ? Color.rgb(243,247,252) : NAVY);
         String list = lists.get(listInput.getSelectedItemPosition());
+        String context = contexts.get(labelInput.getSelectedItemPosition());
         boolean today = viewInput.getSelectedItemPosition() == 1;
         try {
-            List<TaskStore.Task> tasks = TaskWidgetProvider.selectedTasks(this, list, today);
-            previewSummary.setText(tasks.size() + (tasks.size() == 1 ? " open task" : " open tasks") + " · " + (today ? "Today + overdue" : list.isEmpty() ? "All lists" : list));
-            previewTask.setText(tasks.isEmpty() ? "No open tasks. Add one in the app." : "○  " + tasks.get(0).title);
+            List<TaskStore.Task> tasks = TaskWidgetProvider.selectedTasks(this, list, today, context);
+            previewSummary.setText(tasks.size() + " open" + (context.isEmpty() ? "" : " · " + context)
+                    + " · " + (today ? "Today + overdue" : list.isEmpty() ? "All lists" : list));
+            previewTask.setText(tasks.isEmpty() ? "No open tasks. Add one in the app."
+                    : (TaskStore.IN_PROGRESS.equals(tasks.get(0).status) ? "▶  " : "○  ") + tasks.get(0).title);
         } catch (RuntimeException unavailable) {
             previewSummary.setText("Checklist unavailable");
             previewTask.setText("Open the app to check your saved tasks.");
@@ -182,6 +208,7 @@ public final class WidgetConfigActivity extends Activity {
         TaskWidgetProvider.preferences(this, widgetId).edit()
                 .putString("title", title)
                 .putString("list", lists.get(listInput.getSelectedItemPosition()))
+                .putString("label", contexts.get(labelInput.getSelectedItemPosition()))
                 .putBoolean("today", viewInput.getSelectedItemPosition() == 1)
                 .putBoolean("dark", colorInput.getSelectedItemPosition() == 1)
                 .putInt("opacity", 25 + opacityInput.getProgress())
@@ -193,8 +220,10 @@ public final class WidgetConfigActivity extends Activity {
 
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
+        if (!ready) return;
         state.putString("title", titleInput.getText().toString());
         state.putString("list", lists.get(listInput.getSelectedItemPosition()));
+        state.putString("label", contexts.get(labelInput.getSelectedItemPosition()));
         state.putBoolean("today", viewInput.getSelectedItemPosition() == 1);
         state.putBoolean("dark", colorInput.getSelectedItemPosition() == 1);
         state.putInt("opacity", 25 + opacityInput.getProgress());
@@ -202,16 +231,31 @@ public final class WidgetConfigActivity extends Activity {
 
     private Spinner spinner(List<String> values) {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, values);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, values) {
+            @Override public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                if (view instanceof TextView) ((TextView) view).setTextColor(FOREGROUND);
+                return view;
+            }
+            @Override public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                view.setBackgroundColor(SURFACE);
+                if (view instanceof TextView) ((TextView) view).setTextColor(FOREGROUND);
+                view.setMinimumHeight(dp(48));
+                return view;
+            }
+        };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
+        GradientDrawable popup = new GradientDrawable(); popup.setColor(SURFACE);
+        spinner.setPopupBackgroundDrawable(popup);
         spinner.setMinimumHeight(dp(50));
         spinner.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(50)));
         return spinner;
     }
 
     private void label(LinearLayout parent, String value) {
-        TextView label = text(value, 14, NAVY); label.setTypeface(null, Typeface.BOLD);
+        TextView label = text(value, 14, FOREGROUND); label.setTypeface(null, Typeface.BOLD);
         label.setPadding(0, dp(18), 0, dp(2)); parent.addView(label);
     }
 
