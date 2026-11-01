@@ -25,6 +25,7 @@ await page.addInitScript(initial => {
     readState() { return JSON.stringify(canonical); },
     writeState(text) { if (__nativeQA.failWrites) throw Error('Simulated storage failure'); canonical = JSON.parse(text); },
     updateSnapshot(text) { window.__nativeQA.snapshot = JSON.parse(text); },
+    setThemeColors(color) { window.__nativeQA.background=color; },
     showWidgetSettings() { window.__nativeQA.widgetOpened=true; }
   };
 }, seed);
@@ -32,6 +33,7 @@ await page.goto(pathToFileURL(documentPath).href);
 await page.waitForFunction(() => !!window.TaskListApp && window.__nativeQA.snapshot.length > 0);
 await page.screenshot({ path: path.join(output, 'today-dark.png'), fullPage: false });
 await page.getByRole('button',{name:'Add task',exact:true}).click();
+await page.getByRole('button',{name:'Details',exact:true}).click();
 await page.screenshot({path:path.join(output,'compact-editor.png'),fullPage:false});
 await page.getByRole('button',{name:'Cancel',exact:true}).click();
 const result = await page.evaluate(async () => {
@@ -164,6 +166,38 @@ const result = await page.evaluate(async () => {
   dialog.querySelector('[data-field=repeat] input[value=weekends]').click();dialog.querySelector('.tl-urgent input').click();
   clickText(dialog,'Save task');await tick();repeat=__nativeQA.getState().customTasks.find(task=>task.title==='Alternate weekends QA');
   check(!!repeat.weekendCycleStart&&repeat.urgent&&repeat.priority==='HIGHEST','Alternate weekends and urgent options remain available');
+  // Quick entry saves with the current context; Back dismisses without saving.
+  TaskListApp.setContextFilter('On the phone');await tick();
+  document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');
+  check(dialog.querySelector('h2').textContent==='Quick add'&&dialog.querySelectorAll('input').length===1,'Corner plus opens the one-field quick-add form');
+  dialog.querySelector('input').value='Quick entry QA';
+  dialog.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await tick();
+  let quick=__nativeQA.getState().customTasks.find(task=>task.title==='Quick entry QA');
+  check(quick&&quick.due===original.today&&quick._contexts.includes('On the phone')&&!document.querySelector('dialog'),'Quick add saves with today and the selected context');
+  document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');dialog.querySelector('input').value='Keep this title';
+  clickText(dialog,'Details');dialog=document.querySelector('dialog');
+  check(dialog.querySelector('input[type=text]').value==='Keep this title','Quick add can open full details without losing the title');
+  const countBeforeBack=TaskListApp.debugSummary().definitions;
+  check(TaskListApp.handleBack()&&!document.querySelector('dialog')&&TaskListApp.debugSummary().definitions===countBeforeBack,'Android Back closes the full editor without saving a draft');
+  document.querySelector('.tl-add-task').click();check(TaskListApp.handleBack()&&!document.querySelector('dialog'),'Android Back closes quick add');
+  check(!TaskListApp.handleBack(),'Back reports when there is no menu to close');
+  TaskListApp.setContextFilter('');await tick();
+  // Hex colors persist and invalid input cannot replace saved colors.
+  document.querySelector('.tl-settings').click();dialog=document.querySelector('dialog');
+  let accent=dialog.querySelector('input[placeholder="#68B7FF"]'),background=dialog.querySelector('input[placeholder="#10151F"]');
+  accent.value='#ff9933';background.value='#18232f';clickText(dialog,'Apply colors');
+  check(__nativeQA.getState().uiTheme.accent==='#ff9933'&&__nativeQA.background==='#18232f','Hex settings save the accent and native app background');
+  check(getComputedStyle(document.querySelector('.tl-add-task')).backgroundColor==='rgb(255, 153, 51)','Chosen accent colors the app buttons');
+  check(getComputedStyle(document.body).backgroundColor==='rgb(24, 35, 47)','Chosen background colors the task screen');
+  check(TaskListApp.handleBack(),'Android Back closes Settings');TaskListApp.reloadFromNative();await tick();
+  check(document.documentElement.style.getPropertyValue('--tl-accent')==='#ff9933','Hex theme survives reload');
+  document.querySelector('.tl-settings').click();dialog=document.querySelector('dialog');accent=dialog.querySelector('input[placeholder="#68B7FF"]');background=dialog.querySelector('input[placeholder="#10151F"]');
+  accent.value='invalid';clickText(dialog,'Apply colors');
+  check(!!dialog.querySelector('[role=alert]').textContent&&__nativeQA.getState().uiTheme.accent==='#ff9933','Invalid hex input is rejected without changing saved colors');
+  accent.value='#123';background.value='#fff';clickText(dialog,'Apply colors');
+  check(__nativeQA.getState().uiTheme.accent==='#112233'&&getComputedStyle(document.body).backgroundColor==='rgb(255, 255, 255)','Short hex input expands and light backgrounds are supported');
+  clickText(dialog,'Reset colors');check(__nativeQA.getState().uiTheme.accent==='#68b7ff'&&__nativeQA.getState().uiTheme.background==='#10151f','Default colors can be restored');
+  clickText(dialog,'Close');
   return {checks};
 });
 // Check real geometry, including expanded content and long task text, without masking overflow.

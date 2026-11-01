@@ -55,4 +55,24 @@ public class MainActivityTest {
         assertEquals("On the phone", activity.get().getIntent().getStringExtra("widget_label"));
         activity.pause().stop().destroy();
     }
+    @Test public void backChecksTheOpenTaskMenuBeforeLeavingTheActivity() {
+        ActivityController<MainActivity> activity = Robolectric.buildActivity(MainActivity.class).setup();
+        android.webkit.WebView web = activity.get().webForTests();
+        web.getWebViewClient().onPageFinished(web, "https://tasklist.local/");
+        activity.get().onBackPressed();
+        assertTrue(Shadows.shadowOf(web).getLastEvaluatedJavascript().contains("handleBack"));
+        assertFalse(activity.get().isFinishing());
+        activity.pause().stop().destroy();
+    }
+    @Test public void validHexBackgroundUpdatesSystemBarsAndInvalidInputIsIgnored() {
+        ActivityController<MainActivity> activity = Robolectric.buildActivity(MainActivity.class).setup();
+        activity.get().taskBridgeForTests().setThemeColors("#ffffff");
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(android.graphics.Color.WHITE, activity.get().getWindow().getStatusBarColor());
+        assertEquals(android.graphics.Color.WHITE, activity.get().getWindow().getNavigationBarColor());
+        activity.get().taskBridgeForTests().setThemeColors("not a color");
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(android.graphics.Color.WHITE, activity.get().getWindow().getStatusBarColor());
+        activity.pause().stop().destroy();
+    }
 }

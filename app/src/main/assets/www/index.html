@@ -1798,7 +1798,7 @@ main{max-width:100%;margin:0;padding:0}
     const isNew = !task; const original = task ? clone(task) : {};
     const { form, close } = modal(isNew ? 'Add task' : 'Edit task');
     form.classList.add('tl-task-form');
-    const title = inputField(form, 'Task', 'text', original.title || ''); title.required = true; title.placeholder = 'What needs doing?';
+    const title = inputField(form, 'Task', 'text', original.title || (prefill && prefill.title) || ''); title.required = true; title.placeholder = 'What needs doing?';
     const priority = choiceField(form, 'Priority', scope.groups.map(([key, label]) => [key, key === 'UNSET' ? 'None' : label.replace(' priority', '')]), original.priority || 'UNSET');
     const schedule = node('div', 'tl-schedule-grid'); form.append(schedule);
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
@@ -1904,8 +1904,84 @@ main{max-width:100%;margin:0;padding:0}
     const snapshot = Array.from(rows.values()); global.TaskListBridge.lastSnapshot = snapshot;
     if (native && native.updateSnapshot) { try { native.updateSnapshot(JSON.stringify(snapshot)); } catch (error) { console.error('Could not update the home widget', error); } }
   }
+  const DEFAULT_THEME = { accent:'#68b7ff', background:'#10151f' };
+  function normalizeHex(value) {
+    const text = String(value || '').trim().replace(/^#/, '');
+    if (/^[0-9a-f]{3}$/i.test(text)) return '#' + text.split('').map(c => c + c).join('').toLowerCase();
+    return /^[0-9a-f]{6}$/i.test(text) ? '#' + text.toLowerCase() : null;
+  }
+  function mix(a, b, ratio) {
+    const channels = value => [1,3,5].map(i => parseInt(value.slice(i, i + 2), 16));
+    const left = channels(a), right = channels(b);
+    return '#' + left.map((v, i) => Math.round(v * (1 - ratio) + right[i] * ratio).toString(16).padStart(2, '0')).join('');
+  }
+  function ink(color) {
+    const values = [1,3,5].map(i => parseInt(color.slice(i,i + 2),16) / 255)
+      .map(v => v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4));
+    const luminance = values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
+    return luminance > .179 ? '#10151f' : '#f3f6fb';
+  }
+  function applyTheme() {
+    const stored = readCanonical().uiTheme || {};
+    const accent = normalizeHex(stored.accent) || DEFAULT_THEME.accent;
+    const background = normalizeHex(stored.background) || DEFAULT_THEME.background;
+    const text = ink(background), light = text === '#10151f';
+    const surface = background === DEFAULT_THEME.background ? '#172131' : mix(background, text, .07);
+    const variables = { '--tl-accent':accent, '--tl-background':background, '--tl-surface':surface,
+      '--tl-ink':ink(accent), '--tl-text':text, '--tl-muted':mix(background, text, .7),
+      '--tl-border':mix(background, text, .25), '--tl-selected':mix(background, accent, .18) };
+    Object.entries(variables).forEach(([name, value]) => document.documentElement.style.setProperty(name, value));
+    document.documentElement.style.colorScheme = light ? 'light' : 'dark';
+    if (native && native.setThemeColors) native.setThemeColors(background);
+    return {accent,background};
+  }
+  function quickAddTask(prefill = {}) {
+    const { form, close } = modal('Quick add'); form.classList.add('tl-quick-form');
+    const title = inputField(form, 'Task', 'text', prefill.title || ''); title.placeholder = 'What needs doing?';
+    const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
+    const labels = prefill.labels || (selectedContext ? [selectedContext] : []);
+    const save = () => {
+      if (!title.value.trim()) { error.textContent = 'Enter a task title.'; title.focus(); return; }
+      const next = { id:'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9),
+        title:title.value.trim(), priority:'UNSET', due:prefill.dueDate || scope.today, _contexts:labels };
+      scope.tasks.push(next); saveDefinition(next, true); close();
+    };
+    const actions = node('div', 'tl-dialog-actions');
+    actions.append(action('Cancel', close), action('Details', () => {
+      const value = title.value; close(); editTask(null, null, { ...prefill, title:value, labels });
+    }), action('Add', save, 'btn btn-primary'));
+    form.append(actions); form.addEventListener('submit', event => { event.preventDefault(); save(); }); title.focus();
+  }
+  function handleBack() {
+    const dialogs = Array.from(document.querySelectorAll('dialog[open]'));
+    const active = dialogs[dialogs.length - 1]; if (!active) return false;
+    active.dispatchEvent(new Event('cancel', { cancelable:true }));
+    if (active.isConnected) { if (active.close) active.close(); active.remove(); }
+    return true;
+  }
   function showSettings() {
-    const { form, close } = modal('Settings');
+    const { form, close } = modal('Settings'); form.classList.add('tl-settings-form');
+    const theme = applyTheme();
+    const colors = node('div', 'tl-schedule-grid'); form.append(colors);
+    const accent = inputField(colors, 'Accent hex', 'text', theme.accent); accent.placeholder = '#68B7FF'; accent.spellcheck = false;
+    const background = inputField(colors, 'Background hex', 'text', theme.background); background.placeholder = '#10151F'; background.spellcheck = false;
+    const preview = node('div', 'tl-color-preview', 'Color preview'); form.append(preview);
+    const previewColors = () => {
+      const a = normalizeHex(accent.value), b = normalizeHex(background.value);
+      if (a && b) { preview.style.background = b; preview.style.color = a; preview.style.borderColor = a; }
+    };
+    accent.addEventListener('input', previewColors); background.addEventListener('input', previewColors); previewColors();
+    const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
+    const save = () => {
+      const a = normalizeHex(accent.value), b = normalizeHex(background.value);
+      if (!a || !b) { error.textContent = 'Use a hex color such as #68B7FF.'; return; }
+      persist(Object.assign({}, readCanonical(), { uiTheme:{accent:a,background:b} }));
+      applyTheme(); error.textContent = ''; accent.value = a; background.value = b; previewColors();
+    };
+    const colorsActions = node('div', 'tl-color-actions');
+    colorsActions.append(action('Apply colors', save, 'btn btn-primary'), action('Reset colors', () => {
+      accent.value = DEFAULT_THEME.accent; background.value = DEFAULT_THEME.background; save();
+    })); form.append(colorsActions);
     if (native && native.showWidgetSettings) {
       form.append(action('Add home-screen widget', () => { close(); native.showWidgetSettings(); }, 'btn tl-widget-settings'));
     }
@@ -1917,7 +1993,7 @@ main{max-width:100%;margin:0;padding:0}
     const select = node('select', 'form-control'); select.id = 'tl-context-filter'; select.setAttribute('aria-label', 'Filter tasks by context');
     select.addEventListener('change', () => global.TaskListApp.setContextFilter(select.value)); toolbar.append(select);
     const settings = action('⚙', showSettings, 'btn tl-settings'); settings.setAttribute('aria-label', 'Settings'); settings.title = 'Settings'; toolbar.append(settings);
-    const add = action('+', () => editTask(null, null, {}), 'btn tl-add-task'); add.setAttribute('aria-label', 'Add task'); add.title = 'Add task';
+    const add = action('+', () => quickAddTask(), 'btn tl-add-task'); add.setAttribute('aria-label', 'Add task'); add.title = 'Add task';
     root.querySelector('.tm-top').after(toolbar); root.append(add); updateContextOptions();
   }
   global.TaskListBridge = {
@@ -1925,11 +2001,12 @@ main{max-width:100%;margin:0;padding:0}
     attach(context) {
       scope = context;
       const state = readCanonical(); selectedContext = typeof state.uiContext === 'string' ? state.uiContext : '';
-      applyDefinitions(state); addToolbar();
+      applyDefinitions(state); applyTheme(); addToolbar();
       global.TaskListApp = {
+        quickAddTask, handleBack,
         addTask(prefill) { try { if (typeof prefill === 'string') prefill = JSON.parse(prefill || '{}'); } catch (_) { prefill = {}; } editTask(null, null, prefill || {}); },
         setContextFilter(label) { selectedContext = typeof label === 'string' ? label : ''; saveExtras(); rebuild(); },
-        reloadFromNative() { cached = null; const latest = readCanonical(); scope.setState(latest); applyDefinitions(latest); selectedContext = typeof latest.uiContext === 'string' ? latest.uiContext : ''; rebuild(); },
+        reloadFromNative() { cached = null; const latest = readCanonical(); scope.setState(latest); applyDefinitions(latest); selectedContext = typeof latest.uiContext === 'string' ? latest.uiContext : ''; applyTheme(); rebuild(); },
         debugSummary() { return { definitions: scope.tasks.length, savedKeys: Object.keys(scope.getState().completed).length, moves: Object.keys(scope.getState().movedTo).length, active: scope.getState().inProgress, today: scope.today, contexts: allContexts(), snapshot: global.TaskListBridge.lastSnapshot.length }; }
       };
       queueSnapshot();
@@ -3066,5 +3143,29 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 .tl-task-form .tl-dialog-actions{position:sticky;bottom:-14px;margin:0 -2px -2px;padding:8px 2px 2px;background:#172131;gap:8px;z-index:2}
 .tl-dialog .tl-dialog-actions .btn{height:42px;min-height:42px;padding:6px 14px}
 @media(max-width:350px){#today-task-list-20261023 .nav-link{padding:0 8px;font-size:12px}.tl-dialog{padding:12px}.tl-choice{padding:4px 5px}}
+
+/* User-selected app colors. These rules follow the packaged layout styles. */
+:root{--background:var(--tl-background);--foreground:var(--tl-text);--primary:var(--tl-accent);--border:var(--tl-border)}
+:root,html>body,#today-task-list-20261023{background:var(--tl-background)!important;color:var(--tl-text)!important}
+#today-task-list-20261023 .form-check-label,#today-task-list-20261023 .tm-title,.tl-dialog,.tl-dialog label,.tl-dialog .tl-context-choice,.tl-dialog .tl-choice{color:var(--tl-text)}
+#today-task-list-20261023 .nav,.tl-dialog{background:var(--tl-surface);border-color:var(--tl-border)}
+#today-task-list-20261023 .form-control,.tl-dialog .form-control,#today-task-list-20261023 .tl-settings{background:var(--tl-surface);color:var(--tl-text);border-color:var(--tl-border)}
+#today-task-list-20261023 .nav-link{color:var(--tl-muted)}
+#today-task-list-20261023 .nav-link.active,#today-task-list-20261023 .tl-add-task,.tl-dialog .btn-primary{background:var(--tl-accent);color:var(--tl-ink);border-color:var(--tl-accent)}
+#pt-date,.tl-dialog h2{color:var(--tl-accent)}
+#today-task-list-20261023 .progress-bar{background:var(--tl-accent)}
+#today-task-list-20261023 .tm-summary,#today-task-list-20261023 .tm-meta,#today-task-list-20261023 .tm-group,#today-task-list-20261023 .tm-pair-note,#today-task-list-20261023 .tm-task-note,.tl-dialog legend,.tl-dialog .tl-field,.tl-dialog summary{color:var(--tl-muted)}
+#today-task-list-20261023 .tm-progress-control,#today-task-list-20261023 .tm-move-control,#today-task-list-20261023 .tl-show-hidden{color:var(--tl-text);border-color:var(--tl-border)}
+#today-task-list-20261023 .tl-show-hidden,.tl-dialog .btn:not(.btn-primary){background:var(--tl-surface);color:var(--tl-text);border-color:var(--tl-border)}
+.tl-dialog .tl-task-form .tl-dialog-actions{background:var(--tl-surface)}
+.tl-dialog .tl-choice,.tl-dialog fieldset{border-color:var(--tl-border)}
+.tl-choice:has(input:checked){background:var(--tl-selected);border-color:var(--tl-accent);color:var(--tl-text)}
+#today-task-list-20261023 input,.tl-dialog input{accent-color:var(--tl-accent)}
+.tl-dialog .form-control::placeholder{color:var(--tl-muted);opacity:.85}
+.tl-settings-form .tl-field{margin:6px 0;font-size:13px}
+.tl-color-preview{border:1px solid;border-radius:7px;padding:14px;margin:8px 0;font-size:18px;font-weight:650}
+.tl-color-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.tl-quick-form .tl-field{margin:6px 0}
+.tl-quick-form .tl-form-error:empty,.tl-settings-form .tl-form-error:empty{display:none}
 
 </style></body></html>

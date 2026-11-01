@@ -36,6 +36,8 @@ public final class MainActivity extends Activity {
     private static final int EXPORT_BACKUP = 201;
     private ReferenceStore reference;
     private WebView web;
+    private FrameLayout root;
+    private Object backCallback;
     private final TaskBridge bridge = new TaskBridge();
     private boolean pageReady, destroyed, addRequested;
     private String contextFilter;
@@ -45,7 +47,7 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         reference = new ReferenceStore(this);
-        FrameLayout root = new FrameLayout(this);
+        root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(16, 21, 31));
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
@@ -82,6 +84,31 @@ public final class MainActivity extends Activity {
         });
         readIntent(getIntent());
         loadTaskList();
+        if (android.os.Build.VERSION.SDK_INT >= 33)
+            backCallback = BackApi33.register(this, this::handleBackPress);
+    }
+
+    @Override public void onBackPressed() { handleBackPress(); }
+
+    private void handleBackPress() {
+        if (web == null || !pageReady) { finish(); return; }
+        web.evaluateJavascript("Boolean(window.TaskListApp&&window.TaskListApp.handleBack())", result -> {
+            if (!destroyed && !"true".equals(result)) finish();
+        });
+    }
+
+    @android.annotation.TargetApi(33)
+    private static final class BackApi33 {
+        static Object register(Activity activity, Runnable action) {
+            android.window.OnBackInvokedCallback callback = action::run;
+            activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback);
+            return callback;
+        }
+        static void unregister(Activity activity, Object callback) {
+            activity.getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(
+                    (android.window.OnBackInvokedCallback) callback);
+        }
     }
 
     @Override protected void onNewIntent(Intent intent) {
@@ -161,6 +188,20 @@ public final class MainActivity extends Activity {
             reference.writeState(json); loadedRevision = reference.revision();
         }
         @JavascriptInterface public void updateSnapshot(String json) { reference.updateSnapshot(json); }
+        @JavascriptInterface public void setThemeColors(String background) {
+            if (background == null || !background.matches("#[0-9a-fA-F]{6}")) return;
+            final int color = Color.parseColor(background);
+            runOnUiThread(() -> {
+                if (destroyed) return;
+                root.setBackgroundColor(color); web.setBackgroundColor(color);
+                getWindow().setStatusBarColor(color); getWindow().setNavigationBarColor(color);
+                int light = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                        | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                int flags = getWindow().getDecorView().getSystemUiVisibility() & ~light;
+                if (Color.luminance(color) > .5) flags |= light;
+                getWindow().getDecorView().setSystemUiVisibility(flags);
+            });
+        }
         @JavascriptInterface public void copyText(String text) {
             if (text == null || text.length() > 2 * 1024 * 1024) return;
             runOnUiThread(() -> {
@@ -189,6 +230,7 @@ public final class MainActivity extends Activity {
         }
     }
     TaskBridge taskBridgeForTests() { return bridge; }
+    WebView webForTests() { return web; }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -222,6 +264,8 @@ public final class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         destroyed = true;
+        if (android.os.Build.VERSION.SDK_INT >= 33 && backCallback != null)
+            BackApi33.unregister(this, backCallback);
         if (web != null) {
             web.removeJavascriptInterface("TaskListNative"); web.stopLoading(); web.destroy(); web = null;
         }
