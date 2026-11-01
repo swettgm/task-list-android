@@ -19,8 +19,6 @@ jobs:
     name: Build and check debug APK
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    env:
-      TASK_DEBUG_KEYSTORE: ${{ runner.temp }}/task-list-debug.keystore
     steps:
       - name: Check out project
         uses: actions/checkout@v4
@@ -61,6 +59,8 @@ jobs:
 
       - name: Build APK, run unit tests, and run lint
         run: |
+          export TASK_DEBUG_KEYSTORE="$RUNNER_TEMP/task-list-debug.keystore"
+          printf 'TASK_DEBUG_KEYSTORE=%s\n' "$TASK_DEBUG_KEYSTORE" >> "$GITHUB_ENV"
           keytool -genkeypair -keystore "$TASK_DEBUG_KEYSTORE" -storepass android \
             -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 \
             -validity 10000 -dname 'CN=Android Debug,O=Android,C=US'
