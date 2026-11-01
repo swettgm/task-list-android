@@ -1,45 +1,32 @@
-# Validation status
+# Validation — Task List Dark 0.2.0
 
-A signed debug APK was built successfully in [GitHub Actions run 41267502984](https://github.com/swettgm/task-list-android/actions/runs/41267502984), from source commit `bd3327d6f5d9901b49adab6bd00cda41042b0806` in [swettgm/task-list-android](https://github.com/swettgm/task-list-android).
+[GitHub Actions run 41314538789](https://github.com/swettgm/task-list-android/actions/runs/41314538789) passed for source commit `fb6a6e88cc245ea4f1306c111e2ed256e0b86d6e`.
 
-## Passed in CI
+## Passed
 
-- `:app:assembleDebug`: Android Java/resources compiled and the debug APK was packaged.
-- `:app:testDebugUnitTest`: **14 tests passed**, with zero failures, errors, or skipped tests.
-- `:app:lintDebug`: zero errors and 21 warnings. Remaining warnings include hardcoded English strings, text sizing, newer widget attributes, target-SDK guidance, and a compatibility constant.
-- `apksigner verify`: signature verification passed using APK Signature Scheme v2, with one signer.
-- Downloaded test/lint reports were independently inspected, and the downloaded APK's checksum matched the CI artifact.
+- Android APK compilation and packaging.
+- **51 Robolectric tests**, with zero failures or errors. Coverage includes persistent task state, damaged data preservation, widget filters and independent settings, canonical widget completion, clipboard integration, and popup save/cancel/validation. Popup tests confirm that saving does not launch MainActivity.
+- Android lint: **zero errors**, 23 warnings. Warnings concern hardcoded English text, layout/accessibility guidance, compatibility attributes, and target-SDK guidance.
+- **38 Chromium workflow checks** using the packaged HTML and a narrow mock of the Android bridge: date-only dark UI; original definitions/history; contexts; Do now toggling; one-time Do tomorrow; staged parent completion; save; clipboard exports; full backup; native-popup task reload; editor saves; persistent labels; and Upcoming grouping.
+- Exact data comparison with the original HTML: all 102 task definitions and their fields, pairing maps, child history indexes, 304 completion records, 26 moves, and 13 rollover records retained. The original HTML contains all 78 PDF task IDs and all 217 PDF completion records, plus newer updates; those newer updates take precedence.
+- All downloaded artifact ZIP digests matched GitHub’s reported SHA-256; archive CRC checks passed. Packaged HTML, bridge, and first-launch state match the checked source byte-for-byte.
+- APK checksum matched CI. APK Signature Scheme v2 verified in CI and independently with the downloaded apksigner; exactly one signer. The retained private preview signing key’s certificate matches the APK.
 
-The tests cover task creation/editing/persistence, list selection, date/title validation, damaged-data preservation, repeated completion, widget date/list filtering, per-widget preferences and deletion, invalid configuration, and the task editor through the app and widget shortcuts, including empty checklists.
+## Download
 
-## APK
+[Task-List-Dark.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Task-List-Dark.apk)
 
-- Package: `com.personal.tasklist`
-- Version: `0.1.0` (version code `1`)
-- Minimum Android API: `26` (Android 8.0); target API: `35`
-- File size: `40,380` bytes
-- SHA-256: `124cd6b93608d40b39fd9508916f13243f26cc85af5045b18e27ad10505b6d56`
+- Package: `com.personal.tasklist.preview`
+- Version: `0.2.0`, version code `2`
+- Android: minimum API 26 (Android 8.0), target API 35
+- Size: 105,024 bytes
+- SHA-256: `84a9af5fc37fc354514153977ade86a1eae3b7a8380dde4132b9cb344752c61e`
+- Signer certificate SHA-256: `c608cec387ed404701648b82b426777de0c2bc038d4fe44d3dd0237f3d0171c2`
 
-The APK and verification files are in the [Task-List-Android-Debug-APK artifact](https://github.com/swettgm/task-list-android/actions/runs/41267502984/artifacts/13068340692). GitHub retains this artifact for 14 days. See [APK_BUILD.md](APK_BUILD.md) for installation and rebuild steps.
-
-## Passed offline
-
-- All seven production/test Java source files parse with the JDK Java 17 grammar: four production classes and three test classes.
-- All 11 Android XML files parse, and all Java/XML resource references resolve to the project's 29 resource definitions.
-- All manifest components have corresponding Java source files.
-- The Unix Gradle bootstrap passes shell syntax validation. Its cache/argument forwarding and invalid-checksum rejection were exercised using local fixtures.
-
-Repeat the offline source checks with:
-
-```sh
-python3 tools/validate_source.py
-sh -n gradlew
-```
+The APK in `downloads/` is the exact verified CI APK. The previous Task List app uses a separate package and can stay installed; its local data is not imported automatically into this version.
 
 ## Device checks remaining
 
-Robolectric tests run on the host JVM. No physical phone or Android emulator was used in this validation.
+No physical Android phone or Android emulator was available. Chromium and Robolectric checks do not establish actual launcher/window behavior. On a phone, check initial installation, task completion and reopen, widget placement/resizing, independent widget settings, widget completion reflected in the app, and the widget’s floating + popup with the keyboard open. Try cancel and save, including a Tomorrow task and a selected context.
 
-On an Android device, install the APK, create a task, and add the widget. Change its checklist, theme, and opacity; complete a task from the widget and confirm that the app updates. Check a second independently configured widget, live resizing, and the **+** shortcut after its selected checklist's final task is deleted.
-
-This APK is a debug build for personal testing. A store release needs a release signing configuration.
+This is a debug build for personal testing. Store publication needs a release signing configuration.

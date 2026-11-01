@@ -1,48 +1,27 @@
-# Install or rebuild Task List
+# Install Task List Dark
 
-A signed debug APK is ready from the [successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41267502984). The Android build, all 14 Robolectric tests, lint, and APK signature verification passed. Device and launcher checks remain pending.
+Requires Android 8.0 or newer. This is a debug build for personal use.
 
-## Install on your Android phone
+1. Download [Task-List-Dark.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Task-List-Dark.apk) on your phone.
+2. Open the download. If Android asks, allow installation from the browser or Files app opening the APK.
+3. Open **Task List Dark**. Your supplied tasks and saved history are included on the first launch.
+4. To add the checklist widget, touch and hold an empty area on the home screen, choose **Widgets → Task List Dark checklist**, and place it. Use its settings icon to change the context filter, title, colors, and transparency.
+5. Tap the widget’s **+** to add a task in a small floating form over the home screen. Saving closes the form. Ticking a widget task also saves it in the full task list.
 
-1. Open the [Task-List-Android-Debug-APK download](https://github.com/swettgm/task-list-android/actions/runs/41267502984/artifacts/13068340692). Sign in to GitHub if asked.
-2. Download the artifact ZIP and extract it with your phone's Files app. It contains `app-debug.apk`, `app-debug.apk.sha256`, and `signature-verification.txt`.
-3. Open `app-debug.apk` to install **Task List**. If Android asks, allow installation from the app opening the APK.
-4. Open Task List, add a task, then touch and hold an empty home-screen area. Choose **Widgets → Task List checklist**, place the widget, and customize it using its settings icon.
+Version 0.2 is installed alongside the original Task List app. Keep the old app if you have added tasks there; its data is separate. This version contains the supplied HTML/PDF history, rather than importing changes made inside the older Android app.
 
-Requires Android 8.0 or newer. This is a debug build for personal testing.
+## Build again
 
-The verified APK's SHA-256 is:
+The [Build Android APK workflow](https://github.com/swettgm/task-list-android/actions/workflows/build-apk.yml) runs automatically for app/build changes and can be run manually from GitHub Actions. It produces **Task-List-Android-Debug-APK**, plus test/lint/browser reports. Artifacts expire after 14 days; the APK committed under `downloads/` remains available.
 
-```text
-124cd6b93608d40b39fd9508916f13243f26cc85af5045b18e27ad10505b6d56
-```
+CI compiles against SDK 35 with JDK 21 and Gradle 8.11.1. It runs Android behavior tests, lint, Chromium workflow checks, and signature verification. It does not run a phone or Android emulator.
 
-GitHub retains the artifact for 14 days. The [source repository](https://github.com/swettgm/task-list-android) can produce a fresh build afterward.
-
-## Rebuild with GitHub Actions
-
-Open [Actions → Build Android APK](https://github.com/swettgm/task-list-android/actions/workflows/build-apk.yml) and select **Run workflow**. The workflow also runs automatically when relevant app, build, or workflow source files are pushed.
-
-After the run succeeds, open it and download **Task-List-Android-Debug-APK** under **Artifacts**. Test and lint reports are available separately as **Android-test-and-lint-reports**.
-
-GitHub's runner supplies Java and the Android SDK. The workflow installs SDK 35/build-tools 35.0.0, compiles and packages the APK, runs unit tests and Android lint, and verifies the APK signature. It does not run an Android emulator or verify launcher behavior on a phone.
-
-## Build with Android Studio or the command line
-
-Open this project in Android Studio, select JDK 21 for Gradle, and install Android SDK Platform 35 and Build-Tools 35.0.0 through **SDK Manager**. Let Android Studio create `local.properties` with your SDK path, or set `ANDROID_HOME` when using the command line.
-
-On macOS/Linux:
+Local build:
 
 ```sh
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 ```
 
-On Windows:
+The output is `app/build/outputs/apk/debug/app-debug.apk`. A fresh CI runner creates a fresh debug signing key; use the retained original preview key when preparing an installable update for the published APK. The CI key is encrypted to the public certificate in `.github/`; the private decryption key and retained signing key stay outside this repository.
 
-```bat
-gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
-```
-
-These bootstrap launchers download and checksum-verify Gradle 8.11.1 on first use; a Gradle Wrapper JAR is not bundled. The APK is generated at `app/build/outputs/apk/debug/app-debug.apk`. Store publication requires a release signing configuration.
-
-See [VALIDATION.md](VALIDATION.md) for the verified source commit, APK metadata, and remaining device checks.
+See [VALIDATION.md](VALIDATION.md) for the verified build and APK checksum.
