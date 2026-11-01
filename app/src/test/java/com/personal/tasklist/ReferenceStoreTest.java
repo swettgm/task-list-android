@@ -136,6 +136,7 @@ public class ReferenceStoreTest {
         assertTrue(reference.completeTask("html:" + key));
         JSONObject saved = new JSONObject(new ReferenceStore(context).readState());
         assertTrue(saved.getJSONObject("completed").getBoolean(key));
+        assertEquals(day, saved.getJSONObject("completedOn").getString(key));
         assertTrue(saved.getJSONObject("completed").getBoolean("unrelated:2026-10-01"));
         assertTrue(saved.isNull("inProgress"));
         assertEquals("yes", saved.getJSONObject("futureSettings").getString("retain"));
@@ -160,6 +161,9 @@ public class ReferenceStoreTest {
         JSONObject saved = new JSONObject(reference.readState());
         assertTrue(saved.getJSONObject("completed").getBoolean(first));
         assertTrue(saved.getJSONObject("completed").getBoolean(second));
+        assertEquals(day, saved.getJSONObject("completedOn").getString(first));
+        assertEquals(day, saved.getJSONObject("completedOn").getString(second));
+        assertEquals(day, saved.getJSONObject("completedOn").getString(parent));
         assertTrue(saved.isNull("inProgress"));
     }
 
@@ -171,6 +175,8 @@ public class ReferenceStoreTest {
         assertTrue(reference.completeTask("html:" + progress));
         JSONObject saved = new JSONObject(reference.readState());
         assertTrue(saved.getJSONObject("completed").getBoolean(occurrence));
+        assertEquals(day, saved.getJSONObject("completedOn").getString(occurrence));
+        assertEquals(day, saved.getJSONObject("completedOn").getString(progress));
         assertTrue(saved.isNull("inProgress"));
     }
 
@@ -222,6 +228,64 @@ public class ReferenceStoreTest {
         assertFalse(reference.completeTask("html:unknown:" + day));
         assertFalse(find(nativeId).done);
         assertEquals(savedRevision, reference.revision());
+    }
+
+    @Test public void overdueWidgetCompletionRecordsActualDateWithoutRewritingCompletedChildHistory() throws Exception {
+        String day = today(), oldDate = LocalDate.parse(day).minusDays(3).toString();
+        String parent = "overdue:" + oldDate, first = parent + ":step:0", second = parent + ":step:1";
+        String earlierCompletion = LocalDate.parse(day).minusDays(1).toString();
+        reference.writeState(new JSONObject()
+            .put("completed", new JSONObject().put(first, true).put(second, false))
+            .put("completedOn", new JSONObject().put(first, earlierCompletion).put("unrelated:2026-10-01", "2026-10-02"))
+            .put("futureSettings", new JSONObject().put("retain", true)).toString());
+        reference.updateSnapshot(new JSONArray().put(snapshot(parent, oldDate, false, first, second)).toString());
+
+        assertTrue(reference.completeTask("html:" + parent));
+        JSONObject saved = new JSONObject(reference.readState());
+        JSONObject dates = saved.getJSONObject("completedOn");
+        assertEquals(earlierCompletion, dates.getString(first));
+        assertEquals(day, dates.getString(second));
+        assertEquals(day, dates.getString(parent));
+        assertEquals("2026-10-02", dates.getString("unrelated:2026-10-01"));
+        assertTrue(saved.getJSONObject("futureSettings").getBoolean("retain"));
+        assertFalse(saved.has("rolloverCompletedOn"));
+        assertTrue(find("html:" + parent).done);
+    }
+
+    @Test public void repeatedCompletionKeepsPriorDatesForOccurrenceProgressAndRollover() throws Exception {
+        String day = today(), originalDate = LocalDate.parse(day).minusDays(4).toString();
+        String priorCompletion = LocalDate.parse(day).minusDays(1).toString();
+        String occurrence = "prior:" + originalDate, progress = "prior:" + day;
+        reference.writeState(new JSONObject()
+            .put("completed", new JSONObject().put(occurrence, true))
+            .put("completedOn", new JSONObject().put(occurrence, priorCompletion).put(progress, priorCompletion))
+            .put("rolloverCompletedOn", new JSONObject().put(progress, priorCompletion)).toString());
+        reference.updateSnapshot(new JSONArray().put(snapshot(progress, originalDate, true, occurrence)).toString());
+        String before = reference.readState();
+        long revision = reference.revision();
+
+        assertTrue(reference.completeTask("html:" + progress));
+        assertEquals(before, reference.readState());
+        assertEquals(revision, reference.revision());
+        assertEquals(priorCompletion, new JSONObject(reference.readState()).getJSONObject("completedOn").getString(progress));
+    }
+
+    @Test public void malformedCompletionDatesCannotPartiallySaveStateOrMirror() throws Exception {
+        String day = today(), key = "invalid-dates:" + day;
+        reference.writeState("{\"completed\":{}}");
+        reference.updateSnapshot(new JSONArray().put(snapshot(key, day, true, key)).toString());
+        String state = new JSONObject().put("completed", new JSONObject()).put("completedOn", new JSONArray()).toString();
+        preferences().edit().putString("state", state).commit();
+        String mirror = taskPreferences().getString("items", "");
+        String snapshotBefore = preferences().getString("snapshot", "");
+        long revision = reference.revision();
+
+        assertThrows(IllegalStateException.class, () -> reference.completeTask("html:" + key));
+        assertEquals(state, preferences().getString("state", ""));
+        assertEquals(mirror, taskPreferences().getString("items", ""));
+        assertEquals(snapshotBefore, preferences().getString("snapshot", ""));
+        assertEquals(revision, reference.revision());
+        assertFalse(find("html:" + key).done);
     }
 
     @Test public void malformedCompletionMapCannotPartiallySaveOrCompleteMirror() throws Exception {

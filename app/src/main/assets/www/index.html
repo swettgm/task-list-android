@@ -2300,6 +2300,7 @@ main{max-width:100%;margin:0;padding:0}
     let progressStateInitialized = false;
     let movedTo = {};
     let rolloverCompletedOn = {};
+    let completedOn = {};
     let storageAvailable = false;
     let storedVersion = 0;
     try {
@@ -2310,6 +2311,7 @@ main{max-width:100%;margin:0;padding:0}
       }
       if(typeof value.movedTo==='object' && value.movedTo) movedTo={...value.movedTo};
       if(typeof value.rolloverCompletedOn==='object' && value.rolloverCompletedOn) rolloverCompletedOn={...value.rolloverCompletedOn};
+      if(value.completedOn&&typeof value.completedOn==='object'&&!Array.isArray(value.completedOn))completedOn={...value.completedOn};
       if(typeof value.inProgress==='string') inProgress=value.inProgress;
       if(value.progressStateInitialized===true) progressStateInitialized=true;
       localStorage.setItem(storageKey + '-probe','1');
@@ -2333,7 +2335,7 @@ main{max-width:100%;margin:0;padding:0}
           delete saved[key];
         });
       });
-      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
+      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
     }
     // Apply the latest chat-saved states by occurrence while retaining all unlisted data.
     const explicitUpdates = {
@@ -2665,7 +2667,7 @@ main{max-width:100%;margin:0;padding:0}
     if(storedVersion<2026103017)Object.assign(saved,october31GroomingSupplementalUpdates,october31LatestUpdates);
     if(storedVersion<2026103018)Object.assign(saved,october31DailyUpdates);
     if(inProgress==='laundry:2026-10-25')inProgress=null;
-    if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
+    if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
     let draft = {...saved};
     const allChildren = (task,date,state) => Array.from({length:subtaskCount(task,date)},(_,i)=>Boolean(state[childKey(task,date,i)])).every(Boolean);
     const isDone = (task,date,state=saved) => hasSubtasks(task) ? allChildren(task,date,state) : Boolean(state[occurrenceKey(task,date)]);
@@ -2687,7 +2689,7 @@ main{max-width:100%;margin:0;padding:0}
       return task.title;
     };
     const saveLocalState=()=>{
-      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
+      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
     };
     const progressButton=(key,title,completed=false)=>{
       const active=inProgress===key;
@@ -2819,6 +2821,30 @@ main{max-width:100%;margin:0;padding:0}
     };
     const openChecklists=new Set();
     const completing=new Map();
+    const taskPointers=new Set();
+    root.addEventListener('pointerdown',event=>{
+      if(event.target.closest('.tm-task-item,.tm-future-card'))taskPointers.add(event.pointerId);
+    },true);
+    const releaseTaskPointer=event=>taskPointers.delete(event.pointerId);
+    document.addEventListener('pointerup',releaseTaskPointer,true);
+    document.addEventListener('pointercancel',releaseTaskPointer,true);
+    window.addEventListener('blur',()=>taskPointers.clear());
+    const completionDate=(task,date)=>{
+      const key=progressKey(task,date),stamp=completedOn[key];
+      if(typeof stamp==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(stamp))return stamp;
+      if(hasSubtasks(task)){
+        const dates=Array.from({length:subtaskCount(task,date)},(_,i)=>completedOn[childKey(task,date,i)])
+          .filter(value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)).sort();
+        if(dates.length)return dates[dates.length-1];
+      }
+      return rolloverCompletedOn[occurrenceId(task,date)]||date;
+    };
+    const expireCompletion=(key,entry)=>{
+      if(completing.get(key)!==entry)return;
+      // Do not replace a checkbox while a finger is down on it.
+      if(taskPointers.size){entry.timer=setTimeout(()=>expireCompletion(key,entry),25);return;}
+      completing.delete(key);renderToday();renderFuture();
+    };
     const isCompleting=(task,date)=>completing.has(progressKey(task,date))&&isDone(task,date,saved);
     const withCompleting=(items,place,date)=>{
       const result=new Map(items.map(item=>[progressKey(item.task,item.stateDate),item]));
@@ -2837,14 +2863,21 @@ main{max-width:100%;margin:0;padding:0}
         const item=instance(task,today,date,date<today,Boolean(movedTo[occurrenceId(task,date)]));
         items.set(progressKey(task,date),item);
       });
-      return Array.from(items.values()).sort((a,b)=>b.stateDate.localeCompare(a.stateDate)||a.task.title.localeCompare(b.task.title));
+      return Array.from(items.values()).sort((a,b)=>Number(completionDate(b.task,b.stateDate)===today)-Number(completionDate(a.task,a.stateDate)===today)||completionDate(b.task,b.stateDate).localeCompare(completionDate(a.task,a.stateDate))||b.stateDate.localeCompare(a.stateDate)||a.task.title.localeCompare(b.task.title));
     };
     const saveCompletion=(task,date)=>{
-      const previousSaved=saved,previousRollover={...rolloverCompletedOn},previousActive=inProgress;
+      const previousSaved=saved,previousRollover={...rolloverCompletedOn},previousDates={...completedOn},previousActive=inProgress;
       const key=progressKey(task,date),wasDone=isDone(task,date,saved);
       const matches=item=>item.task.id===task.id&&item.stateDate===date;
       const presentation={today:dueToday().filter(matches),overdue:overdue().filter(matches),future:[]};
       if(!wasDone&&isDone(task,date,draft))for(let day=1;day<=14;day++)presentation.future.push(...onDate(addDays(today,day)).filter(matches));
+      const keys=hasSubtasks(task)?Array.from({length:subtaskCount(task,date)},(_,i)=>childKey(task,date,i)):[occurrenceKey(task,date)];
+      keys.forEach(key=>{
+        if(draft[key]&&!previousSaved[key])completedOn[key]=today;
+        else if(!draft[key]&&previousSaved[key])delete completedOn[key];
+      });
+      if(!wasDone&&isDone(task,date,draft))completedOn[key]=today;
+      else if(!isDone(task,date,draft))delete completedOn[key];
       const id=occurrenceId(task,date);
       if(isDone(task,date,draft) && date!==today)rolloverCompletedOn[id]=today;
       else if(!isDone(task,date,draft))delete rolloverCompletedOn[id];
@@ -2852,18 +2885,17 @@ main{max-width:100%;margin:0;padding:0}
       if(inProgressIsDone(saved))inProgress=null;
       try{
         if(!storageAvailable)throw new Error('Storage unavailable');
-        localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,updatedAt:new Date().toISOString()}));
+        localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));
         find('pt-status').textContent='';
         if(completing.has(key)){clearTimeout(completing.get(key).timer);completing.delete(key);}
         if(!wasDone&&isDone(task,date,saved)){
-          const entry={...presentation,timer:setTimeout(()=>{
-            if(completing.get(key)!==entry)return;
-            completing.delete(key);renderToday();renderFuture();
-          },450)};
+          const entry={...presentation,active:previousActive!==inProgress?previousActive:null,
+            bannerHeight:find('pt-current').getBoundingClientRect().height,timer:null};
+          entry.timer=setTimeout(()=>expireCompletion(key,entry),450);
           completing.set(key,entry);
         }
       }catch(error){
-        saved=previousSaved;draft={...saved};rolloverCompletedOn=previousRollover;inProgress=previousActive;
+        saved=previousSaved;draft={...saved};rolloverCompletedOn=previousRollover;completedOn=previousDates;inProgress=previousActive;
         find('pt-status').textContent='Couldn’t save this change. Please try again.';
       }
       renderToday();renderFuture();window.TaskListBridge.queueSnapshot();
@@ -2923,6 +2955,8 @@ main{max-width:100%;margin:0;padding:0}
       const {task,stateDate}=item;
       const wrapper=el('div','tm-task-item');
       if(!completed&&isCompleting(task,stateDate))wrapper.classList.add('tm-completing');
+      const finishedToday=completed&&completionDate(task,stateDate)===today;
+      if(finishedToday)wrapper.classList.add('tm-completed-today');
       const active=inProgress===progressKey(task,stateDate);
       if(active)wrapper.classList.add('tm-in-progress-item');
       const linkedActive=!completed&&!isDone(task,stateDate,draft)&&linkedInProgress(task,item.date);
@@ -2938,13 +2972,14 @@ main{max-width:100%;margin:0;padding:0}
       if(linkedActive)titleMain.append(el('span','tm-linked-chain','🔗'));
       if(task.urgent)titleMain.append(el('span','tm-in-progress-badge','🟢 URGENT'));
       if(active)titleMain.append(el('span','tm-in-progress-badge','🟢 IN PROGRESS'));
+      if(finishedToday)titleMain.append(el('span','tm-today-badge','Completed today'));
       titleLine.append(titleMain);
       text.append(titleLine,el('span','tm-meta',meta(task,number)));
       if(task.instruction)text.append(el('span','tm-task-note',task.instruction));
       const origin=originNote(item);if(origin)text.append(el('span','tm-meta tm-overdue',origin));
       if(!completed){const pairing=pairNote(task,item.date);if(pairing)text.append(pairing);}
       if(task.notes)text.setAttribute('data-tooltip',task.notes);
-      if(completed)text.append(el('span','tm-meta tm-completion-date',labelDate(stateDate,true)));
+      if(completed)text.append(el('span','tm-meta tm-completion-date',(finishedToday?'Due ':'')+labelDate(stateDate,true)));
       if(input.checked && !completed) title.classList.add('tm-staged');
       label.append(input,text);
       const controls=el('div','tm-item-actions');
@@ -2964,7 +2999,11 @@ main{max-width:100%;margin:0;padding:0}
         input.addEventListener('change',()=>{draft[occurrenceKey(task,stateDate)]=input.checked;saveCompletion(task,stateDate);});
       }
       window.TaskListBridge.decorateRow(wrapper,task,item,completed);
-      if(wrapper.classList.contains('tm-completing'))wrapper.querySelectorAll('button').forEach(button=>button.disabled=true);
+      if(wrapper.classList.contains('tm-completing')){
+        input.setAttribute('aria-label','Undo completion of '+task.title);
+        wrapper.querySelectorAll('button').forEach(button=>button.disabled=true);
+        controls.append(el('span','tm-undo-hint','Uncheck to undo'));
+      }else if(completed)input.setAttribute('aria-label','Reopen '+task.title);
       return wrapper;
     };
     const renderToday=()=>{
@@ -2976,16 +3015,19 @@ main{max-width:100%;margin:0;padding:0}
       savedDone.forEach((i,index)=>completedNumbers.set(progressKey(i.task,i.stateDate),index+1));
       const minutes=pending.reduce((n,i)=>n+(i.task.minutes||0),0),untimed=pending.filter(i=>i.task.minutes===undefined).length;
       find('pt-progress').textContent=done.length+' / '+items.length+' completed · '+pending.length+' pending · '+minutes+'m remaining'+(untimed?' + '+untimed+' untimed':'');
-      const current=find('pt-current'),currentTitle=progressTitle(inProgress);
+      const pendingActive=Array.from(completing.values()).find(entry=>entry.active);
+      const displayActive=inProgress||(pendingActive&&pendingActive.active);
+      const current=find('pt-current'),currentTitle=progressTitle(displayActive);
+      current.style.minHeight=!inProgress&&pendingActive?pendingActive.bannerHeight+'px':'';
       current.hidden=!currentTitle;
       current.replaceChildren();
       if(currentTitle){
         current.hidden=false;
-        const currentTask=tasks.find(task=>task.id===inProgress.split(':')[0]);
+        const currentTask=tasks.find(task=>task.id===displayActive.split(':')[0]);
         const currentTitleLine=el('span','tm-title-line'),currentTitleMain=el('span','tm-title-main',currentTitle);
         currentTitleLine.append(currentTitleMain);
         if(currentTask){const pairing=pairNote(currentTask,today);if(pairing)currentTitleLine.append(pairing);}
-        current.append(el('span','tm-in-progress-badge','🟢 IN PROGRESS'),currentTitleLine);
+        current.append(el('span','tm-in-progress-badge',inProgress?'🟢 IN PROGRESS':'✓ Completed'),currentTitleLine);
       }
       const percent=items.length?Math.round(done.length/items.length*100):100;
       find('pt-progressbar').setAttribute('aria-valuenow',String(percent));find('pt-progressfill').style.width=percent+'%';
@@ -3009,7 +3051,14 @@ main{max-width:100%;margin:0;padding:0}
       const toggle=find('pt-toggle-hidden'),expanded=!find('pt-completed').hidden;
       toggle.textContent=(expanded?'Hide completed':'Show hidden')+' ('+hiddenItems.length+')';
       toggle.setAttribute('aria-expanded',String(expanded));
-      find('pt-completed-list').replaceChildren(...hiddenItems.map((i,index)=>row(i,true,index+1)));
+      const history=find('pt-completed-list');history.replaceChildren();
+      const doneToday=hiddenItems.filter(item=>completionDate(item.task,item.stateDate)===today);
+      const earlier=hiddenItems.filter(item=>completionDate(item.task,item.stateDate)!==today);
+      for(const [heading,items]of [['Completed today',doneToday],['Earlier',earlier]]){
+        if(!items.length)continue;
+        history.append(el('div','tm-group tm-history-heading',heading+' · '+items.length));
+        items.forEach(item=>history.append(row(item,true,hiddenItems.indexOf(item)+1)));
+      }
 
     };
     const renderFuture=()=>{
@@ -3075,12 +3124,12 @@ main{max-width:100%;margin:0;padding:0}
     window.TaskListBridge.attach({
       root,tasks,pairWith,children,groups,today,addDays,progressKey,occurrenceKey,childKey,
       subtaskCount,hasSubtasks,dueToday,overdue,onDate,isDone,isRecurring,renderToday,renderFuture,
-      getState:()=>({version:2026103022,completed:{...saved},inProgress,progressStateInitialized,movedTo:{...movedTo},rolloverCompletedOn:{...rolloverCompletedOn},updatedAt:new Date().toISOString()}),
+      getState:()=>({version:2026103022,completed:{...saved},inProgress,progressStateInitialized,movedTo:{...movedTo},rolloverCompletedOn:{...rolloverCompletedOn},completedOn:{...completedOn},updatedAt:new Date().toISOString()}),
       setState:state=>{
         saved={...(state.completed||{})};draft={...saved};
         inProgress=typeof state.inProgress==='string'?state.inProgress:null;
         progressStateInitialized=state.progressStateInitialized===true;
-        movedTo={...(state.movedTo||{})};rolloverCompletedOn={...(state.rolloverCompletedOn||{})};
+        movedTo={...(state.movedTo||{})};rolloverCompletedOn={...(state.rolloverCompletedOn||{})};completedOn={...(state.completedOn||{})};
       },
       moveOccurrence:(task,date,target)=>{
         const key=occurrenceId(task,date);movedTo[key]=target;delete rolloverCompletedOn[key];saveLocalState();
@@ -3193,8 +3242,15 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 .tl-quick-form .tl-field{margin:6px 0}
 .tl-quick-form .tl-form-error:empty,.tl-settings-form .tl-form-error:empty{display:none}
 
-#today-task-list-20261023 .tm-completing{animation:task-completed 450ms ease-out both}
+#today-task-list-20261023 .tm-completing{animation:none}
+#today-task-list-20261023 .tm-completing>.form-check>.form-check-label{animation:task-completed 450ms ease-out both}
 #today-task-list-20261023 .tm-completing>.form-check .tm-title{ text-decoration:line-through }
 @keyframes task-completed{0%,45%{opacity:1}100%{opacity:.25}}
-@media(prefers-reduced-motion:reduce){#today-task-list-20261023 .tm-completing{animation:none}}
+@media(prefers-reduced-motion:reduce){#today-task-list-20261023 .tm-completing>.form-check>.form-check-label{animation:none}}
+#today-task-list-20261023 .form-check-input{width:24px;height:24px;min-width:24px;min-height:24px}
+#today-task-list-20261023 .tm-completing .form-check-input{opacity:1;cursor:pointer}
+#today-task-list-20261023 .tm-undo-hint{font-size:11px;color:var(--tl-text);white-space:normal}
+#today-task-list-20261023 .tm-completed-today{background:var(--tl-selected);border:1px solid var(--tl-accent)!important;border-left-width:3px!important;border-radius:7px;padding:8px}
+#today-task-list-20261023 .tm-today-badge{font-size:10px;font-weight:650;color:var(--tl-text);border:1px solid var(--tl-accent);border-radius:5px;padding:1px 5px}
+#today-task-list-20261023 .tm-history-heading{font-weight:650}
 </style></body></html>

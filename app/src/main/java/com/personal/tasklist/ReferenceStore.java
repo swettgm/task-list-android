@@ -130,6 +130,7 @@ public final class ReferenceStore {
                 if (target == null) return false;
                 JSONObject current = state();
                 JSONObject completed = current.has("completed") ? objectField(current, "completed") : new JSONObject();
+                JSONObject completedOn = current.has("completedOn") ? objectField(current, "completedOn") : new JSONObject();
                 JSONObject rollover = current.has("rolloverCompletedOn") ? objectField(current, "rolloverCompletedOn") : new JSONObject();
                 Object rawActive = current.opt("inProgress");
                 if (rawActive != null && rawActive != JSONObject.NULL && !(rawActive instanceof String))
@@ -138,15 +139,24 @@ public final class ReferenceStore {
                 String progress = target.getString("progressKey");
                 JSONArray keys = target.getJSONArray("completionKeys");
                 boolean changed = false;
+                boolean becameComplete = false;
+                String today = LocalDate.now(REFERENCE_ZONE).toString();
                 boolean clearActive = matches(active, progress);
                 for (int i = 0; i < keys.length(); i++) {
                     String key = keys.getString(i);
-                    if (!Boolean.TRUE.equals(completed.opt(key))) { completed.put(key, true); changed = true; }
+                    if (!Boolean.TRUE.equals(completed.opt(key))) {
+                        completed.put(key, true);
+                        completedOn.put(key, today);
+                        changed = true; becameComplete = true;
+                    }
                     if (matches(active, key)) clearActive = true;
                 }
+                if (becameComplete) {
+                    completedOn.put(progress, today);
+                    current.put("completedOn", completedOn);
+                }
                 if (clearActive) { current.put("inProgress", JSONObject.NULL); changed = true; }
-                String today = LocalDate.now(REFERENCE_ZONE).toString();
-                if (target.getBoolean("onToday") && !today.equals(target.getString("stateDate"))) {
+                if (becameComplete && target.getBoolean("onToday") && !today.equals(target.getString("stateDate"))) {
                     if (!today.equals(rollover.opt(progress))) {
                         rollover.put(progress, today); changed = true;
                     }
