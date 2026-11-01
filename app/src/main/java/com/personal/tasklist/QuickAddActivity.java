@@ -21,7 +21,7 @@ public final class QuickAddActivity extends Activity {
         super.onCreate(state);
         setFinishOnTouchOutside(true);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        LinearLayout form = new LinearLayout(this); form.setOrientation(1);form.setPadding(dp(20),dp(16),dp(20),dp(12));
+        LinearLayout form = new LinearLayout(this); form.setOrientation(LinearLayout.VERTICAL);form.setPadding(dp(20),dp(16),dp(20),dp(12));
         form.setBackgroundColor(Color.rgb(24,33,50));
         TextView heading = new TextView(this);heading.setText("Add task");heading.setTextSize(20);heading.setTextColor(Color.rgb(230,237,247));form.addView(heading);
         title = new EditText(this);title.setContentDescription("Task title");title.setHint("What needs doing?");title.setSingleLine(true);title.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -29,7 +29,7 @@ public final class QuickAddActivity extends Activity {
         contexts.add("No label");contexts.addAll(new TaskStore(this).labels());
         String selected=getIntent().getStringExtra("widget_label");if(selected!=null&&!selected.isEmpty()&&!contexts.contains(selected))contexts.add(selected);
         context=spinner("Context label",contexts);if(selected!=null)context.setSelection(Math.max(0,contexts.indexOf(selected)));form.addView(context);
-        LinearLayout options=new LinearLayout(this);options.setOrientation(0);
+        LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
         priority=spinner("Priority",Arrays.asList("Highest","High","Medium","Low","Lowest","Not set"));priority.setSelection(5);
         when=spinner("When to do it",Arrays.asList("Today","Tomorrow"));
         options.addView(priority,new LinearLayout.LayoutParams(0,dp(48),1));options.addView(when,new LinearLayout.LayoutParams(0,dp(48),1));form.addView(options);

@@ -30,6 +30,7 @@ public class TaskWidgetTest {
     @Before public void setUp() {
         context = RuntimeEnvironment.getApplication();
         context.getSharedPreferences("tasks", Context.MODE_PRIVATE).edit().clear().commit();
+        context.getSharedPreferences("reference_state", Context.MODE_PRIVATE).edit().clear().commit();
         context.deleteSharedPreferences("widget_17");
         context.deleteSharedPreferences("widget_29");
         store = new TaskStore(context);
@@ -135,6 +136,24 @@ public class TaskWidgetTest {
         assertEquals(Activity.RESULT_CANCELED, Shadows.shadowOf(controller.get()).getResultCode());
         assertTrue(TaskWidgetProvider.preferences(context, 17).getAll().isEmpty());
         controller.destroy();
+    }
+
+    @Test public void widgetCompletionPersistsInTheFullTaskEngine() throws Exception {
+        ReferenceStore reference = new ReferenceStore(context);
+        String taskId = reference.addCustomTask("Widget task", Arrays.asList("At home"), "HIGH", false);
+        String day = LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
+        String key = taskId + ":" + day;
+        int widgetId = Shadows.shadowOf(AppWidgetManager.getInstance(context))
+                .createWidget(TaskWidgetProvider.class, R.layout.widget_tasks);
+        Intent complete = new Intent(context, TaskWidgetProvider.class)
+                .setAction("com.personal.tasklist.WIDGET_COMPLETE")
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+                .putExtra("task_id", "html:" + key);
+        new TaskWidgetProvider().onReceive(context, complete);
+        assertTrue(new org.json.JSONObject(reference.readState()).getJSONObject("completed").getBoolean(key));
+        assertTrue(TaskWidgetProvider.selectedTasks(context, "", false).isEmpty());
+        new TaskWidgetProvider().onReceive(context, complete);
+        assertTrue(new org.json.JSONObject(reference.readState()).getJSONObject("completed").getBoolean(key));
     }
 
     private static List<String> titles(List<TaskStore.Task> tasks) {

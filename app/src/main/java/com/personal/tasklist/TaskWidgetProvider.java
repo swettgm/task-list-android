@@ -55,7 +55,9 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
             if (registered && taskId != null) {
                 TaskStore store = new TaskStore(context);
                 // The store atomically completes it; stale taps must never reopen a task.
-                try { store.complete(taskId); }
+                try {
+                    if (!new ReferenceStore(context).completeTask(taskId)) store.complete(taskId);
+                }
                 catch (RuntimeException unavailable) { refreshAll(context); }
             }
             return;
