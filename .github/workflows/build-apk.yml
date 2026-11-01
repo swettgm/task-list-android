@@ -19,6 +19,8 @@ jobs:
     name: Build and check debug APK
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      TASK_DEBUG_KEYSTORE: ${{ runner.temp }}/task-list-debug.keystore
     steps:
       - name: Check out project
         uses: actions/checkout@v4
@@ -58,7 +60,11 @@ jobs:
           printf 'sdk.dir=%s\n' "$TASK_SDK_DIR" > local.properties
 
       - name: Build APK, run unit tests, and run lint
-        run: gradle --no-daemon --console=plain --stacktrace :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+        run: |
+          keytool -genkeypair -keystore "$TASK_DEBUG_KEYSTORE" -storepass android \
+            -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 \
+            -validity 10000 -dname 'CN=Android Debug,O=Android,C=US'
+          gradle --no-daemon --console=plain --stacktrace :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 
       - name: Check the complete task workflow in Chromium
         run: |
@@ -93,12 +99,12 @@ jobs:
           TASK_BUILD_TOOLS="$TASK_SDK_DIR/build-tools/35.0.0"
           TASK_TOOLS_DIR="$RUNNER_TEMP/task-list-personalization-tools"
           mkdir -p "$TASK_TOOLS_DIR"
-          test -s "$HOME/.android/debug.keystore"
+          test -s "$TASK_DEBUG_KEYSTORE"
           test -s .github/build-encryption-cert.pem
           # Only the public encryption certificate is in this repository.
-          # The decryption private key and personalized assets stay local.
+          # The decryption private key stays outside the repository.
           openssl cms -encrypt -binary -aes-256-cbc \
-            -in "$HOME/.android/debug.keystore" -outform DER \
+            -in "$TASK_DEBUG_KEYSTORE" -outform DER \
             -out "$TASK_TOOLS_DIR/encrypted-debug-keystore.p7m" \
             .github/build-encryption-cert.pem
           cp "$TASK_BUILD_TOOLS/lib/apksigner.jar" "$TASK_TOOLS_DIR/apksigner.jar"
