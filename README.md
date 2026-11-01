@@ -26,7 +26,9 @@ Tap a task's circle to complete it. Tapping the title opens the app, **+** adds 
 
 ## Build
 
-This workspace contains source code. An APK has **not** been produced, and the Android build and runtime tests have **not** run here. See [APK_BUILD.md](APK_BUILD.md) for the prepared build options and their current status.
+A signed debug APK is ready. [Download the APK artifact](https://github.com/swettgm/task-list-android/actions/runs/41267502984/artifacts/13068340692), unzip it, and install `app-debug.apk` on your Android phone. See [APK_BUILD.md](APK_BUILD.md) for the phone installation steps and rebuild options.
+
+The [verified CI run](https://github.com/swettgm/task-list-android/actions/runs/41267502984) passed the Android build, all 14 Robolectric tests, and Android lint with zero errors. APK signature verification also passed. Physical device and launcher checks remain pending.
 
 Open this folder in Android Studio, or use JDK 21 with Android SDK platform 35 and build tools 35.0.0:
 
@@ -47,7 +49,7 @@ Production code uses the Android framework and Java, with no production dependen
 - `TaskStore.java`: shared persistence and atomic completion.
 - `TaskWidgetProvider.java`: interactive RemoteViews widget and resize handling.
 - `WidgetConfigActivity.java`: independent widget configuration and preview.
-- `app/src/test/java/`: fourteen prepared Robolectric behavior tests.
+- `app/src/test/java/`: fourteen passing Robolectric behavior tests.
 
 ## Validation
 

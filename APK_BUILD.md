@@ -1,19 +1,48 @@
-# Get an installable Android APK
+# Install or rebuild Task List
 
-The app source is ready for a build. **An APK has not been produced or tested yet.** The workflow below has been prepared but has not run remotely. It needs no repository secrets and publishes nothing.
+A signed debug APK is ready from the [successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41267502984). The Android build, all 14 Robolectric tests, lint, and APK signature verification passed. Device and launcher checks remain pending.
 
-## Build in your browser with GitHub
+## Install on your Android phone
 
-1. Create a private GitHub repository and upload the **contents of this project folder** to its root. `app/`, `gradle/`, `build.gradle`, and `settings.gradle` must be at the repository root.
-2. Include `.github/workflows/build-apk.yml`. If your upload skips the hidden `.github` folder, use **Add file → Create new file**, enter `.github/workflows/build-apk.yml`, paste the supplied workflow, and commit it to the default branch.
-3. Open **Actions → Build Android APK → Run workflow → Run workflow**. The build runs only when you start it manually.
-4. After it succeeds, open the run and download **Task-List-Android-Debug-APK** under **Artifacts**. Unzip it to obtain `app-debug.apk`, its SHA-256 checksum, and signature-verification results. Test and lint reports appear as a separate artifact, including when the build fails.
-5. Transfer `app-debug.apk` to your Android phone and open it to install. Android may ask you to allow installs from the app opening the file. This is a debug build for trying the app; it is not a Play Store release.
+1. Open the [Task-List-Android-Debug-APK download](https://github.com/swettgm/task-list-android/actions/runs/41267502984/artifacts/13068340692). Sign in to GitHub if asked.
+2. Download the artifact ZIP and extract it with your phone's Files app. It contains `app-debug.apk`, `app-debug.apk.sha256`, and `signature-verification.txt`.
+3. Open `app-debug.apk` to install **Task List**. If Android asks, allow installation from the app opening the APK.
+4. Open Task List, add a task, then touch and hold an empty home-screen area. Choose **Widgets → Task List checklist**, place the widget, and customize it using its settings icon.
 
-GitHub's runner supplies Java and the Android SDK. The workflow installs SDK 35/build-tools 35.0.0, builds the APK, runs the included unit tests and Android lint, and verifies the APK signature. It does not run an Android emulator or verify launcher/widget behavior on a device.
+Requires Android 8.0 or newer. This is a debug build for personal testing.
 
-## Build with Android Studio instead
+The verified APK's SHA-256 is:
 
-Open this folder in Android Studio, select a complete JDK 21 for Gradle, and install Android SDK Platform 35 and Build-Tools 35.0.0 through **SDK Manager**. Let Android Studio set `local.properties` to your computer's existing SDK path; replace the supplied `/workspace/android-sdk` path if present. Sync the project and use the APK build action under **Build → Generate App Bundles or APKs → Generate APKs** (wording varies by Android Studio version). The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
+```text
+124cd6b93608d40b39fd9508916f13243f26cc85af5045b18e27ad10505b6d56
+```
 
-For command-line builds with an existing SDK/JDK, run `./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug` on macOS/Linux or `gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug` on Windows. These bootstrap launchers download and checksum-verify Gradle 8.11.1 on first use; a Gradle wrapper JAR is not bundled.
+GitHub retains the artifact for 14 days. The [source repository](https://github.com/swettgm/task-list-android) can produce a fresh build afterward.
+
+## Rebuild with GitHub Actions
+
+Open [Actions → Build Android APK](https://github.com/swettgm/task-list-android/actions/workflows/build-apk.yml) and select **Run workflow**. The workflow also runs automatically when relevant app, build, or workflow source files are pushed.
+
+After the run succeeds, open it and download **Task-List-Android-Debug-APK** under **Artifacts**. Test and lint reports are available separately as **Android-test-and-lint-reports**.
+
+GitHub's runner supplies Java and the Android SDK. The workflow installs SDK 35/build-tools 35.0.0, compiles and packages the APK, runs unit tests and Android lint, and verifies the APK signature. It does not run an Android emulator or verify launcher behavior on a phone.
+
+## Build with Android Studio or the command line
+
+Open this project in Android Studio, select JDK 21 for Gradle, and install Android SDK Platform 35 and Build-Tools 35.0.0 through **SDK Manager**. Let Android Studio create `local.properties` with your SDK path, or set `ANDROID_HOME` when using the command line.
+
+On macOS/Linux:
+
+```sh
+./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
+
+On Windows:
+
+```bat
+gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
+
+These bootstrap launchers download and checksum-verify Gradle 8.11.1 on first use; a Gradle Wrapper JAR is not bundled. The APK is generated at `app/build/outputs/apk/debug/app-debug.apk`. Store publication requires a release signing configuration.
+
+See [VALIDATION.md](VALIDATION.md) for the verified source commit, APK metadata, and remaining device checks.
