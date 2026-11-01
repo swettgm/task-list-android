@@ -8,7 +8,7 @@ The first launch includes all 102 task definitions and 304 saved completion reco
 
 - **Today** shows pending tasks; **Upcoming** groups future work by date.
 - **Do now** toggles the current task. **Do tomorrow** moves an unfinished one-time occurrence without changing its history.
-- Checking a task saves it immediately and hides it. **Show hidden** reveals completed occurrences; uncheck one to reopen it. Parent checkboxes complete their checklist too, and individual steps save immediately.
+- Checking a task saves it immediately, then keeps a checked/fading confirmation visible for 450 milliseconds before hiding it. Uncheck it during that pause to keep it open. **Show hidden** reveals completed occurrences; uncheck one to reopen it. Parent checkboxes complete their checklist too, and individual steps save immediately.
 - Filter by **At home**, **On the road**, **On the phone**, **On the computer**, or other contexts. Use the **⚙** on a task to change its contexts or other details.
 - The large corner **+** opens a one-field **Quick add** form. Enter a task and press **Add**, or choose **Details** for the compact full editor. Priority and repeat choices appear in rows, date/time/duration share a small grid, and contexts use checkboxes. **Notes & checklist** expands to show the remaining fields. All previous task information is retained.
 - Android Back closes Quick add, the full editor, and Settings before exiting the app.
@@ -21,13 +21,13 @@ Dates follow America/New_York, as in the original task system. State is stored o
 
 ## Home-screen widget
 
-Touch and hold an empty area on the Android home screen and choose **Widgets → Task List Dark checklist**. Each widget has independent checklist/context filters, title, colors, transparency, and size.
+Touch and hold an empty area on the Android home screen and choose **Widgets → Task List Dark checklist**. Each widget has independent checklist/context filters, title, colors, transparency, and size. Background opacity ranges from 0% to 100%; at 0% the entire background is transparent while text and controls remain visible.
 
 Ticking a widget row immediately saves completion in the full task system. The **+** button opens a small floating quick-add form over the home screen, with context, priority, and Today/Tomorrow options. Saving closes the form without opening the full app. No “draw over other apps” permission is needed.
 
 ## Install and build
 
-See [APK_BUILD.md](APK_BUILD.md) for installation and [VALIDATION.md](VALIDATION.md) for checks. Version 0.4 uses package `com.personal.tasklist.preview` and the label **Task List Dark**, so the earlier Task List app can remain installed with its data.
+See [APK_BUILD.md](APK_BUILD.md) for installation and [VALIDATION.md](VALIDATION.md) for checks. Version 0.5 uses package `com.personal.tasklist.preview` and the label **Task List Dark**, so the earlier Task List app can remain installed with its data.
 
 The [Android build workflow](https://github.com/swettgm/task-list-android/actions/workflows/build-apk.yml) builds the APK, runs Robolectric tests and Android lint, exercises the full HTML workflow in Chromium, and verifies the APK signature.
 
