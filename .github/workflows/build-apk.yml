@@ -1,0 +1,103 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - '*.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and check debug APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          TASK_SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$TASK_SDK_DIR"
+          TASK_SDKMANAGER="$TASK_SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -x "$TASK_SDKMANAGER" ]]; then
+            TASK_SDKMANAGER=$(command -v sdkmanager)
+          fi
+          # yes receives SIGPIPE once sdkmanager finishes. Use sdkmanager's
+          # exit status instead of treating that expected SIGPIPE as failure.
+          set +e
+          yes | "$TASK_SDKMANAGER" --sdk_root="$TASK_SDK_DIR" --licenses > /dev/null
+          TASK_LICENSE_STATUS=${PIPESTATUS[1]}
+          set -e
+          if [[ "$TASK_LICENSE_STATUS" -ne 0 ]]; then
+            exit "$TASK_LICENSE_STATUS"
+          fi
+          "$TASK_SDKMANAGER" --sdk_root="$TASK_SDK_DIR" \
+            'platforms;android-35' 'build-tools;35.0.0'
+          printf 'sdk.dir=%s\n' "$TASK_SDK_DIR" > local.properties
+
+      - name: Build APK, run unit tests, and run lint
+        run: gradle --no-daemon --console=plain --stacktrace :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+
+      - name: Verify APK signature and record checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          TASK_SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          TASK_APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$TASK_APK"
+          "$TASK_SDK_DIR/build-tools/35.0.0/apksigner" verify --verbose "$TASK_APK" \
+            | tee app/build/outputs/apk/debug/signature-verification.txt
+          cd app/build/outputs/apk/debug
+          sha256sum app-debug.apk | tee app-debug.apk.sha256
+          {
+            echo '### Android debug APK'
+            echo 'Signature verification passed. Download the Task-List-Android-Debug-APK artifact below.'
+            echo ''
+            echo '```text'
+            cat app-debug.apk.sha256
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK and verification files
+        uses: actions/upload-artifact@v4
+        with:
+          name: Task-List-Android-Debug-APK
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
+            app/build/outputs/apk/debug/signature-verification.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-test-and-lint-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            app/build/reports/lint-results-debug.*
+          if-no-files-found: warn
+          retention-days: 14
