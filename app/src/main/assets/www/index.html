@@ -2958,7 +2958,7 @@ main{max-width:100%;margin:0;padding:0}
       const finishedToday=completed&&completionDate(task,stateDate)===today;
       if(finishedToday)wrapper.classList.add('tm-completed-today');
       const active=inProgress===progressKey(task,stateDate);
-      if(active)wrapper.classList.add('tm-in-progress-item');
+      if(active||completing.get(progressKey(task,stateDate))?.active===progressKey(task,stateDate))wrapper.classList.add('tm-in-progress-item');
       const linkedActive=!completed&&!isDone(task,stateDate,draft)&&linkedInProgress(task,item.date);
       if(linkedActive)wrapper.classList.add('tm-linked-active');
       const label=el('label','form-check');
