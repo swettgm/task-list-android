@@ -4,14 +4,15 @@ An offline Android version of the supplied task-list HTML and PDF handoff, with 
 
 ## Task list
 
-The first launch includes all 102 task definitions and 304 saved completion records from the latest HTML, including the PDF handoff’s tasks and history. The task engine preserves recurring schedules, nested checklists, priorities, durations, paired tasks, saved progress, historical occurrence IDs, moves, and rollover completion.
+The first launch includes all 102 task definitions and 304 saved completion records from the latest HTML, including the PDF handoff’s tasks and history. The task engine preserves recurring schedules, nested checklists, priorities, durations, saved progress, historical occurrence IDs, moves, and rollover completion.
 
 - **Today** shows pending tasks; **Upcoming** groups future work by date.
 - **Do now** toggles the current task. **Do tomorrow** moves an unfinished one-time occurrence without changing its history.
-- Checkboxes stage changes. **Save Completed** saves them. Completed work and backup controls start collapsed.
-- Filter by **At home**, **On the road**, **On the phone**, **On the computer**, or other contexts. Use **Labels** to assign several contexts and **Edit** to change a task.
+- Checking a task saves it immediately and hides it. **Show hidden** reveals completed occurrences; uncheck one to reopen it. Parent checkboxes complete their checklist too, and individual steps save immediately.
+- Filter by **At home**, **On the road**, **On the phone**, **On the computer**, or other contexts. Use the **⚙** on a task to change its contexts or other details.
 - **+ Task** adds a task with priority, schedule, contexts, notes, and optional checklist steps.
-- Copy saved updates or full history, or export a complete JSON backup through Android’s file picker.
+- The creation/edit menu has a **Linked tasks** dropdown and **Link task** button. Only links you choose are shown; you can remove them in the same menu. Linked tasks keep separate completion states.
+- AI recommendation text, suggested task links, copy-progress controls, backup controls, and the bottom save button have been removed.
 
 Dates follow America/New_York, as in the original task system. State is stored on the device; the app requests no internet permission. The user authorized including the supplied personal task definitions and initial history in this public repository.
 
@@ -23,7 +24,7 @@ Ticking a widget row immediately saves completion in the full task system. The *
 
 ## Install and build
 
-See [APK_BUILD.md](APK_BUILD.md) for installation and [VALIDATION.md](VALIDATION.md) for checks. Version 0.2 uses package `com.personal.tasklist.preview` and the label **Task List Dark**, so the earlier Task List app can remain installed with its data.
+See [APK_BUILD.md](APK_BUILD.md) for installation and [VALIDATION.md](VALIDATION.md) for checks. Version 0.3 uses package `com.personal.tasklist.preview` and the label **Task List Dark**, so the earlier Task List app can remain installed with its data.
 
 The [Android build workflow](https://github.com/swettgm/task-list-android/actions/workflows/build-apk.yml) builds the APK, runs Robolectric tests and Android lint, exercises the full HTML workflow in Chromium, and verifies the APK signature.
 
@@ -38,7 +39,7 @@ The bootstrap launchers download and checksum-verify Gradle 8.11.1. The APK is g
 ## Source
 
 - `app/src/main/assets/www/`: full offline task document and first-launch history.
-- `bridge.js`: context/editor/backup and Android integration.
+- `bridge.js`: contexts, gear editor, manual linking, and Android integration.
 - `MainActivity.java`: offline WebView and native clipboard/file export.
 - `ReferenceStore.java`: canonical task state and widget synchronization.
 - `TaskStore.java`: native widget task mirror.
