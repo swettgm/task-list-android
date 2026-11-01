@@ -10,7 +10,10 @@ The first launch includes all 102 task definitions and 304 saved completion reco
 - **Do now** toggles the current task. **Do tomorrow** moves an unfinished one-time occurrence without changing its history.
 - Checking a task saves it immediately and hides it. **Show hidden** reveals completed occurrences; uncheck one to reopen it. Parent checkboxes complete their checklist too, and individual steps save immediately.
 - Filter by **At home**, **On the road**, **On the phone**, **On the computer**, or other contexts. Use the **⚙** on a task to change its contexts or other details.
-- **+ Task** adds a task with priority, schedule, contexts, notes, and optional checklist steps.
+- The large corner **+** opens a one-field **Quick add** form. Enter a task and press **Add**, or choose **Details** for the compact full editor. Priority and repeat choices appear in rows, date/time/duration share a small grid, and contexts use checkboxes. **Notes & checklist** expands to show the remaining fields. All previous task information is retained.
+- Android Back closes Quick add, the full editor, and Settings before exiting the app.
+- **Settings ⚙** accepts custom accent and background hex colors, with live preview, validation, and a reset option. Colors remain saved when the app reopens.
+- The context dropdown and header buttons share a 48-pixel height. Open **Settings ⚙ → Add home-screen widget** for widget placement.
 - The creation/edit menu has a **Linked tasks** dropdown and **Link task** button. Only links you choose are shown; you can remove them in the same menu. Linked tasks keep separate completion states.
 - AI recommendation text, suggested task links, copy-progress controls, backup controls, and the bottom save button have been removed.
 
@@ -24,7 +27,7 @@ Ticking a widget row immediately saves completion in the full task system. The *
 
 ## Install and build
 
-See [APK_BUILD.md](APK_BUILD.md) for installation and [VALIDATION.md](VALIDATION.md) for checks. Version 0.3 uses package `com.personal.tasklist.preview` and the label **Task List Dark**, so the earlier Task List app can remain installed with its data.
+See [APK_BUILD.md](APK_BUILD.md) for installation and [VALIDATION.md](VALIDATION.md) for checks. Version 0.4 uses package `com.personal.tasklist.preview` and the label **Task List Dark**, so the earlier Task List app can remain installed with its data.
 
 The [Android build workflow](https://github.com/swettgm/task-list-android/actions/workflows/build-apk.yml) builds the APK, runs Robolectric tests and Android lint, exercises the full HTML workflow in Chromium, and verifies the APK signature.
 

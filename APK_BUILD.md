@@ -2,13 +2,13 @@
 
 Requires Android 8.0 or newer. This is a debug build for personal use.
 
-1. Download [Task-List-Dark-v0.3.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Task-List-Dark-v0.3.0.apk) on your phone.
+1. Download [Task-List-Dark-v0.4.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Task-List-Dark-v0.4.0.apk) on your phone.
 2. Open the download. If Android asks, allow installation from the browser or Files app opening the APK.
-3. Open **Task List Dark**. Your supplied tasks and saved history are included on the first launch.
-4. To add the checklist widget, touch and hold an empty area on the home screen, choose **Widgets → Task List Dark checklist**, and place it. Use its settings icon to change the context filter, title, colors, and transparency.
+3. Open **Task List Dark**. Your supplied tasks and saved history are included on the first launch. Use the corner **+** for Quick add and **Details** for the full editor. Custom hex colors are in **Settings ⚙**.
+4. To add the checklist widget, use **Settings ⚙ → Add home-screen widget** in the app, or touch and hold an empty area on the home screen and choose **Widgets → Task List Dark checklist**, and place it. Use its settings icon to change the context filter, title, colors, and transparency.
 5. Tap the widget’s **+** to add a task in a small floating form over the home screen. Saving closes the form. Ticking a widget task also saves it in the full task list.
 
-Version 0.3 updates the existing Task List Dark installation in place, retaining its tasks and saved history. The original Task List app can also remain installed. Keep the old app if you have added tasks there; its data is separate. This version contains the supplied HTML/PDF history, rather than importing changes made inside the older Android app.
+Version 0.4 updates the existing Task List Dark installation in place, retaining its tasks and saved history. The original Task List app can also remain installed. Keep the old app if you have added tasks there; its data is separate. This version contains the supplied HTML/PDF history, rather than importing changes made inside the older Android app.
 
 ## Build again
 
