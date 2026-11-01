@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -15,6 +16,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.shadows.ShadowAlertDialog;
@@ -32,12 +34,14 @@ public class MainActivityTest {
         Button add = findButton(activity.getWindow().getDecorView(), "+  Add task");
         assertNotNull(add);
         add.performClick();
+        idleMainLooper();
         AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
         assertNotNull(dialog);
         EditText title = findFirstEditor(dialog.getWindow().getDecorView());
         assertNotNull(title);
         title.setText("Prepare for work");
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        idleMainLooper();
         assertFalse(dialog.isShowing());
         TaskStore store = new TaskStore(activity);
         assertEquals(1, store.all().size());
@@ -56,11 +60,13 @@ public class MainActivityTest {
         ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
         controller.newIntent(new Intent(context, MainActivity.class)
                 .putExtra("widget_list", "Work").putExtra("add_task", true));
+        idleMainLooper();
         AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
         assertNotNull("The widget's plus shortcut must open the task editor", dialog);
         EditText title = findFirstEditor(dialog.getWindow().getDecorView());
         title.setText("Added from widget");
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        idleMainLooper();
         TaskStore.Task added = null;
         for (TaskStore.Task task : store.all()) if (task.title.equals("Added from widget")) added = task;
         assertNotNull(added);
@@ -77,15 +83,21 @@ public class MainActivityTest {
         Intent shortcut = new Intent(context, MainActivity.class)
                 .putExtra("widget_list", "Work").putExtra("add_task", true);
         ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class, shortcut).setup();
-        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+        idleMainLooper();
         AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
         assertNotNull(dialog);
         EditText title = findFirstEditor(dialog.getWindow().getDecorView());
         title.setText("First task back in Work");
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        idleMainLooper();
         assertEquals(1, store.all().size());
         assertEquals("Work", store.all().get(0).listName);
         controller.pause().stop().destroy();
+    }
+
+    private static void idleMainLooper() {
+        // Dialog.show() queues OnShow callbacks; let that UI turn finish before user input.
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
     }
 
     private static Button findButton(View view, String text) {
