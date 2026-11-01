@@ -2750,7 +2750,6 @@ main{max-width:100%;margin:0;padding:0}
       const details=el('details','tm-children');
       const checklistKey=progressKey(task,date);details.open=openChecklists.has(checklistKey);
       details.addEventListener('toggle',()=>{if(!details.isConnected)return;if(details.open)openChecklists.add(checklistKey);else openChecklists.delete(checklistKey);});
-      details.open=false;
       const summary=el('summary','cursor-interaction');
       const count=subtaskCount(task,date),unit=task.children?'subtasks':'steps';
       const updateCount=()=>{
