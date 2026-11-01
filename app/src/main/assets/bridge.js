@@ -35,11 +35,11 @@
     if (mergedTasks.size) next.customTasks = Array.from(mergedTasks.values());
     next.taskOverrides = Object.assign({}, fresh.taskOverrides, previous.taskOverrides, value.taskOverrides);
     next.pairOverrides = Object.assign({}, fresh.pairOverrides, previous.pairOverrides, value.pairOverrides);
-    cached = next;
     let succeeded = false;
     if (native && native.writeState) { native.writeState(JSON.stringify(next)); succeeded = true; }
     if (fallback) { try { fallback.setItem(KEY, JSON.stringify(next)); succeeded = true; } catch (_) {} }
     if (!succeeded) throw new Error('Task storage is unavailable');
+    cached = next;
     return next;
   }
   global.TaskListStorage = {
@@ -56,9 +56,6 @@
     },
     removeItem(key) { try { if (fallback) fallback.removeItem(key); } catch (_) {} }
   };
-  if (native && native.copyText) {
-    try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText(text) { native.copyText(String(text)); return Promise.resolve(); } } }); } catch (_) {}
-  }
   function node(tag, className, text) {
     const result = document.createElement(tag);
     if (className) result.className = className;
@@ -121,9 +118,59 @@
       const index = scope.tasks.findIndex(t => t.id === task.id);
       if (index >= 0) scope.tasks[index] = clone(task); else scope.tasks.push(clone(task));
     });
-    Object.entries(state.pairOverrides || {}).forEach(([id, peers]) => {
-      if (Array.isArray(peers)) scope.pairWith[id] = peers.filter(value => typeof value === 'string' && value !== id);
+    // Original suggested pairings and legacy pairOverrides are no longer used.
+    Object.keys(scope.pairWith).forEach(id => delete scope.pairWith[id]);
+    const ids = new Set(scope.tasks.map(task => task.id));
+    Object.entries(state.manualLinks || {}).forEach(([id, peers]) => {
+      if (!ids.has(id) || !Array.isArray(peers)) return;
+      peers.filter(peer => ids.has(peer) && peer !== id).forEach(peer => {
+        scope.pairWith[id] = [...new Set([...(scope.pairWith[id] || []), peer])];
+        scope.pairWith[peer] = [...new Set([...(scope.pairWith[peer] || []), id])];
+      });
     });
+  }
+  function saveManualLinks(id, peers) {
+    const state = readCanonical(), links = {};
+    Object.entries(state.manualLinks || {}).forEach(([key, values]) => {
+      if (key !== id && Array.isArray(values)) links[key] = values.filter(peer => peer !== id);
+    });
+    links[id] = [...new Set(peers.filter(peer => peer !== id))];
+    links[id].forEach(peer => { links[peer] = [...new Set([...(links[peer] || []), id])]; });
+    persist(Object.assign({}, state, { manualLinks: links }));
+    applyDefinitions(readCanonical());
+    rebuild();
+  }
+  function linkedTasksField(form, task) {
+    const selected = new Set(task ? scope.pairWith[task.id] || [] : []);
+    const group = node('fieldset', 'tl-context-options tl-links');
+    group.append(node('legend', '', 'Linked tasks'));
+    const row = node('div', 'tl-link-picker');
+    const select = node('select', 'form-control');
+    select.setAttribute('aria-label', 'Choose a task to link');
+    const add = action('Link task', () => { if (select.value) { selected.add(select.value); render(); } }, 'btn tl-link-add');
+    const list = node('div', 'tl-linked-list');
+    const candidates = scope.tasks.filter(candidate => !task || candidate.id !== task.id)
+      .slice().sort((a, b) => a.title.localeCompare(b.title));
+    function render() {
+      select.replaceChildren();
+      const placeholder = node('option', '', 'Choose a task…'); placeholder.value = ''; select.append(placeholder);
+      candidates.filter(candidate => !selected.has(candidate.id)).forEach(candidate => {
+        const date = candidate.due || candidate.recurrence;
+        const option = node('option', '', candidate.title + (date ? ' · ' + date : ''));
+        option.value = candidate.id; select.append(option);
+      });
+      add.disabled = !select.value;
+      list.replaceChildren();
+      selected.forEach(id => {
+        const target = candidates.find(candidate => candidate.id === id); if (!target) return;
+        const chip = node('div', 'tl-linked-task'); chip.append(node('span', '', target.title));
+        const remove = action('×', () => { selected.delete(id); render(); }, 'btn tl-unlink');
+        remove.setAttribute('aria-label', 'Unlink ' + target.title); chip.append(remove); list.append(chip);
+      });
+    }
+    select.addEventListener('change', () => { add.disabled = !select.value; });
+    row.append(select, add); group.append(row, list); form.append(group); render();
+    return () => Array.from(selected);
   }
   function modal(title) {
     const dialog = node('dialog', 'tl-dialog');
@@ -155,14 +202,6 @@
     const custom = inputField(form, 'Other contexts (comma separated)', 'text', '');
     return () => [...new Set([...inputs.filter(x => x.check.checked).map(x => x.label), ...custom.value.split(',').map(x => x.trim()).filter(Boolean)])];
   }
-  function editContexts(task) {
-    const { form, close } = modal('Task contexts');
-    form.append(node('p', 'text-muted', task.title));
-    const read = contextsField(form, derivedContexts(task));
-    const actions = node('div', 'tl-dialog-actions'); const save = action('Save contexts', () => {
-      task._contexts = read(); saveDefinition(task, false); close();
-    }, 'btn btn-primary'); actions.append(action('Cancel', close), save); form.append(actions);
-  }
   function editTask(task, item, prefill) {
     if (!scope) return;
     const isNew = !task; const original = task ? clone(task) : {};
@@ -193,8 +232,8 @@
     recurrence.addEventListener('change', toggleRepeat); toggleRepeat();
     const selected = task ? derivedContexts(task) : (prefill && (prefill.labels || [prefill.label || prefill.widget_label].filter(Boolean))) || (selectedContext ? [selectedContext] : []);
     const readContexts = contextsField(form, selected);
+    const readLinks = linkedTasksField(form, task);
     const notes = inputField(form, 'Notes', 'textarea', original.notes || '');
-    const help = inputField(form, 'Useful help note (optional)', 'textarea', original.aiHelp || '');
     const urgentWrap = node('label', 'tl-context-choice'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
     urgentWrap.append(urgent, node('span', '', 'Urgent')); form.append(urgentWrap);
     const steps = isNew ? inputField(form, 'Checklist steps, one per line (optional)', 'textarea', '') : null;
@@ -211,7 +250,7 @@
       if (duration.value) next.minutes = Number(duration.value); else delete next.minutes;
       if (time.value.trim()) next.time = time.value.trim(); else delete next.time;
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
-      if (help.value.trim()) next.aiHelp = help.value.trim(); else delete next.aiHelp;
+      delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
       if (isNew || recurrence.value !== oldMode) {
         ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence'].forEach(key => delete next[key]);
@@ -226,7 +265,7 @@
       }
       if (steps) { const names = steps.value.split('\n').map(x => x.trim()).filter(Boolean); if (names.length) next.steps = names; }
       if (isNew) scope.tasks.push(next); else scope.tasks[scope.tasks.findIndex(t => t.id === task.id)] = next;
-      saveDefinition(next, isNew); close();
+      saveDefinition(next, isNew); saveManualLinks(next.id, readLinks()); close();
     }, 'btn btn-primary'));
     form.append(buttons); title.focus();
   }
@@ -244,7 +283,10 @@
     const labels = derivedContexts(task);
     if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => badges.append(node('span', 'tl-context-badge', label))); text.append(badges); }
     const controls = wrapper.querySelector('.tm-item-actions');
-    if (controls) { controls.append(action('Labels', () => editContexts(task), 'tm-move-control tl-label-button')); controls.append(action('Edit', () => editTask(task, item), 'tm-move-control tl-edit-button')); }
+    if (controls) {
+      const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
+      edit.setAttribute('aria-label', 'Edit ' + task.title); edit.title = 'Edit task'; controls.append(edit);
+    }
     queueSnapshot();
   }
   function queueSnapshot() {
@@ -273,16 +315,6 @@
     const snapshot = Array.from(rows.values()); global.TaskListBridge.lastSnapshot = snapshot;
     if (native && native.updateSnapshot) { try { native.updateSnapshot(JSON.stringify(snapshot)); } catch (error) { console.error('Could not update the home widget', error); } }
   }
-  function exportBackup() {
-    if (!scope) return;
-    const full = { schema: 'task-list-full-backup-v1', exportedAt: new Date().toISOString(), timeZone: 'America/New_York', storageKey: KEY, rootId: scope.root.id, tasks: clone(scope.tasks), pairWith: clone(scope.pairWith), children: clone(scope.children), state: Object.assign({}, readCanonical(), scope.getState()) };
-    const json = JSON.stringify(full, null, 2);
-    if (native && native.exportBackup) native.exportBackup(json);
-    else {
-      const anchor = node('a'); anchor.href = URL.createObjectURL(new Blob([json], { type: 'application/json' })); anchor.download = 'task-list-backup-' + scope.today + '.json'; anchor.click(); setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
-    }
-    return json;
-  }
   function addToolbar() {
     const root = scope.root; if (root.querySelector('#tl-tools')) return;
     const toolbar = node('div', 'tl-tools'); toolbar.id = 'tl-tools';
@@ -291,7 +323,6 @@
     toolbar.append(action('+ Task', () => editTask(null, null, {}), 'btn tl-add-task'));
     if (native && native.showWidgetSettings) toolbar.append(action('Widget', () => native.showWidgetSettings(), 'btn tl-widget'));
     root.querySelector('.tm-top').after(toolbar); updateContextOptions();
-    const backup = root.querySelector('#pt-backup'); if (backup) backup.append(action('Export full backup', exportBackup, 'btn tl-export'));
   }
   global.TaskListBridge = {
     contextsFor: derivedContexts, contextMatches: matches, decorateRow, queueSnapshot, lastSnapshot: [],
@@ -303,7 +334,6 @@
         addTask(prefill) { try { if (typeof prefill === 'string') prefill = JSON.parse(prefill || '{}'); } catch (_) { prefill = {}; } editTask(null, null, prefill || {}); },
         setContextFilter(label) { selectedContext = typeof label === 'string' ? label : ''; saveExtras(); rebuild(); },
         reloadFromNative() { cached = null; const latest = readCanonical(); scope.setState(latest); applyDefinitions(latest); selectedContext = typeof latest.uiContext === 'string' ? latest.uiContext : ''; rebuild(); },
-        exportBackup,
         debugSummary() { return { definitions: scope.tasks.length, savedKeys: Object.keys(scope.getState().completed).length, moves: Object.keys(scope.getState().movedTo).length, active: scope.getState().inProgress, today: scope.today, contexts: allContexts(), snapshot: global.TaskListBridge.lastSnapshot.length }; }
       };
       queueSnapshot();

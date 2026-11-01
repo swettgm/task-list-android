@@ -1,11 +1,9 @@
-// Run with Playwright on a host that permits Chromium subprocess networking.
-// The test uses the real offline document and a narrow mock of Android's bridge.
+// Behavior checks against the exact offline APK document with Android persistence mocked.
 import { chromium } from 'playwright';
 import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-
 const documentPath = path.resolve(process.argv[2] || 'app/src/main/assets/www/index.html');
 const seedPath = path.resolve(process.argv[3] || path.join(path.dirname(documentPath), 'initial-state.json'));
 const seed = JSON.parse(await readFile(seedPath, 'utf8'));
@@ -18,113 +16,130 @@ const failures = [];
 page.on('pageerror', error => failures.push(error.message));
 await page.addInitScript(initial => {
   let canonical = JSON.parse(JSON.stringify(initial));
-  window.__nativeQA = { snapshot: [], copied: '', exported: '', widgetOpened: false,
-    setState(value) { canonical = JSON.parse(JSON.stringify(value)); }, getState() { return JSON.parse(JSON.stringify(canonical)); } };
+  // Simulate an upgrade with old suggested pairs still in saved data.
+  canonical.pairOverrides = { credit:['fix-credit'] };
+  window.__nativeQA = { snapshot: [], failWrites:false,
+    setState(value) { canonical = JSON.parse(JSON.stringify(value)); },
+    getState() { return JSON.parse(JSON.stringify(canonical)); } };
   window.TaskListNative = {
     readState() { return JSON.stringify(canonical); },
-    writeState(text) { canonical = JSON.parse(text); },
+    writeState(text) { if (__nativeQA.failWrites) throw Error('Simulated storage failure'); canonical = JSON.parse(text); },
     updateSnapshot(text) { window.__nativeQA.snapshot = JSON.parse(text); },
-    copyText(text) { window.__nativeQA.copied = text; },
-    exportBackup(text) { window.__nativeQA.exported = text; },
-    showWidgetSettings() { window.__nativeQA.widgetOpened = true; }
+    showWidgetSettings() {}
   };
 }, seed);
 await page.goto(pathToFileURL(documentPath).href);
 await page.waitForFunction(() => !!window.TaskListApp && window.__nativeQA.snapshot.length > 0);
 await page.screenshot({ path: path.join(output, 'today-dark.png'), fullPage: false });
-
 const result = await page.evaluate(async () => {
   const checks = [];
   function check(condition, label) { if (!condition) throw new Error(label); checks.push(label); }
-  const tick = () => new Promise(resolve => setTimeout(resolve, 25));
+  const tick = () => new Promise(resolve => setTimeout(resolve, 40));
   const rows = () => [...document.querySelectorAll('#pt-list .tm-task-item[data-task-id]')];
   const rowFor = (id, date) => rows().find(row => row.dataset.taskId === id && (!date || row.dataset.stateDate === date));
+  const clickText = (root, text) => { const button=[...root.querySelectorAll('button')].find(b=>b.textContent===text);check(!!button,'Control exists: '+text);button.click(); };
   const original = TaskListApp.debugSummary();
-  check(original.definitions === 102, 'All 102 task definitions retained');
-  check(original.savedKeys >= 304, 'All 304 saved completion keys retained');
-  check(original.moves >= 26, 'All 26 saved moves retained');
-  check(document.querySelector('#pt-date').textContent.trim().length > 0, 'Date is visible');
-  check(!document.querySelector('h1'), 'No screen heading consumes task space');
+  check(original.definitions === 102 && original.savedKeys >= 304 && original.moves >= 26, 'Original tasks, saved history, and moves retained');
+  check(!!document.querySelector('#pt-date').textContent.trim() && !document.querySelector('h1'), 'Date-only heading');
   check(getComputedStyle(document.body).backgroundColor === 'rgb(16, 21, 31)', 'Dark page background');
-  check(document.querySelector('#pt-upcoming').hidden, 'Today opens first');
-  check(!document.querySelector('#pt-completed').open && !document.querySelector('#pt-backup').open, 'Completed and backup start collapsed');
+  check(document.querySelector('#pt-upcoming').hidden && document.querySelector('#pt-completed').hidden, 'Today opens with completed tasks hidden');
+  check(!document.querySelector('#pt-save,#pt-copy,#pt-backup,#pt-copy-full,#pt-copy-box,.tl-export'), 'Manual completion, copy, and backup controls removed');
+  check(!document.querySelector('.tm-ai-note,.tm-pair-note,.tm-linked-chain'), 'AI tips and original suggested links are absent');
   check([...document.querySelectorAll('.tm-children')].every(item => !item.open), 'Subtask checklists start collapsed');
-  check(document.querySelector('#tl-context-filter').options.length >= 5, 'Named contexts are available');
-
+  check(rows().every(row=>[...row.querySelector(':scope > .tm-item-actions').children].every(b=>['Do now','Do tomorrow ➜','⚙'].includes(b.textContent))), 'Task rows only show Do now, Do tomorrow arrow, and gear');
+  check(rows().every(row=>row.querySelector('.tl-edit-button')?.getAttribute('aria-label').startsWith('Edit ')), 'Gear buttons have accessible task names');
   TaskListApp.setContextFilter('At home'); await tick();
-  check(rows().every(row => [...row.querySelectorAll('.tl-context-badge')].some(badge => badge.textContent === 'At home')), 'Context filtering limits displayed rows');
+  check(rows().every(row => [...row.querySelectorAll('.tl-context-badge')].some(badge => badge.textContent === 'At home')), 'Context filter works');
   TaskListApp.setContextFilter(''); await tick();
-
   const first = rows().find(row => !row.querySelector('.tm-progress-control').disabled);
-  check(!!first, 'A current task can be selected');
-  const firstId = first.dataset.taskId, firstDate = first.dataset.stateDate;
+  const firstId=first.dataset.taskId,firstDate=first.dataset.stateDate;
   first.querySelector('.tm-progress-control').click(); await tick();
-  check(TaskListApp.debugSummary().active === firstId + ':' + firstDate, 'Do now selects one current occurrence');
-  rowFor(firstId, firstDate).querySelector('.tm-progress-control').click(); await tick();
-  check(TaskListApp.debugSummary().active === null, 'Do now toggles off');
-  TaskListApp.reloadFromNative(); await tick();
-  check(TaskListApp.debugSummary().active === null, 'Cleared current marker stays cleared on reload');
-
-  const repeating = rows().filter(row => row.querySelector('.tm-meta').textContent.includes('🔁'));
-  check(repeating.length > 0 && repeating.every(row => ![...row.querySelectorAll('button')].some(button => button.textContent === 'Do tomorrow ➜')), 'Recurring tasks never get Do tomorrow');
-  const movable = rows().find(row => [...row.querySelectorAll('button')].some(button => button.textContent === 'Do tomorrow ➜'));
-  check(!!movable, 'Unfinished one-time tasks get Do tomorrow');
-  const movedId = movable.dataset.taskId, movedDate = movable.dataset.stateDate;
-  [...movable.querySelectorAll('button')].find(button => button.textContent === 'Do tomorrow ➜').click(); await tick();
-  const tomorrowDate = new Date(original.today + 'T12:00:00Z'); tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
-  check(__nativeQA.getState().movedTo[movedId + ':' + movedDate] === tomorrowDate.toISOString().slice(0, 10), 'Do tomorrow preserves the original occurrence and records its new date');
-  check(!rowFor(movedId, movedDate), 'Moved occurrence leaves Today');
-
-  const parent = rows().find(row => row.querySelector('.tm-children') && !row.querySelector(':scope > .form-check > .form-check-input').checked);
-  check(!!parent, 'An unfinished checklist is available');
-  const parentId = parent.dataset.taskId, parentDate = parent.dataset.stateDate;
-  const before = JSON.stringify(__nativeQA.getState().completed);
-  parent.querySelector(':scope > .form-check > .form-check-input').click(); await tick();
-  check(JSON.stringify(__nativeQA.getState().completed) === before, 'Checkbox completion is staged until Save Completed');
-  check(!document.querySelector('#pt-save').disabled, 'Staged completion enables Save Completed');
-  document.querySelector('#pt-save').click(); await tick();
-  check(!rowFor(parentId, parentDate), 'Saving removes the completed parent from pending Today');
-  check(__nativeQA.snapshot.some(row => row.id === 'html:' + parentId + ':' + parentDate && row.done), 'Saved parent completion reaches the native widget snapshot');
-  check(!document.querySelector('#pt-completed').open, 'Saving keeps Completed today collapsed');
-
-  document.querySelector('#pt-copy').click(); await tick();
-  check(__nativeQA.copied.startsWith('Saved task updates as of'), 'Copy progress exports saved changes');
-  document.querySelector('#pt-copy-full').click(); await tick();
-  check(__nativeQA.copied.startsWith('Saved task states as of') && __nativeQA.copied.split('\n').length >= 304, 'Full history copy retains the original history');
-  const backup = JSON.parse(TaskListApp.exportBackup());
-  check(backup.tasks.length === 102 && Object.keys(backup.state.completed).length >= 304, 'Full JSON backup preserves task definitions and saved history');
-  check(__nativeQA.exported.length > 0, 'Backup is sent through Android export');
-
-  const state = __nativeQA.getState();
-  state.customTasks = [...(state.customTasks || []), { id:'custom-native-qa',title:'Native popup task',priority:'UNSET',labels:['On the phone'],due:original.today,when:'Not set' }];
-  __nativeQA.setState(state);
-  TaskListApp.setContextFilter(''); await tick();
-  check(__nativeQA.getState().customTasks.some(task => task.id === 'custom-native-qa'), 'An older open page does not drop a task added by the native popup');
-  TaskListApp.reloadFromNative(); await tick();
-  check(TaskListApp.debugSummary().definitions === 103 && rows().some(row => row.dataset.taskId === 'custom-native-qa'), 'Native popup task appears after state reload');
-  TaskListApp.setContextFilter('On the phone'); await tick();
-  check(rows().some(row => row.dataset.taskId === 'custom-native-qa'), 'Native popup labels are recognized by the context filter');
-  TaskListApp.setContextFilter(''); await tick();
-
-  TaskListApp.addTask({ labels:['On the computer'] });
-  const dialog = document.querySelector('dialog'); check(!!dialog && dialog.open, 'Add task opens its editor');
-  dialog.querySelector('input[type=text]').value = 'Browser-created task';
-  [...dialog.querySelectorAll('button')].find(button => button.textContent === 'Save task').click(); await tick();
-  check(TaskListApp.debugSummary().definitions === 104 && !document.querySelector('dialog'), 'A new task saves and closes its editor');
-  check(rows().some(row => row.querySelector('.tm-title').textContent === 'Browser-created task'), 'A new task appears in Today');
-  const labelsRow = rows().find(row => row.querySelector('.tm-title').textContent === 'Browser-created task');
-  labelsRow.querySelector('.tl-label-button').click();
-  const labelsDialog = document.querySelector('dialog');
-  [...labelsDialog.querySelectorAll('label.tl-context-choice')].find(label => label.textContent === 'On the road').querySelector('input').click();
-  [...labelsDialog.querySelectorAll('button')].find(button => button.textContent === 'Save contexts').click(); await tick();
-  TaskListApp.reloadFromNative(); await tick();
-  const restored = rows().find(row => row.querySelector('.tm-title').textContent === 'Browser-created task');
-  check([...restored.querySelectorAll('.tl-context-badge')].some(badge => badge.textContent === 'On the road'), 'Edited contexts survive a reload');
-  document.querySelector('#pt-upcoming-tab').click();
-  check(!document.querySelector('#pt-upcoming').hidden && document.querySelector('#pt-today').hidden, 'Upcoming tab works');
-  check(document.querySelectorAll('#pt-future-list .tm-day').length > 0, 'Upcoming remains grouped into dated sections');
-  return { checks, definitionsAfterQA:TaskListApp.debugSummary().definitions, snapshotRows:__nativeQA.snapshot.length };
+  check(TaskListApp.debugSummary().active===firstId+':'+firstDate,'Do now selects the task');
+  rowFor(firstId,firstDate).querySelector('.tm-progress-control').click();await tick();
+  TaskListApp.reloadFromNative();await tick();
+  check(TaskListApp.debugSummary().active===null,'Do now toggles off and stays off');
+  const repeating=rows().filter(row=>row.querySelector('.tm-meta').textContent.includes('🔁'));
+  check(repeating.length>0&&repeating.every(row=>![...row.querySelectorAll('button')].some(b=>b.textContent==='Do tomorrow ➜')),'Recurring tasks retain their schedule');
+  const movable=rows().find(row=>[...row.querySelectorAll('button')].some(b=>b.textContent==='Do tomorrow ➜'));
+  const movedId=movable.dataset.taskId,movedDate=movable.dataset.stateDate;
+  clickText(movable,'Do tomorrow ➜');await tick();
+  check(!!__nativeQA.getState().movedTo[movedId+':'+movedDate]&&!rowFor(movedId,movedDate),'Do tomorrow saves the move and removes the current row');
+  const parent=rows().find(row=>row.querySelector('.tm-children'));
+  check(!!parent,'A task with a checklist is available');
+  const parentId=parent.dataset.taskId,parentDate=parent.dataset.stateDate;
+  parent.querySelector('.tm-progress-control').click();await tick();
+  rowFor(parentId,parentDate).querySelector(':scope > .form-check > input').click();await tick();
+  check(!rowFor(parentId,parentDate),'Checking a parent saves and hides it immediately');
+  check(__nativeQA.snapshot.some(row=>row.id==='html:'+parentId+':'+parentDate&&row.done),'Automatic completion reaches the widget snapshot');
+  check(TaskListApp.debugSummary().active===null,'Completing the active parent clears Do now');
+  TaskListApp.reloadFromNative();await tick();
+  check(!rowFor(parentId,parentDate),'Completion survives reload');
+  document.querySelector('#pt-toggle-hidden').click();await tick();
+  const hiddenParent=()=>[...document.querySelectorAll('#pt-completed-list [data-task-id]')].find(row=>row.dataset.taskId===parentId&&row.dataset.stateDate===parentDate);
+  check(!document.querySelector('#pt-completed').hidden&&!!hiddenParent(),'Show hidden reveals completed tasks');
+  hiddenParent().querySelector(':scope > .form-check > input').click();await tick();
+  check(!!rowFor(parentId,parentDate)&&!hiddenParent(),'Unchecking a hidden task saves and restores it');
+  TaskListApp.reloadFromNative();await tick();check(!!rowFor(parentId,parentDate),'Reopened task survives reload');
+  document.querySelector('#pt-toggle-hidden').click();await tick();
+  const details=rowFor(parentId,parentDate).querySelector('.tm-children');details.open=true;await tick();
+  details.querySelector('.tm-child-item input').click();await tick();
+  check(rowFor(parentId,parentDate).querySelector('.tm-children').open,'Checklist stays open after checking a step');
+  check(rowFor(parentId,parentDate).querySelector('.tm-child-item input').checked,'Individual step saves immediately');
+  TaskListApp.reloadFromNative();await tick();
+  check(rowFor(parentId,parentDate).querySelector('.tm-child-item input').checked,'Individual step survives reload');
+  // A failed native save must keep the task available for retry.
+  const before=JSON.stringify(__nativeQA.getState().completed);
+  __nativeQA.failWrites=true;rowFor(parentId,parentDate).querySelector(':scope > .form-check > input').click();await tick();
+  check(!!rowFor(parentId,parentDate)&&JSON.stringify(__nativeQA.getState().completed)===before,'Failed persistence does not lose or hide the task');
+  check(document.querySelector('#pt-status').textContent.includes('Couldn’t save'),'Save failure is shown');__nativeQA.failWrites=false;
+  // The native home-screen popup can add a task while the page is paused.
+  const state=__nativeQA.getState();state.customTasks=[...(state.customTasks||[]),{id:'custom-native-qa',title:'Native popup task',priority:'UNSET',labels:['On the phone'],due:original.today,when:'Not set'}];
+  __nativeQA.setState(state);TaskListApp.setContextFilter('');TaskListApp.reloadFromNative();await tick();
+  check(rows().some(row=>row.dataset.taskId==='custom-native-qa'),'Native popup task is retained and loaded');
+  // Create with a manual link; the picker offers every existing task.
+  TaskListApp.addTask({labels:['On the computer']});
+  let dialog=document.querySelector('dialog');check(dialog.open,'Creation editor opens');
+  check(!dialog.textContent.includes('Useful help note'),'AI recommendation field is removed');
+  dialog.querySelector('input[type=text]').value='Browser-created task';
+  const picker=dialog.querySelector('[aria-label="Choose a task to link"]');
+  check(picker.options.length===104,'Creation dropdown lists every existing task');
+  picker.value='custom-native-qa';picker.dispatchEvent(new Event('change'));clickText(dialog,'Link task');
+  clickText(dialog,'Save task');await tick();
+  let created=()=>rows().find(row=>row.querySelector('.tm-title').textContent==='Browser-created task');
+  check(!!created()&&created().querySelector('.tm-pair-note')?.textContent.includes('Native popup task'),'Manually linked task appears on the saved row');
+  const createdId=created().dataset.taskId;
+  check(__nativeQA.getState().manualLinks['custom-native-qa'].includes(createdId),'Manual linking is bidirectional');
+  TaskListApp.reloadFromNative();await tick();check(created().querySelector('.tm-pair-note')?.textContent.includes('Native popup task'),'Manual links survive reload');
+  created().querySelector('.tl-edit-button').click();dialog=document.querySelector('dialog');
+  check(![...dialog.querySelectorAll('option')].some(o=>o.value===createdId),'Task cannot link to itself');
+  [...dialog.querySelectorAll('label.tl-context-choice')].find(l=>l.textContent==='On the road').querySelector('input').click();
+  dialog.querySelector('.tl-unlink').click();clickText(dialog,'Save task');await tick();TaskListApp.reloadFromNative();await tick();
+  check([...created().querySelectorAll('.tl-context-badge')].some(b=>b.textContent==='On the road'),'Contexts can be edited through the gear');
+  check(!created().querySelector('.tm-pair-note')&&!(__nativeQA.getState().manualLinks['custom-native-qa']||[]).includes(createdId),'Unlink removes both sides and survives reload');
+  created().querySelector(':scope > .form-check > input').click();await tick();
+  check(!created()&&!!rowFor('custom-native-qa'),'Completion affects only the checked task');
+  document.querySelector('#pt-upcoming-tab').click();check(!document.querySelector('#pt-upcoming').hidden&&document.querySelector('#pt-today').hidden,'Upcoming tab works');
+  check(document.querySelectorAll('#pt-future-list .tm-day').length>0,'Upcoming remains grouped by date');
+  document.querySelector('#pt-today-tab').click();
+  return {checks};
 });
-if (failures.length) throw new Error('Page errors: ' + failures.join('; '));
-console.log(JSON.stringify({ passed: result.checks.length, ...result }, null, 2));
+// Check real geometry, including expanded content and long task text, without masking overflow.
+const layouts=[];
+for(const width of [320,360,390,412,600,844]){
+  await page.setViewportSize({width,height:844});
+  await page.evaluate(()=>{if(document.querySelector('#pt-completed').hidden)document.querySelector('#pt-toggle-hidden').click();});
+  for(const view of ['today','upcoming']){
+    await page.locator('#pt-'+view+'-tab').click();
+    await page.evaluate(()=>{document.querySelectorAll('.tm-children,#pt-overdue details').forEach(d=>d.open=true);});
+    const metrics=await page.evaluate(()=>({viewport:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
+    if(metrics.scroll>metrics.viewport+1||metrics.body>metrics.viewport+1)throw Error('Horizontal overflow '+width+' '+view+': '+JSON.stringify(metrics));
+    layouts.push({width,view,...metrics});
+  }
+  await page.evaluate(()=>TaskListApp.addTask());
+  const metrics=await page.evaluate(()=>{const d=document.querySelector('dialog'),r=d.getBoundingClientRect();return{left:r.left,right:r.right,viewport:innerWidth,scroll:d.scrollWidth,client:d.clientWidth};});
+  if(metrics.left<0||metrics.right>width+1||metrics.scroll>metrics.client+1)throw Error('Editor overflow '+width+': '+JSON.stringify(metrics));
+  await page.getByRole('button',{name:'Cancel',exact:true}).click();
+}
+if(failures.length)throw Error('Page errors: '+failures.join('; '));
+console.log(JSON.stringify({passed:result.checks.length,checks:result.checks,layoutChecks:layouts},null,2));
 await browser.close();

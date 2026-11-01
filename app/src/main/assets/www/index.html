@@ -1607,11 +1607,11 @@ main{max-width:100%;margin:0;padding:0}
     if (mergedTasks.size) next.customTasks = Array.from(mergedTasks.values());
     next.taskOverrides = Object.assign({}, fresh.taskOverrides, previous.taskOverrides, value.taskOverrides);
     next.pairOverrides = Object.assign({}, fresh.pairOverrides, previous.pairOverrides, value.pairOverrides);
-    cached = next;
     let succeeded = false;
     if (native && native.writeState) { native.writeState(JSON.stringify(next)); succeeded = true; }
     if (fallback) { try { fallback.setItem(KEY, JSON.stringify(next)); succeeded = true; } catch (_) {} }
     if (!succeeded) throw new Error('Task storage is unavailable');
+    cached = next;
     return next;
   }
   global.TaskListStorage = {
@@ -1628,9 +1628,6 @@ main{max-width:100%;margin:0;padding:0}
     },
     removeItem(key) { try { if (fallback) fallback.removeItem(key); } catch (_) {} }
   };
-  if (native && native.copyText) {
-    try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText(text) { native.copyText(String(text)); return Promise.resolve(); } } }); } catch (_) {}
-  }
   function node(tag, className, text) {
     const result = document.createElement(tag);
     if (className) result.className = className;
@@ -1693,9 +1690,59 @@ main{max-width:100%;margin:0;padding:0}
       const index = scope.tasks.findIndex(t => t.id === task.id);
       if (index >= 0) scope.tasks[index] = clone(task); else scope.tasks.push(clone(task));
     });
-    Object.entries(state.pairOverrides || {}).forEach(([id, peers]) => {
-      if (Array.isArray(peers)) scope.pairWith[id] = peers.filter(value => typeof value === 'string' && value !== id);
+    // Original suggested pairings and legacy pairOverrides are no longer used.
+    Object.keys(scope.pairWith).forEach(id => delete scope.pairWith[id]);
+    const ids = new Set(scope.tasks.map(task => task.id));
+    Object.entries(state.manualLinks || {}).forEach(([id, peers]) => {
+      if (!ids.has(id) || !Array.isArray(peers)) return;
+      peers.filter(peer => ids.has(peer) && peer !== id).forEach(peer => {
+        scope.pairWith[id] = [...new Set([...(scope.pairWith[id] || []), peer])];
+        scope.pairWith[peer] = [...new Set([...(scope.pairWith[peer] || []), id])];
+      });
     });
+  }
+  function saveManualLinks(id, peers) {
+    const state = readCanonical(), links = {};
+    Object.entries(state.manualLinks || {}).forEach(([key, values]) => {
+      if (key !== id && Array.isArray(values)) links[key] = values.filter(peer => peer !== id);
+    });
+    links[id] = [...new Set(peers.filter(peer => peer !== id))];
+    links[id].forEach(peer => { links[peer] = [...new Set([...(links[peer] || []), id])]; });
+    persist(Object.assign({}, state, { manualLinks: links }));
+    applyDefinitions(readCanonical());
+    rebuild();
+  }
+  function linkedTasksField(form, task) {
+    const selected = new Set(task ? scope.pairWith[task.id] || [] : []);
+    const group = node('fieldset', 'tl-context-options tl-links');
+    group.append(node('legend', '', 'Linked tasks'));
+    const row = node('div', 'tl-link-picker');
+    const select = node('select', 'form-control');
+    select.setAttribute('aria-label', 'Choose a task to link');
+    const add = action('Link task', () => { if (select.value) { selected.add(select.value); render(); } }, 'btn tl-link-add');
+    const list = node('div', 'tl-linked-list');
+    const candidates = scope.tasks.filter(candidate => !task || candidate.id !== task.id)
+      .slice().sort((a, b) => a.title.localeCompare(b.title));
+    function render() {
+      select.replaceChildren();
+      const placeholder = node('option', '', 'Choose a task…'); placeholder.value = ''; select.append(placeholder);
+      candidates.filter(candidate => !selected.has(candidate.id)).forEach(candidate => {
+        const date = candidate.due || candidate.recurrence;
+        const option = node('option', '', candidate.title + (date ? ' · ' + date : ''));
+        option.value = candidate.id; select.append(option);
+      });
+      add.disabled = !select.value;
+      list.replaceChildren();
+      selected.forEach(id => {
+        const target = candidates.find(candidate => candidate.id === id); if (!target) return;
+        const chip = node('div', 'tl-linked-task'); chip.append(node('span', '', target.title));
+        const remove = action('×', () => { selected.delete(id); render(); }, 'btn tl-unlink');
+        remove.setAttribute('aria-label', 'Unlink ' + target.title); chip.append(remove); list.append(chip);
+      });
+    }
+    select.addEventListener('change', () => { add.disabled = !select.value; });
+    row.append(select, add); group.append(row, list); form.append(group); render();
+    return () => Array.from(selected);
   }
   function modal(title) {
     const dialog = node('dialog', 'tl-dialog');
@@ -1727,14 +1774,6 @@ main{max-width:100%;margin:0;padding:0}
     const custom = inputField(form, 'Other contexts (comma separated)', 'text', '');
     return () => [...new Set([...inputs.filter(x => x.check.checked).map(x => x.label), ...custom.value.split(',').map(x => x.trim()).filter(Boolean)])];
   }
-  function editContexts(task) {
-    const { form, close } = modal('Task contexts');
-    form.append(node('p', 'text-muted', task.title));
-    const read = contextsField(form, derivedContexts(task));
-    const actions = node('div', 'tl-dialog-actions'); const save = action('Save contexts', () => {
-      task._contexts = read(); saveDefinition(task, false); close();
-    }, 'btn btn-primary'); actions.append(action('Cancel', close), save); form.append(actions);
-  }
   function editTask(task, item, prefill) {
     if (!scope) return;
     const isNew = !task; const original = task ? clone(task) : {};
@@ -1765,8 +1804,8 @@ main{max-width:100%;margin:0;padding:0}
     recurrence.addEventListener('change', toggleRepeat); toggleRepeat();
     const selected = task ? derivedContexts(task) : (prefill && (prefill.labels || [prefill.label || prefill.widget_label].filter(Boolean))) || (selectedContext ? [selectedContext] : []);
     const readContexts = contextsField(form, selected);
+    const readLinks = linkedTasksField(form, task);
     const notes = inputField(form, 'Notes', 'textarea', original.notes || '');
-    const help = inputField(form, 'Useful help note (optional)', 'textarea', original.aiHelp || '');
     const urgentWrap = node('label', 'tl-context-choice'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
     urgentWrap.append(urgent, node('span', '', 'Urgent')); form.append(urgentWrap);
     const steps = isNew ? inputField(form, 'Checklist steps, one per line (optional)', 'textarea', '') : null;
@@ -1783,7 +1822,7 @@ main{max-width:100%;margin:0;padding:0}
       if (duration.value) next.minutes = Number(duration.value); else delete next.minutes;
       if (time.value.trim()) next.time = time.value.trim(); else delete next.time;
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
-      if (help.value.trim()) next.aiHelp = help.value.trim(); else delete next.aiHelp;
+      delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
       if (isNew || recurrence.value !== oldMode) {
         ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence'].forEach(key => delete next[key]);
@@ -1798,7 +1837,7 @@ main{max-width:100%;margin:0;padding:0}
       }
       if (steps) { const names = steps.value.split('\n').map(x => x.trim()).filter(Boolean); if (names.length) next.steps = names; }
       if (isNew) scope.tasks.push(next); else scope.tasks[scope.tasks.findIndex(t => t.id === task.id)] = next;
-      saveDefinition(next, isNew); close();
+      saveDefinition(next, isNew); saveManualLinks(next.id, readLinks()); close();
     }, 'btn btn-primary'));
     form.append(buttons); title.focus();
   }
@@ -1816,7 +1855,10 @@ main{max-width:100%;margin:0;padding:0}
     const labels = derivedContexts(task);
     if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => badges.append(node('span', 'tl-context-badge', label))); text.append(badges); }
     const controls = wrapper.querySelector('.tm-item-actions');
-    if (controls) { controls.append(action('Labels', () => editContexts(task), 'tm-move-control tl-label-button')); controls.append(action('Edit', () => editTask(task, item), 'tm-move-control tl-edit-button')); }
+    if (controls) {
+      const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
+      edit.setAttribute('aria-label', 'Edit ' + task.title); edit.title = 'Edit task'; controls.append(edit);
+    }
     queueSnapshot();
   }
   function queueSnapshot() {
@@ -1845,16 +1887,6 @@ main{max-width:100%;margin:0;padding:0}
     const snapshot = Array.from(rows.values()); global.TaskListBridge.lastSnapshot = snapshot;
     if (native && native.updateSnapshot) { try { native.updateSnapshot(JSON.stringify(snapshot)); } catch (error) { console.error('Could not update the home widget', error); } }
   }
-  function exportBackup() {
-    if (!scope) return;
-    const full = { schema: 'task-list-full-backup-v1', exportedAt: new Date().toISOString(), timeZone: 'America/New_York', storageKey: KEY, rootId: scope.root.id, tasks: clone(scope.tasks), pairWith: clone(scope.pairWith), children: clone(scope.children), state: Object.assign({}, readCanonical(), scope.getState()) };
-    const json = JSON.stringify(full, null, 2);
-    if (native && native.exportBackup) native.exportBackup(json);
-    else {
-      const anchor = node('a'); anchor.href = URL.createObjectURL(new Blob([json], { type: 'application/json' })); anchor.download = 'task-list-backup-' + scope.today + '.json'; anchor.click(); setTimeout(() => URL.revokeObjectURL(anchor.href), 1000);
-    }
-    return json;
-  }
   function addToolbar() {
     const root = scope.root; if (root.querySelector('#tl-tools')) return;
     const toolbar = node('div', 'tl-tools'); toolbar.id = 'tl-tools';
@@ -1863,7 +1895,6 @@ main{max-width:100%;margin:0;padding:0}
     toolbar.append(action('+ Task', () => editTask(null, null, {}), 'btn tl-add-task'));
     if (native && native.showWidgetSettings) toolbar.append(action('Widget', () => native.showWidgetSettings(), 'btn tl-widget'));
     root.querySelector('.tm-top').after(toolbar); updateContextOptions();
-    const backup = root.querySelector('#pt-backup'); if (backup) backup.append(action('Export full backup', exportBackup, 'btn tl-export'));
   }
   global.TaskListBridge = {
     contextsFor: derivedContexts, contextMatches: matches, decorateRow, queueSnapshot, lastSnapshot: [],
@@ -1875,7 +1906,6 @@ main{max-width:100%;margin:0;padding:0}
         addTask(prefill) { try { if (typeof prefill === 'string') prefill = JSON.parse(prefill || '{}'); } catch (_) { prefill = {}; } editTask(null, null, prefill || {}); },
         setContextFilter(label) { selectedContext = typeof label === 'string' ? label : ''; saveExtras(); rebuild(); },
         reloadFromNative() { cached = null; const latest = readCanonical(); scope.setState(latest); applyDefinitions(latest); selectedContext = typeof latest.uiContext === 'string' ? latest.uiContext : ''; rebuild(); },
-        exportBackup,
         debugSummary() { return { definitions: scope.tasks.length, savedKeys: Object.keys(scope.getState().completed).length, moves: Object.keys(scope.getState().movedTo).length, active: scope.getState().inProgress, today: scope.today, contexts: allContexts(), snapshot: global.TaskListBridge.lastSnapshot.length }; }
       };
       queueSnapshot();
@@ -1951,17 +1981,9 @@ main{max-width:100%;margin:0;padding:0}
     <div class="progress" id="pt-progressbar" role="progressbar" aria-label="Today's task completion" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" id="pt-progressfill" style="width:0%"></div></div>
     <div id="pt-overdue"></div>
     <div id="pt-list"></div>
-    <details id="pt-completed"><summary id="pt-completed-summary">Completed today: none</summary><div id="pt-completed-list" class="tm-list"></div></details>
-    <div class="tm-actions">
-      <button type="button" class="btn btn-primary" id="pt-save" disabled>Save Completed</button>
-      <button type="button" class="btn" id="pt-copy">Copy progress</button>
-      <span id="pt-status" class="text-small text-muted" role="status">No changes saved yet</span>
-    </div>
-    <details id="pt-backup">
-      <summary class="cursor-interaction text-small text-muted">Backup</summary>
-      <button type="button" class="btn" id="pt-copy-full">Copy full history</button>
-    </details>
-    <div id="pt-copy-box" class="tm-copy" hidden><label class="form-label" for="pt-copy-text">Progress to paste into this chat</label><textarea class="form-control" id="pt-copy-text" rows="7" readonly></textarea></div>
+    <button type="button" class="btn tl-show-hidden" id="pt-toggle-hidden" aria-expanded="false" aria-controls="pt-completed">Show hidden</button>
+    <div id="pt-completed" hidden><div id="pt-completed-list" class="tm-list"></div></div>
+    <p id="pt-status" class="text-small text-muted" role="status" aria-live="polite"></p>
   </div>
   <div id="pt-upcoming" role="tabpanel" aria-labelledby="pt-upcoming-tab" hidden><div id="pt-future-list"></div></div>
   <script>
@@ -1975,7 +1997,6 @@ main{max-width:100%;margin:0;padding:0}
       ['HIGHEST','Highest priority'], ['HIGH','High priority'], ['MEDIUM','Medium priority'],
       ['LOW','Low priority'], ['LOWEST','Lowest priority'], ['UNSET','Priority not set']
     ];
-    // One-time tasks include a concise ChatGPT-help note only when useful.
     const children = [
       ['RAID', ['Recruiting needs','Raid holidays']],
       ['DISCORD', ['Store additions','Website updates','New/waiting members','Applications handled','Tickets / suggestions / issues']],
@@ -2102,52 +2123,7 @@ main{max-width:100%;margin:0;padding:0}
       {id:'finish-task-list-app',title:'Finish my task list app',priority:'UNSET',due:'2026-10-31',when:'Not set'}
     );
     tasks.find(task=>task.id==='dispose-tires').title='Throw away tires';
-    const pairWith = {
-      'chatgpt-wow-ui':['wow-lock-in'],'wow-lock-in':['chatgpt-wow-ui'],
-      'shorten-activity-feed':['holiday-banners'],'holiday-banners':['shorten-activity-feed'],
-      'credit':['fix-credit','check-bc-response'],'fix-credit':['credit','check-bc-response'],
-      'check-bc-response':['credit','fix-credit'],'grievance':['check-bc-response','credit'],
-      'truck-alcohol':['figure-spray-bottle','truck'],'figure-spray-bottle':['truck','truck-alcohol'],
-      'truck':['figure-spray-bottle','truck-alcohol'],'truck-brakes':['spare-tire','oil','dispose-tires'],
-      'spare-tire':['truck-brakes','oil','dispose-tires'],'oil':['truck-brakes','spare-tire'],
-      'dispose-tires':['spare-tire','truck-brakes'],'move-garage-box':['dispose-tires','truck'],
-      'find-mustache-comb':['move-cologne','groom'],'move-cologne':['find-mustache-comb','groom'],
-      'groom':['find-mustache-comb','move-cologne'],
-      'mustache-wax':['groom','find-mustache-comb'],
-      'buy-tongs':['groceries','meal'],'groceries':['buy-tongs','meal'],'meal':['dishes','mango-sticky-rice'],
-      'mango-sticky-rice':['meal','dishes'],'dishes':['meal','mango-sticky-rice'],'bottle':['meal','dishes'],
-      'laundry':['vacuum','sheets','clean-desk'],'vacuum':['laundry','clean-desk','trash'],
-      'clean-desk':['vacuum','laundry','trash'],'sheets':['laundry','vacuum'],'trash':['vacuum','clean-desk'],
-      'guild':['ranks','guild-role'],'guild-role':['ranks','guild'],'ranks':['guild-role','guild'],
-      'wow-chores':['ntel-bench','raid-plan-options'],'ntel-bench':['wow-chores','guild-role'],
-      'admin-permission-alert':['forever-role-removals','guild-application-instructions'],
-      'raidbots-raider-access':['wow-chores','guild-role'],'forever-role-removals':['admin-permission-alert','forever-wow-cosmetic-role'],
-      'forever-wow-cosmetic-role':['forever-role-removals','guild-application-instructions'],
-      'guild-application-instructions':['guild-role','ranks'],'raid-plan-options':['wow-chores','guild'],
-      'activity-feed':['bot-channel','music'],'bot-channel':['activity-feed','panels'],
-      'music':['fine-tune-music-panel','panels','favorite-music-playlist'],
-      'fine-tune-music-panel':['music','panels','favorite-music-playlist'],
-      'panels':['music','fine-tune-music-panel','bot-channel'],
-      'favorite-music-playlist':['music','fine-tune-music-panel']
-    };
-    // Review useful task links before displaying the list. Daily routines only link within the same day.
-    pairWith['hair-serum']=['supplements'];
-    pairWith['hair-serum-2pm']=[];
-    pairWith['groom'].push('teeth-whitening');
-    pairWith['teeth-whitening']=['groom','meditate'];
-    pairWith['meditate']=['teeth-whitening'];
-    pairWith['supplements']=['hair-serum','meal'];
-    pairWith['meal'].push('supplements');
-    pairWith['truck'].push('trash','remote-start-climate');
-    pairWith['trash'].push('truck');
-    pairWith['remote-start-climate']=['truck'];
-    pairWith['move-charter-botghost']=['botghost-role-commands','charter-icons-ai'];
-    pairWith['holiday-banners'].push('finish-holiday-changer');
-    pairWith['finish-holiday-changer']=['holiday-banners'];
-    pairWith['work-shoes-20261030']=['set-up-piano'];
-    pairWith['set-up-piano']=['work-shoes-20261030'];
-    const wowGroup=['chatgpt-wow-ui','charter-icons-ai','wow-chores','in-game-chores','hallows-end-event'];
-    wowGroup.forEach(id=>pairWith[id]=[...new Set([...(pairWith[id]||[]),...wowGroup.filter(other=>other!==id)])]);
+    const pairWith = {}; // Links are chosen manually in the task editor.
     const linkedIds=task=>[...new Set([...(pairWith[task.id]||[]),...Object.keys(pairWith).filter(id=>pairWith[id].includes(task.id))])];
     const localDate = () => new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     let today = localDate();
@@ -2701,15 +2677,9 @@ main{max-width:100%;margin:0;padding:0}
       return result;
     };
     const el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;};
-    const pairNote=(task,date=today)=>{
-      const sameDay=onDate(date),nextDay=isDaily(task)?[]:onDate(addDays(date,1));
-      const peers=linkedIds(task).flatMap(id=>{
-        const sameDayPeer=sameDay.find(item=>item.task.id===id&&!isDone(item.task,item.stateDate,draft));
-        if(sameDayPeer)return [{item:sameDayPeer,tomorrow:false}];
-        const tomorrowPeer=nextDay.find(item=>item.task.id===id&&!isDaily(item.task)&&!isDone(item.task,item.stateDate,draft));
-        return tomorrowPeer?[{item:tomorrowPeer,tomorrow:true}]:[];
-      });
-      return peers.length?el('span','tm-pair-note','🔗 '+peers.map(peer=>(peer.tomorrow?'tomorrow: ':'')+peer.item.task.title).join(', ')):null;
+    const pairNote=task=>{
+      const peers=linkedIds(task).map(id=>tasks.find(candidate=>candidate.id===id)).filter(Boolean);
+      return peers.length?el('span','tm-pair-note','🔗 '+peers.map(peer=>peer.title).join(', ')):null;
     };
     const linkedInProgress=(task,date)=>{
       if(!inProgress)return false;
@@ -2726,7 +2696,6 @@ main{max-width:100%;margin:0;padding:0}
       task.recurrence?'🔁 '+task.recurrence:null,
       task.place,task.device
     ].filter(Boolean).join(' · ');
-    const helpNote=task=>task.aiHelp?'✦ '+task.aiHelp:null;
     const originNote=item=>{
       if(!item.carried || isDone(item.task,item.stateDate,draft))return null;
       const target=movedTo[occurrenceId(item.task,item.stateDate)];
@@ -2747,15 +2716,40 @@ main{max-width:100%;margin:0;padding:0}
       });
       return button;
     };
-    const updateDraftStatus=()=>{
-      const keys=new Set([...Object.keys(saved),...Object.keys(draft)]);
-      const changed=[...keys].filter(k=>Boolean(saved[k])!==Boolean(draft[k])).length;
-      find('pt-save').disabled=!changed;
-      find('pt-save').textContent=changed?'Save Completed ('+changed+')':'Save Completed';
-      if(changed)find('pt-status').textContent='Unsaved changes';
+    const openChecklists=new Set();
+    const completedItems=()=>{
+      const items=new Map();
+      Object.keys(saved).filter(key=>saved[key]).forEach(key=>{
+        const [id,date]=key.split(':');
+        const task=tasks.find(candidate=>candidate.id===id);
+        if(!task || task.retired || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !isDone(task,date,saved))return;
+        if(!window.TaskListBridge.contextMatches(task))return;
+        const item=instance(task,today,date,date<today,Boolean(movedTo[occurrenceId(task,date)]));
+        items.set(progressKey(task,date),item);
+      });
+      return Array.from(items.values()).sort((a,b)=>b.stateDate.localeCompare(a.stateDate)||a.task.title.localeCompare(b.task.title));
+    };
+    const saveCompletion=(task,date)=>{
+      const previousSaved=saved,previousRollover={...rolloverCompletedOn},previousActive=inProgress;
+      const id=occurrenceId(task,date);
+      if(isDone(task,date,draft) && date!==today)rolloverCompletedOn[id]=today;
+      else if(!isDone(task,date,draft))delete rolloverCompletedOn[id];
+      saved={...draft};
+      if(inProgressIsDone(saved))inProgress=null;
+      try{
+        if(!storageAvailable)throw new Error('Storage unavailable');
+        localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,updatedAt:new Date().toISOString()}));
+        find('pt-status').textContent='';
+      }catch(error){
+        saved=previousSaved;draft={...saved};rolloverCompletedOn=previousRollover;inProgress=previousActive;
+        find('pt-status').textContent='Couldn’t save this change. Please try again.';
+      }
+      renderToday();renderFuture();window.TaskListBridge.queueSnapshot();
     };
     const checklistDetails=(task,date,parentInput,parentTitle,completed=false)=>{
       const details=el('details','tm-children');
+      const checklistKey=progressKey(task,date);details.open=openChecklists.has(checklistKey);
+      details.addEventListener('toggle',()=>{if(!details.isConnected)return;if(details.open)openChecklists.add(checklistKey);else openChecklists.delete(checklistKey);});
       details.open=false;
       const summary=el('summary','cursor-interaction');
       const count=subtaskCount(task,date),unit=task.children?'subtasks':'steps';
@@ -2772,7 +2766,7 @@ main{max-width:100%;margin:0;padding:0}
         const childItem=el('div','tm-task-item tm-child-item');
         const childLabel=el('label','form-check');
         const checkbox=el('input','form-check-input');checkbox.type='checkbox';checkbox.checked=Boolean(draft[key]);
-        checkbox.addEventListener('change',()=>{draft[key]=checkbox.checked;updateCount();updateDraftStatus();});
+        checkbox.addEventListener('change',()=>{draft[key]=checkbox.checked;saveCompletion(task,date);});
         const childText=el('span','form-check-label');
         const childTitle=el('span',undefined,name);
         const childActive=inProgress===key;
@@ -2824,11 +2818,11 @@ main{max-width:100%;margin:0;padding:0}
       if(active)titleMain.append(el('span','tm-in-progress-badge','🟢 IN PROGRESS'));
       titleLine.append(titleMain);
       text.append(titleLine,el('span','tm-meta',meta(task,number)));
-      if(task.instruction)text.append(el('span','tm-ai-note',task.instruction));
+      if(task.instruction)text.append(el('span','tm-task-note',task.instruction));
       const origin=originNote(item);if(origin)text.append(el('span','tm-meta tm-overdue',origin));
-      if(task.aiHelp)text.append(el('span','tm-ai-note',helpNote(task)));
       if(!completed){const pairing=pairNote(task,item.date);if(pairing)text.append(pairing);}
       if(task.notes)text.setAttribute('data-tooltip',task.notes);
+      if(completed)text.append(el('span','tm-meta tm-completion-date',labelDate(stateDate,true)));
       if(input.checked && !completed) title.classList.add('tm-staged');
       label.append(input,text);
       const controls=el('div','tm-item-actions');
@@ -2841,11 +2835,11 @@ main{max-width:100%;margin:0;padding:0}
         input.title='Complete or reopen this task and its entire checklist';
         input.addEventListener('change',()=>{
           for(let index=0;index<count;index++)draft[childKey(task,stateDate,index)]=input.checked;
-          renderToday();renderFuture();
+          saveCompletion(task,stateDate);
         });
         wrapper.append(checklistDetails(task,stateDate,input,title,completed));
       } else {
-        input.addEventListener('change',()=>{draft[occurrenceKey(task,stateDate)]=input.checked;title.classList.toggle('tm-staged',input.checked&&!completed);updateDraftStatus();});
+        input.addEventListener('change',()=>{draft[occurrenceKey(task,stateDate)]=input.checked;saveCompletion(task,stateDate);});
       }
       window.TaskListBridge.decorateRow(wrapper,task,item,completed);
       return wrapper;
@@ -2888,9 +2882,12 @@ main{max-width:100%;margin:0;padding:0}
         const details=el('details');details.append(el('summary','cursor-interaction','Overdue: '+old.length+' · separate from today’s total'));
         old.forEach((i,index)=>{details.append(el('div','text-small text-muted',labelDate(i.stateDate)));details.append(row(i,false,index+1));});overdueBox.append(details);
       }
-      find('pt-completed-summary').textContent='Completed today: '+(savedDone.length?savedDone.map(i=>i.task.title).join('; '):'none');
-      find('pt-completed-list').replaceChildren(...savedDone.map(i=>row(i,true,completedNumbers.get(progressKey(i.task,i.stateDate)))));
-      updateDraftStatus();
+      const hiddenItems=completedItems();
+      const toggle=find('pt-toggle-hidden'),expanded=!find('pt-completed').hidden;
+      toggle.textContent=(expanded?'Hide completed':'Show hidden')+' ('+hiddenItems.length+')';
+      toggle.setAttribute('aria-expanded',String(expanded));
+      find('pt-completed-list').replaceChildren(...hiddenItems.map((i,index)=>row(i,true,index+1)));
+
     };
     const renderFuture=()=>{
       const container=find('pt-future-list');container.replaceChildren();
@@ -2919,9 +2916,8 @@ main{max-width:100%;margin:0;padding:0}
             if(active)titleMain.append(el('span','tm-in-progress-badge','🟢 IN PROGRESS'));
             titleLine.append(titleMain);
             content.append(titleLine,el('span','tm-meta',meta(i.task,taskNumbers.get(progressKey(i.task,i.stateDate)))));
-            if(i.task.instruction)content.append(el('span','tm-ai-note',i.task.instruction));
+            if(i.task.instruction)content.append(el('span','tm-task-note',i.task.instruction));
             const origin=originNote(i);if(origin)content.append(el('span','tm-meta tm-overdue',origin));
-            if(i.task.aiHelp)content.append(el('span','tm-ai-note',helpNote(i.task)));
             const pairing=pairNote(i.task,date);if(pairing)content.append(pairing);
             if(i.task.notes)content.setAttribute('data-tooltip',i.task.notes);
             const futureControls=el('div','tm-item-actions');
@@ -2937,19 +2933,8 @@ main{max-width:100%;margin:0;padding:0}
       }
       if(!container.children.length)container.append(el('p',undefined,'No upcoming tasks in the next two weeks.'));
     };
-    find('pt-save').addEventListener('click',()=>{
-      const todayItems=dueToday();
-      todayItems.filter(i=>i.stateDate!==today).forEach(i=>{
-        const id=occurrenceId(i.task,i.stateDate);
-        if(isDone(i.task,i.stateDate,draft))rolloverCompletedOn[id]=today;
-        else if(rolloverCompletedOn[id]===today)delete rolloverCompletedOn[id];
-      });
-      saved={...draft};
-      if(inProgressIsDone(saved))inProgress=null;
-      let persisted=false;
-      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,updatedAt:new Date().toISOString()}));persisted=true;}catch(error){storageAvailable=false;}
-      renderToday();renderFuture();
-      find('pt-status').textContent=persisted?'Saved locally · chat not synced':'Saved in this open view · chat not synced';
+    find('pt-toggle-hidden').addEventListener('click',()=>{
+      find('pt-completed').hidden=!find('pt-completed').hidden;renderToday();
     });
     const showView=view=>{
       const todayView=view==='today';
@@ -2962,63 +2947,6 @@ main{max-width:100%;margin:0;padding:0}
     };
     find('pt-today-tab').addEventListener('click',()=>showView('today'));
     find('pt-upcoming-tab').addEventListener('click',()=>showView('upcoming'));
-    const buildProgressText=(full=false)=>{
-      const updates=[];
-      const keys=full?Object.keys(saved):[...new Set([...Object.keys(saved),...Object.keys(explicitUpdates)])]
-        .filter(key=>Boolean(saved[key])!==Boolean(explicitUpdates[key]));
-      for(const key of keys){
-        const parts=key.split(':'),task=tasks.find(t=>t.id===parts[0]);if(!task)continue;
-        let title=task.title;
-        if(parts[2]==='child'){
-          const visibleIndex=childIndexesForDate(task,parts[1]).indexOf(Number(parts[3]));if(visibleIndex<0)continue;
-          title+=' > '+childNamesForDate(task,parts[1])[visibleIndex];
-        } else if(parts[2]==='step'){
-          const name=stepsFor(task,parts[1])[Number(parts[3])];if(!name)continue;
-          title+=' > '+name;
-        } else if(parts[2]==='retired'){
-          title+=' > '+parts.slice(3).join(':');
-        }
-        updates.push(parts[1]+' | '+(saved[key]?'COMPLETE':'PENDING')+' | '+title);
-      }
-      if(full || inProgress!==chatSnapshotActive){
-        if(inProgress){
-          const parts=inProgress.split(':'),title=progressTitle(inProgress);
-          if(title)updates.push(parts[1]+' | IN PROGRESS | '+title);
-        } else updates.push(today+' | IN PROGRESS | NONE');
-      }
-      Object.entries(movedTo).forEach(([id,target])=>{
-        if(!full && chatSnapshotMoves[id]===target)return;
-        const parsed=occurrenceFromId(id);if(!parsed)return;
-        const [taskId,sourceDate]=parsed,task=tasks.find(t=>t.id===taskId);
-        if(task)updates.push(sourceDate+' | MOVED TO | '+target+' | '+task.title);
-      });
-      if(!full && !updates.length)return null;
-      return ['Saved task '+(full?'states':'updates')+' as of '+today+' (America/New_York):',...updates,
-        'Apply only these saved updates. Preserve all other tasks, history, and schedules. IN PROGRESS | NONE clears the active marker. Return my full updated Today list.'
-      ].join('\n');
-    };
-    const copyProgress=async(full=false)=>{
-      const text=buildProgressText(full);
-      if(!text){
-        find('pt-copy-box').hidden=true;find('pt-copy-text').value='';
-        const unsaved=[...new Set([...Object.keys(saved),...Object.keys(draft)])]
-          .some(key=>Boolean(saved[key])!==Boolean(draft[key]));
-        find('pt-status').textContent=unsaved?'Save Completed first, then copy progress':'No new saved changes to copy';
-        return;
-      }
-      try{
-        if(!navigator.clipboard)throw new Error('Clipboard unavailable');
-        await navigator.clipboard.writeText(text);
-        find('pt-copy-box').hidden=true;
-        find('pt-status').textContent=full?'Full history copied · paste to sync or keep as a backup':'New changes copied · paste into this chat to sync';
-      } catch(error){
-        find('pt-copy-box').hidden=false;find('pt-copy-text').value=text;
-        find('pt-copy-text').focus();find('pt-copy-text').select();
-        find('pt-status').textContent=full?'Select and copy the full history below':'Select and copy the new changes below';
-      }
-    };
-    find('pt-copy').addEventListener('click',()=>copyProgress(false));
-    find('pt-copy-full').addEventListener('click',()=>copyProgress(true));
     window.TaskListBridge.attach({
       root,tasks,pairWith,children,groups,today,addDays,progressKey,occurrenceKey,childKey,
       subtaskCount,hasSubtasks,dueToday,overdue,onDate,isDone,isRecurring,renderToday,renderFuture,
@@ -3034,9 +2962,39 @@ main{max-width:100%;margin:0;padding:0}
       }
     });
     renderToday();renderFuture();
-    if(Object.keys(saved).some(k=>saved[k]))find('pt-status').textContent='Local progress restored · chat not synced';
   })();
   </script>
 </div>
 
-</main></body></html>
+</main><style id="task-phone-layout">
+/* Phone layouts: let grid tracks and every flex child shrink to the viewport. */
+html,html>body{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+main,#today-task-list-20261023{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+#today-task-list-20261023 .tm-list,#today-task-list-20261023 .tm-future-card{grid-template-columns:minmax(0,1fr);min-width:0;max-width:100%}
+#today-task-list-20261023 .tm-task-item{min-width:0;max-width:100%;flex-direction:column!important;align-items:stretch!important}
+#today-task-list-20261023 .form-check{width:100%;min-width:0;max-width:100%}
+#today-task-list-20261023 .form-check-label{flex:1 1 0%;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+#today-task-list-20261023 .tm-title-line,#today-task-list-20261023 .tm-title-main,#today-task-list-20261023 .tm-future-content{min-width:0;max-width:100%;overflow-wrap:anywhere}
+#today-task-list-20261023 .tm-title,#today-task-list-20261023 .tm-meta,#today-task-list-20261023 .tm-task-note{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+#today-task-list-20261023 .tm-task-note{display:block;font-size:12px;color:#a7b6c8}
+#today-task-list-20261023 .tm-item-actions,#today-task-list-20261023 .tm-future .tm-item-actions{flex-wrap:wrap!important;min-width:0;max-width:100%;margin-left:0!important;align-self:flex-start!important}
+#today-task-list-20261023 .tm-item-actions{padding-left:25px;box-sizing:border-box}
+#today-task-list-20261023 .tm-future .tm-item-actions{padding-left:0}
+#today-task-list-20261023 .tm-children{min-width:0;max-width:100%;box-sizing:border-box}
+#today-task-list-20261023 .tm-current-banner{flex-wrap:wrap;min-width:0;max-width:100%}
+#today-task-list-20261023 .tl-edit-button{font-family:system-ui,sans-serif;font-size:17px;line-height:1;min-width:32px;min-height:30px}
+#today-task-list-20261023 .tl-show-hidden{margin:14px 0 8px;white-space:normal}
+#pt-status:empty{display:none}
+.tl-dialog,.tl-dialog *{box-sizing:border-box}
+.tl-dialog{min-width:0;width:460px;max-width:calc(100vw - 24px);overflow-x:hidden}
+.tl-dialog form,.tl-dialog fieldset,.tl-dialog .tl-field{min-width:0;max-width:100%}
+.tl-dialog input,.tl-dialog textarea,.tl-dialog select{min-width:0;max-width:100%;box-sizing:border-box}
+.tl-dialog .tl-context-choice{overflow-wrap:anywhere}
+.tl-dialog .tl-context-choice input{flex-shrink:0}
+.tl-link-picker{display:flex;gap:8px;min-width:0;align-items:center}
+.tl-link-picker select{flex:1;width:0;text-overflow:ellipsis}
+.tl-link-picker .btn{flex:none;white-space:normal}
+.tl-linked-task{display:flex;min-width:0;align-items:center;gap:8px;margin-top:8px}
+.tl-linked-task>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.tl-linked-task .tl-unlink{flex:none;min-width:32px}
+</style></body></html>
