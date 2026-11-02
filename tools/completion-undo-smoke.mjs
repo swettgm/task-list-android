@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { serveFixture } from './browser-fixture-server.mjs';
 
 const documentPath = path.resolve(process.argv[2] || 'app/src/main/assets/www/index.html');
 const seedPath = path.resolve(process.argv[3] || path.join(path.dirname(documentPath), 'initial-state.json'));
@@ -11,6 +11,7 @@ const seed = JSON.parse(await readFile(seedPath, 'utf8'));
 const output = path.resolve(process.env.TASK_SCREENSHOT_DIR || 'build/browser-qa');
 await mkdir(output, { recursive: true });
 const executablePath = process.env.CHROME_BIN || ['/usr/bin/google-chrome', '/usr/bin/chromium', '/opt/google/chrome/chrome'].find(existsSync);
+const fixture=await serveFixture(documentPath);
 const browser = await chromium.launch({ headless: true, executablePath, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
 const checks = [], errors = [];
@@ -48,7 +49,7 @@ async function showCompleted() {
 }
 
 try {
-  await page.goto(pathToFileURL(documentPath).href);
+  await page.goto(fixture.url);
   await page.waitForFunction(() => !!window.TaskListApp && window.__undoNative.snapshot.length > 0);
   const dates = await page.evaluate(() => {
     const today = TaskListApp.debugSummary().today;
@@ -146,8 +147,13 @@ try {
   check(await row(ids.overdue).isVisible() && !await row(ids.overdue, '#pt-completed-list').isVisible(), 'Reopening a highlighted row restores it to pending work');
   await reload();
   check((await state()).completed[keys.overdue] === false && !(await state()).completedOn?.[keys.overdue], 'History undo remains cleared after reload');
+  await page.evaluate(today=>{const s=__undoNative.getState();s.customTasks.push({id:'recent-alpha',title:'Alpha completed first',due:today,priority:'HIGH',labels:['Undo QA']},{id:'recent-zulu',title:'Zulu completed second',due:today,priority:'LOW',labels:['Undo QA']});__undoNative.setState(s);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('Undo QA');},dates.today);
+  await checkbox('recent-alpha').check();await checkbox('recent-zulu').check();await page.waitForTimeout(2200);await showCompleted();
+  check(await page.locator('#pt-completed-list>.tm-task-item').first().getAttribute('data-task-id')==='recent-zulu','Completed tasks are newest first regardless of title or priority');let orderState=await state();check(orderState.completedAt['recent-zulu:'+dates.today]>orderState.completedAt['recent-alpha:'+dates.today],'Each completion records an ordered timestamp');
+  await reload();await showCompleted();check(await page.locator('#pt-completed-list>.tm-task-item').first().getAttribute('data-task-id')==='recent-zulu','Newest-first order survives a full reload');
+  await checkbox('recent-alpha','#pt-completed-list').uncheck();check(!(await state()).completedAt?.['recent-alpha:'+dates.today],'Undo removes the completion timestamp');await checkbox('recent-alpha').check();await page.waitForTimeout(2200);await showCompleted();check(await page.locator('#pt-completed-list>.tm-task-item').first().getAttribute('data-task-id')==='recent-alpha','Completing a reopened task moves it back to the top');
   check(errors.length === 0, 'No browser errors occurred during pointer undo or history highlighting');
   console.log(JSON.stringify({ passed:checks.length, checks }, null, 2));
 } finally {
-  await browser.close();
+  await browser.close();await fixture.close();
 }

@@ -2863,6 +2863,7 @@ main{max-width:100%;margin:0;padding:0}
     let movedTo = {};
     let rolloverCompletedOn = {};
     let completedOn = {};
+    let completedAt = {};
     let storageAvailable = false;
     let storedVersion = 0;
     try {
@@ -2874,6 +2875,7 @@ main{max-width:100%;margin:0;padding:0}
       if(typeof value.movedTo==='object' && value.movedTo) movedTo={...value.movedTo};
       if(typeof value.rolloverCompletedOn==='object' && value.rolloverCompletedOn) rolloverCompletedOn={...value.rolloverCompletedOn};
       if(value.completedOn&&typeof value.completedOn==='object'&&!Array.isArray(value.completedOn))completedOn={...value.completedOn};
+      if(value.completedAt&&typeof value.completedAt==='object'&&!Array.isArray(value.completedAt))completedAt={...value.completedAt};
       if(typeof value.inProgress==='string') inProgress=value.inProgress;
       if(value.progressStateInitialized===true) progressStateInitialized=true;
       localStorage.setItem(storageKey + '-probe','1');
@@ -2897,7 +2899,7 @@ main{max-width:100%;margin:0;padding:0}
           delete saved[key];
         });
       });
-      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
+      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
     }
     // Apply the latest chat-saved states by occurrence while retaining all unlisted data.
     const explicitUpdates = {
@@ -3229,7 +3231,7 @@ main{max-width:100%;margin:0;padding:0}
     if(storedVersion<2026103017)Object.assign(saved,october31GroomingSupplementalUpdates,october31LatestUpdates);
     if(storedVersion<2026103018)Object.assign(saved,october31DailyUpdates);
     if(inProgress==='laundry:2026-10-25')inProgress=null;
-    if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
+    if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
     let draft = {...saved};
     const allChildren = (task,date,state) => Array.from({length:subtaskCount(task,date)},(_,i)=>Boolean(state[childKey(task,date,i)])).every(Boolean);
     const isDone = (task,date,state=saved) => hasSubtasks(task,date) ? allChildren(task,date,state) : Boolean(state[occurrenceKey(task,date)]);
@@ -3251,7 +3253,7 @@ main{max-width:100%;margin:0;padding:0}
       return task.title;
     };
     const saveLocalState=()=>{
-      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));return true;}catch(error){storageAvailable=false;}
+      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));return true;}catch(error){storageAvailable=false;}
       return false;
     };
     const progressButton=(key,title,completed=false)=>{
@@ -3432,31 +3434,37 @@ main{max-width:100%;margin:0;padding:0}
       }));
       return Array.from(result.values());
     };
+    const completionTime=(task,date)=>{
+      const values=[completedAt[progressKey(task,date)]];
+      if(hasSubtasks(task,date))for(let index=0;index<subtaskCount(task,date);index++)values.push(completedAt[childKey(task,date,index)]);
+      return values.reduce((latest,value)=>Number.isSafeInteger(value)&&value>latest?value:latest,0);
+    };
     const completedItems=()=>{
-      const items=new Map();
+      const items=new Map(),legacyOrder=new Map();let completionIndex=0;
       Object.keys(saved).filter(key=>saved[key]).forEach(key=>{
         const [id,date]=key.split(':');
         const task=tasks.find(candidate=>candidate.id===id);
         if(!task || task.retired || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !isDone(task,date,saved) || isCompleting(task,date))return;
         if(!window.TaskListBridge.contextMatches(task))return;
         const item=instance(task,today,date,date<today,Boolean(movedTo[occurrenceId(task,date)]));
-        items.set(progressKey(task,date),item);
+        items.set(progressKey(task,date),item);legacyOrder.set(progressKey(task,date),completionIndex++);
       });
-      return Array.from(items.values()).sort((a,b)=>Number(completionDate(b.task,b.stateDate)===today)-Number(completionDate(a.task,a.stateDate)===today)||completionDate(b.task,b.stateDate).localeCompare(completionDate(a.task,a.stateDate))||b.stateDate.localeCompare(a.stateDate)||a.task.title.localeCompare(b.task.title));
+      return Array.from(items.values()).sort((a,b)=>Number(completionDate(b.task,b.stateDate)===today)-Number(completionDate(a.task,a.stateDate)===today)||completionDate(b.task,b.stateDate).localeCompare(completionDate(a.task,a.stateDate))||completionTime(b.task,b.stateDate)-completionTime(a.task,a.stateDate)||(legacyOrder.get(progressKey(b.task,b.stateDate))||0)-(legacyOrder.get(progressKey(a.task,a.stateDate))||0)||b.stateDate.localeCompare(a.stateDate)||a.task.title.localeCompare(b.task.title));
     };
     const saveCompletion=(task,date)=>{
-      const previousSaved=saved,previousRollover={...rolloverCompletedOn},previousDates={...completedOn},previousActive=inProgress;
+      const previousSaved=saved,previousRollover={...rolloverCompletedOn},previousDates={...completedOn},previousTimes={...completedAt},previousActive=inProgress;
+      const finishedAt=Object.values(completedAt).reduce((latest,value)=>Number.isSafeInteger(value)&&value>=latest?value+1:latest,Date.now());
       const key=progressKey(task,date),wasDone=isDone(task,date,saved);
       const matches=item=>item.task.id===task.id&&item.stateDate===date;
       const presentation={today:dueToday().filter(matches),overdue:overdue().filter(matches),future:[]};
       if(!wasDone&&isDone(task,date,draft))for(let day=1;day<=14;day++)presentation.future.push(...onDate(addDays(today,day)).filter(matches));
       const keys=hasSubtasks(task,date)?Array.from({length:subtaskCount(task,date)},(_,i)=>childKey(task,date,i)):[occurrenceKey(task,date)];
       keys.forEach(key=>{
-        if(draft[key]&&!previousSaved[key])completedOn[key]=today;
-        else if(!draft[key]&&previousSaved[key])delete completedOn[key];
+        if(draft[key]&&!previousSaved[key]){completedOn[key]=today;completedAt[key]=finishedAt;}
+        else if(!draft[key]&&previousSaved[key]){delete completedOn[key];delete completedAt[key];}
       });
-      if(!wasDone&&isDone(task,date,draft))completedOn[key]=today;
-      else if(!isDone(task,date,draft))delete completedOn[key];
+      if(!wasDone&&isDone(task,date,draft)){completedOn[key]=today;completedAt[key]=finishedAt;}
+      else if(!isDone(task,date,draft)){delete completedOn[key];delete completedAt[key];}
       const id=occurrenceId(task,date);
       if(isDone(task,date,draft) && date!==today)rolloverCompletedOn[id]=today;
       else if(!isDone(task,date,draft))delete rolloverCompletedOn[id];
@@ -3464,7 +3472,7 @@ main{max-width:100%;margin:0;padding:0}
       if(inProgressIsDone(saved))inProgress=null;
       try{
         if(!storageAvailable)throw new Error('Storage unavailable');
-        localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));
+        localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));
         find('pt-status').textContent='';
         if(completing.has(key)){clearTimeout(completing.get(key).timer);completing.delete(key);}
         if(!wasDone&&isDone(task,date,saved)){
@@ -3474,7 +3482,7 @@ main{max-width:100%;margin:0;padding:0}
           completing.set(key,entry);
         }
       }catch(error){
-        saved=previousSaved;draft={...saved};rolloverCompletedOn=previousRollover;completedOn=previousDates;inProgress=previousActive;
+        saved=previousSaved;draft={...saved};rolloverCompletedOn=previousRollover;completedOn=previousDates;completedAt=previousTimes;inProgress=previousActive;
         find('pt-status').textContent='Couldn’t save this change. Please try again.';
       }
       renderToday();renderFuture();window.TaskListBridge.queueSnapshot();
@@ -3747,12 +3755,12 @@ main{max-width:100%;margin:0;padding:0}
     window.TaskListBridge.attach({
       root,tasks,pairWith,children,groups,today,addDays,progressKey,occurrenceKey,childKey,showView,isInteracting:()=>taskPointers.size>0,
       subtaskCount,hasSubtasks,checklistEntries,dueToday,overdue,onDate,isDone,isRecurring,renderToday,renderFuture,
-      getState:()=>({version:2026103022,completed:{...saved},inProgress,progressStateInitialized,movedTo:{...movedTo},rolloverCompletedOn:{...rolloverCompletedOn},completedOn:{...completedOn},updatedAt:new Date().toISOString()}),
+      getState:()=>({version:2026103022,completed:{...saved},inProgress,progressStateInitialized,movedTo:{...movedTo},rolloverCompletedOn:{...rolloverCompletedOn},completedOn:{...completedOn},completedAt:{...completedAt},updatedAt:new Date().toISOString()}),
       setState:state=>{
         saved={...(state.completed||{})};draft={...saved};
         inProgress=typeof state.inProgress==='string'?state.inProgress:null;
         progressStateInitialized=state.progressStateInitialized===true;
-        movedTo={...(state.movedTo||{})};rolloverCompletedOn={...(state.rolloverCompletedOn||{})};completedOn={...(state.completedOn||{})};
+        movedTo={...(state.movedTo||{})};rolloverCompletedOn={...(state.rolloverCompletedOn||{})};completedOn={...(state.completedOn||{})};completedAt={...(state.completedAt||{})};
       },
       moveOccurrence:(task,date,target)=>{
         const key=occurrenceId(task,date);movedTo[key]=target;delete rolloverCompletedOn[key];saveLocalState();

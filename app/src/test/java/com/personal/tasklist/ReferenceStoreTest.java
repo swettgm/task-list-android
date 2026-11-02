@@ -497,6 +497,9 @@ public class ReferenceStoreTest {
             .put("priority", "UNSET").put("minutes", 0).put("completionKeys", new JSONArray(Arrays.asList(completionKeys)))
             .put("progressKey", progress).put("stateDate", stateDate).put("onToday", onToday);
     }
+    @Test public void widgetCompletionRecordsStrictRecencyWithoutRefreshingDuplicateTaps() throws Exception {
+        String day=today(),a=reference.addCustomTask("Alpha",Collections.emptyList(),"HIGH",false),b=reference.addCustomTask("Zulu",Collections.emptyList(),"LOW",false);reference.completeTask("html:"+a+":"+day);long first=new JSONObject(reference.readState()).getJSONObject("completedAt").getLong(a+":"+day);reference.completeTask("html:"+b+":"+day);JSONObject times=new JSONObject(reference.readState()).getJSONObject("completedAt");assertTrue(times.getLong(b+":"+day)>first);reference.completeTask("html:"+a+":"+day);assertEquals(first,new JSONObject(reference.readState()).getJSONObject("completedAt").getLong(a+":"+day));assertEquals(day,new JSONObject(reference.readState()).getJSONObject("completedOn").getString(a+":"+day));
+    }
     private static String today() { return LocalDate.now(ZoneId.of("America/New_York")).toString(); }
     private SharedPreferences preferences() { return context.getSharedPreferences("reference_state", Context.MODE_PRIVATE); }
     private SharedPreferences taskPreferences() { return context.getSharedPreferences("tasks", Context.MODE_PRIVATE); }

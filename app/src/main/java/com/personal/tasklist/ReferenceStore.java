@@ -148,6 +148,9 @@ public final class ReferenceStore {
                 JSONObject current = state();
                 JSONObject completed = current.has("completed") ? objectField(current, "completed") : new JSONObject();
                 JSONObject completedOn = current.has("completedOn") ? objectField(current, "completedOn") : new JSONObject();
+                JSONObject completedAt = current.has("completedAt") ? objectField(current, "completedAt") : new JSONObject();
+                long finishedAt=System.currentTimeMillis();for(java.util.Iterator<String> it=completedAt.keys();it.hasNext();){Object value=completedAt.opt(it.next());if(value instanceof Number){long previous=((Number)value).longValue();if(previous>=finishedAt&&previous<Long.MAX_VALUE)finishedAt=previous+1;}}
+
                 JSONObject rollover = current.has("rolloverCompletedOn") ? objectField(current, "rolloverCompletedOn") : new JSONObject();
                 Object rawActive = current.opt("inProgress");
                 if (rawActive != null && rawActive != JSONObject.NULL && !(rawActive instanceof String))
@@ -163,13 +166,14 @@ public final class ReferenceStore {
                     String key = keys.getString(i);
                     if (!Boolean.TRUE.equals(completed.opt(key))) {
                         completed.put(key, true);
-                        completedOn.put(key, today);
+                        completedOn.put(key, today);completedAt.put(key,finishedAt);
                         changed = true; becameComplete = true;
                     }
                     if (matches(active, key)) clearActive = true;
                 }
                 if (becameComplete) {
-                    completedOn.put(progress, today);
+                    completedOn.put(progress, today);completedAt.put(progress,finishedAt);
+                    current.put("completedAt",completedAt);
                     current.put("completedOn", completedOn);
                 }
                 if (clearActive) { current.put("inProgress", JSONObject.NULL); changed = true; }
