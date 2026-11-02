@@ -76,6 +76,7 @@ jobs:
           node tools/tasks-v7-smoke.mjs
           node tools/theme-smoke.mjs
           node tools/row-layout-smoke.mjs
+          node tools/checklist-edit-smoke.mjs
 
       - name: Verify APK signature and record checksum
         shell: bash

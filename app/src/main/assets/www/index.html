@@ -2202,9 +2202,11 @@ main{max-width:100%;margin:0;padding:0}
     const extra = node('section', 'tl-extra-fields');
     const extraGrid = node('div', 'tl-notes-grid'); extra.append(extraGrid); form.append(extra);
     const notes = inputField(extraGrid, 'Notes', 'textarea', original.notes || ''); notes.placeholder = 'Add notes';
-    const steps = isNew ? inputField(extraGrid, 'Checklist', 'textarea', '') : null;
+    const checklistDate=item?item.stateDate:scope.today;
+    const originalSteps=isNew?[]:scope.checklistEntries(original,checklistDate);
+    const steps = inputField(extraGrid, 'Checklist', 'textarea', originalSteps.map(step=>step.title).join('\n'));
     if (steps) steps.placeholder = 'One step per line';
-    if (!isNew && scope.hasSubtasks(task)) extraGrid.append(node('p', 'text-muted', 'Check or reopen steps on the task.'));
+
     const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
     const buttons = node('div', 'tl-dialog-actions');
     buttons.append(action('Cancel', close), action('Save task', () => {
@@ -2231,7 +2233,13 @@ main{max-width:100%;margin:0;padding:0}
       }else if(item&&recurrence.value!=='repeat'&&date.value!==initialDate){
         scope.moveOccurrence(task,item.stateDate,date.value);
       }
-      if (steps) { const names = steps.value.split('\n').map(x => x.trim()).filter(Boolean); if (names.length) next.steps = names; }
+      const names=steps.value.split('\n').map(x=>x.trim()).filter(Boolean);
+      if(isNew){if(names.length)next.steps=names;}
+      else if(JSON.stringify(names)!==JSON.stringify(originalSteps.map(step=>step.title))){
+        const used=new Set(),items=names.map(name=>{const index=originalSteps.findIndex((step,i)=>!used.has(i)&&step.title===name);if(index<0)return{title:name,key:null};used.add(index);return{title:name,key:originalSteps[index].key};});
+        items.forEach((step,index)=>{if(step.key)return;const old=originalSteps[index];if(old&&!used.has(index)){used.add(index);step.key=old.key;}else step.key=':step:added-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);});
+        next.checklistRevisions=[...(original.checklistRevisions||[]).filter(revision=>revision.from!==checklistDate),{from:checklistDate,items}].sort((a,b)=>a.from.localeCompare(b.from));
+      }
       if (isNew) scope.tasks.push(next); else scope.tasks[scope.tasks.findIndex(t => t.id === task.id)] = next;
       saveDefinition(next, isNew); saveManualLinks(next.id, readLinks()); close();
     }, 'btn btn-primary'));
@@ -2267,7 +2275,7 @@ main{max-width:100%;margin:0;padding:0}
     const push = (item, onToday) => {
       const key = scope.progressKey(item.task, item.stateDate); if (rows.has(key)) return;
       const done = scope.isDone(item.task, item.stateDate); const task = item.task;
-      const completionKeys = scope.hasSubtasks(task) ? Array.from({ length: scope.subtaskCount(task, item.stateDate) }, (_, i) => scope.childKey(task, item.stateDate, i)) : [scope.occurrenceKey(task, item.stateDate)];
+      const completionKeys = scope.hasSubtasks(task,item.stateDate) ? Array.from({ length: scope.subtaskCount(task, item.stateDate) }, (_, i) => scope.childKey(task, item.stateDate, i)) : [scope.occurrenceKey(task, item.stateDate)];
       rows.set(key, {
         id: 'html:' + key, title: task.title, listName: 'My tasks',
         dueDate: task.due || '', plannedDate: item.date || scope.today,
@@ -2449,9 +2457,11 @@ main{max-width:100%;margin:0;padding:0}
       ? childIndexesBeforeCheck
       : childIndexes;
     const childNamesForDate=(task,date)=>childGroupsForDate(task,date).flatMap(group=>group[1]);
-    const stepsFor = (task,date) => [...((task.previousSteps && date < task.stepsChangedOn) ? task.previousSteps : (task.steps || [])), ...((task.extraStepsByDate && task.extraStepsByDate[date]) || [])];
-    const hasSubtasks = task => Boolean(task.children || (task.steps && task.steps.length) || Object.values(task.extraStepsByDate || {}).some(names=>names.length));
-    const subtaskCount = (task,date) => task.children ? childIndexesForDate(task,date).length : stepsFor(task,date).length;
+    const checklistFor=(task,date)=>{const revisions=(task.checklistRevisions||[]).filter(revision=>revision.from<=date).sort((a,b)=>a.from.localeCompare(b.from));return revisions.length?revisions[revisions.length-1].items:null;};
+    const stepsFor=(task,date)=>{const edited=checklistFor(task,date);return edited?edited.map(step=>step.title):[...((task.previousSteps&&date<task.stepsChangedOn)?task.previousSteps:(task.steps||[])),...((task.extraStepsByDate&&task.extraStepsByDate[date])||[])];};
+    const hasSubtasks=(task,date=today)=>{const edited=checklistFor(task,date);return edited?edited.length>0:Boolean(task.children||stepsFor(task,date).length);};
+    const subtaskCount=(task,date)=>{const edited=checklistFor(task,date);return edited?edited.length:task.children?childIndexesForDate(task,date).length:stepsFor(task,date).length;};
+    const checklistEntries=(task,date)=>{const edited=checklistFor(task,date);if(edited)return edited.map(step=>({...step}));const names=task.children?childNamesForDate(task,date):stepsFor(task,date);return names.map((title,index)=>({title,key:task.children?':child:'+childIndexesForDate(task,date)[index]:':step:'+index}));};
     // If a broad time is given, infer morning=8:00 AM, afternoon=2:00 PM, and night/evening=6:00 PM.
     const tasks = [
       {id:'guild',title:'Weekly Guild Checklist',priority:'MEDIUM',minutes:20,days:[2],recurrence:'Tuesdays',place:'🏠',device:'💻',children:true,childrenChangedOn:'2026-11-03'},
@@ -2570,7 +2580,7 @@ main{max-width:100%;margin:0;padding:0}
     const labelDate = (day,full=false) => new Intl.DateTimeFormat('en-US',{timeZone:'UTC',weekday:full?'long':'short',month:'short',day:'numeric'}).format(dateObject(day));
     const occurrenceKey = (task,date) => task.id + ':' + (task.dates && task.dates.includes(date) ? date : (task.due || date));
     const occurrenceId = (task,date) => task.id + ':' + date;
-    const childKey = (task,date,index) => occurrenceKey(task,date) + (task.children ? ':child:' + childIndexesForDate(task,date)[index] : ':step:' + index);
+    const childKey=(task,date,index)=>occurrenceKey(task,date)+(checklistFor(task,date)?checklistFor(task,date)[index].key:(task.children?':child:'+childIndexesForDate(task,date)[index]:':step:'+index));
     const initialCompleted = {
       'box:2026-10-20':true,
       'hotel:2026-10-20':true,
@@ -3006,7 +3016,7 @@ main{max-width:100%;margin:0;padding:0}
     if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
     let draft = {...saved};
     const allChildren = (task,date,state) => Array.from({length:subtaskCount(task,date)},(_,i)=>Boolean(state[childKey(task,date,i)])).every(Boolean);
-    const isDone = (task,date,state=saved) => hasSubtasks(task) ? allChildren(task,date,state) : Boolean(state[occurrenceKey(task,date)]);
+    const isDone = (task,date,state=saved) => hasSubtasks(task,date) ? allChildren(task,date,state) : Boolean(state[occurrenceKey(task,date)]);
     const progressKey = (task,date) => task.id + ':' + date;
     const progressTitle = key => {
       if(!key)return '';
@@ -3171,7 +3181,7 @@ main{max-width:100%;margin:0;padding:0}
     const completionDate=(task,date)=>{
       const key=progressKey(task,date),stamp=completedOn[key];
       if(typeof stamp==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(stamp))return stamp;
-      if(hasSubtasks(task)){
+      if(hasSubtasks(task,date)){
         const dates=Array.from({length:subtaskCount(task,date)},(_,i)=>completedOn[childKey(task,date,i)])
           .filter(value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)).sort();
         if(dates.length)return dates[dates.length-1];
@@ -3210,7 +3220,7 @@ main{max-width:100%;margin:0;padding:0}
       const matches=item=>item.task.id===task.id&&item.stateDate===date;
       const presentation={today:dueToday().filter(matches),overdue:overdue().filter(matches),future:[]};
       if(!wasDone&&isDone(task,date,draft))for(let day=1;day<=14;day++)presentation.future.push(...onDate(addDays(today,day)).filter(matches));
-      const keys=hasSubtasks(task)?Array.from({length:subtaskCount(task,date)},(_,i)=>childKey(task,date,i)):[occurrenceKey(task,date)];
+      const keys=hasSubtasks(task,date)?Array.from({length:subtaskCount(task,date)},(_,i)=>childKey(task,date,i)):[occurrenceKey(task,date)];
       keys.forEach(key=>{
         if(draft[key]&&!previousSaved[key])completedOn[key]=today;
         else if(!draft[key]&&previousSaved[key])delete completedOn[key];
@@ -3274,7 +3284,7 @@ main{max-width:100%;margin:0;padding:0}
         childList.append(childItem);
       };
       details.append(summary);
-      if(task.children){
+      if(task.children&&!checklistFor(task,date)){
         let index=0;
         childGroupsForDate(task,date).forEach(([category,names])=>{
           details.append(el('div','tm-group text-small',category));
@@ -3330,7 +3340,7 @@ main{max-width:100%;margin:0;padding:0}
       if(titleBadges.childNodes.length)taskDetails.append(titleBadges);
       Array.from(text.children).filter(child=>child!==titleLine).forEach(child=>taskDetails.append(child));
       wrapper.append(label,taskDetails,controls);
-      if(hasSubtasks(task)){
+      if(hasSubtasks(task,stateDate)){
         const count=subtaskCount(task,stateDate),unit=task.children?'subtasks':'steps';
         input.setAttribute('aria-label',task.title+'; toggle completion for the task and all '+count+' '+unit);
         input.title='Complete or reopen this task and its entire checklist';
@@ -3468,7 +3478,7 @@ main{max-width:100%;margin:0;padding:0}
 
     window.TaskListBridge.attach({
       root,tasks,pairWith,children,groups,today,addDays,progressKey,occurrenceKey,childKey,showView,isInteracting:()=>taskPointers.size>0,
-      subtaskCount,hasSubtasks,dueToday,overdue,onDate,isDone,isRecurring,renderToday,renderFuture,
+      subtaskCount,hasSubtasks,checklistEntries,dueToday,overdue,onDate,isDone,isRecurring,renderToday,renderFuture,
       getState:()=>({version:2026103022,completed:{...saved},inProgress,progressStateInitialized,movedTo:{...movedTo},rolloverCompletedOn:{...rolloverCompletedOn},completedOn:{...completedOn},updatedAt:new Date().toISOString()}),
       setState:state=>{
         saved={...(state.completed||{})};draft={...saved};

@@ -294,9 +294,11 @@
     const extra = node('section', 'tl-extra-fields');
     const extraGrid = node('div', 'tl-notes-grid'); extra.append(extraGrid); form.append(extra);
     const notes = inputField(extraGrid, 'Notes', 'textarea', original.notes || ''); notes.placeholder = 'Add notes';
-    const steps = isNew ? inputField(extraGrid, 'Checklist', 'textarea', '') : null;
+    const checklistDate=item?item.stateDate:scope.today;
+    const originalSteps=isNew?[]:scope.checklistEntries(original,checklistDate);
+    const steps = inputField(extraGrid, 'Checklist', 'textarea', originalSteps.map(step=>step.title).join('\n'));
     if (steps) steps.placeholder = 'One step per line';
-    if (!isNew && scope.hasSubtasks(task)) extraGrid.append(node('p', 'text-muted', 'Check or reopen steps on the task.'));
+
     const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
     const buttons = node('div', 'tl-dialog-actions');
     buttons.append(action('Cancel', close), action('Save task', () => {
@@ -323,7 +325,13 @@
       }else if(item&&recurrence.value!=='repeat'&&date.value!==initialDate){
         scope.moveOccurrence(task,item.stateDate,date.value);
       }
-      if (steps) { const names = steps.value.split('\n').map(x => x.trim()).filter(Boolean); if (names.length) next.steps = names; }
+      const names=steps.value.split('\n').map(x=>x.trim()).filter(Boolean);
+      if(isNew){if(names.length)next.steps=names;}
+      else if(JSON.stringify(names)!==JSON.stringify(originalSteps.map(step=>step.title))){
+        const used=new Set(),items=names.map(name=>{const index=originalSteps.findIndex((step,i)=>!used.has(i)&&step.title===name);if(index<0)return{title:name,key:null};used.add(index);return{title:name,key:originalSteps[index].key};});
+        items.forEach((step,index)=>{if(step.key)return;const old=originalSteps[index];if(old&&!used.has(index)){used.add(index);step.key=old.key;}else step.key=':step:added-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);});
+        next.checklistRevisions=[...(original.checklistRevisions||[]).filter(revision=>revision.from!==checklistDate),{from:checklistDate,items}].sort((a,b)=>a.from.localeCompare(b.from));
+      }
       if (isNew) scope.tasks.push(next); else scope.tasks[scope.tasks.findIndex(t => t.id === task.id)] = next;
       saveDefinition(next, isNew); saveManualLinks(next.id, readLinks()); close();
     }, 'btn btn-primary'));
@@ -359,7 +367,7 @@
     const push = (item, onToday) => {
       const key = scope.progressKey(item.task, item.stateDate); if (rows.has(key)) return;
       const done = scope.isDone(item.task, item.stateDate); const task = item.task;
-      const completionKeys = scope.hasSubtasks(task) ? Array.from({ length: scope.subtaskCount(task, item.stateDate) }, (_, i) => scope.childKey(task, item.stateDate, i)) : [scope.occurrenceKey(task, item.stateDate)];
+      const completionKeys = scope.hasSubtasks(task,item.stateDate) ? Array.from({ length: scope.subtaskCount(task, item.stateDate) }, (_, i) => scope.childKey(task, item.stateDate, i)) : [scope.occurrenceKey(task, item.stateDate)];
       rows.set(key, {
         id: 'html:' + key, title: task.title, listName: 'My tasks',
         dueDate: task.due || '', plannedDate: item.date || scope.today,
