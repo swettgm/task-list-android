@@ -1,26 +1,27 @@
-# Validation — Task List Dark 0.5.0
+# Tasks 0.7.0 validation
 
-[GitHub Actions run 41325730953](https://github.com/swettgm/task-list-android/actions/runs/41325730953) passed for source commit `6f9d7be47fd975ce1d30d16b572ea2322a4b0d4d`.
+[Successful Android build](https://github.com/swettgm/task-list-android/actions/runs/41372469248), source commit `138bc96d7079ac81c28b9ad31f3274dfa858f03c`.
 
-## Passed
+- 59 Android tests passed, with zero errors/failures; lint passed with zero errors.
+- 175 browser checks passed:94 general workflows,23 touch-undo/history checks,36 updated task/schedule/Upcoming checks, and22 picker/gradient checks.
+- 26 calendar recurrence cases passed, including leap years, month-end clamping, weekday and week intervals.
+- Screens checked from320 to844 CSS pixels for horizontal overflow. Screenshots were inspected for emoji contexts, title/checkbox alignment, Upcoming dropdowns, and the slate gradient.
+- Original102 task definitions and304 saved records remain included. Existing installed state is preserved.
+- Repeating/checklist app definitions no longer block native widget quick-add or generate phantom widget rows.
+- No Windows companion, pairing screen, or internet permission is included.
 
-- **55 Android Robolectric tests**, zero failures/errors; Android lint: zero errors. Widget tests verify 0%, 50%, and 100% background opacity with text/checkbox alpha unchanged. Configuration tests verify preserving existing opacity, selecting zero, activity recreation, and saving zero.
-- **94 browser checks** using the actual packaged UI. New checks verify immediate saved/widget completion while the checked row stays visible for 450 ms, delayed parent/checklist disappearance, independent rapid completions, and cancelling disappearance by unchecking during the pause. Prior task, history, context, linking, quick-entry, Back, and hex-theme checks continue to pass.
-- Geometry checks at 320, 360, 390, 412, 600, and 844 CSS pixels passed for Today, Upcoming, expanded checklists, hidden tasks, and the editor.
-- The supplied 102 task definitions, 304 completion records, 26 moves, and 13 rollover records remain included; the package and saved-state identity remain unchanged.
-- Artifact ZIP hashes and CRCs passed. The CI APK checksum matched its verification file, and task assets matched source byte-for-byte.
+## APK
 
-## Installable update
+[Download Tasks-v0.7.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.7.0.apk)
 
-[Task-List-Dark-v0.5.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Task-List-Dark-v0.5.0.apk)
+Package `com.personal.tasklist.preview`, version code7, version0.7.0. Android minimumAPI26, target35. Size120,140 bytes.
 
-- Package: `com.personal.tasklist.preview`; version `0.5.0`, version code `5`.
-- Android API minimum 26, target 35; size 103,631 bytes.
-- SHA-256: `b3cf7ce24633e999fc52b8888df8fe9454c0734c5f29162cccd8bf621ff9e531`.
-- Signer certificate SHA-256: `c608cec387ed404701648b82b426777de0c2bc038d4fe44d3dd0237f3d0171c2`.
+SHA-256: `91c0df3a362a247a9275331c965c4cb742c4f6909bab0d82d6ec1edd73a263a8`.
 
-The APK is signed with the retained preview key; its signing certificate matches 0.4.0. Signature and ZIP alignment checks passed. All compiled code/resources and task assets match the tested CI APK. Install it over Task List Dark to retain saved tasks and settings.
+Signer certificate SHA-256: `c608cec387ed404701648b82b426777de0c2bc038d4fe44d3dd0237f3d0171c2`.
+
+Artifact archive hashes/CRCs and the CI APK checksum were independently verified. Packaged task/bridge/theme/schedule bytes match source. The downloadable APK was signed with the retained preview key; its certificate matches the previous installed version. Signature, ZIP alignment, and package/version checks passed. Compiled code/resources and task assets match the checked CI APK.
 
 ## Device checks remaining
 
-No physical Android device or emulator was used. Browser/Robolectric checks do not establish actual launcher, keyboard, or gesture behavior. Check completion timing and the fully transparent widget against the phone wallpaper on a device. This remains a debug build for personal use.
+No physical phone or Android emulator was available. Browser and framework tests do not establish actual launcher or keyboard behavior; check the update, system font sizing, widget, and touch handling on a phone. This is a debug APK for personal use.
