@@ -166,7 +166,7 @@ public class TaskWidgetTest {
             android.view.View view = Shadows.shadowOf(manager).getViewFor(id);
             assertEquals(Math.round(255 * opacity / 100f), ((android.widget.ImageView) view.findViewById(R.id.widget_background)).getImageAlpha());
             assertEquals(1f, view.findViewById(R.id.widget_title).getAlpha(), 0f);
-            TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,id);factory.onCreate();android.view.View row=factory.getViewAt(0).apply(context,null);assertEquals(1f,row.findViewById(R.id.widget_check).getAlpha(),0f);
+            TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,id);factory.onCreate();android.view.View row=factory.getViewAt(1).apply(context,null);assertEquals(1f,row.findViewById(R.id.widget_check).getAlpha(),0f);
         }
     }
 
@@ -226,10 +226,10 @@ public class TaskWidgetTest {
         for(TaskStore.Task task:store.all())if(task.title.equals("Hidden completed"))store.complete(task.id);
         TaskWidgetProvider.preferences(context,17).edit().putBoolean("today",false).putString("list","Work").commit();
         TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();
-        assertEquals(40,factory.getCount());assertTrue(factory.hasStableIds());
-        android.view.View last=factory.getViewAt(39).apply(context,null);
+        assertEquals(41,factory.getCount());assertTrue(factory.hasStableIds());
+        android.view.View last=factory.getViewAt(40).apply(context,null);
         assertEquals("Today",((android.widget.TextView)last.findViewById(R.id.widget_due)).getText().toString());assertEquals(android.view.View.VISIBLE,last.findViewById(R.id.widget_due).getVisibility());
-        long firstId=factory.getItemId(0);String other=TaskWidgetProvider.todayTasks(context,"Work","").get(3).id;store.complete(other);factory.onDataSetChanged();assertEquals(39,factory.getCount());assertEquals(firstId,factory.getItemId(0));
+        long firstId=factory.getItemId(0);String other=TaskWidgetProvider.todayTasks(context,"Work","").get(3).id;store.complete(other);factory.onDataSetChanged();assertEquals(40,factory.getCount());assertEquals(firstId,factory.getItemId(0));
         assertTrue(store.all().stream().anyMatch(t->t.title.equals("Hidden completed")&&t.done));
     }
     @Test public void widgetHeaderIsTodayAndRowsUseANativeScrollingList() {
@@ -262,5 +262,25 @@ public class TaskWidgetTest {
     }
     private org.json.JSONObject widgetRow(String id,String planned,String stateDate,boolean onToday,boolean done,boolean daily,String snapshot) throws Exception {
         return new org.json.JSONObject().put("id","html:"+id+":"+stateDate).put("title",id).put("listName","My tasks").put("dueDate",planned).put("plannedDate",planned).put("done",done).put("status",done?TaskStore.DONE:TaskStore.NEXT).put("labels",new org.json.JSONArray()).put("onToday",onToday).put("recurringDaily",daily).put("stateDate",stateDate).put("snapshotDate",snapshot);
+    }
+
+    @Test public void widgetUsesQuietPriorityHeadingsInPriorityOrder() {
+        String today=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
+        for(String priority:Arrays.asList("LOWEST","HIGH","HIGHEST"))store.add(priority,"Work",today,java.util.Collections.emptyList(),TaskStore.NEXT,"",priority,0);
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();assertEquals(6,factory.getCount());assertEquals(2,factory.getViewTypeCount());
+        String[] expected={"Highest","High","Lowest"};for(int i=0;i<expected.length;i++){
+            android.view.View header=factory.getViewAt(i*2).apply(context,null);
+            android.widget.TextView label=header.findViewById(R.id.widget_priority);assertEquals(expected[i],label.getText().toString());assertTrue(android.graphics.Color.alpha(label.getCurrentTextColor())<160);
+            android.graphics.drawable.ColorDrawable divider=(android.graphics.drawable.ColorDrawable)header.findViewById(R.id.widget_priority_divider).getBackground();assertTrue(android.graphics.Color.alpha(divider.getColor())<=24);
+        }
+    }
+    @Test public void widgetHeaderPlusAddsAndHeaderTitleOpensTheApp() {
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,id);
+        android.view.View view=Shadows.shadowOf(manager).getViewFor(id);
+        assertEquals("+",((android.widget.TextView)view.findViewById(R.id.widget_add)).getText().toString());
+        assertEquals(0,context.getResources().getIdentifier("widget_settings","id",context.getPackageName()));
+        assertEquals(0,context.getResources().getIdentifier("widget_open","id",context.getPackageName()));
+        view.findViewById(R.id.widget_title).performClick();Intent opened=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();assertEquals(MainActivity.class.getName(),opened.getComponent().getClassName());
+        view.findViewById(R.id.widget_add).performClick();Intent added=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();assertEquals(QuickAddActivity.class.getName(),added.getComponent().getClassName());
     }
 }

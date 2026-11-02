@@ -137,10 +137,10 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     static void update(Context context, AppWidgetManager manager, int id) {
         SharedPreferences prefs=preferences(context,id);String list=prefs.getString("list",""),label=prefs.getString("label","");boolean dark=prefs.getBoolean("dark",true);
         int foreground=Color.parseColor(dark?"#F3F7FC":"#1F2B40"),secondary=Color.parseColor(dark?"#BAC9D9":"#56677F"),accent=Color.parseColor(dark?"#8FC6E7":"#195B7E");
-        RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_today);
+        RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_today_compact);
         views.setImageViewResource(R.id.widget_background,dark?R.drawable.widget_background_dark:R.drawable.widget_background_light);
         views.setInt(R.id.widget_background,"setImageAlpha",Math.round(255*Math.max(0,Math.min(100,prefs.getInt("opacity",100)))/100f));
-        views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setTextColor(R.id.widget_settings,accent);views.setTextColor(R.id.widget_empty,secondary);views.setTextColor(R.id.widget_open,accent);views.setTextColor(R.id.widget_add,accent);
+        views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setTextColor(R.id.widget_empty,secondary);views.setTextColor(R.id.widget_add,accent);
         views.setViewVisibility(R.id.widget_context_icon,TaskStore.usesGuildImage(context,label)?View.VISIBLE:View.GONE);views.setContentDescription(R.id.widget_context_icon,label);
         String empty="No open tasks for today.";try{todayTasks(context,list,label);}catch(RuntimeException unavailable){empty="Open the app to check your saved tasks.";}views.setTextViewText(R.id.widget_empty,empty);
         Intent service=new Intent(context,TaskWidgetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).setData(Uri.parse("tasklist-widget://rows/"+id));
@@ -148,10 +148,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         Intent item=new Intent(context,TaskWidgetProvider.class).setAction(ACTION_ITEM).setData(Uri.parse("tasklist-widget://items/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id);
         int flags=PendingIntent.FLAG_UPDATE_CURRENT;if(android.os.Build.VERSION.SDK_INT>=31)flags|=PendingIntent.FLAG_MUTABLE;
         views.setPendingIntentTemplate(R.id.widget_rows,PendingIntent.getBroadcast(context,id,item,flags));
-        views.setTextViewText(R.id.widget_open,"Open app ›");
-        views.setOnClickPendingIntent(R.id.widget_title,openApp(context,id,list,label,false));views.setOnClickPendingIntent(R.id.widget_empty,openApp(context,id,list,label,false));views.setOnClickPendingIntent(R.id.widget_open,openApp(context,id,list,label,false));views.setOnClickPendingIntent(R.id.widget_add,openApp(context,id,list,label,true));
-        Intent configure=new Intent(context,WidgetConfigActivity.class).setData(Uri.parse("tasklist-widget://configure/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        views.setOnClickPendingIntent(R.id.widget_settings,PendingIntent.getActivity(context,id,configure,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
+        views.setOnClickPendingIntent(R.id.widget_title,openApp(context,id,list,label,false));views.setOnClickPendingIntent(R.id.widget_add,openApp(context,id,list,label,true));
         manager.updateAppWidget(id,views);manager.notifyAppWidgetViewDataChanged(id,R.id.widget_rows);
     }
 
