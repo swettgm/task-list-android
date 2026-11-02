@@ -27,9 +27,9 @@ public final class TaskStore {
     public static final List<String> DEFAULT_LABELS = Collections.unmodifiableList(Arrays.asList(
         "At home", "On the road", "On the phone", "On the computer"));
     public static final List<String> STATUSES = Collections.unmodifiableList(Arrays.asList(NEXT, IN_PROGRESS, WAITING, SOMEDAY, DONE));
-    public static final List<String> PRIORITIES = Collections.unmodifiableList(Arrays.asList("HIGH", "MEDIUM", "LOW"));
+    public static final List<String> PRIORITIES = Collections.unmodifiableList(Arrays.asList("HIGH", "MEDIUM", "LOW", "UNSET"));
 
-    static String normalizePriority(String value){if("HIGHEST".equals(value))return "HIGH";if("LOWEST".equals(value))return "LOW";if("UNSET".equals(value))return "MEDIUM";return value;}
+    static String normalizePriority(String value){if("HIGHEST".equals(value))return "HIGH";if("LOWEST".equals(value))return "LOW";return value;}
 
     public static final class Task {
         public final String id, title, listName, dueDate, status, plannedDate, priority;
@@ -277,7 +277,7 @@ public final class TaskStore {
                 String status = stringField(item, "status", done ? DONE : NEXT);
                 if (item.has("status") && item.has("done") && done != DONE.equals(status))
                     throw new JSONException("Task status and completion do not agree.");
-                String planned = stringField(item, "plannedDate", ""), priority = normalizePriority(stringField(item, "priority", "MEDIUM"));
+                String planned = stringField(item, "plannedDate", ""), priority = normalizePriority(stringField(item, "priority", "UNSET"));
                 if(item.optBoolean("urgent"))priority="HIGH";
                 long minutes = integerField(item, "minutes", 0);
                 if (minutes < 0 || minutes > Integer.MAX_VALUE) throw new JSONException("Invalid task minutes.");

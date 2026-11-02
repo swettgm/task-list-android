@@ -56,7 +56,7 @@ const result = await page.evaluate(async () => {
   check(original.definitions === 102 && original.savedKeys >= 304 && original.moves >= 26, 'Original tasks, saved history, and moves retained');
   check(!!document.querySelector('#pt-date').textContent.trim() && !document.querySelector('h1'), 'Date-only heading');
   check(getComputedStyle(document.body).backgroundColor === 'rgb(16, 21, 31)', 'Dark page background');
-  check(document.querySelector('#pt-upcoming').hidden && document.querySelector('#pt-completed').hidden, 'Today opens with completed tasks hidden');
+  check(document.querySelector('#pt-upcoming').hidden && document.querySelector('#pt-completed').hidden&&document.querySelector('#pt-toggle-hidden').textContent==='Show completed', 'Today opens with a Show completed button without a count');
   check(!document.querySelector('#pt-save,#pt-copy,#pt-backup,#pt-copy-full,#pt-copy-box,.tl-export'), 'Manual completion, copy, and backup controls removed');
   check(!document.querySelector('.tm-ai-note,.tm-pair-note,.tm-linked-chain'), 'AI tips and original suggested links are absent');
   check([...document.querySelectorAll('.tm-children')].every(item => !item.open), 'Subtask checklists start collapsed');
@@ -92,7 +92,7 @@ const result = await page.evaluate(async () => {
   check(!rowFor(parentId,parentDate),'Completion survives reload');
   document.querySelector('#pt-toggle-hidden').click();await tick();
   const hiddenParent=()=>[...document.querySelectorAll('#pt-completed-list [data-task-id]')].find(row=>row.dataset.taskId===parentId&&row.dataset.stateDate===parentDate);
-  check(!document.querySelector('#pt-completed').hidden&&!!hiddenParent(),'Show hidden reveals completed tasks');
+  check(!document.querySelector('#pt-completed').hidden&&!!hiddenParent()&&document.querySelector('#pt-toggle-hidden').textContent==='Hide completed','Show completed reveals history and the button has no count');
   hiddenParent().querySelector(':scope > .form-check > input').click();await tick();
   check(!!rowFor(parentId,parentDate)&&!hiddenParent(),'Unchecking a hidden task saves and restores it');
   TaskListApp.reloadFromNative();await tick();check(!!rowFor(parentId,parentDate),'Reopened task survives reload');
@@ -116,7 +116,7 @@ const result = await page.evaluate(async () => {
   TaskListApp.addTask({labels:['On the computer']});
   let dialog=document.querySelector('dialog');check(dialog.open,'Creation editor opens');check(document.activeElement===dialog.querySelector('input[type=text]'),'Adding a task focuses its title for keyboard entry');
   check(!dialog.textContent.includes('Useful help note'),'AI recommendation field is removed');
-  check(JSON.stringify([...dialog.querySelectorAll('[data-field=priority] input[type=radio]')].map(n=>n.value))==='["HIGH","MEDIUM","LOW"]'&&dialog.querySelector('[data-field=priority] input:checked').value==='MEDIUM'&&dialog.querySelectorAll('[data-field=repeat] input[type=radio]').length===5,'Priority and repeat use compact single-choice rows');
+  check(JSON.stringify([...dialog.querySelectorAll('[data-field=priority] input[type=radio]')].map(n=>n.value))==='["HIGH","MEDIUM","LOW","UNSET"]'&&dialog.querySelector('[data-field=priority] input:checked').value==='UNSET'&&dialog.querySelectorAll('[data-field=repeat] input[type=radio]').length===5,'Priority and repeat use compact single-choice rows');
   check(![...dialog.querySelectorAll('legend,label>span')].some(label=>/[()]/.test(label.textContent)),'Editor labels contain no parenthetical instructions');
   check(dialog.querySelector('input[placeholder="Any time"]')&&dialog.querySelector('input[aria-label=Hours]')&&dialog.querySelector('input[aria-label=Minutes]'),'Time and split duration use short placeholders');
   check(dialog.querySelector('input[type=time]')&&dialog.querySelector('input[type=date]'),'Native time and date pickers are available');

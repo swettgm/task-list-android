@@ -34,7 +34,7 @@ public final class QuickAddActivity extends Activity {
         List<CharSequence> displayedContexts=new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextDisplay(this,value));
         context=spinner("Context label",displayedContexts);if(selected!=null)context.setSelection(Math.max(0,contexts.indexOf(selected)));form.addView(context,fieldParams());
         LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
-        priority=spinner("Priority",Arrays.asList("High","Medium","Low"));priority.setSelection(1);
+        priority=spinner("Priority",Arrays.asList("High","Medium","Low","Not set"));priority.setSelection(3);
         when=spinner("When to do it",Arrays.asList("Today","Tomorrow"));
         LinearLayout.LayoutParams priorityParams=new LinearLayout.LayoutParams(0,dp(40),1);priorityParams.setMarginEnd(dp(8));
         options.addView(priority,priorityParams);options.addView(when,new LinearLayout.LayoutParams(0,dp(40),1));form.addView(options,fieldParams());

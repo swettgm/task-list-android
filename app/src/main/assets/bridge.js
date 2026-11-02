@@ -145,7 +145,7 @@
       const index = scope.tasks.findIndex(t => t.id === task.id);
       if (index >= 0) scope.tasks[index] = clone(task); else scope.tasks.push(clone(task));
     });
-    scope.tasks.forEach(task=>{task.priority=task.urgent?'HIGH':task.priority==='HIGHEST'?'HIGH':task.priority==='LOWEST'?'LOW':['HIGH','MEDIUM','LOW'].includes(task.priority)?task.priority:'MEDIUM';});
+    scope.tasks.forEach(task=>{task.priority=task.urgent?'HIGH':task.priority==='HIGHEST'?'HIGH':task.priority==='LOWEST'?'LOW':['HIGH','MEDIUM','LOW','UNSET'].includes(task.priority)?task.priority:'UNSET';});
     // Original suggested pairings and legacy pairOverrides are no longer used.
     Object.keys(scope.pairWith).forEach(id => delete scope.pairWith[id]);
     const ids = new Set(scope.tasks.map(task => task.id));
@@ -324,7 +324,7 @@
     const { dialog, form, close } = modal(isNew ? 'Add task' : 'Edit task');
     form.classList.add('tl-task-form');
     const title = inputField(form, 'Task', 'text', original.title || (prefill && prefill.title) || ''); title.required = true; title.placeholder = 'What needs doing?';
-    const priority = choiceField(form, 'Priority', scope.groups.map(([key, label]) => [key, label.replace(' priority', '')]), original.priority || 'MEDIUM');
+    const priority = choiceField(form, 'Priority', scope.groups.map(([key, label]) => [key, key==='UNSET'?'Not set':label.replace(' priority', '')]), original.priority || 'UNSET');
     const schedule = node('div', 'tl-schedule-grid'); form.append(schedule);
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
@@ -411,7 +411,7 @@
     const preview=document.getElementById('tl-context-filter-preview');if(preview){const image=selectedContext&&contextIcon(selectedContext)===GUILD_ICON_TOKEN;preview.replaceChildren();preview.hidden=!image;select.classList.toggle('tl-image-filter',!!image);if(image)preview.append(contextGlyph(selectedContext));}
   }
   function changePriority(task,offset) {
-    const levels=scope.groups.map(([key])=>key);const found=levels.indexOf(task.priority||'MEDIUM');const current=found<0?levels.length-1:found;const target=Math.max(0,Math.min(levels.length-1,current+offset));if(target===current)return false;
+    const levels=scope.groups.map(([key])=>key);const found=levels.indexOf(task.priority||'UNSET');const current=found<0?levels.length-1:found;const target=Math.max(0,Math.min(levels.length-1,current+offset));if(target===current)return false;
     const next={...clone(task),priority:levels[target]};if(next.priority!=='HIGH')delete next.urgent;
     const status=document.getElementById('pt-status');
     try{saveDefinition(next,false);if(status)status.textContent='';return true;}
@@ -426,7 +426,7 @@
     let timer=null,start=null,held=false,cancelled=false;
     const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}if(priorityHoldCancel===clear)priorityHoldCancel=null;};
     const button=action('',event=>{if(held||cancelled||priorityHoldActive||performance.now()<priorityHoldUntil){event.preventDefault();return;}clear();changePriority(task,offset);},'tm-move-control tl-priority-button tl-priority-'+direction);
-    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Low');button.disabled=direction==='up'?rank===0:rank===levels.length-1;
+    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Priority not set');button.disabled=direction==='up'?rank===0:rank===levels.length-1;
     button.addEventListener('pointerdown',event=>{
       if(button.disabled||event.button!==0||event.isPrimary===false)return;
       if(priorityHoldCancel)priorityHoldCancel();held=false;cancelled=false;start={x:event.clientX,y:event.clientY};priorityHoldCancel=clear;
@@ -447,7 +447,7 @@
     if (controls) {
       const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
       edit.setAttribute('aria-label', 'Edit ' + task.title); edit.title = 'Edit task';
-      const tools=node('span','tl-priority-tools'),levels=scope.groups.map(([key])=>key),rank=levels.indexOf(task.priority||'MEDIUM');
+      const tools=node('span','tl-priority-tools'),levels=scope.groups.map(([key])=>key),rank=levels.indexOf(task.priority||'UNSET');
       [['up',-1,'Raise'],['down',1,'Lower']].forEach(([direction,offset,label])=>{
         tools.append(priorityButton(task,direction,offset,label,rank,levels));
       });tools.append(edit);controls.append(tools);
@@ -469,7 +469,7 @@
         id: 'html:' + key, title: task.title, listName: 'My tasks',
         dueDate: task.due || '', plannedDate: item.date || scope.today,
         done, status: done ? 'Done' : active && (active === key || completionKeys.includes(active)) ? 'In progress' : 'Next',
-        time:task.time||'', urgent:!!task.urgent, labels: derivedContexts(task), priority: task.priority || 'MEDIUM', minutes: Number(task.minutes) || 0,
+        time:task.time||'', urgent:!!task.urgent, labels: derivedContexts(task), priority: task.priority || 'UNSET', minutes: Number(task.minutes) || 0,
         createdAt: Date.parse(item.stateDate + 'T12:00:00Z') || 0,
         completionKeys, progressKey: key, stateDate: item.stateDate, onToday: !!onToday,
         recurrence: task.recurrence || '', source: 'html', snapshotDate:scope.today, recurringDaily:task.repeat?(task.repeat.unit==='day'&&Number(task.repeat.amount)===1&&!task.repeat.weekdays?.length):(task.recurrence==='Daily'||!!(task.days&&task.days.length===7)), skipCarryDays:task.skipCarryDays||[]
@@ -490,7 +490,7 @@
     const save = () => {
       if (!title.value.trim()) { error.textContent = 'Enter a task title.'; title.focus(); return; }
       const next = { id:'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9),
-        title:title.value.trim(), priority:'MEDIUM', due:prefill.dueDate || scope.today, _contexts:labels };
+        title:title.value.trim(), priority:'UNSET', due:prefill.dueDate || scope.today, _contexts:labels };
       scope.tasks.push(next); saveDefinition(next, true); close();
     };
     const actions = node('div', 'tl-dialog-actions');

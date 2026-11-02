@@ -274,9 +274,9 @@ public class TaskWidgetTest {
 
     @Test public void widgetUsesQuietPriorityHeadingsInPriorityOrder() {
         String today=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
-        for(String priority:Arrays.asList("LOW","MEDIUM","HIGH"))store.add(priority,"Work",today,java.util.Collections.emptyList(),TaskStore.NEXT,"",priority,0);
-        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();assertEquals(6,factory.getCount());assertEquals(2,factory.getViewTypeCount());
-        String[] expected={"High","Medium","Low"};for(int i=0;i<expected.length;i++){
+        for(String priority:Arrays.asList("UNSET","LOW","MEDIUM","HIGH"))store.add(priority,"Work",today,java.util.Collections.emptyList(),TaskStore.NEXT,"",priority,0);
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();assertEquals(8,factory.getCount());assertEquals(2,factory.getViewTypeCount());
+        String[] expected={"High","Medium","Low","Priority not set"};for(int i=0;i<expected.length;i++){
             android.view.View header=factory.getViewAt(i*2).apply(context,null);
             android.widget.TextView label=header.findViewById(R.id.widget_priority);assertEquals(expected[i],label.getText().toString());assertTrue(android.graphics.Color.alpha(label.getCurrentTextColor())<160);
             android.graphics.drawable.ColorDrawable divider=(android.graphics.drawable.ColorDrawable)header.findViewById(R.id.widget_priority_divider).getBackground();assertTrue(android.graphics.Color.alpha(divider.getColor())<=24);
