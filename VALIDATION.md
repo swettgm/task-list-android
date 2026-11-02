@@ -1,23 +1,21 @@
-# Tasks 0.26.0 verification
+# Tasks 0.27.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41503359795), source commit `09e938c07b5d3fbc2d454f56faae23949d598aab`.
+[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41504601696), source commit `88eda5fdeb527218806b36d155c3ddf4a3745412`.
 
-94 Android tests, 448 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+95 Android tests, the full Chromium browser suite and calendar recurrence checks passed; lint reported zero errors.
 
-Priority long-press stops at High or Low; it cannot put a task in Priority not set. Regular taps retain access to unset. Priority arrows use centered, rounded 32px squares; Do today has its arrow on the left. Projects use an outline trash icon that stays gray through the first confirmation and turns red during the second press. Editing disarms confirmation.
+One spaced separator dot appears between the schedule and label sections in Today and Upcoming. No separator is inserted between individual label emojis. The context dropdown uses an inset chevron with a 16px right gap; the native select remains accessible and clickable.
 
-The widget has a smaller bare accent-colored plus, slightly larger 13.5sp task titles, and a Do now/Stop action that updates the same in-progress task in the app. Native tests cover idempotent repeated taps, stale stops, completed-task guards, child progress and stale snapshot reconciliation. Canonical state, completion history and projects are preserved. The launcher icon uses slate-gradient checklist shapes and rounded line ends; app and Projects add glyphs follow their background/gradient.
+Tap a task’s Today badge in the widget to start progress. Its badge becomes In progress and the row moves above the priority sections. Tap that badge again to stop and restore its priority/time/title order. There are no play/stop buttons or title prefixes. Only widget presentation moves; saved task priority and app ordering are unchanged. A new row layout resource refreshes existing collection views. The 48dp badge touch area, title size, completion control, Today-only filtering and scrollbar-free scrolling remain intact.
 
-Both quick-add popups stay open after successful saves, clear the title and retain keyboard focus for another task. A white inset border pulses twice without resizing the popup. Tests cover two distinct consecutive saves, native IME submission, cancellation without saving a draft, retained completion history, and animation cleanup. Reduced-motion or disabled animation settings are respected.
+Native checks verify shared app progress, repeated/stale taps and completed-task guards, active-row pinning, stable row identity, restored ordering and unchanged task priority. Canonical state, completion history and projects remain preserved. Browser checks cover the packaged task screens, labels, recurrence, completion undo, Projects, inline editors, narrow layouts, gestures and theme controls.
 
-Editable label emojis sit in the duration/repeat schedule row and wrap within the screen. App and widget scrollbars are hidden; scrolling stays enabled. The widget uses a new layout resource so existing widgets refresh on update. Browser checks cover narrow task layouts, reactive tab gestures, inline editors, Projects, recurring tasks, completion undo, notifications configuration and shared native state. Projects remain separate from task counts and widget rows. Existing task identities and completion history are unchanged.
+[Download Tasks-v0.27.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.27.0.apk).
 
-[Download Tasks-v0.26.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.26.0.apk).
+Package `com.personal.tasklist.preview`, version 0.27.0, code 27; minimum API 26, target 35; size 195,211 bytes.
 
-Package `com.personal.tasklist.preview`, version 0.26.0, code 26; minimum API 26, target 35; size 195,129 bytes.
+SHA-256: `249f1502ab4762cbaca413594f56cfbaae24495aaa51ffcf893ff1b3e70fa9cc`.
 
-SHA-256: `69f8e57c3623a248eeb52dbe2262f929b8648dfa569901dccb62583f0548cfba`.
+Artifact hashes, ZIP CRCs and CI checksum passed. Packaged UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
-Artifact hashes, ZIP CRCs and CI checksum passed. UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
-
-No physical phone, software keyboard, vibrator or Android launcher was used. Browser checks run in Chromium; native controls and widget behavior use Robolectric and view inflation. Device settings control physical haptics, and Android policies can delay background updates and notifications.
+No physical phone or Android launcher was used. Browser checks run in Chromium; native controls and widget behavior use Robolectric and view inflation. Android policies can delay background updates and notifications.
