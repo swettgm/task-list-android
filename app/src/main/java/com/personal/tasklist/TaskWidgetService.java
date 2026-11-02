@@ -41,6 +41,7 @@ public final class TaskWidgetService extends RemoteViewsService {
             }
             TaskStore.Task task=entry.task;RemoteViews row=new RemoteViews(context.getPackageName(),R.layout.widget_task_row_progress);
             row.setTextViewText(R.id.widget_task_title,(TaskStore.IN_PROGRESS.equals(task.status)?"▶ ":"")+task.title);
+            row.setTextViewTextSize(R.id.widget_task_title,android.util.TypedValue.COMPLEX_UNIT_SP,13.5f);
             row.setTextColor(R.id.widget_task_title,Color.parseColor(dark?"#F3F7FC":"#1F2B40"));
             row.setTextColor(R.id.widget_check,Color.parseColor(dark?"#8FC6E7":"#195B7E"));
             row.setTextColor(R.id.widget_due,Color.parseColor(dark?"#BAC9D9":"#56677F"));

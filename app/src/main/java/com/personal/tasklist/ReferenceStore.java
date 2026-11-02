@@ -123,6 +123,7 @@ public final class ReferenceStore {
             JSONObject current = state();
             appendMissingCustomMirrors(records, current);
             applyPersistedCompletions(records, current);
+            applyPersistedProgress(records,current);
             String normalized = records.toString();
             checkSize(normalized);
             TaskStore.validateReferenceTasks(normalized);
