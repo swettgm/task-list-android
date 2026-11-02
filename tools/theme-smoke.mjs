@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import {serveFixture} from './browser-fixture-server.mjs';
 
 const documentPath = path.resolve(process.argv[2] || 'app/src/main/assets/www/index.html');
 const seedPath = path.resolve(process.argv[3] || path.join(path.dirname(documentPath), 'initial-state.json'));
@@ -30,6 +30,7 @@ await page.addInitScript(initial => {
     pairDesktop(){},unpairDesktop(){},syncNow(){}
   };
 },seed);
+const fixture=await serveFixture(documentPath);
 const state = () => page.evaluate(() => __themeNative.getState());
 async function waitReady(){await page.waitForFunction(()=>!!window.TasksTheme&&!!window.TaskListApp&&window.__themeNative.snapshot.length>0);}
 async function settings(){await page.getByRole('button',{name:'Settings',exact:true}).click();await page.locator('.tasks-theme-settings').waitFor({state:'visible'});}
@@ -39,7 +40,7 @@ const end = () => page.getByRole('textbox',{name:'Gradient end hex',exact:true})
 const apply = () => page.getByRole('button',{name:'Apply colors',exact:true}).click();
 
 try {
-  await page.goto(pathToFileURL(documentPath).href);await waitReady();
+  await page.goto(fixture.url);await waitReady();
   check((await state()).uiTheme?.gradient !== true,'Existing installs keep a solid background by default');
   const originalTheme = JSON.stringify((await state()).uiTheme || null);
   await settings();
@@ -87,6 +88,7 @@ try {
   await settings();check(await page.locator('dialog').evaluate(d=>getComputedStyle(d).backgroundImage.includes('135deg')),'Settings uses the app gradient');
   await page.getByRole('button',{name:'Close',exact:true}).click();
 
+  check(await page.evaluate(()=>JSON.parse(sessionStorage.getItem('tasks-theme-smoke-native')).uiTheme.gradient===true),'The native-state test fixture retains saved settings before reload');
   await page.reload();await waitReady();
   check((await state()).uiTheme.gradient===true&&(await page.evaluate(()=>getComputedStyle(document.body).backgroundImage)).includes('135deg'),'Saved gradient survives a full page reload');
   await settings();
@@ -109,4 +111,4 @@ try {
   await page.screenshot({path:path.join(output,'appearance-picker.png'),fullPage:false});
   check(errors.length===0,'No browser errors occurred during picker or gradient changes');
   console.log(JSON.stringify({passed:checks.length,checks},null,2));
-} finally {await browser.close();}
+} finally {await browser.close();await fixture.close();}
