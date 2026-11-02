@@ -43,6 +43,9 @@ try{
  check((await state()).completed[firstKey]===true,'Reordering keeps the original stable completion key');
  await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__checklist.snapshot.length);await openSteps('edit-plain');
  check(await boxes('edit-plain').nth(1).isChecked(),'Edited checklist and completion survive reload');
+ await row('edit-plain').locator('.tm-children .tm-progress-control').first().click();
+ await edit('edit-plain');await field().fill('One\nThree');await save();
+ check((await state()).inProgress===null,'Removing an active step clears its progress marker');
  await edit('edit-steps');check(await field().inputValue()==='Alpha\nBeta','Original checklist steps are editable');
  await field().fill('Beta\nAlpha\nGamma');await save();await openSteps('edit-steps');
  check(!await boxes('edit-steps').nth(0).isChecked()&&await boxes('edit-steps').nth(1).isChecked(),'Original numeric step keys retain the right completed step');
@@ -68,6 +71,11 @@ try{
  await field().fill(grouped+'\nNew grouped step');await save();await openSteps('edit-groups');
  check(await boxes('edit-groups').first().isChecked()&&!await boxes('edit-groups').last().isChecked(),'Grouped checklist edits preserve child completion and start added steps unchecked');
  check((await state()).completed['edit-groups:'+dates.today+':child:0']===true,'Legacy grouped child keys remain intact');
+ await page.evaluate(d=>{const s=__checklist.get();s.customTasks.push({id:'edit-completed',title:'Completed checklist',due:d,priority:'HIGH',labels:['Checklist QA'],steps:['Done']});s.completed['edit-completed:'+d+':step:0']=true;s.completedOn['edit-completed:'+d+':step:0']=d;__checklist.set(s);TaskListApp.reloadFromNative();},dates.today);
+ await page.locator('#pt-toggle-hidden').click();
+ await page.locator('#pt-completed-list [data-task-id="edit-completed"] .tl-edit-button').click();await field().fill('');await save();
+ check((await state()).completed['edit-completed:'+dates.today]===true,'Removing all steps from a completed task retains completion');
+ check((await state()).completedOn['edit-completed:'+dates.today]===dates.today,'Completion date survives converting a checklist back to a plain task');
  await mkdir('build/browser-qa',{recursive:true});await edit('edit-groups');await field().scrollIntoViewIfNeeded();await page.screenshot({path:'build/browser-qa/edit-checklist.png'});
  check(!errors.length,'Checklist edits have no browser errors');console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();}
