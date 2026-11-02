@@ -2214,7 +2214,7 @@ main{max-width:100%;margin:0;padding:0}
   }
   function decorateRow(wrapper, task, item, completed) {
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
-    const text = wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
+    const text = wrapper.querySelector('.tm-task-details') || wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
     const labels = derivedContexts(task);
     if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=node('span','tl-context-icon',contextIcon(label));icon.setAttribute('aria-label',label);icon.title=label;badges.append(icon);}); text.append(badges); }
     const controls = wrapper.querySelector('.tm-item-actions');
@@ -3286,7 +3286,9 @@ main{max-width:100%;margin:0;padding:0}
       const controls=el('div','tm-item-actions');
       controls.append(progressButton(progressKey(task,stateDate),task.title,isDone(task,stateDate,draft)));
       const move=completed||upcoming?null:moveButton(item);if(move)controls.append(move);
-      wrapper.append(label,controls);
+      const taskDetails=el('div','tm-task-details');
+      Array.from(text.children).filter(child=>child!==titleLine).forEach(child=>taskDetails.append(child));
+      wrapper.append(label,taskDetails,controls);
       if(hasSubtasks(task)){
         const count=subtaskCount(task,stateDate),unit=task.children?'subtasks':'steps';
         input.setAttribute('aria-label',task.title+'; toggle completion for the task and all '+count+' '+unit);
@@ -3552,4 +3554,16 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 #today-task-list-20261023 .tl-context-badges{gap:7px}
 .tl-dialog .tl-context-grid .tl-choice-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
 .tl-dialog .tl-context-grid .tl-context-choice{font-size:19px}
+/* The checkbox belongs to the title row only; metadata has its own row. */
+#today-task-list-20261023 .form-check{display:flex!important;align-items:flex-start!important;gap:8px;min-height:26px}
+#today-task-list-20261023 .form-check-input{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;flex:0 0 24px!important;margin:2px 0 0!important;align-self:flex-start!important}
+#today-task-list-20261023 .form-check-label{display:block!important;min-width:0;flex:1}
+#today-task-list-20261023 .tm-title-line{display:block!important;min-height:24px}
+#today-task-list-20261023 .tm-title-main{min-height:24px;line-height:24px}
+#today-task-list-20261023 .tm-task-details{padding-left:32px;min-width:0}
+#today-task-list-20261023 .tm-item-actions{padding-left:32px}
+#today-task-list-20261023 details.tm-day{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:0!important;margin:12px 0 20px}
+#today-task-list-20261023 .tm-day-heading{font-size:18px;line-height:1.5;padding:10px 0;min-height:46px;border-bottom:1px solid var(--tl-border);margin:0 0 8px}
+#today-task-list-20261023 .tm-day:not([open])>.tm-day-heading{margin-bottom:0}
+#today-task-list-20261023 .tm-day .tm-group{margin-top:10px}
 </style></body></html>

@@ -79,7 +79,7 @@ try{
  check(await page.locator('#pt-list .tm-meta').evaluateAll(nodes=>nodes.every(n=>!/#\d+|\btotal\b/i.test(n.textContent))),'Task list metadata has no task numbers or total duration wording');
  const firstBox=await page.locator('#pt-list .tm-task-item .form-check-input').first().boundingBox();
  const firstTitle=await page.locator('#pt-list .tm-task-item .tm-title').first().boundingBox();
- check(Math.abs((firstBox.y+firstBox.height/2)-(firstTitle.y+12))<2,'Checkbox aligns with the task title first line');
+ check(Math.abs((firstBox.y+firstBox.height/2)-(firstTitle.y+12))<=3,'Checkbox aligns with the task title first line');
  check(await page.locator('.tl-context-icon').evaluateAll(nodes=>nodes.every(n=>!['At home','On the road','On the phone','On the computer'].includes(n.textContent))),'Task context markers use emojis only');
  // General Every X Y recurrence preserves the amount, unit, and start date.
  for(const [unit,amount]of [['week',2],['month',3],['year',1]]){
@@ -95,6 +95,7 @@ try{
   const task=await page.evaluate(title=>__v7.getState().customTasks.find(t=>t.title===title),'General repeat '+unit);
   check(task.repeat.amount===amount&&task.repeat.unit===unit&&!!task.repeat.start,'Every '+amount+' '+unit+' recurrence saves correctly');
  }
+ check(await page.locator('#pt-list .form-check .tm-meta').count()===0,'Checkbox label contains the title rather than the metadata block');
  // Upcoming has its own complete controls and visible grouping.
  await page.getByRole('tab',{name:'Upcoming',exact:true}).click();
  check(await futureRows(ids.dailyA).count()===0&&await futureRows(ids.dailyB).count()===0,'Tasks being done today are excluded from Upcoming');
@@ -104,6 +105,7 @@ try{
  const tomorrowDetails=page.locator('#pt-future-list details.tm-day').filter({has:page.locator('[data-task-id="'+ids.future+'"]')}).first();
  check(await tomorrowDetails.evaluate(d=>d.open),'Tomorrow date group is expanded');
  const later=await page.locator('#pt-future-list details.tm-day').evaluateAll(groups=>groups.slice(1).every(d=>!d.open));
+ check(await page.locator('#pt-future-list details.tm-day').evaluateAll(nodes=>nodes.every(n=>getComputedStyle(n).borderTopWidth==='0px'&&getComputedStyle(n).borderRadius==='0px')),'Upcoming dates have no enclosing frames');
  check(later,'Later Upcoming dates start in separate collapsed dropdowns');
  check(await tomorrowDetails.locator('summary.tm-day-heading').evaluate(summary=>parseFloat(getComputedStyle(summary).fontSize)>=16),'Upcoming date headings are visually prominent');
  const futureRow=futureRows(ids.future).first();

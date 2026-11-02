@@ -330,7 +330,7 @@
   }
   function decorateRow(wrapper, task, item, completed) {
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
-    const text = wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
+    const text = wrapper.querySelector('.tm-task-details') || wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
     const labels = derivedContexts(task);
     if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=node('span','tl-context-icon',contextIcon(label));icon.setAttribute('aria-label',label);icon.title=label;badges.append(icon);}); text.append(badges); }
     const controls = wrapper.querySelector('.tm-item-actions');
