@@ -1,21 +1,19 @@
-# Tasks 0.17.0 verification
+# Tasks 0.18.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41448519680), source commit `b40bad6e18aec2a95ee14fcdf60f6119636af9bc`.
+[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41455650346), source commit `012122624cc21a971d79c5b43a4acb2df763aa0a`.
 
-83 Android tests, 291 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+85 Android tests, 319 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-Edit task now focuses the dialog rather than a text field. New task and Quick add retain title focus for immediate entry; intentionally focusing existing fields remains supported. Browser checks cover new-task focus, existing-task dialog focus and deliberate field focus.
+Up/down priority controls use the same thick arrow glyph as Do tomorrow, match the other task buttons and stay together before the gear. Browser checks cover all priority levels, disabled limits, Today and Upcoming, persisted reload and next-day recurring tasks. Changes preserve notes, labels, links, checklist progress, schedule and completion history. Lowering an urgent task clears Urgent so future edits retain its new priority.
 
-The widget has a top-right plus, a tappable Today title, no gear button and no footer. Its existing reconfigurable Android widget metadata provides launcher long-press configuration. Priority sections are Highest, High, Medium, Low, Lowest and No priority, with small muted labels and low-alpha 1dp dividers. The collection exposes two view types with stable identities. Tests verify priority ordering and subtle colors, add/title routing, absence of the removed controls, scrolling, Today-only filtering and persistent completion.
+Buttons, inputs, dropdowns and native widget forms use rounded rectangular corners. The main plus is a rounded square. Widget Quick Add reads the saved app theme, including gradient colors and direction, clips the panel to rounded corners, and uses matching fields and buttons. Android checks verify saved theme colors, gradient direction, rounded panel clipping, field backgrounds and button colors without default Android tints overriding them. Browser checks also cover rounded control styles and narrow layouts.
 
-The original Guild crest is enlarged another small step (web 1.4em to 1.55em, native pickers 20sp to 22sp, widget header 16dp to 18dp). Widget outer padding is zero, with 4dp side and 2dp vertical internal margins. A distinct compact layout ID refreshes installed widget layouts. The launcher may still apply its own outer padding.
+[Download Tasks-v0.18.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.18.0.apk).
 
-[Download Tasks-v0.17.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.17.0.apk).
+Package `com.personal.tasklist.preview`, version 0.18.0, code 18; minimum API 26, target 35; size 173,949 bytes.
 
-Package `com.personal.tasklist.preview`, version 0.17.0, code 17; minimum API 26, target 35; size 165,594 bytes.
-
-SHA-256: `276c4ade7ca135f422c1466c1d6fcd836ba38a011858dafb8acf470f6e1a19b8`.
+SHA-256: `f03b32d643d70897013aac5f84c4b30a2d4f0352e5a0ce08f21f8bee2a0c94bd`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
-No physical phone, software keyboard or Android launcher was used. Keyboard checks cover DOM focus; native widget behavior was tested with Robolectric and view inflation. Android policies can delay background updates and notifications; force-stop blocks alarms until reopening. These tests do not guarantee against every software, storage or device failure.
+No physical phone, software keyboard or Android launcher was used. Browser checks run in Chromium; native controls and widget behavior use Robolectric and view inflation. Android policies can delay background updates and notifications. These tests do not guarantee against every software, storage or device failure.
