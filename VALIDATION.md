@@ -1,21 +1,19 @@
-# Tasks 0.28.0 verification
+# Tasks 0.29.0 verification
 
-[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41507043236), source commit `36166bd60374cd1cb0ec4e3f42b834a46e5e6510`.
+[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41509436751), source commit `44ef1c779099bfbdc5c268c5fa1a90dec69c554c`.
 
-96 Android tests, the full Chromium browser suite and calendar recurrence checks passed; lint reported zero errors.
+97 Android tests, 451 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-The widget’s active task uses the app’s green rounded pill: #176B42 background, white bold IN PROGRESS text and the green circle emoji. The compact badge is vertically centered inside a 48dp touch area. Tapping it still stops progress and restores Today with its plain background and normal widget priority/time/title position. Active tasks remain pinned at the top of the widget, sharing the same in-progress state with the app. A fresh row resource refreshes existing widget views.
+Widget title, checkbox and progress badge now center independently of text baselines. Extra font padding is removed and a fresh row layout updates existing widget views. Native geometry checks measure badge and title text centers for single-line and wrapped titles at three widths. The green rounded badge, tap-to-stop behavior, priority restoration and two-second completion cancellation remain intact.
 
-Native checks verify the badge text, green fill, white text, rounded corners and minimum touch height, plus restoration to the plain Today label. Existing progress, canonical-state, completion-history, recurrence and widget-ordering checks remain enabled. Widget completion has a durable two-second confirmation window: the row remains checked and can be cancelled by tapping its checkbox again. Canonical completion is applied after the window; expired requests are recovered on widget refresh or app resume. Tokens keep stale taps from cancelling a later completion. Tests cover cancellation, stale undo, timed completion and refresh recovery.
+App task rows place the progress badge beside the title only when the complete title and badge fit. Long titles keep the badge below. The title and checkbox retain the same vertical center. A shared resize observer rechecks active rows on layout changes and tab visibility changes; removed rows are unobserved. Font loading and window resizing also recheck placement. Browser checks verify inline badge centering at two widths, fallback for long titles and unchanged checkbox alignment, alongside the full existing workflow suite.
 
-Metadata dots use a shared bold style with exactly 6px of padding on each side. Labels retain no dots between individual emojis. The full packaged browser UI checks also passed.
+[Download Tasks-v0.29.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.29.0.apk).
 
-[Download Tasks-v0.28.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.28.0.apk).
+Package `com.personal.tasklist.preview`, version 0.29.0, code 29; minimum API 26, target 35; size 203,741 bytes.
 
-Package `com.personal.tasklist.preview`, version 0.28.0, code 28; minimum API 26, target 35; size 199,560 bytes.
-
-SHA-256: `ca15b3da8ec8c62cc40e21191e73b7e0e0bf27a8b3d62df087c45d8eca42c186`.
+SHA-256: `2bbe0209aef0fdeb4628af85fd4bddfba5162eea2bed2a3df8634760728b29e3`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. Packaged UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
-No physical phone or Android launcher was used. Browser checks run in Chromium; native controls and widget behavior use Robolectric and view inflation.
+No physical phone or Android launcher was used. Browser checks run in Chromium; native controls and widget behavior use Robolectric and view inflation. Notification scheduling is unchanged by this alignment update.
