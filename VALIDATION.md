@@ -1,18 +1,18 @@
-# Tasks 0.18.0 verification
+# Tasks 0.19.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41455650346), source commit `012122624cc21a971d79c5b43a4acb2df763aa0a`.
+[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41456829763), source commit `11b99bcbfd619fc6a4023ffd0a685a2dc5a5130c`.
 
-85 Android tests, 319 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+86 Android tests, 322 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-Up/down priority controls use the same thick arrow glyph as Do tomorrow, match the other task buttons and stay together before the gear. Browser checks cover all priority levels, disabled limits, Today and Upcoming, persisted reload and next-day recurring tasks. Changes preserve notes, labels, links, checklist progress, schedule and completion history. Lowering an urgent task clears Urgent so future edits retain its new priority.
+Today and Upcoming sort each priority section by scheduled time, then alphabetically when times match. Untimed tasks follow alphabetically. The widget follows the same ordering within its priority headings. Sorting affects presentation only and retains task identities, schedules, completion history and priority groups. Checks cover midnight, noon, AM/PM and 24-hour inputs, alphabetical time ties and untimed rows on both tabs and the native widget.
 
-Buttons, inputs, dropdowns and native widget forms use rounded rectangular corners. The main plus is a rounded square. Widget Quick Add reads the saved app theme, including gradient colors and direction, clips the panel to rounded corners, and uses matching fields and buttons. Android checks verify saved theme colors, gradient direction, rounded panel clipping, field backgrounds and button colors without default Android tints overriding them. Browser checks also cover rounded control styles and narrow layouts.
+Priority arrow buttons retain their position before the gear, rectangular shape and existing button dimensions. The arrow glyph now uses the same font size and weight as Do tomorrow, with its box centered on both axes. Browser checks compare computed font sizes and weights, verify both center coordinates within half a pixel, and check narrow layouts. Existing daily-priority persistence tests remain passing.
 
-[Download Tasks-v0.18.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.18.0.apk).
+[Download Tasks-v0.19.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.19.0.apk).
 
-Package `com.personal.tasklist.preview`, version 0.18.0, code 18; minimum API 26, target 35; size 173,949 bytes.
+Package `com.personal.tasklist.preview`, version 0.19.0, code 19; minimum API 26, target 35; size 173,949 bytes.
 
-SHA-256: `f03b32d643d70897013aac5f84c4b30a2d4f0352e5a0ce08f21f8bee2a0c94bd`.
+SHA-256: `7cddad6dbc81fa6ac881b720d9d82875bc995f98c4edf6e5a5efa8074b632ab8`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 

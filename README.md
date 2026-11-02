@@ -13,7 +13,8 @@ A personal Android checklist based on the supplied task list. The app includes t
 - Add, rename, reorder or remove checklist steps in Edit task. Stable step identities preserve checkmarks and completion dates; occurrences before the edit retain their original checklist.
 - Set a task time and check Notify beside Urgent for a scheduled notification. Settings has a separate daily reminder, initially 9 AM, and independent controls for both reminder types. Android notification permission is required. Alarms resume after restart and app updates; power-saving mode or force-stop can delay/block delivery.
 - Saves check commit results and reject unreadable state rather than resetting it. Local storage cannot guarantee against uninstalling, clearing data or device loss.
-- Thick up/down priority arrows sit immediately before each task gear, with matching button styling. Changes save to the task definition and carry forward to daily recurrences; limits are disabled.
+- Within each priority section, Today, Upcoming and the widget sort tasks by scheduled time, then alphabetically for ties and untimed tasks.
+- Thick up/down priority arrows sit immediately before each task gear, with matching button styling, centered arrows and the same arrow size as Do tomorrow. Changes save to the task definition and carry forward to daily recurrences; limits are disabled.
 - Buttons, inputs and menus use rounded rectangular corners; the main plus is a rounded square. Widget Quick Add uses the saved app colors, gradient direction, rounded panel and native controls.
 - Link unfinished tasks by title in the editor. Links display immediately and remain attached to repeating task definitions.
 - Settings includes hex fields, swatches/color wheels, optional gradients, and a slate gradient preset. A separate viewport-sized background layer keeps the gradient visible while scrolling long lists in either tab; controls use translucent surfaces.
