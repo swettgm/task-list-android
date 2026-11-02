@@ -1,26 +1,24 @@
-# Tasks 0.24.0 verification
+# Tasks 0.25.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41485496780), source commit `4abf95c5d7125320150a60728c0a444cfc290da3`.
+[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41490957652), source commit `8ecfbe2d4ad8688406f7b0094506b47af0b49d78`.
 
-89 Android tests, 394 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+90 Android tests, 434 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-Label emojis are accessible buttons opening a label-only popup. Existing selections load automatically; Save updates task definitions and widget snapshots while preserving other details and completion history. Cancel retains the previous labels. Emoji sizes and the original Guild crest remain unchanged. Inline metadata and emoji shortcuts suppress blue touch highlights and text selection; keyboard focus uses a neutral outline.
+Holding the date opens Projects; Today and Upcoming remain the only tabs. Keyboard and assistive activation are also supported. Projects have notes, an optional date and duration, their own plus and completed list, and no labels, priority, time or checkboxes. Clicking a project opens its editor. Complete and Reopen move it between project sections. The trash button first turns red and asks Are you sure?; only the second tap deletes. Editing a field disarms confirmation.
 
-Holding a priority arrow for 450ms jumps to the top or bottom section: High for up, Priority not set for down. A successful change requests one native LONG_PRESS haptic, using View.performHapticFeedback without adding vibration permission. Normal taps still move one section. Moving away, cancellation, blur and visibility changes clear pending holds. Release clicks cannot cause an extra change. Browser checks exercise endpoint jumps, haptic call counts, release suppression, ordinary taps afterward, cancellation and Upcoming. Native checks verify the haptic constant, unchanged task state and safety after activity destruction.
+Projects are stored separately by identity in the canonical private state. Deletion removes project content and retains a deletion marker so stale editors cannot resurrect records. Native tests verify projects and completion flags survive native task writes without entering task storage. Browser checks cover new/existing focus, save/cancel, optional fields, completion/reopening, two-step deletion, write failures, stale editors, reload persistence and narrow layouts. Task identities, completion history and manual links remain intact. Open dialogs count as active editing for native refresh handling.
 
-High, Medium and Low remain the set priorities, with Priority not set restored as a separate bottom section in the app and widget. New tasks default to unset in quick-add and full editors. Highest maps to High and Lowest to Low; existing unset values stay unset. Tests verify bottom ordering, default editor selection, native legacy records, widget headings, and preservation of every saved task identity through priority changes. Urgent stays first.
+Make task atomically creates one unset task with the project's notes and duration, and moves the project into its own completed list. Future dates are retained; an undated or past project starts Today. A conversion reference prevents duplicate task creation. Deleting the completed project preserves the new task. Projects themselves stay out of task counts and widget snapshots.
 
-The completed-list button says Show completed or Hide completed, with no count. Duration and repeat frequency share a non-wrapping horizontal group; frequency text can wrap within its own column, and time can wrap separately. Layout checks cover Sunday–Tuesday beside duration on Today and Upcoming at 320, 390 and 600px without sideways scrolling.
+Horizontal drags can begin on task-panel controls, including time, repeat frequency, labels, checkboxes and the gear. Dragging does not activate their tap actions; ordinary taps retain editing and completion behavior. Checks use touch events to verify time/repeat/emoji navigation, checkbox drags without completion and gear drags without opening an editor, along with finger tracking, settling, cancellation, vertical position and reduced motion.
 
-Both tab panels now follow the finger during horizontal dragging. Release settles from the current position; short drags return to the starting tab, and held drags can last over a second. Existing vertical positions remain stable. Checks measure both panels before release, direction and settling, cancellation, vertical scrolling, cleanup and reduced-motion behavior. The white app icon retains its black checklist design with rounded line ends.
+App, widget and Projects add controls have rounded plus strokes. The button uses the accent; the glyph uses the app background color or gradient. Web glyphs use a vector mask and shared theme variables. The native widget uses an antialiased bitmap drawn from the saved theme, with a 48dp tap area aligned to the outer edge and no outline. A fresh widget layout resource refreshes installed widget views. Native tests verify bitmap inflation, layout bounds and add-task routing; browser checks verify rounded masks and theme colors. Projects and editor screenshots were visually reviewed.
 
-The theme-reload browser fixture uses a stable local HTTP origin because file-URL sessionStorage is unreliable across browser process changes. It explicitly checks saved fixture state before and after reload; Android persistence continues to use the existing native private store.
+[Download Tasks-v0.25.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.25.0.apk).
 
-[Download Tasks-v0.24.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.24.0.apk).
+Package `com.personal.tasklist.preview`, version 0.25.0, code 25; minimum API 26, target 35; size 186,554 bytes.
 
-Package `com.personal.tasklist.preview`, version 0.24.0, code 24; minimum API 26, target 35; size 178,123 bytes.
-
-SHA-256: `832e8d1d88300eba6f8eedd57f2381b1047f0dd0cead2d4bbaf505671b5496d9`.
+SHA-256: `05f98d1050ada8b63b293ac82a07d755263208ff17c1e480dcc192447be4b626`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
