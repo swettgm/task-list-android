@@ -2353,10 +2353,10 @@ main{max-width:100%;margin:0;padding:0}
     for(const form of progressRows)if(!form.isConnected){progressResize?.unobserve(form);progressRows.delete(form);}
     document.querySelectorAll('.tm-task-item').forEach(row=>{
       const form=row.querySelector(':scope>.form-check'),home=row.querySelector(':scope>.tm-task-details>.tm-task-badges'),badge=form?.querySelector(':scope>.tm-in-progress-badge')||home?.querySelector(':scope>.tm-in-progress-badge');if(!badge||!form||!home)return;
-      if(!progressRows.has(form)){progressRows.add(form);progressResize?.observe(form);}if(badge.parentElement!==home)home.prepend(badge);
+      if(!progressRows.has(form)){progressRows.add(form);progressResize?.observe(form);}if(badge.parentElement!==home)home.prepend(badge);form.classList.remove('tm-inline-progress');
       const label=form.querySelector(':scope>.form-check-label'),title=label?.querySelector('.tm-title');if(!title||!form.clientWidth)return;
       const range=document.createRange();range.selectNodeContents(title);const lines=Array.from(range.getClientRects());const box=range.getBoundingClientRect(),badgeWidth=badge.getBoundingClientRect().width;
-      if(lines.length===1&&box.width+badgeWidth+8<=label.getBoundingClientRect().width)form.append(badge);
+      if(lines.length===1&&box.width+badgeWidth+4<=label.getBoundingClientRect().width){form.classList.add('tm-inline-progress');form.append(badge);}
     });
   });}
   global.addEventListener('resize',queueProgressLayout);if(document.fonts){document.fonts.ready.then(queueProgressLayout);document.fonts.addEventListener?.('loadingdone',queueProgressLayout);}
@@ -3491,11 +3491,11 @@ main{max-width:100%;margin:0;padding:0}
       const details=el('details','tm-children');
       const checklistKey=progressKey(task,date);details.open=openChecklists.has(checklistKey);
       details.addEventListener('toggle',()=>{if(!details.isConnected)return;if(details.open)openChecklists.add(checklistKey);else openChecklists.delete(checklistKey);});
-      const summary=el('summary','cursor-interaction');
+      const summary=el('summary','cursor-interaction'),chevron=el('span','tm-step-chevron'),countText=el('span','tm-step-count');chevron.setAttribute('aria-hidden','true');summary.append(chevron,countText);
       const count=subtaskCount(task,date),unit=task.children?'subtasks':'steps';
       const updateCount=()=>{
         const checked=Array.from({length:count},(_,i)=>Boolean(draft[childKey(task,date,i)])).filter(Boolean).length;
-        summary.textContent=checked+' / '+count+' '+unit;
+        countText.textContent=checked+'/'+count+' '+unit;
         if(parentInput){
           parentInput.checked=checked===count;
           if(parentTitle)parentTitle.classList.toggle('tm-staged',parentInput.checked&&!completed);
@@ -4084,4 +4084,15 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 <style>
 #today-task-list-20261023 .tm-task-item>.form-check>.tm-in-progress-badge{align-self:center;flex:0 0 auto;margin:0;white-space:nowrap}
 #today-task-list-20261023 .tm-task-badges:empty{display:none}
+</style>
+
+<style>
+#today-task-list-20261023 .tm-task-item>.form-check.tm-inline-progress>.form-check-label{flex:0 1 auto!important}
+#today-task-list-20261023 .tm-task-item>.form-check.tm-inline-progress>.tm-in-progress-badge{margin-left:-4px}
+#today-task-list-20261023 .tm-children{border-left:0!important;margin-left:32px;padding-left:0}
+#today-task-list-20261023 .tm-children>summary{display:flex;align-items:center;gap:6px;list-style:none}
+#today-task-list-20261023 .tm-children>summary::-webkit-details-marker{display:none}
+#today-task-list-20261023 .tm-children>summary::marker{content:""}
+#today-task-list-20261023 .tm-step-chevron{display:block;flex:0 0 10px;width:10px;height:10px;background:currentColor;clip-path:polygon(20% 10%,80% 50%,20% 90%)}
+#today-task-list-20261023 .tm-children[open]>summary>.tm-step-chevron{transform:rotate(90deg)}
 </style>

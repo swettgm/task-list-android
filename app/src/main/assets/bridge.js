@@ -445,10 +445,10 @@
     for(const form of progressRows)if(!form.isConnected){progressResize?.unobserve(form);progressRows.delete(form);}
     document.querySelectorAll('.tm-task-item').forEach(row=>{
       const form=row.querySelector(':scope>.form-check'),home=row.querySelector(':scope>.tm-task-details>.tm-task-badges'),badge=form?.querySelector(':scope>.tm-in-progress-badge')||home?.querySelector(':scope>.tm-in-progress-badge');if(!badge||!form||!home)return;
-      if(!progressRows.has(form)){progressRows.add(form);progressResize?.observe(form);}if(badge.parentElement!==home)home.prepend(badge);
+      if(!progressRows.has(form)){progressRows.add(form);progressResize?.observe(form);}if(badge.parentElement!==home)home.prepend(badge);form.classList.remove('tm-inline-progress');
       const label=form.querySelector(':scope>.form-check-label'),title=label?.querySelector('.tm-title');if(!title||!form.clientWidth)return;
       const range=document.createRange();range.selectNodeContents(title);const lines=Array.from(range.getClientRects());const box=range.getBoundingClientRect(),badgeWidth=badge.getBoundingClientRect().width;
-      if(lines.length===1&&box.width+badgeWidth+8<=label.getBoundingClientRect().width)form.append(badge);
+      if(lines.length===1&&box.width+badgeWidth+4<=label.getBoundingClientRect().width){form.classList.add('tm-inline-progress');form.append(badge);}
     });
   });}
   global.addEventListener('resize',queueProgressLayout);if(document.fonts){document.fonts.ready.then(queueProgressLayout);document.fonts.addEventListener?.('loadingdone',queueProgressLayout);}
