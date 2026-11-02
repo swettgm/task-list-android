@@ -121,7 +121,7 @@
       pairOverrides: data.pairOverrides || {}, uiContext: selectedContext
     }));
   }
-  function saveDefinition(task, isNew) {
+  function saveDefinition(task, isNew, peers) {
     const state = clone(readCanonical());
     if (isNew) {
       const custom = Array.isArray(state.customTasks) ? state.customTasks.slice() : [];
@@ -131,6 +131,7 @@
     } else {
       state.taskOverrides = Object.assign({}, state.taskOverrides, { [task.id]: clone(task) });
     }
+    if(Array.isArray(peers))state.manualLinks=manualLinksFor(state,task.id,peers);
     persist(Object.assign({}, scope.getState(), state));
     rebuild();
   }
@@ -157,16 +158,14 @@
       });
     });
   }
-  function saveManualLinks(id, peers) {
-    const state = readCanonical(), links = {};
+  function manualLinksFor(state,id,peers) {
+    const links = {};
     Object.entries(state.manualLinks || {}).forEach(([key, values]) => {
       if (key !== id && Array.isArray(values)) links[key] = values.filter(peer => peer !== id);
     });
     links[id] = [...new Set(peers.filter(peer => peer !== id))];
     links[id].forEach(peer => { links[peer] = [...new Set([...(links[peer] || []), id])]; });
-    persist(Object.assign({}, state, { manualLinks: links }));
-    applyDefinitions(readCanonical());
-    rebuild();
+    return links;
   }
   function linkedTasksField(form, task, occurrenceDate) {
     const selected = new Set(task ? scope.pairWith[task.id] || [] : []);
@@ -175,7 +174,6 @@
     const row = node('div', 'tl-link-picker');
     const select = node('select', 'form-control');
     select.setAttribute('aria-label', 'Choose a task to link');
-    const add = action('Link task', () => { if (select.value) { selected.add(select.value); render(); } }, 'btn tl-link-add');
     const list = node('div', 'tl-linked-list');
     const atDate=scope.onDate(occurrenceDate||scope.today);
     const available=candidate=>{
@@ -193,7 +191,6 @@
         const option = node('option', '', candidate.title);
         option.value = candidate.id; select.append(option);
       });
-      add.disabled = !select.value;
       list.replaceChildren();
       selected.forEach(id => {
         const target = candidates.find(candidate => candidate.id === id); if (!target) return;
@@ -202,8 +199,8 @@
         remove.setAttribute('aria-label', 'Unlink ' + target.title); chip.append(remove); list.append(chip);
       });
     }
-    select.addEventListener('change', () => { add.disabled = !select.value; });
-    row.append(select, add); group.append(row, list); form.append(group); render();
+    select.addEventListener('change', () => { if(select.value){selected.add(select.value);render();} });
+    row.append(select); group.append(row, list); form.append(group); render();
     return () => Array.from(selected);
   }
   function modal(title) {
@@ -396,8 +393,7 @@
         if(stateChanged)persist(current);
 
       }
-      if (isNew) scope.tasks.push(next); else scope.tasks[scope.tasks.findIndex(t => t.id === task.id)] = next;
-      saveDefinition(next, isNew); saveManualLinks(next.id, readLinks()); close();
+      try{saveDefinition(next,isNew,readLinks());close();}catch(e){error.textContent=e.message||"Couldn’t save. Please try again.";}
     }, 'btn btn-primary'));
     form.append(buttons); if(isNew)title.focus();else dialog.focus({preventScroll:true});
   }

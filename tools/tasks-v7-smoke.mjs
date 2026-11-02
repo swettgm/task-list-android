@@ -3,12 +3,13 @@ import { chromium } from 'playwright';
 import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { serveFixture } from './browser-fixture-server.mjs';
 const documentPath=path.resolve(process.argv[2]||'app/src/main/assets/www/index.html');
 const seedPath=path.resolve(process.argv[3]||path.join(path.dirname(documentPath),'initial-state.json'));
 const seed=JSON.parse(await readFile(seedPath,'utf8'));
 const output=path.resolve(process.env.TASK_SCREENSHOT_DIR||'build/browser-qa');await mkdir(output,{recursive:true});
 const executablePath=process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/opt/google/chrome/chrome'].find(existsSync);
+const fixture=await serveFixture(documentPath);
 const browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage']});
 const checks=[],errors=[];
 function check(value,label){if(!value)throw Error(label);checks.push(label);}
@@ -18,10 +19,10 @@ async function newPage(state,fixedTime){
   if(fixedTime){const RealDate=Date;class FixedDate extends RealDate{constructor(...args){super(...(args.length?args:[fixedTime]));}static now(){return fixedTime;}}window.Date=FixedDate;}
   const key='tasks-v7-state';let current=JSON.parse(sessionStorage.getItem(key)||JSON.stringify(initial));
   const setState=value=>{current=JSON.parse(JSON.stringify(value));sessionStorage.setItem(key,JSON.stringify(current));};
-  window.__v7={snapshot:[],getState:()=>JSON.parse(JSON.stringify(current)),setState};
-  window.TaskListNative={readState:()=>JSON.stringify(current),writeState:text=>setState(JSON.parse(text)),updateSnapshot:text=>{__v7.snapshot=JSON.parse(text);},setThemeColors(){},showWidgetSettings(){}};
+  window.__v7={writes:[],snapshot:[],getState:()=>JSON.parse(JSON.stringify(current)),setState};
+  window.TaskListNative={readState:()=>JSON.stringify(current),writeState:text=>{__v7.writes.push(JSON.parse(text));setState(JSON.parse(text));},updateSnapshot:text=>{__v7.snapshot=JSON.parse(text);},setThemeColors(){},showWidgetSettings(){}};
  },{initial:state,fixedTime});
- await page.goto(pathToFileURL(documentPath).href);await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);return page;
+ await page.goto(fixture.url);await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);return page;
 }
 const page=await newPage(seed);
 try{
@@ -51,10 +52,13 @@ try{
  check(!optionData.some(o=>o.value===ids.closed),'Completed tasks are excluded from the linked-task picker');
  check(optionData.some(o=>o.value===ids.dailyB&&o.title==='Daily link B'),'Linked-task options show titles without dates');
  await editor.locator('[aria-label="Choose a task to link"]').selectOption(ids.dailyB);
- await editor.getByRole('button',{name:'Link task',exact:true}).click();
- await editor.getByRole('button',{name:'Save task',exact:true}).click();
+ check(await editor.locator('.tl-linked-list').textContent().then(t=>t.includes('Daily link B')),'Selecting the dropdown option immediately shows its linked-task chip');
+ const beforeCancel=await page.evaluate(()=>JSON.stringify(__v7.getState().manualLinks||{}));await editor.getByRole('button',{name:'Cancel',exact:true}).click();check(await page.evaluate(()=>JSON.stringify(__v7.getState().manualLinks||{}))===beforeCancel,'Cancelling the editor does not save selected links');
+ await todayRow(ids.dailyA).locator('.tl-edit-button').click();await editor.locator('[aria-label="Choose a task to link"]').selectOption(ids.dailyB);const beforeSave=await page.evaluate(()=>__v7.writes.length);
+ await editor.getByRole('button',{name:'Save task',exact:true}).click();check(await page.evaluate(({a,b,start})=>__v7.writes.slice(start).length>0&&__v7.writes.slice(start).every(s=>s.manualLinks?.[a]?.includes(b)&&s.manualLinks?.[b]?.includes(a)),{a:ids.dailyA,b:ids.dailyB,start:beforeSave}),'Task changes and reciprocal links are persisted together');
  await page.waitForFunction(id=>{const row=[...document.querySelectorAll('#pt-list [data-task-id]')].find(r=>r.dataset.taskId===id);return row?.textContent.includes('Daily link B')&&row.textContent.includes('🔗');},ids.dailyA);
  check(await todayRow(ids.dailyA).textContent().then(t=>t.includes('Daily link B')&&t.includes('🔗')),'Newly linked repeating task shows its link icon and peer immediately');
+ check(await todayRow(ids.dailyA).locator('.tm-pair-note').evaluate(n=>n.textContent==='🔗 Daily link B'&&getComputedStyle(n).fontSize==='12px'),'Saved link renders as a small chain-and-title line');await page.screenshot({path:path.join(output,'manual-linked-tasks.png')});
  let state=await page.evaluate(()=>__v7.getState());
  check(state.manualLinks[ids.dailyA].includes(ids.dailyB)&&state.manualLinks[ids.dailyB].includes(ids.dailyA),'Recurring links are saved bidirectionally by task identity');
  await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
@@ -206,4 +210,4 @@ try{
  await page.evaluate(()=>{const remote=__v7.getState();remote.inProgress=null;__v7.setState(remote);TaskListApp.reloadFromNative();});check(await page.locator('#pt-current').isHidden(),'Stopping from the widget clears the app progress banner');
  check(errors.length===0,'No page errors in Tasks v7 behavior checks');
  console.log(JSON.stringify({passed:checks.length,checks},null,2));
-}finally{await browser.close();}
+}finally{await browser.close();await fixture.close();}

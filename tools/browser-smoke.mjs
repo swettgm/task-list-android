@@ -138,7 +138,7 @@ const result = await page.evaluate(async () => {
   check(dialog.querySelector('input[type=date]')&&dialog.querySelector('input[placeholder="Any time"]')&&dialog.querySelector('input[aria-label=Hours]')&&dialog.querySelector('input[aria-label=Minutes]'),'Date, time, hours, and minutes remain available together');
   const picker=dialog.querySelector('[aria-label="Choose a task to link"]');
   check([...picker.options].some(option=>option.value==='custom-native-qa'&&option.textContent==='Native popup task')&&![...picker.options].some(option=>option.value==='custom-completed-link-qa'),'Link dropdown offers open tasks by title and excludes completed tasks');
-  picker.value='custom-native-qa';picker.dispatchEvent(new Event('change'));clickText(dialog,'Link task');
+  picker.value='custom-native-qa';picker.dispatchEvent(new Event('change'));check(dialog.querySelector('.tl-linked-list').textContent.includes('Native popup task'),'Choosing a linked task immediately adds it to the selection without another button');
   clickText(dialog,'Save task');await tick();
   let created=()=>rows().find(row=>row.querySelector('.tm-title').textContent==='Browser-created task');
   check(!!created()&&created().querySelector('.tm-pair-note')?.textContent.includes('Native popup task'),'Manually linked task appears on the saved row');
