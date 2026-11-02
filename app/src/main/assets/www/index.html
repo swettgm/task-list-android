@@ -1998,7 +1998,7 @@ main{max-width:100%;margin:0;padding:0}
   const contextIcon=label=>{const stored=readCanonical().contextIcons||{},defaults={'At home':'🏠','On the road':'🚗','On the phone':'📱','On the computer':'💻','Outdoors':'🌳','Guild':GUILD_ICON_TOKEN};if(Object.prototype.hasOwnProperty.call(stored,label)&&typeof stored[label]==='string'&&stored[label].trim())return stored[label];return Object.prototype.hasOwnProperty.call(defaults,label)?defaults[label]:'🏷️';};
   function contextGlyph(label,className='') {
     const glyph=node('span',className),value=contextIcon(label);
-    if(value===GUILD_ICON_TOKEN){const img=node('img','tl-context-image');img.src=GUILD_ICON_DATA;img.alt=label;img.width=64;img.height=64;glyph.append(img);}else glyph.textContent=value;
+    if(value===GUILD_ICON_TOKEN){const img=node('img','tl-context-image');img.src=GUILD_ICON_DATA;img.alt=label;img.draggable=false;img.width=64;img.height=64;glyph.append(img);}else glyph.textContent=value;
     return glyph;
   }
   function derivedContexts(task) {
@@ -2019,7 +2019,7 @@ main{max-width:100%;margin:0;padding:0}
   function matches(task) { return !selectedContext || derivedContexts(task).includes(selectedContext); }
   function rebuild() {
     if (!scope) return;
-    scope.renderToday(); scope.renderFuture(); updateContextOptions(); queueSnapshot();
+    scope.renderToday(); scope.renderFuture(); updateContextOptions(); queueSnapshot();if(projectPanel?.dialog.isConnected)projectPanel.render();
   }
   function saveExtras() {
     if (!scope) return;
@@ -2446,14 +2446,90 @@ main{max-width:100%;margin:0;padding:0}
     }
     const actions = node('div', 'tl-dialog-actions'); actions.append(action('Close', close, 'btn')); form.append(actions);
   }
+  let projectPanel=null,projectsCompletedOpen=false;
+  function projectMap(state=readCanonical()){
+    const value=state.projects;if(value===undefined)return{};
+    if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Couldn’t read saved projects. Nothing has been replaced.');
+    for(const [id,project]of Object.entries(value))if(!project||typeof project!=='object'||project.id!==id||typeof project.title!=='string')throw Error('Couldn’t read a saved project. Nothing has been replaced.');
+    return value;
+  }
+  function projectDeletions(state=readCanonical()){
+    const value=state.projectDeleted;if(value===undefined)return{};if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Couldn’t read project history.');return value;
+  }
+  function freshProjectState(){
+    if(!native||!native.readState)return readCanonical();
+    const value=JSON.parse(native.readState());if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Couldn’t read saved projects.');return value;
+  }
+  function projectDuration(value){const hours=Math.floor(value/60),minutes=value%60;return[hours?hours+' hr':'',minutes?minutes+' min':''].filter(Boolean).join(' ');}
+  function plusButton(fn,label,className='btn'){
+    const button=action('',fn,className),glyph=node('span','tl-plus-glyph');glyph.setAttribute('aria-hidden','true');button.append(glyph);button.setAttribute('aria-label',label);button.title=label;return button;
+  }
+  function saveProjectRecord(record,isNew,mode){
+    const latest=freshProjectState(),fresh=projectMap(latest),removed=projectDeletions(latest);
+    if(removed[record.id]||(!isNew&&!fresh[record.id]))throw Error('This project was deleted. Reopen Projects to refresh.');
+    if(isNew&&fresh[record.id])throw Error('A project with this identity already exists. Please reopen the editor.');
+    const projects={...projectMap()},stamp=new Date().toISOString();
+    record.updatedAt=stamp;
+    if(mode==='delete'){
+      delete projects[record.id];persist({projects,projectDeleted:{...projectDeletions(),[record.id]:stamp}});
+    }else{
+      if(mode==='complete'){record.completed=true;record.completedAt=stamp;}
+      if(mode==='reopen'){record.completed=false;delete record.completedAt;}
+      if(mode==='task'){
+        if(fresh[record.id]?.convertedTaskId)throw Error('This project already has a task.');
+        const task={id:'app-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),title:record.title,priority:'UNSET',due:record.date&&record.date>scope.today?record.date:scope.today,_contexts:[]};
+        if(record.notes)task.notes=record.notes;if(record.minutes!==undefined)task.minutes=record.minutes;
+        record.completed=true;record.completedAt=stamp;record.convertedTaskId=task.id;projects[record.id]=record;
+        persist({projects,customTasks:[...(readCanonical().customTasks||[]),task]});
+      }else{projects[record.id]=record;persist({projects});}
+    }
+    rebuild();
+  }
+  function editProject(project=null){
+    const isNew=!project,original=project?clone(project):{id:'project-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),createdAt:new Date().toISOString(),completed:false};
+    const {dialog,form,close}=modal(isNew?'Add project':'Edit project');dialog.classList.add('tl-project-editor');form.classList.add('tl-task-form');
+    const title=inputField(form,'Project','text',original.title||'');title.placeholder='Project or idea';title.required=true;title.setAttribute('aria-label','Project title');
+    const notes=inputField(form,'Notes','textarea',original.notes||'');notes.rows=4;notes.placeholder='Ideas to assess later';notes.setAttribute('aria-label','Project notes');
+    const date=inputField(form,'Date','date',original.date||'');date.setAttribute('aria-label','Project date');
+    const duration=node('div','tl-duration-row');form.append(duration);const hours=inputField(duration,'Hours','number',original.minutes===undefined?'':Math.floor(original.minutes/60)),minutes=inputField(duration,'Minutes','number',original.minutes===undefined?'':original.minutes%60);hours.min=minutes.min='0';hours.step=minutes.step='1';minutes.max='59';hours.setAttribute('aria-label','Project hours');minutes.setAttribute('aria-label','Project minutes');
+    const error=node('p','tl-form-error');error.setAttribute('role','alert');form.append(error);const actions=node('div','tl-dialog-actions tl-project-actions');
+    const read=()=>{const next=clone(original);if(!title.value.trim())throw Error('Enter a project title.');next.title=title.value.trim();if(notes.value.trim())next.notes=notes.value.trim();else delete next.notes;
+      if(date.value){const parsed=new Date(date.value+'T12:00:00Z');if(!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==date.value)throw Error('Choose a valid date.');next.date=date.value;}else delete next.date;
+      const total=Number(hours.value)*60+Number(minutes.value);if((hours.value&&!/^\d+$/.test(hours.value))||(minutes.value&&!/^\d+$/.test(minutes.value))||Number(minutes.value)>59||((hours.value||minutes.value)&&(!Number.isSafeInteger(total)||total<1)))throw Error('Enter hours and 0–59 minutes.');if(hours.value||minutes.value)next.minutes=total;else delete next.minutes;return next;};
+    const save=mode=>{try{const next=mode==='delete'?clone(original):read();saveProjectRecord(next,isNew,mode);close();}catch(e){error.textContent=e.message||'Couldn’t save this project. Please try again.';}};
+    if(!isNew){let armed=false;const trash=action('🗑',()=>{if(!armed){armed=true;trash.textContent='Are you sure?';trash.classList.add('tl-project-delete-armed');trash.setAttribute('aria-label','Confirm delete project');return;}save('delete');},'btn tl-project-delete');trash.setAttribute('aria-label','Delete project');form.addEventListener('input',()=>{armed=false;trash.textContent='🗑';trash.classList.remove('tl-project-delete-armed');trash.setAttribute('aria-label','Delete project');});actions.append(trash);
+      actions.append(action(original.completed?'Reopen':'Complete',()=>save(original.completed?'reopen':'complete'),'btn'));
+      const make=action(original.convertedTaskId?'Task already created':'Make task',()=>save('task'),'btn');make.disabled=!!original.convertedTaskId;actions.append(make);
+    }
+    actions.append(action('Cancel',close),action('Save',()=>save('save'),'btn btn-primary'));form.append(actions);form.addEventListener('submit',event=>{event.preventDefault();save('save');});if(isNew)title.focus();else dialog.focus({preventScroll:true});
+  }
+  function showProjects(){
+    if(projectPanel?.dialog.isConnected){projectPanel.dialog.focus({preventScroll:true});return;}
+    const {dialog,form,close}=modal('Projects');dialog.classList.add('tl-projects');const heading=dialog.querySelector('h2'),header=node('div','tl-projects-header');heading.replaceWith(header);header.append(heading,plusButton(()=>editProject(),'Add project','btn tl-project-add'));
+    const active=node('div','tl-project-list'),completed=node('div','tl-project-list tl-project-completed'),toggle=action('Show completed',()=>{projectsCompletedOpen=!projectsCompletedOpen;render();},'btn tl-project-toggle');toggle.setAttribute('aria-controls','tl-project-completed');completed.id='tl-project-completed';
+    const error=node('p','tl-form-error');error.setAttribute('role','alert');form.append(active,toggle,completed,error,action('Back to tasks',close,'btn'));
+    const row=project=>{const button=action('',()=>editProject(project),'tl-project-row');button.dataset.projectId=project.id;button.append(node('strong','tl-project-title',project.title));
+      const parts=[project.date?new Date(project.date+'T12:00:00Z').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}):'Any date'];if(project.minutes!==undefined)parts.push(projectDuration(project.minutes));if(project.convertedTaskId)parts.push('Added to task list');button.append(node('span','tl-project-meta',parts.join(' · ')));if(project.notes)button.append(node('span','tl-project-note',project.notes));return button;};
+    const render=()=>{try{const deleted=projectDeletions(),projects=Object.values(projectMap()).filter(p=>!deleted[p.id]),open=projects.filter(p=>!p.completed).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999')||a.title.localeCompare(b.title,undefined,{sensitivity:'base',numeric:true})),done=projects.filter(p=>p.completed).sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||'')||a.title.localeCompare(b.title));
+        active.replaceChildren(...open.map(row));if(!open.length)active.append(node('p','text-muted','No projects yet.'));completed.replaceChildren(...done.map(row));if(!done.length)completed.append(node('p','text-muted','No completed projects.'));completed.hidden=!projectsCompletedOpen;toggle.textContent=projectsCompletedOpen?'Hide completed':'Show completed';toggle.setAttribute('aria-expanded',String(projectsCompletedOpen));error.textContent='';
+      }catch(e){error.textContent=e.message;}};
+    projectPanel={dialog,render};render();dialog.focus({preventScroll:true});
+  }
+  function bindProjectDate(){
+    const date=document.getElementById('pt-date');if(!date)return;date.setAttribute('role','button');date.tabIndex=0;date.title='Hold to open projects';date.setAttribute('aria-haspopup','dialog');
+    let timer=null,start=null;const clear=()=>{if(timer!==null)clearTimeout(timer);timer=null;};
+    date.addEventListener('pointerdown',event=>{clear();if(event.button!==0||event.isPrimary===false)return;start={x:event.clientX,y:event.clientY};timer=setTimeout(()=>{timer=null;if(!document.querySelector('dialog[open]')){showProjects();try{if(native&&native.priorityHaptic)native.priorityHaptic();}catch(_){}}},450);});
+    date.addEventListener('pointermove',event=>{if(start&&Math.hypot(event.clientX-start.x,event.clientY-start.y)>10)clear();});for(const name of ['pointerup','pointercancel','pointerleave'])date.addEventListener(name,clear);global.addEventListener('blur',clear);document.addEventListener('visibilitychange',()=>{if(document.hidden)clear();});date.addEventListener('contextmenu',event=>event.preventDefault());date.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();clear();showProjects();}});date.addEventListener('click',event=>{if(event.detail===0&&!document.querySelector('dialog[open]'))showProjects();});
+  }
+
   function addToolbar() {
     const root = scope.root; if (root.querySelector('#tl-tools')) return;
     const toolbar = node('div', 'tl-tools'); toolbar.id = 'tl-tools';
     const select = node('select', 'form-control'); select.id = 'tl-context-filter'; select.setAttribute('aria-label', 'Filter tasks by context');
     select.addEventListener('change', () => global.TaskListApp.setContextFilter(select.value)); const filterWrap=node('div','tl-context-filter-wrap'),preview=node('span','tl-context-filter-preview');preview.id='tl-context-filter-preview';preview.hidden=true;preview.setAttribute('aria-hidden','true');filterWrap.append(select,preview);toolbar.append(filterWrap);
     const settings = action('⚙', showSettings, 'btn tl-settings'); settings.setAttribute('aria-label', 'Settings'); settings.title = 'Settings'; toolbar.append(settings);
-    const add = action('+', () => quickAddTask(), 'btn tl-add-task'); add.setAttribute('aria-label', 'Add task'); add.title = 'Add task';
-    root.querySelector('.tm-top').after(toolbar); root.append(add); updateContextOptions();
+    const add = plusButton(() => quickAddTask(), 'Add task', 'btn tl-add-task'); add.setAttribute('aria-label', 'Add task'); add.title = 'Add task';
+    root.querySelector('.tm-top').after(toolbar); root.append(add); updateContextOptions();bindProjectDate();
   }
   global.TaskListBridge = {
     editComponent,
@@ -2464,9 +2540,9 @@ main{max-width:100%;margin:0;padding:0}
       const state = readCanonical(); selectedContext = typeof state.uiContext === 'string' ? state.uiContext : '';
       applyDefinitions(state); applyTheme(); addToolbar();
       global.TaskListApp = {
-        quickAddTask, handleBack,
+        quickAddTask, handleBack,showProjects,
         showToday(){scope.showView('today');},
-        isInteracting(){return scope.isInteracting();},
+        isInteracting(){return scope.isInteracting()||!!document.querySelector('dialog[open]');},
         addTask(prefill) { try { if (typeof prefill === 'string') prefill = JSON.parse(prefill || '{}'); } catch (_) { prefill = {}; } editTask(null, null, prefill || {}); },
         setContextFilter(label) { selectedContext = typeof label === 'string' ? label : ''; saveExtras(); rebuild(); },
         reloadFromNative() { cached = null;lastCanonical=null; const latest = readCanonical(); scope.setState(latest); applyDefinitions(latest); selectedContext = typeof latest.uiContext === 'string' ? latest.uiContext : ''; applyTheme(); rebuild(); },
@@ -3621,7 +3697,7 @@ main{max-width:100%;margin:0;padding:0}
     const cancelSwipe=(animate=true)=>{swipeStart=null;if(viewDrag){const {from,ratio}=viewDrag;showView(from,animate,1-ratio);}};
     root.addEventListener('touchstart',event=>{
       cancelSwipe(false);if(viewTransition)viewTransition.finish();
-      if(event.touches.length!==1||document.querySelector('dialog[open]')||event.target.closest('input,button,select,textarea,a,summary'))return;
+      if(event.touches.length!==1||document.querySelector('dialog[open]')||event.target.closest('input,button,select,textarea,a,summary')&&!event.target.closest('.tl-meta-edit,.tl-label-edit'))return;
       const t=event.touches[0];swipeStart={x:t.clientX,y:t.clientY,horizontal:false,from:find('pt-today-tab').getAttribute('aria-selected')==='true'?'today':'upcoming'};
     },{passive:true});
     root.addEventListener('touchmove',event=>{
@@ -3641,7 +3717,7 @@ main{max-width:100%;margin:0;padding:0}
     root.addEventListener('touchend',event=>{
       const start=swipeStart;swipeStart=null;if(!start)return;
       if(start.horizontal)suppressClickUntil=Date.now()+400;
-      if(viewDrag){const drag=viewDrag,commit=drag.ratio*drag.width>=Math.min(72,Math.max(40,drag.width*.22));showView(commit?drag.target:drag.from,true,commit?drag.ratio:1-drag.ratio);}
+      if(viewDrag){const drag=viewDrag,commit=drag.ratio*drag.width>=Math.min(56,Math.max(32,drag.width*.16));showView(commit?drag.target:drag.from,true,commit?drag.ratio:1-drag.ratio);}
     },{passive:true});
     root.addEventListener('touchcancel',()=>cancelSwipe(),{passive:true});
     window.addEventListener('blur',()=>{cancelSwipe(false);if(viewTransition)viewTransition.finish();});
@@ -3938,4 +4014,13 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 #today-task-list-20261023 .tl-meta-schedule>.tl-meta-duration,#today-task-list-20261023 .tl-meta-separator{flex:0 0 auto;white-space:nowrap}
 #today-task-list-20261023 .tl-meta-schedule>.tl-meta-frequency{flex:0 1 auto;min-width:0;white-space:normal;overflow-wrap:anywhere}
 #today-task-list-20261023 .tl-meta-time-wrap{display:inline-block;white-space:nowrap}
+</style>
+
+<style>
+#pt-date{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+.tl-plus-glyph{display:block;width:32px;height:32px;background:var(--tl-app-gradient,var(--tl-bg,#10151f));--tl-plus-mask:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M12%204V20M4%2012H20'%20fill='none'%20stroke='black'%20stroke-width='3.5'%20stroke-linecap='round'/%3E%3C/svg%3E");-webkit-mask:var(--tl-plus-mask) center/contain no-repeat;mask:var(--tl-plus-mask) center/contain no-repeat}
+.tl-projects-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.tl-projects-header h2{margin:0}
+.tl-project-add{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:var(--tl-accent)!important;border:0!important;padding:0!important}.tl-project-add .tl-plus-glyph{width:26px;height:26px}
+.tl-project-list{display:flex;flex-direction:column;gap:6px}.tl-project-row{display:flex;flex-direction:column;gap:5px;width:100%;text-align:left;border:0;background:transparent;color:var(--tl-text);padding:10px 2px;overflow-wrap:anywhere;cursor:pointer}.tl-project-title{font-size:16px;line-height:1.35}.tl-project-meta,.tl-project-note{font-size:12px;color:var(--tl-muted)}.tl-project-note{white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tl-project-toggle{margin:12px 0}.tl-project-completed{margin-bottom:12px}.tl-project-actions{display:flex;flex-wrap:wrap;gap:8px}.tl-project-delete{margin-right:auto}.tl-project-delete-armed{background:#b42336!important;border-color:#b42336!important;color:white!important}
 </style>

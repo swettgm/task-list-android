@@ -48,7 +48,7 @@ const result = await page.evaluate(async () => {
   check(topControls.every(control=>Math.abs(control.getBoundingClientRect().height-48)<1),'Header dropdown and buttons have matching 48px heights');
   check(document.querySelector('#tl-tools').children.length===2&&!document.querySelector('.tl-widget'),'Top bar contains only the larger context dropdown and Settings');
   const add=document.querySelector('.tl-add-task');
-  check(add.textContent==='+'&&getComputedStyle(add).position==='fixed'&&add.getBoundingClientRect().height===56,'Add task is a large corner plus button');
+  check(!!add.querySelector('.tl-plus-glyph')&&getComputedStyle(add).position==='fixed'&&add.getBoundingClientRect().height===56,'Add task is a large corner plus button');
   document.querySelector('.tl-settings').click();
   check(document.querySelector('dialog h2').textContent==='Settings','Settings opens from the gear');
   clickText(document.querySelector('dialog'),'Add home-screen widget');

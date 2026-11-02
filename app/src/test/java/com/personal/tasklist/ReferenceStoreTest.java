@@ -34,6 +34,13 @@ public class ReferenceStoreTest {
         tasks = new TaskStore(context);
     }
 
+    @Test public void projectsStaySeparateAndSurviveNativeTaskWrites() throws Exception {
+        JSONObject projects=new JSONObject().put("project-test",new JSONObject().put("id","project-test").put("title","Assess future idea").put("notes","Private project notes").put("date","2026-12-01").put("minutes",75).put("completed",true));
+        reference.writeState(new JSONObject().put("projects",projects).put("projectDeleted",new JSONObject().put("deleted-project","2026-11-02")).put("customTasks",new JSONArray()).put("completed",new JSONObject()).toString());
+        assertTrue(tasks.all().isEmpty());String id=reference.addCustomTask("Actual task",Collections.emptyList(),"UNSET",false);String day=LocalDate.now(ZoneId.of("America/New_York")).toString();assertTrue(reference.completeTask("html:"+id+":"+day));
+        JSONObject reopened=new JSONObject(new ReferenceStore(context).readState());assertEquals(projects.toString(),reopened.getJSONObject("projects").toString());assertEquals("2026-11-02",reopened.getJSONObject("projectDeleted").getString("deleted-project"));assertEquals(1,tasks.all().size());assertEquals("Actual task",tasks.all().get(0).title);
+    }
+
     @Test public void emptyStoreDoesNotInventTasksOrState() {
         assertEquals("{}", reference.readState());
         assertEquals(0, reference.revision());
