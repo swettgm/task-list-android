@@ -257,6 +257,64 @@
     return () => inputs.filter(x => x.check.checked).map(x => x.label);
   }
 
+  function frequencyFields(form,original,initialDate,date){
+    const oldSpec=global.TasksSchedule.fromTask(original,initialDate);
+    const oldMode=oldSpec.mode==='repeat'&&oldSpec.unit==='day'&&oldSpec.amount===1?'daily':(oldSpec.mode==='weekdays'&&JSON.stringify(oldSpec.weekdays)==='[0,6]'?'weekends':oldSpec.mode);
+    if(oldSpec.mode==='repeat')date.value=oldSpec.start;
+    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['daily','Daily'],['weekdays','Weekdays'],['weekends','Weekends'],['repeat','Every…']], oldMode);
+    const repeatRow=node('div','tl-repeat-row');
+    repeatRow.append(node('span','','Every'));
+    const amount=node('input','form-control tl-repeat-amount');amount.type='number';amount.min='1';amount.step='1';amount.value=oldSpec.amount||1;amount.setAttribute('aria-label','Repeat amount');
+    const unit=node('select','form-control tl-repeat-unit');unit.setAttribute('aria-label','Repeat unit');
+    [['day','Day'],['week','Week'],['month','Month'],['year','Year']].forEach(([value,label])=>{const option=node('option','',label);option.value=value;unit.append(option);});unit.value=oldSpec.unit||'day';
+    repeatRow.append(amount,unit);recurrence.append(repeatRow);
+    const week = node('div', 'tl-weekdays');
+    const weekChecks = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((name, index) => {
+      const label = node('label', 'tl-context-choice'), check = node('input'); check.type = 'checkbox'; check.checked = (oldSpec.weekdays || []).includes(index);
+      check.setAttribute('aria-label', name); label.append(check, node('span', '', name.slice(0, 3))); week.append(label); return check;
+    }); recurrence.append(week);
+    const toggleRepeat = () => {repeatRow.hidden=recurrence.value!=='repeat';week.hidden=recurrence.value!=='weekdays'&&!(recurrence.value==='repeat'&&unit.value==='week');};
+    recurrence.addEventListener('change',toggleRepeat);unit.addEventListener('change',toggleRepeat);toggleRepeat();
+    return {oldSpec,oldMode,recurrence,amount,unit,weekChecks};
+  }
+  function editComponent(task,item,component){
+    const original=clone(task),names={time:'Time',frequency:'Frequency',duration:'Duration'};
+    if(!names[component])return;
+    const {dialog,form,close}=modal(names[component]);form.classList.add('tl-task-form','tl-component-form');
+    form.append(node('p','tl-component-title',task.title));
+    let readChange;
+    if(component==='time'){
+      const match=/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i.exec(original.time||'');let value='';if(match){let h=Number(match[1]);if(match[3])h=h%12+(match[3].toUpperCase()==='PM'?12:0);value=String(h).padStart(2,'0')+':'+match[2];}
+      const time=inputField(form,'Time','time',value);time.setAttribute('aria-label','Time');
+      const notifyLabel=node('label','tl-context-choice'),notify=node('input');notify.type='checkbox';notify.checked=!!original.notify;notify.setAttribute('aria-label','Notify at scheduled time');notifyLabel.append(notify,node('span','','Notify'));form.append(notifyLabel);
+      const sync=()=>{notify.disabled=!time.value;if(!time.value)notify.checked=false;};time.addEventListener('input',sync);time.addEventListener('change',sync);sync();
+      form.append(action('Clear',()=>{time.value='';sync();},'btn tl-clear-time'));
+      readChange=next=>{if(time.value){const [h,m]=time.value.split(':').map(Number);next.time=(h%12||12)+':'+String(m).padStart(2,'0')+(h>=12?' PM':' AM');}else delete next.time;if(time.value&&notify.checked)next.notify=true;else delete next.notify;};
+    }else if(component==='duration'){
+      const row=node('div','tl-duration-row');form.append(row);const hours=inputField(row,'Hours','number',original.minutes===undefined?'':Math.floor(original.minutes/60)),minutes=inputField(row,'Minutes','number',original.minutes===undefined?'':original.minutes%60);hours.min=minutes.min='0';hours.step=minutes.step='1';minutes.max='59';hours.setAttribute('aria-label','Hours');minutes.setAttribute('aria-label','Minutes');
+      readChange=next=>{if((hours.value&&!/^\d+$/.test(hours.value))||(minutes.value&&!/^\d+$/.test(minutes.value))||Number(minutes.value)>59||((hours.value||minutes.value)&&(!Number.isSafeInteger(Number(hours.value)*60+Number(minutes.value))||Number(hours.value)*60+Number(minutes.value)<1)))throw Error('Enter hours and 0–59 minutes.');if(hours.value||minutes.value)next.minutes=Number(hours.value)*60+Number(minutes.value);else delete next.minutes;};
+    }else{
+      const initialDate=item?item.date:scope.today,date=inputField(form,'Starts','date',initialDate);date.setAttribute('aria-label','Repeat start date');
+      const fields=frequencyFields(form,original,initialDate,date),{recurrence,amount,unit,weekChecks}=fields;
+      const signature=()=>JSON.stringify([recurrence.value,date.value,recurrence.value==='repeat'?[amount.value,unit.value]:null,recurrence.value==='weekdays'||recurrence.value==='repeat'&&unit.value==='week'?weekChecks.map(c=>c.checked):null]),initialSignature=signature();
+      readChange=next=>{
+        const parsed=new Date(date.value+'T12:00:00Z');if(!/^\d{4}-\d{2}-\d{2}$/.test(date.value)||!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==date.value)throw Error('Choose a valid date.');
+        const chosenDays=weekChecks.flatMap((check,index)=>check.checked?[index]:[]);
+        if(recurrence.value==='weekdays'&&!chosenDays.length)throw Error('Select at least one weekday.');
+        if(recurrence.value==='repeat'&&(!/^\d+$/.test(amount.value)||!Number.isSafeInteger(Number(amount.value))||Number(amount.value)<1))throw Error('Repeat amount must be at least 1.');
+        if(signature()===initialSignature)return;
+        ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence','repeat','startsOn'].forEach(key=>delete next[key]);
+        if(recurrence.value==='once')next.due=date.value;
+        if(recurrence.value==='daily'){next.repeat={amount:1,unit:'day',start:date.value};next.recurrence='Daily';}
+        if(recurrence.value==='weekends'){next.days=[0,6];next.startsOn=date.value;next.recurrence='Weekends';}
+        if(recurrence.value==='weekdays'){next.days=chosenDays;next.startsOn=date.value;next.recurrence=global.TasksSchedule.weekdaysLabel(chosenDays);}
+        if(recurrence.value==='repeat'){next.repeat={amount:Number(amount.value),unit:unit.value,start:date.value};if(unit.value==='week'&&chosenDays.length)next.repeat.weekdays=chosenDays;next.recurrence=global.TasksSchedule.describe(next);}
+      };
+    }
+    const error=node('p','tl-form-error');error.setAttribute('role','alert');form.append(error);const buttons=node('div','tl-dialog-actions');
+    const save=()=>{try{const next=clone(original);readChange(next);saveDefinition(next,false);close();}catch(e){error.textContent=e.message||'Couldn’t save. Please try again.';}};
+    buttons.append(action('Cancel',close),action('Save',save,'btn btn-primary'));form.append(buttons);form.addEventListener('submit',e=>{e.preventDefault();save();});dialog.focus({preventScroll:true});
+  }
   function editTask(task, item, prefill) {
     if (!scope) return;
     const isNew = !task; const original = task ? clone(task) : {};
@@ -280,23 +338,7 @@
     urgentWrap.append(urgent, node('span', '', 'Urgent'));
     const flags=node('div','tl-task-flags'),notifyWrap=node('label','tl-context-choice tl-notify'),notify=node('input');notify.type='checkbox';notify.checked=original.notify===true;notify.setAttribute('aria-label','Notify at scheduled time');notifyWrap.append(notify,node('span','','Notify'));flags.append(urgentWrap,notifyWrap);schedule.append(flags);
     const syncNotify=()=>{notify.disabled=!time.value;if(!time.value)notify.checked=false;notifyWrap.title=time.value?'Send a reminder at this time':'Set a time to enable notifications';};time.addEventListener('input',syncNotify);time.addEventListener('change',syncNotify);syncNotify();
-    const oldSpec=global.TasksSchedule.fromTask(original,initialDate);
-    const oldMode=oldSpec.mode==='repeat'&&oldSpec.unit==='day'&&oldSpec.amount===1?'daily':(oldSpec.mode==='weekdays'&&JSON.stringify(oldSpec.weekdays)==='[0,6]'?'weekends':oldSpec.mode);
-    if(oldSpec.mode==='repeat')date.value=oldSpec.start;
-    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['daily','Daily'],['weekdays','Weekdays'],['weekends','Weekends'],['repeat','Every…']], oldMode);
-    const repeatRow=node('div','tl-repeat-row');
-    repeatRow.append(node('span','','Every'));
-    const amount=node('input','form-control tl-repeat-amount');amount.type='number';amount.min='1';amount.step='1';amount.value=oldSpec.amount||1;amount.setAttribute('aria-label','Repeat amount');
-    const unit=node('select','form-control tl-repeat-unit');unit.setAttribute('aria-label','Repeat unit');
-    [['day','Day'],['week','Week'],['month','Month'],['year','Year']].forEach(([value,label])=>{const option=node('option','',label);option.value=value;unit.append(option);});unit.value=oldSpec.unit||'day';
-    repeatRow.append(amount,unit);recurrence.append(repeatRow);
-    const week = node('div', 'tl-weekdays');
-    const weekChecks = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((name, index) => {
-      const label = node('label', 'tl-context-choice'), check = node('input'); check.type = 'checkbox'; check.checked = (oldSpec.weekdays || []).includes(index);
-      check.setAttribute('aria-label', name); label.append(check, node('span', '', name.slice(0, 3))); week.append(label); return check;
-    }); recurrence.append(week);
-    const toggleRepeat = () => {repeatRow.hidden=recurrence.value!=='repeat';week.hidden=recurrence.value!=='weekdays'&&!(recurrence.value==='repeat'&&unit.value==='week');};
-    recurrence.addEventListener('change',toggleRepeat);unit.addEventListener('change',toggleRepeat);toggleRepeat();
+    const {oldSpec,oldMode,recurrence,amount,unit,weekChecks}=frequencyFields(form,original,initialDate,date);
     const selected = task ? derivedContexts(task) : (prefill && (prefill.labels || [prefill.label || prefill.widget_label].filter(Boolean))) || (selectedContext ? [selectedContext] : []);
     const readContexts = contextsField(form, selected);
     const readLinks = linkedTasksField(form, task, item?item.date:scope.today);
@@ -482,6 +524,7 @@
     root.querySelector('.tm-top').after(toolbar); root.append(add); updateContextOptions();
   }
   global.TaskListBridge = {
+    editComponent,
     contextsFor: derivedContexts, contextMatches: matches, decorateRow, queueSnapshot, lastSnapshot: [],
     attach(context) {
       scope = context;
