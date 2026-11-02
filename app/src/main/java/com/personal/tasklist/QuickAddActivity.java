@@ -28,7 +28,8 @@ public final class QuickAddActivity extends Activity {
         form.addView(title,new LinearLayout.LayoutParams(-1,dp(56)));
         contexts.add("No label");contexts.addAll(new TaskStore(this).labels());
         String selected=getIntent().getStringExtra("widget_label");if(selected!=null&&!selected.isEmpty()&&!contexts.contains(selected))contexts.add(selected);
-        context=spinner("Context label",contexts);if(selected!=null)context.setSelection(Math.max(0,contexts.indexOf(selected)));form.addView(context);
+        List<String> displayedContexts=new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextEmoji(value));
+        context=spinner("Context label",displayedContexts);if(selected!=null)context.setSelection(Math.max(0,contexts.indexOf(selected)));form.addView(context);
         LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
         priority=spinner("Priority",Arrays.asList("Highest","High","Medium","Low","Lowest","Not set"));priority.setSelection(5);
         when=spinner("When to do it",Arrays.asList("Today","Tomorrow"));
@@ -48,7 +49,7 @@ public final class QuickAddActivity extends Activity {
             if(store.readState().equals("{}"))try(InputStream in=getAssets().open("www/initial-state.json");ByteArrayOutputStream out=new ByteArrayOutputStream()){
                 byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)out.write(b,0,n);String seed=out.toString(StandardCharsets.UTF_8.name()).trim();if(!seed.isEmpty()&&!seed.equals("{}"))store.writeState(seed);
             }
-            List<String> labels=context.getSelectedItemPosition()==0?Collections.emptyList():Collections.singletonList(context.getSelectedItem().toString());
+            List<String> labels=context.getSelectedItemPosition()==0?Collections.emptyList():Collections.singletonList(contexts.get(context.getSelectedItemPosition()));
             store.addCustomTask(title.getText().toString(),labels,TaskStore.PRIORITIES.get(priority.getSelectedItemPosition()),when.getSelectedItemPosition()==1);
             finish();
         }catch(Exception error){title.setError("Couldn’t save. Please try again.");}

@@ -354,6 +354,13 @@ public final class TaskStore {
         if (!(value instanceof Integer) && !(value instanceof Long)) throw new JSONException("Task field must be an integer: " + key);
         return ((Number) value).longValue();
     }
+    public static String contextEmoji(String label) {
+        switch(label){
+            case "At home":return "🏠";case "On the road":return "🚗";
+            case "On the phone":return "📱";case "On the computer":return "💻";
+            case "Outdoors":return "🌳";default:return label;
+        }
+    }
     private static String listName(String list) { return list == null || list.trim().isEmpty() ? DEFAULT_LIST : list.trim(); }
     private static void requireTitle(String title) {
         if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Enter a task title.");

@@ -146,7 +146,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         views.setTextColor(R.id.widget_open, accent);
         views.setTextColor(R.id.widget_add, accent);
         views.setTextViewText(R.id.widget_summary, unavailable ? "Checklist unavailable" : tasks.size() + " open"
-                + (label.isEmpty() ? "" : " · " + label)
+                + (label.isEmpty() ? "" : " · " + TaskStore.contextEmoji(label))
                 + (today ? " · Today + overdue" : " · " + (listName.isEmpty() ? "All lists" : listName)));
         views.setViewVisibility(R.id.widget_empty, tasks.isEmpty() ? View.VISIBLE : View.GONE);
         views.setTextViewText(R.id.widget_empty, unavailable ? "Open the app to check your saved tasks." : today ? "Nothing due. Add a due date in the app." : "No open tasks. Add one in the app.");

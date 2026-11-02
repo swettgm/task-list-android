@@ -54,7 +54,7 @@ public class QuickAddActivityTest {
         Spinner priority = findDescription(decor, "Priority", Spinner.class);
         Spinner when = findDescription(decor, "When to do it", Spinner.class);
         assertNotNull(title); assertNotNull(label); assertNotNull(priority); assertNotNull(when);
-        assertEquals("On the phone", label.getSelectedItem().toString());
+        assertEquals("📱", label.getSelectedItem().toString());
         title.setText("  Call the office  ");
         select(priority, "High");
         select(when, "Tomorrow");
