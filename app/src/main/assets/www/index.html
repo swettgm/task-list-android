@@ -3376,7 +3376,7 @@ main{max-width:100%;margin:0;padding:0}
         const key=childKey(task,date,index);
         const childItem=el('div','tm-task-item tm-child-item');
         const childLabel=el('div','form-check');
-        const checkbox=el('input','form-check-input');checkbox.type='checkbox';checkbox.checked=Boolean(draft[key]);
+        const checkbox=el('input','form-check-input');checkbox.type='checkbox';checkbox.checked=Boolean(draft[key]);checkbox.setAttribute('aria-label',(checkbox.checked?'Reopen ':'Complete ')+task.title+' > '+name);
         checkbox.addEventListener('change',()=>{draft[key]=checkbox.checked;saveCompletion(task,date);});
         const childText=el('span','form-check-label');
         const childTitle=el('span','tm-title',name);
