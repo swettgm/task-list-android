@@ -114,7 +114,7 @@ const result = await page.evaluate(async () => {
   check(rows().some(row=>row.dataset.taskId==='custom-native-qa'),'Native popup task is retained and loaded');
   // Create with a manual link; the picker offers every existing task.
   TaskListApp.addTask({labels:['On the computer']});
-  let dialog=document.querySelector('dialog');check(dialog.open,'Creation editor opens');
+  let dialog=document.querySelector('dialog');check(dialog.open,'Creation editor opens');check(document.activeElement===dialog.querySelector('input[type=text]'),'Adding a task focuses its title for keyboard entry');
   check(!dialog.textContent.includes('Useful help note'),'AI recommendation field is removed');
   check(dialog.querySelectorAll('[data-field=priority] input[type=radio]').length===6&&dialog.querySelectorAll('[data-field=repeat] input[type=radio]').length===5,'Priority and repeat use compact single-choice rows');
   check(![...dialog.querySelectorAll('legend,label>span')].some(label=>/[()]/.test(label.textContent)),'Editor labels contain no parenthetical instructions');
@@ -148,6 +148,7 @@ const result = await page.evaluate(async () => {
   check(__nativeQA.getState().manualLinks['custom-native-qa'].includes(createdId),'Manual linking is bidirectional');
   TaskListApp.reloadFromNative();await tick();check(created().querySelector('.tm-pair-note')?.textContent.includes('Native popup task'),'Manual links survive reload');
   created().querySelector('.tl-edit-button').click();dialog=document.querySelector('dialog');
+  check(document.activeElement===dialog,'Editing an existing task focuses the dialog instead of opening a text field');dialog.querySelector('input[type=text]').focus();check(document.activeElement===dialog.querySelector('input[type=text]'),'Existing task fields can still be focused intentionally');
   check(![...dialog.querySelectorAll('option')].some(o=>o.value===createdId),'Task cannot link to itself');
   check(dialog.querySelector('[data-field=priority] input[value=HIGH]').checked&&dialog.querySelector('input[aria-label=Minutes]').value==='17'&&dialog.querySelector('input[placeholder="Any time"]').value==='09:00','Saved values repopulate the compact editor');
   [...dialog.querySelectorAll('label.tl-context-choice')].find(l=>l.getAttribute('aria-label')==='On the road').querySelector('input').click();

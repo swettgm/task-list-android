@@ -260,7 +260,7 @@
   function editTask(task, item, prefill) {
     if (!scope) return;
     const isNew = !task; const original = task ? clone(task) : {};
-    const { form, close } = modal(isNew ? 'Add task' : 'Edit task');
+    const { dialog, form, close } = modal(isNew ? 'Add task' : 'Edit task');
     form.classList.add('tl-task-form');
     const title = inputField(form, 'Task', 'text', original.title || (prefill && prefill.title) || ''); title.required = true; title.placeholder = 'What needs doing?';
     const priority = choiceField(form, 'Priority', scope.groups.map(([key, label]) => [key, key === 'UNSET' ? 'None' : label.replace(' priority', '')]), original.priority || 'UNSET');
@@ -354,7 +354,7 @@
       if (isNew) scope.tasks.push(next); else scope.tasks[scope.tasks.findIndex(t => t.id === task.id)] = next;
       saveDefinition(next, isNew); saveManualLinks(next.id, readLinks()); close();
     }, 'btn btn-primary'));
-    form.append(buttons); title.focus();
+    form.append(buttons); if(isNew)title.focus();else dialog.focus({preventScroll:true});
   }
   function updateContextOptions() {
     const select = document.getElementById('tl-context-filter'); if (!select) return;
