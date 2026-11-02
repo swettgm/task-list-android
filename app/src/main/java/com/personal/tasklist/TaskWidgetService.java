@@ -29,7 +29,7 @@ public final class TaskWidgetService extends RemoteViewsService {
         }catch(RuntimeException unavailable){rows=new ArrayList<>();}finally{Binder.restoreCallingIdentity(token);}}
         @Override public void onDestroy(){rows=new ArrayList<>();}
         @Override public int getCount(){return rows.size();}
-        private String priorityLabel(String value){switch(value){case "HIGHEST":return "Highest";case "HIGH":return "High";case "MEDIUM":return "Medium";case "LOW":return "Low";case "LOWEST":return "Lowest";default:return "No priority";}}
+        private String priorityLabel(String value){switch(value){case "HIGH":return "High";case "LOW":return "Low";default:return "Medium";}}
         @Override public RemoteViews getViewAt(int position){
             List<Entry> snapshot=rows;if(position<0||position>=snapshot.size())return null;Entry entry=snapshot.get(position);
             if(entry.task==null){

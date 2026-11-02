@@ -133,6 +133,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
             if(!blocked)result.add(task);
         }
         result.sort(Comparator.comparingInt((TaskStore.Task t)->TaskStore.PRIORITIES.indexOf(t.priority))
+                .thenComparingInt(t->t.sourceRecord().optBoolean("urgent")?0:1)
                 .thenComparingInt(t->{java.time.LocalTime time=ReminderPlanner.time(t.sourceRecord().optString("time"));return time==null?Integer.MAX_VALUE:time.toSecondOfDay();})
                 .thenComparing(t->t.title,String.CASE_INSENSITIVE_ORDER).thenComparing(t->t.id));
         return result;

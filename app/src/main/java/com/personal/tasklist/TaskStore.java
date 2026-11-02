@@ -27,7 +27,9 @@ public final class TaskStore {
     public static final List<String> DEFAULT_LABELS = Collections.unmodifiableList(Arrays.asList(
         "At home", "On the road", "On the phone", "On the computer"));
     public static final List<String> STATUSES = Collections.unmodifiableList(Arrays.asList(NEXT, IN_PROGRESS, WAITING, SOMEDAY, DONE));
-    public static final List<String> PRIORITIES = Collections.unmodifiableList(Arrays.asList("HIGHEST", "HIGH", "MEDIUM", "LOW", "LOWEST", "UNSET"));
+    public static final List<String> PRIORITIES = Collections.unmodifiableList(Arrays.asList("HIGH", "MEDIUM", "LOW"));
+
+    static String normalizePriority(String value){if("HIGHEST".equals(value))return "HIGH";if("LOWEST".equals(value))return "LOW";if("UNSET".equals(value))return "MEDIUM";return value;}
 
     public static final class Task {
         public final String id, title, listName, dueDate, status, plannedDate, priority;
@@ -45,7 +47,7 @@ public final class TaskStore {
             this.id = id; this.title = title; this.listName = listName; this.dueDate = dueDate;
             this.done = DONE.equals(status); this.createdAt = createdAt;
             this.labels = Collections.unmodifiableList(new ArrayList<>(labels));
-            this.status = status; this.plannedDate = plannedDate; this.priority = priority;
+            this.status = status; this.plannedDate = plannedDate; this.priority = normalizePriority(priority);
             this.minutes = minutes; this.sourceJson = sourceJson;
         }
         JSONObject sourceRecord() { try{return new JSONObject(sourceJson);}catch(JSONException invalid){throw new IllegalStateException("Invalid saved task metadata",invalid);} }
@@ -275,7 +277,8 @@ public final class TaskStore {
                 String status = stringField(item, "status", done ? DONE : NEXT);
                 if (item.has("status") && item.has("done") && done != DONE.equals(status))
                     throw new JSONException("Task status and completion do not agree.");
-                String planned = stringField(item, "plannedDate", ""), priority = stringField(item, "priority", "UNSET");
+                String planned = stringField(item, "plannedDate", ""), priority = normalizePriority(stringField(item, "priority", "MEDIUM"));
+                if(item.optBoolean("urgent"))priority="HIGH";
                 long minutes = integerField(item, "minutes", 0);
                 if (minutes < 0 || minutes > Integer.MAX_VALUE) throw new JSONException("Invalid task minutes.");
                 List<String> labels = new ArrayList<>();
@@ -327,7 +330,7 @@ public final class TaskStore {
     }
     private static void validateInput(String title, String due, String status, String planned, String priority, int minutes) {
         requireTitle(title); requireDate(due); requireDate(planned); requireStatus(status);
-        if (!PRIORITIES.contains(priority)) throw new IllegalArgumentException("Choose a valid priority.");
+        if (!PRIORITIES.contains(normalizePriority(priority))) throw new IllegalArgumentException("Choose a valid priority.");
         if (minutes < 0) throw new IllegalArgumentException("Minutes cannot be negative.");
     }
     private static List<String> normalizeLabels(List<String> labels) {

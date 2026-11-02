@@ -105,7 +105,7 @@ public class TaskStoreTest {
         preferences().edit().putString("items", legacy).commit();
         TaskStore.Task open = find("legacy-open");
         assertEquals(TaskStore.NEXT, open.status);
-        assertEquals("UNSET", open.priority);
+        assertEquals("MEDIUM", open.priority);
         assertEquals("", open.plannedDate);
         assertEquals(0, open.minutes);
         assertTrue(open.labels.isEmpty());
@@ -206,7 +206,7 @@ public class TaskStoreTest {
         assertEquals(TaskStore.NEXT, reopened.status);
         assertEquals("2026-12-01", reopened.dueDate);
         assertEquals(Collections.singletonList("On the road"), reopened.labels);
-        assertEquals("HIGHEST", reopened.priority);
+        assertEquals("HIGH", reopened.priority);
         assertEquals(30, reopened.minutes);
     }
 
@@ -227,13 +227,19 @@ public class TaskStoreTest {
         assertEquals(Collections.singletonList("On the computer"), edited.labels);
     }
 
+    @Test public void legacyPrioritiesMapToThreeLevelsWithoutLosingTasksOrMetadata() throws Exception {
+        JSONArray records=new JSONArray();String[][] legacy={{"legacy-high","HIGHEST","HIGH"},{"legacy-low","LOWEST","LOW"},{"legacy-none","UNSET","MEDIUM"}};
+        for(String[] value:legacy)records.put(new JSONObject().put("id",value[0]).put("title",value[0]).put("priority",value[1]).put("futureField","keep"));preferences().edit().putString("items",records.toString()).commit();
+        assertEquals(Arrays.asList("HIGH","MEDIUM","LOW"),TaskStore.PRIORITIES);for(String[] value:legacy)assertEquals(value[2],find(value[0]).priority);store.complete("legacy-none");assertEquals(3,store.all().size());for(String[] value:legacy)assertEquals("keep",find(value[0]).sourceRecord().getString("futureField"));
+    }
+
     @Test public void priorityGroupsSortHighestFirstAndCompletedTasksStayLast() {
-        for (String priority : Arrays.asList("UNSET", "LOWEST", "LOW", "MEDIUM", "HIGH", "HIGHEST"))
+        for (String priority : Arrays.asList("LOW", "MEDIUM", "HIGH"))
             store.add(priority, "Work", "", Collections.emptyList(), TaskStore.NEXT, "", priority, 0);
         assertEquals(TaskStore.PRIORITIES, store.all().stream().map(t -> t.priority).collect(java.util.stream.Collectors.toList()));
         String highest = store.all().get(0).id;
         store.complete(highest);
-        assertEquals("HIGH", store.all().get(0).priority);
+        assertEquals("MEDIUM", store.all().get(0).priority);
         assertEquals(highest, store.all().get(store.all().size()-1).id);
     }
 

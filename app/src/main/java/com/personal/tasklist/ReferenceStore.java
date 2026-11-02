@@ -77,6 +77,7 @@ public final class ReferenceStore {
     /** Add a one-time task from the small native home-screen popup. */
     public String addCustomTask(String title, List<String> labels, String priority, boolean tomorrow) {
         if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Enter a task title.");
+        priority=TaskStore.normalizePriority(priority);
         if (!TaskStore.PRIORITIES.contains(priority)) throw new IllegalArgumentException("Choose a valid priority.");
         if (labels == null) throw new IllegalArgumentException("Choose valid context labels.");
         LinkedHashSet<String> contexts = new LinkedHashSet<>();

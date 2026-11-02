@@ -145,6 +145,7 @@
       const index = scope.tasks.findIndex(t => t.id === task.id);
       if (index >= 0) scope.tasks[index] = clone(task); else scope.tasks.push(clone(task));
     });
+    scope.tasks.forEach(task=>{task.priority=task.urgent?'HIGH':task.priority==='HIGHEST'?'HIGH':task.priority==='LOWEST'?'LOW':['HIGH','MEDIUM','LOW'].includes(task.priority)?task.priority:'MEDIUM';});
     // Original suggested pairings and legacy pairOverrides are no longer used.
     Object.keys(scope.pairWith).forEach(id => delete scope.pairWith[id]);
     const ids = new Set(scope.tasks.map(task => task.id));
@@ -321,7 +322,7 @@
     const { dialog, form, close } = modal(isNew ? 'Add task' : 'Edit task');
     form.classList.add('tl-task-form');
     const title = inputField(form, 'Task', 'text', original.title || (prefill && prefill.title) || ''); title.required = true; title.placeholder = 'What needs doing?';
-    const priority = choiceField(form, 'Priority', scope.groups.map(([key, label]) => [key, key === 'UNSET' ? 'None' : label.replace(' priority', '')]), original.priority || 'UNSET');
+    const priority = choiceField(form, 'Priority', scope.groups.map(([key, label]) => [key, label.replace(' priority', '')]), original.priority || 'MEDIUM');
     const schedule = node('div', 'tl-schedule-grid'); form.append(schedule);
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
@@ -358,7 +359,7 @@
       if((hours.value&&!/^\d+$/.test(hours.value))||(minutes.value&&!/^\d+$/.test(minutes.value))||Number(minutes.value)>59||((hours.value||minutes.value)&&Number(hours.value)*60+Number(minutes.value)<1)){error.textContent='Enter hours and 0–59 minutes.';return;}
       if (recurrence.value === 'weekdays' && !weekChecks.some(check => check.checked)) { error.textContent = 'Select at least one weekday.'; return; }
       if(recurrence.value==='repeat'&&(!/^\d+$/.test(amount.value)||Number(amount.value)<1)){error.textContent='Repeat amount must be at least 1.';return;}
-      const next = Object.assign({}, original, { id: original.id || 'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9), title: title.value.trim(), priority: urgent.checked ? 'HIGHEST' : priority.value, _contexts: readContexts() });
+      const next = Object.assign({}, original, { id: original.id || 'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9), title: title.value.trim(), priority: urgent.checked ? 'HIGH' : priority.value, _contexts: readContexts() });
       if(hours.value||minutes.value)next.minutes=Number(hours.value)*60+Number(minutes.value);else delete next.minutes;
       if(time.value){const [h,m]=time.value.split(':').map(Number);next.time=(h%12||12)+':'+String(m).padStart(2,'0')+(h>=12?' PM':' AM');}else delete next.time;
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
@@ -408,8 +409,8 @@
     const preview=document.getElementById('tl-context-filter-preview');if(preview){const image=selectedContext&&contextIcon(selectedContext)===GUILD_ICON_TOKEN;preview.replaceChildren();preview.hidden=!image;select.classList.toggle('tl-image-filter',!!image);if(image)preview.append(contextGlyph(selectedContext));}
   }
   function changePriority(task,offset) {
-    const levels=scope.groups.map(([key])=>key);const found=levels.indexOf(task.priority||'UNSET');const current=found<0?levels.length-1:found;const target=Math.max(0,Math.min(levels.length-1,current+offset));if(target===current)return;
-    const next={...clone(task),priority:levels[target]};if(next.priority!=='HIGHEST')delete next.urgent;
+    const levels=scope.groups.map(([key])=>key);const found=levels.indexOf(task.priority||'MEDIUM');const current=found<0?levels.length-1:found;const target=Math.max(0,Math.min(levels.length-1,current+offset));if(target===current)return;
+    const next={...clone(task),priority:levels[target]};if(next.priority!=='HIGH')delete next.urgent;
     const status=document.getElementById('pt-status');
     try{saveDefinition(next,false);if(status)status.textContent='';}
     catch(error){cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();if(status)status.textContent='Couldn’t change priority. Please try again.';}
@@ -423,7 +424,7 @@
     if (controls) {
       const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
       edit.setAttribute('aria-label', 'Edit ' + task.title); edit.title = 'Edit task';
-      const tools=node('span','tl-priority-tools'),levels=scope.groups.map(([key])=>key),rank=levels.indexOf(task.priority||'UNSET');
+      const tools=node('span','tl-priority-tools'),levels=scope.groups.map(([key])=>key),rank=levels.indexOf(task.priority||'MEDIUM');
       [['up',-1,'Raise'],['down',1,'Lower']].forEach(([direction,offset,label])=>{
         const button=action('',()=>changePriority(task,offset),'tm-move-control tl-priority-button tl-priority-'+direction);const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority';button.disabled=direction==='up'?rank===0:rank===levels.length-1;tools.append(button);
       });tools.append(edit);controls.append(tools);
@@ -445,7 +446,7 @@
         id: 'html:' + key, title: task.title, listName: 'My tasks',
         dueDate: task.due || '', plannedDate: item.date || scope.today,
         done, status: done ? 'Done' : active && (active === key || completionKeys.includes(active)) ? 'In progress' : 'Next',
-        time:task.time||'', labels: derivedContexts(task), priority: task.priority || 'UNSET', minutes: Number(task.minutes) || 0,
+        time:task.time||'', urgent:!!task.urgent, labels: derivedContexts(task), priority: task.priority || 'MEDIUM', minutes: Number(task.minutes) || 0,
         createdAt: Date.parse(item.stateDate + 'T12:00:00Z') || 0,
         completionKeys, progressKey: key, stateDate: item.stateDate, onToday: !!onToday,
         recurrence: task.recurrence || '', source: 'html', snapshotDate:scope.today, recurringDaily:task.repeat?(task.repeat.unit==='day'&&Number(task.repeat.amount)===1&&!task.repeat.weekdays?.length):(task.recurrence==='Daily'||!!(task.days&&task.days.length===7)), skipCarryDays:task.skipCarryDays||[]
@@ -466,7 +467,7 @@
     const save = () => {
       if (!title.value.trim()) { error.textContent = 'Enter a task title.'; title.focus(); return; }
       const next = { id:'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9),
-        title:title.value.trim(), priority:'UNSET', due:prefill.dueDate || scope.today, _contexts:labels };
+        title:title.value.trim(), priority:'MEDIUM', due:prefill.dueDate || scope.today, _contexts:labels };
       scope.tasks.push(next); saveDefinition(next, true); close();
     };
     const actions = node('div', 'tl-dialog-actions');

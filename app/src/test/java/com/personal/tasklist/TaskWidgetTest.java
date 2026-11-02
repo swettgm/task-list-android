@@ -268,15 +268,15 @@ public class TaskWidgetTest {
         String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();org.json.JSONArray rows=new org.json.JSONArray();
         String[][] values={{"Zulu",""},{"Noon","12:00 PM"},{"alpha",""},{"Late","23:59"},{"Zulu morning","9:00 AM"},{"Midnight","12:00 AM"},{"Alpha morning","09:00"}};
         for(String[] value:values)rows.put(widgetRow(value[0],day,day,true,false,false,day).put("time",value[1]).put("priority","HIGH"));
-        rows.put(widgetRow("First priority",day,day,true,false,false,day).put("priority","HIGHEST"));store.replaceReferenceTasks(rows.toString());
+        rows.put(widgetRow("First priority",day,day,true,false,false,day).put("priority","HIGH").put("urgent",true).put("time","23:59"));store.replaceReferenceTasks(rows.toString());
         assertEquals(Arrays.asList("First priority","Midnight","Alpha morning","Zulu morning","Noon","Late","alpha","Zulu"),titles(TaskWidgetProvider.todayTasks(context,"","")));
     }
 
     @Test public void widgetUsesQuietPriorityHeadingsInPriorityOrder() {
         String today=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
-        for(String priority:Arrays.asList("LOWEST","HIGH","HIGHEST"))store.add(priority,"Work",today,java.util.Collections.emptyList(),TaskStore.NEXT,"",priority,0);
+        for(String priority:Arrays.asList("LOW","MEDIUM","HIGH"))store.add(priority,"Work",today,java.util.Collections.emptyList(),TaskStore.NEXT,"",priority,0);
         TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();assertEquals(6,factory.getCount());assertEquals(2,factory.getViewTypeCount());
-        String[] expected={"Highest","High","Lowest"};for(int i=0;i<expected.length;i++){
+        String[] expected={"High","Medium","Low"};for(int i=0;i<expected.length;i++){
             android.view.View header=factory.getViewAt(i*2).apply(context,null);
             android.widget.TextView label=header.findViewById(R.id.widget_priority);assertEquals(expected[i],label.getText().toString());assertTrue(android.graphics.Color.alpha(label.getCurrentTextColor())<160);
             android.graphics.drawable.ColorDrawable divider=(android.graphics.drawable.ColorDrawable)header.findViewById(R.id.widget_priority_divider).getBackground();assertTrue(android.graphics.Color.alpha(divider.getColor())<=24);

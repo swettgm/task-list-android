@@ -177,7 +177,7 @@ const result = await page.evaluate(async () => {
   TaskListApp.addTask();dialog=document.querySelector('dialog');dialog.querySelector('input[type=text]').value='Alternate weekends QA';
   dialog.querySelector('[data-field=repeat] input[value=repeat]').click();dialog.querySelector('.tl-repeat-amount').value='2';const weekly=dialog.querySelector('.tl-repeat-unit');weekly.value='week';weekly.dispatchEvent(new Event('change'));dialog.querySelectorAll('.tl-weekdays input').forEach(input=>input.checked=false);dialog.querySelector('input[aria-label=Sunday]').click();dialog.querySelector('input[aria-label=Saturday]').click();dialog.querySelector('.tl-urgent input').click();
   clickText(dialog,'Save task');await tick();repeat=__nativeQA.getState().customTasks.find(task=>task.title==='Alternate weekends QA');
-  check(repeat.repeat?.amount===2&&repeat.repeat?.unit==='week'&&JSON.stringify(repeat.repeat.weekdays?.slice().sort())==='[0,6]'&&repeat.urgent&&repeat.priority==='HIGHEST','Every two weeks on selected weekend days and urgent options remain available');
+  check(repeat.repeat?.amount===2&&repeat.repeat?.unit==='week'&&JSON.stringify(repeat.repeat.weekdays?.slice().sort())==='[0,6]'&&repeat.urgent&&repeat.priority==='HIGH','Every two weeks on selected weekend days and urgent options remain available');
   // Quick entry saves with the current context; Back dismisses without saving.
   TaskListApp.setContextFilter('On the phone');await tick();
   document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');
