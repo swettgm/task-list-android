@@ -1,18 +1,18 @@
-# Tasks 0.20.0 verification
+# Tasks 0.21.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41458489773), source commit `7900df7748fcbb9be450595f018f9fcfabd9ff4f`.
+[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41464410541), source commit `60fde4d5a8684839de73f86d3336d86b35dbf3ba`.
 
-87 Android tests, 322 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+87 Android tests, 326 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-The widget header plus has a transparent background without an outline, retaining its existing tap area and add-task action. Widget tests check the transparent background and routing.
+Swiping left from Today slides Upcoming into view from the right while Today exits left. Swiping right reverses the direction. The transition lasts 240ms; header controls and viewport gradient remain stationary. Tab taps and app startup still switch immediately. Reduced-motion preferences skip animation while preserving swipe navigation.
 
-Widget Quick Add uses compact 40dp fields and 42dp buttons, with 8dp gaps between each row, the two side-by-side menus and the action buttons. Title and menu text use 16sp. Its window width remains 92% of the screen, with the existing outer padding, gradient and rounded panel. Native layout checks measure the actual field heights and horizontal/vertical gaps, then compare total height with the previous layout at the same width and font scale to verify that the popup does not grow. Saving, validation, cancellation and retained-state checks remain passing.
+The outgoing panel temporarily leaves normal flow, remains inaccessible during transition, and is hidden afterward. Animation transforms and inert flags are cleaned up on completion or interruption; task identities and stored data are unchanged. Browser checks verify both directional keyframes, absence of horizontal overflow during movement, clean final state with one interactive panel, vertical scrolling and reduced-motion navigation. Existing narrow-layout, completion, editor, priority, theme and widget checks remain passing.
 
-[Download Tasks-v0.20.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.20.0.apk).
+[Download Tasks-v0.21.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.21.0.apk).
 
-Package `com.personal.tasklist.preview`, version 0.20.0, code 20; minimum API 26, target 35; size 173,949 bytes.
+Package `com.personal.tasklist.preview`, version 0.21.0, code 21; minimum API 26, target 35; size 173,949 bytes.
 
-SHA-256: `2c43d683b41865e8127bfa76356c451a1fe3cbfe1ea040937e62813e34da58f1`.
+SHA-256: `527be72c0cd7bd54dd941fa3e3ced1e42327ccca9eded9e71072921d4f5ae767`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
