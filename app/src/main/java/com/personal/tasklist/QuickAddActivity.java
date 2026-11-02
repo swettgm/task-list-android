@@ -28,7 +28,7 @@ public final class QuickAddActivity extends Activity {
         form.addView(title,new LinearLayout.LayoutParams(-1,dp(56)));
         contexts.add("No label");contexts.addAll(new TaskStore(this).labels());
         String selected=getIntent().getStringExtra("widget_label");if(selected!=null&&!selected.isEmpty()&&!contexts.contains(selected))contexts.add(selected);
-        List<String> displayedContexts=new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextEmoji(this,value));
+        List<CharSequence> displayedContexts=new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextDisplay(this,value));
         context=spinner("Context label",displayedContexts);if(selected!=null)context.setSelection(Math.max(0,contexts.indexOf(selected)));form.addView(context);
         LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
         priority=spinner("Priority",Arrays.asList("Highest","High","Medium","Low","Lowest","Not set"));priority.setSelection(5);
@@ -41,7 +41,7 @@ public final class QuickAddActivity extends Activity {
         title.setOnEditorActionListener((v,action,event)->{if(action==EditorInfo.IME_ACTION_DONE){save();return true;}return false;});
     }
     @Override protected void onStart(){super.onStart();getWindow().setLayout((int)(getResources().getDisplayMetrics().widthPixels*.92),WindowManager.LayoutParams.WRAP_CONTENT);}
-    private Spinner spinner(String description,List<String> items){Spinner s=new Spinner(this);s.setContentDescription(description);ArrayAdapter<String>a=new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,items);s.setAdapter(a);s.setLayoutParams(new LinearLayout.LayoutParams(-1,dp(48)));return s;}
+    private Spinner spinner(String description,List<? extends CharSequence> items){Spinner s=new Spinner(this);s.setContentDescription(description);ArrayAdapter<CharSequence>a=new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new ArrayList<CharSequence>(items));s.setAdapter(a);s.setLayoutParams(new LinearLayout.LayoutParams(-1,dp(48)));return s;}
     private void save(){
         if(title.getText().toString().trim().isEmpty()){title.setError("Enter a task title");return;}
         try{

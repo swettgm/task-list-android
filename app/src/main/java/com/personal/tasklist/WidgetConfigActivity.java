@@ -127,7 +127,7 @@ public final class WidgetConfigActivity extends Activity {
         listInput.setContentDescription("Choose the widget checklist");
         String selectedContext = prefs.getString("label", "");
         if (!selectedContext.isEmpty() && !contexts.contains(selectedContext)) contexts.add(selectedContext);
-        List<String> displayedContexts = new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextEmoji(this,value)); displayedContexts.set(0, "All contexts");
+        List<CharSequence> displayedContexts = new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextDisplay(this,value)); displayedContexts.set(0, "All contexts");
         label(content, "Context label"); labelInput = spinner(displayedContexts);
         labelInput.setSelection(Math.max(0, contexts.indexOf(selectedContext)));
         labelInput.setContentDescription("Filter widget tasks by context label");
@@ -230,9 +230,9 @@ public final class WidgetConfigActivity extends Activity {
         state.putInt("opacity", opacityInput.getProgress());
     }
 
-    private Spinner spinner(List<String> values) {
+    private Spinner spinner(List<? extends CharSequence> values) {
         Spinner spinner = new Spinner(this);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, values) {
+        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item, new ArrayList<CharSequence>(values)) {
             @Override public View getView(int position, View convertView, ViewGroup parent) {
                 View view = super.getView(position, convertView, parent);
                 if (view instanceof TextView) ((TextView) view).setTextColor(FOREGROUND);

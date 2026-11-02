@@ -128,7 +128,7 @@ public class TaskStoreTest {
         TaskStore.Task initial = store.all().get(0);
         assertEquals(Arrays.asList("At home", "On the phone", "Custom context"), initial.labels);
         assertThrows(UnsupportedOperationException.class, () -> initial.labels.add("Other"));
-        assertEquals(Arrays.asList("At home", "On the road", "On the phone", "On the computer", "Custom context"), store.labels());
+        assertEquals(Arrays.asList("At home", "On the road", "On the phone", "On the computer", "Guild", "Custom context"), store.labels());
         store.update(initial.id, "Edited task", "Work", "2026-12-02");
         TaskStore.Task edited = find(initial.id);
         assertEquals(initial.id, edited.id);
@@ -300,5 +300,19 @@ public class TaskStoreTest {
         reference.edit().putString("state","[").commit();
         assertEquals("🏠",TaskStore.contextEmoji(context,"At home"));
         assertEquals("[",reference.getString("state",""));
+    }
+
+    @Test public void guildImageUsesAStaticDrawableAtEmojiSize() {
+        CharSequence text=TaskStore.contextDisplay(context,"Guild");
+        assertTrue(text instanceof android.text.Spanned);
+        android.text.style.ImageSpan[] images=((android.text.Spanned)text).getSpans(0,text.length(),android.text.style.ImageSpan.class);
+        assertEquals(1,images.length);assertEquals(images[0].getDrawable().getBounds().width(),images[0].getDrawable().getBounds().height());
+        assertTrue(images[0].getDrawable().getBounds().width()>0);
+    }
+    @Test public void guildImageCanBeSelectedForAnotherLabel() throws Exception {
+        new ReferenceStore(context).writeState("{\"contextIcons\":{\"Raid\":\"image:guild\"}}");
+        assertTrue(TaskStore.usesGuildImage(context,"Raid"));
+        assertTrue(TaskStore.contextDisplay(context,"Raid") instanceof android.text.Spanned);
+        assertEquals("Raid",TaskStore.contextEmoji(context,"Raid"));
     }
 }

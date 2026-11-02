@@ -12,23 +12,23 @@ const dialog=page.locator('dialog'),settings=()=>page.getByRole('button',{name:'
 try{
  await page.goto(pathToFileURL(file).href);await page.waitForFunction(()=>window.TaskListApp&&__emoji.snapshot.length);
  await settings();check(await dialog.locator('.tl-emoji-choice').count()>=20,'New-label settings offer common emoji choices');
- await label().fill('Guild');await dialog.getByRole('button',{name:'Choose emoji 👑',exact:true}).click();check(await emoji().inputValue()==='👑','Picking an emoji fills the label emoji field');await add();
- check(await page.evaluate(()=>__emoji.get().contextIcons.Guild==='👑'&&__emoji.get().contextOptions.includes('Guild')),'Label name and selected emoji persist together');
+ await label().fill('Raid');await dialog.getByRole('button',{name:'Choose emoji 👑',exact:true}).click();check(await emoji().inputValue()==='👑','Picking an emoji fills the label emoji field');await add();
+ check(await page.evaluate(()=>__emoji.get().contextIcons.Raid==='👑'&&__emoji.get().contextOptions.includes('Raid')),'Label name and selected emoji persist together');
  await dialog.getByRole('button',{name:'Close',exact:true}).click();
- await page.evaluate(()=>TaskListApp.addTask({title:'Guild emoji QA',labels:['Guild','At home']}));
- check(await dialog.locator('label[aria-label=Guild]').textContent().then(t=>t.includes('👑')),'Task editor displays the chosen emoji for the label');
+ await page.evaluate(()=>TaskListApp.addTask({title:'Raid emoji QA',labels:['Raid','At home']}));
+ check(await dialog.locator('label[aria-label=Raid]').textContent().then(t=>t.includes('👑')),'Task editor displays the chosen emoji for the label');
  await dialog.getByRole('button',{name:'Save task',exact:true}).click();
- await page.waitForFunction(()=>__emoji.snapshot.some(t=>t.title==='Guild emoji QA'));
- const id=await page.evaluate(()=>__emoji.snapshot.find(t=>t.title==='Guild emoji QA').id.slice(5).split(':')[0]);
+ await page.waitForFunction(()=>__emoji.snapshot.some(t=>t.title==='Raid emoji QA'));
+ const id=await page.evaluate(()=>__emoji.snapshot.find(t=>t.title==='Raid emoji QA').id.slice(5).split(':')[0]);
  const row=()=>page.locator('#pt-list [data-task-id="'+id+'"]');
- check(await row().locator('.tl-context-icon[aria-label=Guild]').textContent()==='👑','Task rows show the selected emoji');
- check(await page.locator('#tl-context-filter option[value=Guild]').textContent()==='👑','Context filter uses the selected emoji');
+ check(await row().locator('.tl-context-icon[aria-label=Raid]').textContent()==='👑','Task rows show the selected emoji');
+ check(await page.locator('#tl-context-filter option[value=Raid]').textContent()==='👑','Context filter uses the selected emoji');
  const glyphs=await row().locator('.tl-context-icon').evaluateAll(nodes=>nodes.map(n=>({font:getComputedStyle(n).fontSize,line:getComputedStyle(n).lineHeight})));check(glyphs.length===2&&glyphs[0].font===glyphs[1].font&&glyphs[0].line===glyphs[1].line,'Custom emojis use the same font size and line height as built-in emojis');
- await page.evaluate(()=>TaskListApp.setContextFilter('Guild'));check(await row().isVisible(),'Changing the emoji preserves filtering by label identity');
- await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__emoji.snapshot.length);check(await row().locator('.tl-context-icon[aria-label=Guild]').textContent()==='👑','Chosen label emoji survives reload');
- await settings();await label().fill('Guild');await emoji().fill('⚔️');await add();
- check(await page.evaluate(()=>__emoji.get().contextOptions.filter(x=>x==='Guild').length===1&&__emoji.get().contextIcons.Guild==='⚔️'),'Existing labels can change emoji without duplicate labels');
- check(await row().locator('.tl-context-icon[aria-label=Guild]').textContent()==='⚔️','Changing a label emoji updates existing tasks immediately');
+ await page.evaluate(()=>TaskListApp.setContextFilter('Raid'));check(await row().isVisible(),'Changing the emoji preserves filtering by label identity');
+ await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__emoji.snapshot.length);check(await row().locator('.tl-context-icon[aria-label=Raid]').textContent()==='👑','Chosen label emoji survives reload');
+ await settings();await label().fill('Raid');await emoji().fill('⚔️');await add();
+ check(await page.evaluate(()=>__emoji.get().contextOptions.filter(x=>x==='Raid').length===1&&__emoji.get().contextIcons.Raid==='⚔️'),'Existing labels can change emoji without duplicate labels');
+ check(await row().locator('.tl-context-icon[aria-label=Raid]').textContent()==='⚔️','Changing a label emoji updates existing tasks immediately');
  await label().fill('Computer work');await emoji().fill('👩🏽‍💻');await add();check(await page.evaluate(()=>__emoji.get().contextIcons['Computer work']==='👩🏽‍💻'),'A keyboard emoji with skin tone and joined characters is accepted');
  for(const invalid of ['abc','👑⚔️']){await label().fill('Invalid emoji');await emoji().fill(invalid);await add();check(await page.evaluate(()=>!__emoji.get().contextOptions.includes('Invalid emoji'))&&!!await dialog.locator('.tl-context-error').textContent(),'Reject invalid or multiple emoji: '+invalid);}
  await page.setViewportSize({width:320,height:844});await emoji().scrollIntoViewIfNeeded();check(await dialog.evaluate(n=>n.scrollWidth<=n.clientWidth+1),'Emoji picker fits a narrow phone without horizontal scrolling');

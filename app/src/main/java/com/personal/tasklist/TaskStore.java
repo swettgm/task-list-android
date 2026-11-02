@@ -81,6 +81,7 @@ public final class TaskStore {
     }
     public List<String> labels() {
         LinkedHashSet<String> values = new LinkedHashSet<>(DEFAULT_LABELS);
+        values.add("Guild");
         for (Task task : all()) values.addAll(task.labels);
         try { JSONArray saved=new JSONObject(new ReferenceStore(context).readState()).optJSONArray("contextOptions");if(saved!=null)for(int i=0;i<saved.length();i++)if(!saved.optString(i).trim().isEmpty())values.add(saved.optString(i).trim()); } catch(JSONException|RuntimeException unavailable) { /* Rendering a picker must not overwrite damaged state. */ }
         return new ArrayList<>(values);
@@ -355,8 +356,17 @@ public final class TaskStore {
         if (!(value instanceof Integer) && !(value instanceof Long)) throw new JSONException("Task field must be an integer: " + key);
         return ((Number) value).longValue();
     }
+    public static boolean usesGuildImage(Context context,String label){
+        try{JSONObject icons=new JSONObject(new ReferenceStore(context).readState()).optJSONObject("contextIcons");if(icons!=null&&icons.has(label))return "image:guild".equals(icons.optString(label));}catch(JSONException|RuntimeException unavailable){}
+        return "Guild".equals(label);
+    }
+    public static CharSequence contextDisplay(Context context,String label){
+        if(!usesGuildImage(context,label))return contextEmoji(context,label);
+        android.graphics.drawable.Drawable icon=context.getDrawable(R.drawable.guild_label);int size=Math.round(18*context.getResources().getDisplayMetrics().scaledDensity);icon.setBounds(0,0,size,size);
+        android.text.SpannableString text=new android.text.SpannableString(label);text.setSpan(new android.text.style.ImageSpan(icon,android.text.style.ImageSpan.ALIGN_BOTTOM),0,text.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);return text;
+    }
     public static String contextEmoji(Context context,String label) {
-        try{JSONObject icons=new JSONObject(new ReferenceStore(context).readState()).optJSONObject("contextIcons");if(icons!=null&&!icons.optString(label).isEmpty())return icons.getString(label);}catch(JSONException|RuntimeException unavailable){/* Keep the saved label identity when an icon cannot be read. */}
+        try{JSONObject icons=new JSONObject(new ReferenceStore(context).readState()).optJSONObject("contextIcons");if(icons!=null&&!icons.optString(label).isEmpty())return "image:guild".equals(icons.getString(label))?label:icons.getString(label);}catch(JSONException|RuntimeException unavailable){/* Keep the saved label identity when an icon cannot be read. */}
         return contextEmoji(label);
     }
     public static String contextEmoji(String label) {
