@@ -1737,6 +1737,9 @@ main{max-width:100%;margin:0;padding:0}
     if (document.getElementById('tasks-theme-controls-style')) return;
     const style = node('style'); style.id = 'tasks-theme-controls-style';
     style.textContent = `
+      html.tasks-app-gradient main,html.tasks-app-gradient #today-task-list-20261023,html.tasks-app-gradient #pt-today,html.tasks-app-gradient #pt-upcoming,html.tasks-app-gradient #pt-future-list{background:transparent!important}
+      html.tasks-app-gradient .tl-dialog{background:var(--tl-app-gradient)!important;background-attachment:fixed!important;background-size:100vw 100vh!important}
+      html.tasks-app-gradient .tl-dialog .tl-task-form .tl-dialog-actions{background:transparent!important}
       .tasks-theme-settings{min-width:0;margin:0 0 14px;border:1px solid var(--tl-border);border-radius:8px;padding:8px}
       .tasks-theme-settings>summary{font-size:14px;font-weight:650;cursor:pointer;min-height:30px;color:var(--tl-text)}
       .tasks-theme-settings *{box-sizing:border-box}
@@ -1784,7 +1787,11 @@ main{max-width:100%;margin:0;padding:0}
       '--tl-border':mix(middle, text, .25), '--tl-selected':mix(middle, theme.accent, .18) };
     Object.entries(variables).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
     document.documentElement.style.colorScheme = text === '#10151f' ? 'light' : 'dark';
-    document.documentElement.style.setProperty('background', theme.background, 'important');
+    document.documentElement.classList.toggle('tasks-app-gradient',theme.gradient);
+    document.documentElement.style.setProperty('--tl-app-gradient',paint(theme));
+    document.documentElement.style.setProperty('background',paint(theme),'important');
+    document.documentElement.style.backgroundAttachment=theme.gradient?'fixed':'';
+    document.documentElement.style.backgroundSize=theme.gradient?'100vw 100vh':'';
     if (document.body) {
       document.body.style.setProperty('background', paint(theme), 'important');
       document.body.style.backgroundAttachment = theme.gradient ? 'fixed' : '';
@@ -1830,7 +1837,7 @@ main{max-width:100%;margin:0;padding:0}
       const wheelBase=node('canvas');wheelBase.width=240;wheelBase.height=240;
       {const ctx=wheelBase.getContext('2d'),image=ctx.createImageData(240,240);for(let y=0;y<240;y++)for(let x=0;x<240;x++){const dx=x-120,dy=y-120,r=Math.hypot(dx,dy);if(r>118)continue;const h=(Math.atan2(dy,dx)*180/Math.PI+360)%360,c=channels(hsvColor(h,r/118,1));const i=(y*240+x)*4;image.data[i]=c[0];image.data[i+1]=c[1];image.data[i+2]=c[2];image.data[i+3]=255;}ctx.putImageData(image,0,0);}
       function drawWheel(){
-        const ctx=wheel.getContext('2d');ctx.clearRect(0,0,240,240);ctx.drawImage(wheelBase,0,0);ctx.save();ctx.globalCompositeOperation='source-atop';ctx.fillStyle='rgba(0,0,0,'+(1-brightness)+')';ctx.fillRect(0,0,240,240);ctx.restore();const angle=hue*Math.PI/180;ctx.beginPath();ctx.arc(120+Math.cos(angle)*saturation*118,120+Math.sin(angle)*saturation*118,6,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();ctx.strokeStyle='#111';ctx.lineWidth=1;ctx.stroke();
+        const ctx=wheel.getContext('2d');ctx.clearRect(0,0,240,240);ctx.drawImage(wheelBase,0,0);const angle=hue*Math.PI/180;ctx.beginPath();ctx.arc(120+Math.cos(angle)*saturation*118,120+Math.sin(angle)*saturation*118,6,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();ctx.strokeStyle='#111';ctx.lineWidth=1;ctx.stroke();
         const sc=shade.getContext('2d'),gradient=sc.createLinearGradient(0,0,280,0);gradient.addColorStop(0,'#000');gradient.addColorStop(1,hsvColor(hue,saturation,1));sc.fillStyle=gradient;sc.fillRect(0,0,280,28);const cursor=Math.max(2,Math.min(278,brightness*280));sc.strokeStyle='#fff';sc.lineWidth=3;sc.strokeRect(cursor-2,1,4,26);
         wheel.setAttribute('aria-valuenow',String(Math.round(hue)));wheel.setAttribute('aria-valuetext',hex(input.value)+', saturation '+Math.round(saturation*100)+' percent');shade.setAttribute('aria-valuenow',String(Math.round(brightness*100)));
       }
