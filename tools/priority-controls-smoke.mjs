@@ -14,7 +14,7 @@ try{
  const row=id=>page.locator('#pt-list [data-task-id="'+id+'"]');const state=()=>page.evaluate(()=>__priority.get());
  const daily=()=>row('priority-daily'),up=()=>daily().locator('.tl-priority-up'),down=()=>daily().locator('.tl-priority-down');
  check(await down().isDisabled()&&await up().isEnabled(),'No priority disables only the lower arrow');
- const order=await daily().locator('.tm-item-actions button').evaluateAll(nodes=>nodes.slice(-3).map(n=>n.getAttribute('aria-label')));check(order[0].startsWith('Raise priority')&&order[1].startsWith('Lower priority')&&order[2].startsWith('Edit '),'Up and down controls sit immediately before the task gear');
+ const order=await daily().locator(':scope > .tm-item-actions button').evaluateAll(nodes=>nodes.slice(-3).map(n=>n.getAttribute('aria-label')));check(order[0].startsWith('Raise priority')&&order[1].startsWith('Lower priority')&&order[2].startsWith('Edit '),'Up and down controls sit immediately before the task gear');
  check(await up().textContent()==='➜'&&await down().textContent()==='➜','Priority controls use the same thick-arrow glyph as Do tomorrow');
  for(const expected of ['LOWEST','LOW','MEDIUM','HIGH','HIGHEST']){await up().click();check((await state()).customTasks.find(t=>t.id==='priority-daily').priority===expected,'Raise priority saves '+expected);}
  check(await up().isDisabled()&&await down().isEnabled(),'Highest priority disables the raise arrow without wrapping');
