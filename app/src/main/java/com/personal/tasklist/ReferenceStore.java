@@ -233,7 +233,12 @@ public final class ReferenceStore {
             for (int i = 0; i < records.length(); i++) present.add(records.getJSONObject(i).getString("id"));
             for (int i = 0; i < definitions.length(); i++) {
                 JSONObject definition = definitions.getJSONObject(i);
-                String id = requiredString(definition, "id"), due = requiredString(definition, "due");
+                String id = requiredString(definition, "id");
+                // Only the native quick-add form needs an immediate fallback row.
+                // App-defined recurring/checklist occurrences come from the engine snapshot.
+                if (!id.startsWith("custom-") || !definition.has("due") || definition.has("repeat")
+                        || definition.has("days") || definition.has("intervalDays") || definition.has("weekendCycleStart")) continue;
+                String due = requiredString(definition, "due");
                 String mirrorId = "html:" + id + ":" + due;
                 if (!present.contains(mirrorId)) {
                     boolean today = !LocalDate.parse(due).isAfter(LocalDate.now(REFERENCE_ZONE));

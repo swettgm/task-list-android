@@ -451,6 +451,20 @@ public class ReferenceStoreTest {
         assertTrue(new JSONObject(new ReferenceStore(context).readState()).getJSONObject("completed").getBoolean(key));
     }
 
+    @Test public void appRecurringAndChecklistDefinitionsDoNotBlockNativeQuickAddOrInventMirrorRows() throws Exception {
+        JSONObject repeat = new JSONObject().put("id", "app-recurring").put("title", "Monthly task")
+            .put("repeat", new JSONObject().put("amount", 1).put("unit", "month").put("start", today()));
+        JSONObject checklist = new JSONObject().put("id", "app-checklist").put("title", "Past checklist")
+            .put("due", "2026-01-01").put("steps", new JSONArray().put("Step"));
+        reference.writeState(new JSONObject().put("customTasks", new JSONArray().put(repeat).put(checklist)).toString());
+        reference.updateSnapshot("[]");
+        assertTrue(tasks.all().isEmpty());
+        String id = reference.addCustomTask("Popup task", Collections.singletonList("At home"), "UNSET", false);
+        assertEquals(1, tasks.all().size());
+        assertTrue(tasks.all().get(0).id.startsWith("html:" + id));
+        assertEquals(3, new JSONObject(reference.readState()).getJSONArray("customTasks").length());
+    }
+
     private static JSONObject snapshot(String progress, String stateDate, boolean onToday, String... completionKeys) throws Exception {
         return new JSONObject().put("id", "html:" + progress).put("title", "Generic task").put("listName", "Personal")
             .put("dueDate", "").put("done", false).put("createdAt", 42)
