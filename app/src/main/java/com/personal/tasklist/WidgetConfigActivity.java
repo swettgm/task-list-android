@@ -214,7 +214,7 @@ public final class WidgetConfigActivity extends Activity {
             }
             @Override public View getDropDownView(int position, View convertView, ViewGroup parent) {
                 View view = super.getDropDownView(position, convertView, parent);
-                view.setBackgroundColor(SURFACE);
+                view.setBackgroundColor(Color.TRANSPARENT);
                 if (view instanceof TextView) ((TextView) view).setTextColor(FOREGROUND);
                 view.setMinimumHeight(dp(48));
                 return view;
@@ -222,7 +222,7 @@ public final class WidgetConfigActivity extends Activity {
         };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);spinner.setBackground(new PopupAppearance(null).dropdown(this));spinner.setPadding(dp(12),0,dp(36),0);
-        GradientDrawable popup = new GradientDrawable(); popup.setColor(SURFACE);
+        GradientDrawable popup = new GradientDrawable(); popup.setColor(SURFACE);popup.setCornerRadius(dp(10));popup.setStroke(dp(1),Color.rgb(53,70,95));
         spinner.setPopupBackgroundDrawable(popup);
         spinner.setMinimumHeight(dp(50));
         spinner.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(50)));
