@@ -116,7 +116,7 @@ const result = await page.evaluate(async () => {
   TaskListApp.addTask({labels:['On the computer']});
   let dialog=document.querySelector('dialog');check(dialog.open,'Creation editor opens');check(document.activeElement===dialog.querySelector('input[type=text]'),'Adding a task focuses its title for keyboard entry');
   check(!dialog.textContent.includes('Useful help note'),'AI recommendation field is removed');
-  check(dialog.querySelectorAll('[data-field=priority] input[type=radio]').length===6&&dialog.querySelectorAll('[data-field=repeat] input[type=radio]').length===5,'Priority and repeat use compact single-choice rows');
+  check(JSON.stringify([...dialog.querySelectorAll('[data-field=priority] input[type=radio]')].map(n=>n.value))==='["HIGH","MEDIUM","LOW"]'&&dialog.querySelector('[data-field=priority] input:checked').value==='MEDIUM'&&dialog.querySelectorAll('[data-field=repeat] input[type=radio]').length===5,'Priority and repeat use compact single-choice rows');
   check(![...dialog.querySelectorAll('legend,label>span')].some(label=>/[()]/.test(label.textContent)),'Editor labels contain no parenthetical instructions');
   check(dialog.querySelector('input[placeholder="Any time"]')&&dialog.querySelector('input[aria-label=Hours]')&&dialog.querySelector('input[aria-label=Minutes]'),'Time and split duration use short placeholders');
   check(dialog.querySelector('input[type=time]')&&dialog.querySelector('input[type=date]'),'Native time and date pickers are available');
