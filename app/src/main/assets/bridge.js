@@ -279,12 +279,14 @@
     return {oldSpec,oldMode,recurrence,amount,unit,weekChecks};
   }
   function editComponent(task,item,component){
-    const original=clone(task),names={time:'Time',frequency:'Frequency',duration:'Duration'};
+    const original=clone(task),names={time:'Time',frequency:'Frequency',duration:'Duration',labels:'Labels'};
     if(!names[component])return;
     const {dialog,form,close}=modal(names[component]);form.classList.add('tl-task-form','tl-component-form');
     form.append(node('p','tl-component-title',task.title));
     let readChange;
-    if(component==='time'){
+    if(component==='labels'){
+      const readLabels=contextsField(form,derivedContexts(original));readChange=next=>{next._contexts=readLabels();};
+    }else if(component==='time'){
       const match=/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i.exec(original.time||'');let value='';if(match){let h=Number(match[1]);if(match[3])h=h%12+(match[3].toUpperCase()==='PM'?12:0);value=String(h).padStart(2,'0')+':'+match[2];}
       const time=inputField(form,'Time','time',value);time.setAttribute('aria-label','Time');
       const notifyLabel=node('label','tl-context-choice'),notify=node('input');notify.type='checkbox';notify.checked=!!original.notify;notify.setAttribute('aria-label','Notify at scheduled time');notifyLabel.append(notify,node('span','','Notify'));form.append(notifyLabel);
@@ -419,7 +421,7 @@
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
     const text = wrapper.querySelector('.tm-task-details') || wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
     const labels = derivedContexts(task);
-    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=contextGlyph(label,'tl-context-icon');icon.setAttribute('aria-label',label);icon.title=label;badges.append(icon);}); text.append(badges); }
+    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=action('',()=>editComponent(task,item,'labels'),'tl-context-icon tl-label-edit');icon.append(...contextGlyph(label).childNodes);icon.setAttribute('aria-label',label);icon.setAttribute('aria-haspopup','dialog');icon.title='Edit labels · '+label;badges.append(icon);}); text.append(badges); }
     const controls = wrapper.querySelector('.tm-item-actions');
     if (controls) {
       const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
