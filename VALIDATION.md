@@ -1,19 +1,21 @@
-# Tasks 0.29.0 verification
+# Tasks 0.30.0 verification
 
-[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41509436751), source commit `44ef1c779099bfbdc5c268c5fa1a90dec69c554c`.
+[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41512812383), source commit `fe484e34dce3977a51eae466b64e53ba9d6ae020`.
 
-97 Android tests, 451 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+101 Android tests, 452 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-Widget title, checkbox and progress badge now center independently of text baselines. Extra font padding is removed and a fresh row layout updates existing widget views. Native geometry checks measure badge and title text centers for single-line and wrapped titles at three widths. The green rounded badge, tap-to-stop behavior, priority restoration and two-second completion cancellation remain intact.
+A reminder already armed for 2 PM could be cancelled by an unrelated save after 2 PM when Android had delayed delivery. Rescheduling now preserves the earliest still-valid undelivered alarm for up to 24 hours and requests prompt catch-up delivery. Due records are acknowledged after delivery so they do not repeat. Notify off, changed time/date/recurrence, completed tasks and expired reminders are excluded. Canonical task identities and completion history remain unchanged.
 
-App task rows place the progress badge beside the title only when the complete title and badge fit. Long titles keep the badge below. The title and checkbox retain the same vertical center. A shared resize observer rechecks active rows on layout changes and tab visibility changes; removed rows are unobserved. Font loading and window resizing also recheck placement. Browser checks verify inline badge centering at two widths, fallback for long titles and unchanged checkbox alignment, alongside the full existing workflow suite.
+On Android 12 and newer Settings offers Allow precise reminders when permission is needed. The app uses exact alarms when permitted and safely falls back to inexact alarms if unavailable or revoked. It replans on permission-grant broadcasts and app resume. Notifications permission remains separate. Settings also detects a blocked Scheduled task reminders channel, even if general notifications are enabled.
 
-[Download Tasks-v0.29.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.29.0.apk).
+Native regressions reproduce a delayed alarm followed by an unrelated state save, verify delivery and acknowledgement, check an existing Use hair serum override at 2 PM, reject cancelled/edited/completed/expired reminders, and exercise precise-alarm permission and the Android settings intent. Existing notification, recurrence, widget, progress, completion and layout checks remain enabled.
 
-Package `com.personal.tasklist.preview`, version 0.29.0, code 29; minimum API 26, target 35; size 203,741 bytes.
+[Download Tasks-v0.30.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.30.0.apk).
 
-SHA-256: `2bbe0209aef0fdeb4628af85fd4bddfba5162eea2bed2a3df8634760728b29e3`.
+Package `com.personal.tasklist.preview`, version 0.30.0, code 30; minimum API 26, target 35; size 203,741 bytes.
+
+SHA-256: `06eba1278f270c352b3c7182a7cffb7c5bc115e4c977a2067915f893298a8e45`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. Packaged UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
-No physical phone or Android launcher was used. Browser checks run in Chromium; native controls and widget behavior use Robolectric and view inflation. Notification scheduling is unchanged by this alignment update.
+No physical phone was used. Checks establish the scheduling regression and its fix, not the cause of a specific missed notification on the user’s device. Android permission settings, channel settings, Do Not Disturb, force-stop and device policies can affect delivery; exact alarms require user permission on Android 12 and newer.
