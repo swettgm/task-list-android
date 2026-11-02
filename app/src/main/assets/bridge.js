@@ -438,6 +438,20 @@
     button.addEventListener('pointerleave',()=>{cancelled=true;clear();});button.addEventListener('pointercancel',()=>{cancelled=true;clear();});button.addEventListener('pointerup',clear);
     button.addEventListener('contextmenu',event=>event.preventDefault());return button;
   }
+  let progressLayoutFrame=0;
+  const progressRows=new Set(),progressWidths=new WeakMap();
+  const progressResize=global.ResizeObserver?new ResizeObserver(entries=>{let changed=false;for(const entry of entries){const width=entry.contentRect.width;if(progressWidths.get(entry.target)!==width){progressWidths.set(entry.target,width);changed=true;}}if(changed)queueProgressLayout();}):null;
+  function queueProgressLayout(){if(progressLayoutFrame)return;progressLayoutFrame=requestAnimationFrame(()=>{progressLayoutFrame=0;
+    for(const form of progressRows)if(!form.isConnected){progressResize?.unobserve(form);progressRows.delete(form);}
+    document.querySelectorAll('.tm-task-item').forEach(row=>{
+      const form=row.querySelector(':scope>.form-check'),home=row.querySelector(':scope>.tm-task-details>.tm-task-badges'),badge=form?.querySelector(':scope>.tm-in-progress-badge')||home?.querySelector(':scope>.tm-in-progress-badge');if(!badge||!form||!home)return;
+      if(!progressRows.has(form)){progressRows.add(form);progressResize?.observe(form);}if(badge.parentElement!==home)home.prepend(badge);
+      const label=form.querySelector(':scope>.form-check-label'),title=label?.querySelector('.tm-title');if(!title||!form.clientWidth)return;
+      const range=document.createRange();range.selectNodeContents(title);const lines=Array.from(range.getClientRects());const box=range.getBoundingClientRect(),badgeWidth=badge.getBoundingClientRect().width;
+      if(lines.length===1&&box.width+badgeWidth+8<=label.getBoundingClientRect().width)form.append(badge);
+    });
+  });}
+  global.addEventListener('resize',queueProgressLayout);if(document.fonts){document.fonts.ready.then(queueProgressLayout);document.fonts.addEventListener?.('loadingdone',queueProgressLayout);}
   function decorateRow(wrapper, task, item, completed) {
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
     const text = wrapper.querySelector('.tm-task-details') || wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
@@ -452,7 +466,7 @@
         tools.append(priorityButton(task,direction,offset,label,rank,levels));
       });tools.append(edit);controls.append(tools);
     }
-    queueSnapshot();
+    queueSnapshot();queueProgressLayout();
   }
   function queueSnapshot() {
     if (!scope || snapshotTimer) return;
