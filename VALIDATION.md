@@ -1,21 +1,21 @@
-# Tasks 0.16.0 verification
+# Tasks 0.17.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41444152194), source commit `f0acd5716d990c0540726e2a9968445d97130e99`.
+[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41448519680), source commit `b40bad6e18aec2a95ee14fcdf60f6119636af9bc`.
 
-81 Android tests, 288 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+83 Android tests, 291 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-The home widget now uses a native ListView and a protected RemoteViewsService. Its factory returns every selected open Today row, without the former 12-row cap. The header is always Today; task-count and checklist-name subtitles are removed. Each row keeps its Today label, including narrow widgets. The collection uses stable IDs and scoped fill-in click intents; completion stays persistent and idempotent. Context/checklist filters, colors, 0% opacity, quick add and the enlarged Guild crest remain available.
+Edit task now focuses the dialog rather than a text field. New task and Quick add retain title focus for immediate entry; intentionally focusing existing fields remains supported. Browser checks cover new-task focus, existing-task dialog focus and deliberate field focus.
 
-Tests cover 40 scrollable rows, excluding future/undated/completed rows, retaining completed records in storage, stable row identity after a completion, per-row Today labels, the fixed header and native list type, fresh snapshot flags, current-day recurring rows versus old daily history, old snapshot compatibility, and collection completion with stale-tap protection. Existing widget-opacity/configuration, notification, daily-edit recurrence, checklist, crest, gradient and mobile layout checks pass.
+The widget has a top-right plus, a tappable Today title, no gear button and no footer. Its existing reconfigurable Android widget metadata provides launcher long-press configuration. Priority sections are Highest, High, Medium, Low, Lowest and No priority, with small muted labels and low-alpha 1dp dividers. The collection exposes two view types with stable identities. Tests verify priority ordering and subtle colors, add/title routing, absence of the removed controls, scrolling, Today-only filtering and persistent completion.
 
-A distinct widget layout ID causes installed widget hosts to rebuild the old fixed-row layout when the update is applied. No physical Android launcher or device was used: collection behavior was tested with Robolectric and native view inflation.
+The original Guild crest is enlarged another small step (web 1.4em to 1.55em, native pickers 20sp to 22sp, widget header 16dp to 18dp). Widget outer padding is zero, with 4dp side and 2dp vertical internal margins. A distinct compact layout ID refreshes installed widget layouts. The launcher may still apply its own outer padding.
 
-[Download Tasks-v0.16.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.16.0.apk).
+[Download Tasks-v0.17.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.17.0.apk).
 
-Package `com.personal.tasklist.preview`, version 0.16.0, code 16; minimum API 26, target 35; size 161,334 bytes.
+Package `com.personal.tasklist.preview`, version 0.17.0, code 17; minimum API 26, target 35; size 165,594 bytes.
 
-SHA-256: `277c9e49191a0b003baa6f0d0b4478f78bda633fb252d55f1de49812071e2f9a`.
+SHA-256: `276c4ade7ca135f422c1466c1d6fcd836ba38a011858dafb8acf470f6e1a19b8`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
-Android policies can delay notifications and widget refreshes; force-stop blocks alarms until reopening. Local data remains subject to device loss, uninstalling, clearing app data, storage failure and software defects; tests are not a 100% reliability guarantee.
+No physical phone, software keyboard or Android launcher was used. Keyboard checks cover DOM focus; native widget behavior was tested with Robolectric and view inflation. Android policies can delay background updates and notifications; force-stop blocks alarms until reopening. These tests do not guarantee against every software, storage or device failure.
