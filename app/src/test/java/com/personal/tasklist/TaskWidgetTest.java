@@ -306,6 +306,15 @@ public class TaskWidgetTest {
         new TaskWidgetProvider().onReceive(context,tap);String second=WidgetCompletions.token(context,rowId);assertNotEquals(first,second);new TaskWidgetProvider().onReceive(context,undo);assertEquals(second,WidgetCompletions.token(context,rowId));org.robolectric.shadows.ShadowSystemClock.advanceBy(java.time.Duration.ofMillis(2100));factory.onDataSetChanged();assertTrue(new TaskStore(context).all().get(0).done);assertEquals("",WidgetCompletions.token(context,rowId));assertTrue(new org.json.JSONObject(reference.readState()).getJSONObject("completed").getBoolean(id+":"+day));factory.onDataSetChanged();assertEquals(0,factory.getCount());new TaskWidgetProvider().onReceive(context,undo);assertTrue(new TaskStore(context).all().get(0).done);
     }
 
+    @Test public void progressBadgeCentersOnSingleAndWrappedTitleText() throws Exception {
+        ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();String id=reference.addCustomTask("Centered task",java.util.Collections.emptyList(),"HIGH",false);reference.setTaskInProgress("html:"+id+":"+day,true);TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();float density=context.getResources().getDisplayMetrics().density;
+        for(int width:new int[]{240,320,420})for(String text:Arrays.asList("Short task","A long task title that needs two lines within a narrow widget")){
+            android.view.View row=factory.getViewAt(0).apply(context,null);android.widget.TextView title=row.findViewById(R.id.widget_task_title),badge=row.findViewById(R.id.widget_due);title.setText(text);row.measure(android.view.View.MeasureSpec.makeMeasureSpec(Math.round(width*density),android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(0,android.view.View.MeasureSpec.UNSPECIFIED));row.layout(0,0,row.getMeasuredWidth(),row.getMeasuredHeight());
+            android.text.Layout lines=title.getLayout();float titleCenter=title.getTop()+title.getBaseline()-lines.getLineBaseline(0)+(lines.getLineTop(0)+lines.getLineBottom(lines.getLineCount()-1))/2f;android.view.View toggle=row.findViewById(R.id.widget_status_toggle);float badgeCenter=toggle.getTop()+badge.getTop()+badge.getHeight()/2f;
+            assertEquals("Badge center must match title text at "+width+"px: "+text,titleCenter,badgeCenter,1f);assertFalse(((android.widget.LinearLayout)row).isBaselineAligned());assertFalse(title.getIncludeFontPadding());assertFalse(badge.getIncludeFontPadding());
+        }
+    }
+
     @Test public void widgetHeaderPlusAddsAndHeaderTitleOpensTheApp() {
         AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,id);
         android.view.View view=Shadows.shadowOf(manager).getViewFor(id);
