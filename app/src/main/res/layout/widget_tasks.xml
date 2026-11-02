@@ -29,6 +29,8 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <ImageView android:id="@+id/widget_context_icon" android:layout_width="16dp" android:layout_height="16dp" android:layout_marginEnd="6dp" android:src="@drawable/guild_label" android:contentDescription="Guild" android:visibility="gone" />
+
             <TextView
                 android:id="@+id/widget_title"
                 android:layout_width="0dp"
@@ -36,7 +38,7 @@
                 android:layout_weight="1"
                 android:gravity="center_vertical"
                 android:fontFamily="sans-serif-medium"
-                android:text="@string/widget_name"
+                android:text="Today"
                 android:textColor="#1F2B40"
                 android:textSize="16sp"
                 android:maxLines="1"
@@ -53,32 +55,20 @@
                 android:contentDescription="@string/widget_customize" />
         </LinearLayout>
 
-        <LinearLayout android:layout_width="match_parent" android:layout_height="18dp" android:orientation="horizontal" android:gravity="center_vertical">
-            <ImageView android:id="@+id/widget_context_icon" android:layout_width="16dp" android:layout_height="16dp" android:layout_marginEnd="4dp" android:src="@drawable/guild_label" android:contentDescription="Guild" android:visibility="gone" />
-        <TextView
-            android:id="@+id/widget_summary"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="18dp"
-            android:gravity="center_vertical"
-            android:text="@string/widget_preview_summary"
-            android:textColor="#56677F"
-            android:textSize="10sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        </LinearLayout>
-
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
 
-            <LinearLayout
+            <ListView
                 android:id="@+id/widget_rows"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical" />
+                android:divider="@null"
+                android:scrollbars="vertical"
+                android:scrollbarStyle="insideOverlay"
+                android:cacheColorHint="@android:color/transparent"
+                android:background="@android:color/transparent" />
 
             <TextView
                 android:id="@+id/widget_empty"

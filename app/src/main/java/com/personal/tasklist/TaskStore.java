@@ -48,6 +48,7 @@ public final class TaskStore {
             this.status = status; this.plannedDate = plannedDate; this.priority = priority;
             this.minutes = minutes; this.sourceJson = sourceJson;
         }
+        JSONObject sourceRecord() { try{return new JSONObject(sourceJson);}catch(JSONException invalid){throw new IllegalStateException("Invalid saved task metadata",invalid);} }
         private Task withStatus(String value, String planned) {
             return new Task(id, title, listName, dueDate, createdAt, labels, value, planned, priority, minutes, sourceJson);
         }

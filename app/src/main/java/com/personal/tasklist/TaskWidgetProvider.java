@@ -21,8 +21,10 @@ import java.util.Map;
 
 /** Native, offline home-screen checklist. Each instance has independent settings. */
 public final class TaskWidgetProvider extends AppWidgetProvider {
+    static final String ACTION_ITEM="com.personal.tasklist.WIDGET_ITEM";
+    static final String ITEM_ACTION="item_action";
+    static final String EXTRA_TASK_ID = "task_id";
     private static final String ACTION_COMPLETE = "com.personal.tasklist.WIDGET_COMPLETE";
-    private static final String EXTRA_TASK_ID = "task_id";
 
     static SharedPreferences preferences(Context context, int widgetId) {
         return context.getSharedPreferences("widget_" + widgetId, Context.MODE_PRIVATE);
@@ -44,14 +46,19 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     }
 
     @Override public void onReceive(Context context, Intent intent) {
-        if (ACTION_COMPLETE.equals(intent.getAction())) {
+        if (ACTION_COMPLETE.equals(intent.getAction())||ACTION_ITEM.equals(intent.getAction())) {
             int id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
             boolean registered = false;
             for (int actual : AppWidgetManager.getInstance(context).getAppWidgetIds(
                     new android.content.ComponentName(context, TaskWidgetProvider.class))) {
                 if (actual == id) { registered = true; break; }
             }
+            if(registered&&ACTION_ITEM.equals(intent.getAction())&&"open".equals(intent.getStringExtra(ITEM_ACTION))){
+                SharedPreferences widget=preferences(context,id);context.startActivity(new Intent(context,MainActivity.class).putExtra("widget_label",widget.getString("label","")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));return;
+            }
+            if(ACTION_ITEM.equals(intent.getAction())&&!"complete".equals(intent.getStringExtra(ITEM_ACTION)))return;
             String taskId = intent.getStringExtra(EXTRA_TASK_ID);
+            if(registered&&ACTION_ITEM.equals(intent.getAction())){try{SharedPreferences widget=preferences(context,id);boolean visible=false;for(TaskStore.Task row:todayTasks(context,widget.getString("list",""),widget.getString("label","")))if(row.id.equals(taskId)){visible=true;break;}if(!visible){refreshAll(context);return;}}catch(RuntimeException unavailable){refreshAll(context);return;}}
             if (registered && taskId != null) {
                 TaskStore store = new TaskStore(context);
                 // The store atomically completes it; stale taps must never reopen a task.
@@ -112,85 +119,40 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         return tasks;
     }
 
+    /** Only rows belonging to the app's current Today list; completed history stays in storage. */
+    static List<TaskStore.Task> todayTasks(Context context,String listName,String label){
+        LocalDate today=LocalDate.now(java.time.ZoneId.of("America/New_York"));List<TaskStore.Task> result=new ArrayList<>();
+        for(TaskStore.Task task:selectedTasks(context,listName,true,label)){
+            String planned=effectiveDate(task);if(planned.isEmpty()||LocalDate.parse(planned).isAfter(today))continue;
+            if(!task.id.startsWith("html:")){if(planned.equals(today.toString()))result.add(task);continue;}
+            org.json.JSONObject record=task.sourceRecord();
+            if(today.toString().equals(record.optString("snapshotDate"))){if(record.optBoolean("onToday"))result.add(task);continue;}
+            String stateDate=record.optString("stateDate",planned);
+            if(record.optBoolean("recurringDaily")&&!stateDate.equals(today.toString()))continue;
+            boolean blocked=false;org.json.JSONArray skips=record.optJSONArray("skipCarryDays");if(stateDate.compareTo(today.toString())<0&&skips!=null)for(int i=0;i<skips.length();i++)if(skips.optInt(i,-1)==today.getDayOfWeek().getValue()%7)blocked=true;
+            if(!blocked)result.add(task);
+        }return result;
+    }
+
     static void update(Context context, AppWidgetManager manager, int id) {
-        SharedPreferences prefs = preferences(context, id);
-        String title = prefs.getString("title", "My checklist");
-        String listName = prefs.getString("list", "");
-        String label = prefs.getString("label", "");
-        boolean today = prefs.getBoolean("today", false);
-        boolean dark = prefs.getBoolean("dark", true);
-        int opacity = Math.max(0, Math.min(100, prefs.getInt("opacity", 100)));
-        int foreground = Color.parseColor(dark ? "#F3F7FC" : "#1F2B40");
-        int secondary = Color.parseColor(dark ? "#BAC9D9" : "#56677F");
-        int accent = Color.parseColor(dark ? "#8FC6E7" : "#195B7E");
-        List<TaskStore.Task> tasks;
-        boolean unavailable = false;
-        try { tasks = selectedTasks(context, listName, today, label); }
-        catch (RuntimeException cannotReadTasks) { tasks = new ArrayList<>(); unavailable = true; }
-
-        Bundle options = manager.getAppWidgetOptions(id);
-        int height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 230);
-        int width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
-        // Reserve title, summary, footer, host padding; bound row payload size as well.
-        int count = Math.max(1, Math.min(12, (height - 148) / 48));
-        boolean compact = width < 210;
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_tasks);
-        views.setImageViewResource(R.id.widget_background,
-                dark ? R.drawable.widget_background_dark : R.drawable.widget_background_light);
-        views.setInt(R.id.widget_background, "setImageAlpha", Math.round(255 * opacity / 100f));
-        views.setTextViewText(R.id.widget_title, title);
-        views.setTextColor(R.id.widget_title, foreground);
-        views.setTextColor(R.id.widget_settings, accent);
-        views.setTextColor(R.id.widget_summary, secondary);
-        views.setTextColor(R.id.widget_empty, secondary);
-        views.setTextColor(R.id.widget_open, accent);
-        views.setTextColor(R.id.widget_add, accent);
-        boolean imageLabel=TaskStore.usesGuildImage(context,label);
-        views.setViewVisibility(R.id.widget_context_icon,imageLabel?View.VISIBLE:View.GONE);
-        views.setContentDescription(R.id.widget_context_icon,label);
-        views.setTextViewText(R.id.widget_summary, unavailable ? "Checklist unavailable" : tasks.size() + " open"
-                + (label.isEmpty()||imageLabel ? "" : " · " + TaskStore.contextEmoji(context,label))
-                + (today ? " · Today + overdue" : " · " + (listName.isEmpty() ? "All lists" : listName)));
-        views.setViewVisibility(R.id.widget_empty, tasks.isEmpty() ? View.VISIBLE : View.GONE);
-        views.setTextViewText(R.id.widget_empty, unavailable ? "Open the app to check your saved tasks." : today ? "Nothing due. Add a due date in the app." : "No open tasks. Add one in the app.");
-        views.removeAllViews(R.id.widget_rows);
-
-        int displayed = Math.min(count, tasks.size());
-        for (int i = 0; i < displayed; i++) {
-            TaskStore.Task task = tasks.get(i);
-            RemoteViews row = new RemoteViews(context.getPackageName(), R.layout.widget_task_row);
-            boolean active = TaskStore.IN_PROGRESS.equals(task.status);
-            row.setTextViewText(R.id.widget_task_title, (active ? "▶ " : "") + task.title);
-            row.setContentDescription(R.id.widget_task_title, task.title + ", " + task.status
-                    + (task.labels.isEmpty() ? "" : ", " + android.text.TextUtils.join(", ", task.labels)));
-            row.setTextColor(R.id.widget_task_title, foreground);
-            row.setTextColor(R.id.widget_check, accent);
-            row.setTextColor(R.id.widget_due, secondary);
-            row.setContentDescription(R.id.widget_check, "Complete " + task.title);
-            String detail = taskDetail(task);
-            row.setTextViewText(R.id.widget_due, detail);
-            row.setViewVisibility(R.id.widget_due, compact || detail.isEmpty() ? View.GONE : View.VISIBLE);
-            Intent complete = new Intent(context, TaskWidgetProvider.class).setAction(ACTION_COMPLETE)
-                    .setData(Uri.parse("tasklist-widget://complete/" + id + "/" + Uri.encode(task.id)))
-                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id).putExtra(EXTRA_TASK_ID, task.id);
-            row.setOnClickPendingIntent(R.id.widget_check, PendingIntent.getBroadcast(context, 0, complete,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-            row.setOnClickPendingIntent(R.id.widget_task_title, openApp(context, id, listName, label, false));
-            views.addView(R.id.widget_rows, row);
-        }
-
-        views.setTextViewText(R.id.widget_open, tasks.size() > displayed ? "+" + (tasks.size() - displayed) + " more · Open app ›" : "Open app ›");
-        views.setOnClickPendingIntent(R.id.widget_title, openApp(context, id, listName, label, false));
-        views.setOnClickPendingIntent(R.id.widget_empty, openApp(context, id, listName, label, false));
-        views.setOnClickPendingIntent(R.id.widget_open, openApp(context, id, listName, label, false));
-        views.setOnClickPendingIntent(R.id.widget_add, openApp(context, id, listName, label, true));
-        Intent configure = new Intent(context, WidgetConfigActivity.class)
-                .setData(Uri.parse("tasklist-widget://configure/" + id))
-                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        views.setOnClickPendingIntent(R.id.widget_settings, PendingIntent.getActivity(context, id, configure,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-        manager.updateAppWidget(id, views);
+        SharedPreferences prefs=preferences(context,id);String list=prefs.getString("list",""),label=prefs.getString("label","");boolean dark=prefs.getBoolean("dark",true);
+        int foreground=Color.parseColor(dark?"#F3F7FC":"#1F2B40"),secondary=Color.parseColor(dark?"#BAC9D9":"#56677F"),accent=Color.parseColor(dark?"#8FC6E7":"#195B7E");
+        RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_tasks);
+        views.setImageViewResource(R.id.widget_background,dark?R.drawable.widget_background_dark:R.drawable.widget_background_light);
+        views.setInt(R.id.widget_background,"setImageAlpha",Math.round(255*Math.max(0,Math.min(100,prefs.getInt("opacity",100)))/100f));
+        views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setTextColor(R.id.widget_settings,accent);views.setTextColor(R.id.widget_empty,secondary);views.setTextColor(R.id.widget_open,accent);views.setTextColor(R.id.widget_add,accent);
+        views.setViewVisibility(R.id.widget_context_icon,TaskStore.usesGuildImage(context,label)?View.VISIBLE:View.GONE);views.setContentDescription(R.id.widget_context_icon,label);
+        String empty="No open tasks for today.";try{todayTasks(context,list,label);}catch(RuntimeException unavailable){empty="Open the app to check your saved tasks.";}views.setTextViewText(R.id.widget_empty,empty);
+        Intent service=new Intent(context,TaskWidgetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).setData(Uri.parse("tasklist-widget://rows/"+id));
+        views.setRemoteAdapter(R.id.widget_rows,service);views.setEmptyView(R.id.widget_rows,R.id.widget_empty);
+        Intent item=new Intent(context,TaskWidgetProvider.class).setAction(ACTION_ITEM).setData(Uri.parse("tasklist-widget://items/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id);
+        int flags=PendingIntent.FLAG_UPDATE_CURRENT;if(android.os.Build.VERSION.SDK_INT>=31)flags|=PendingIntent.FLAG_MUTABLE;
+        views.setPendingIntentTemplate(R.id.widget_rows,PendingIntent.getBroadcast(context,id,item,flags));
+        views.setTextViewText(R.id.widget_open,"Open app ›");
+        views.setOnClickPendingIntent(R.id.widget_title,openApp(context,id,list,label,false));views.setOnClickPendingIntent(R.id.widget_empty,openApp(context,id,list,label,false));views.setOnClickPendingIntent(R.id.widget_open,openApp(context,id,list,label,false));views.setOnClickPendingIntent(R.id.widget_add,openApp(context,id,list,label,true));
+        Intent configure=new Intent(context,WidgetConfigActivity.class).setData(Uri.parse("tasklist-widget://configure/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        views.setOnClickPendingIntent(R.id.widget_settings,PendingIntent.getActivity(context,id,configure,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
+        manager.updateAppWidget(id,views);manager.notifyAppWidgetViewDataChanged(id,R.id.widget_rows);
     }
 
     private static PendingIntent openApp(Context context, int widgetId, String listName, String label, boolean add) {
@@ -206,7 +168,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         return task.plannedDate.isEmpty() ? task.dueDate : task.plannedDate;
     }
 
-    private static String taskDetail(TaskStore.Task task) {
+    static String taskDetail(TaskStore.Task task) {
         String date = effectiveDate(task);
         if (!date.isEmpty()) return dueLabel(date);
         if (TaskStore.IN_PROGRESS.equals(task.status)) return "Now";

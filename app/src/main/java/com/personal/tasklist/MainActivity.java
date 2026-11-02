@@ -268,7 +268,7 @@ public final class MainActivity extends Activity {
         AppWidgetManager manager = AppWidgetManager.getInstance(this);
         AlertDialog.Builder dialog = new AlertDialog.Builder(this).setTitle("Home-screen checklist")
                 .setMessage("Touch and hold an empty home-screen area, choose Widgets, then add Tasks checklist. "
-                    + "Use its settings icon to choose a context, title, colors, and transparency. "
+                    + "Use its settings icon to choose a context, colors, and transparency. Scroll to see all of today’s open tasks. "
                     + "Ticking a task in the widget also saves its completion in this task list.")
                 .setNegativeButton("Close", null);
         if (manager.isRequestPinAppWidgetSupported()) dialog.setPositiveButton("Add widget", (d, which) -> {

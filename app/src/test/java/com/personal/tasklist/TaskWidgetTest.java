@@ -157,7 +157,7 @@ public class TaskWidgetTest {
     }
 
     @Test public void widgetSupportsFullyTransparentBackgroundAndKeepsItsTextVisible() {
-        store.add("Visible task", "Personal", "");
+        store.add("Visible task", "Personal", LocalDate.now(java.time.ZoneId.of("America/New_York")).toString());
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
         int id = Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class, R.layout.widget_tasks);
         for (int opacity : new int[] {0, 50, 100}) {
@@ -166,7 +166,7 @@ public class TaskWidgetTest {
             android.view.View view = Shadows.shadowOf(manager).getViewFor(id);
             assertEquals(Math.round(255 * opacity / 100f), ((android.widget.ImageView) view.findViewById(R.id.widget_background)).getImageAlpha());
             assertEquals(1f, view.findViewById(R.id.widget_title).getAlpha(), 0f);
-            assertEquals(1f, view.findViewById(R.id.widget_check).getAlpha(), 0f);
+            TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,id);factory.onCreate();android.view.View row=factory.getViewAt(0).apply(context,null);assertEquals(1f,row.findViewById(R.id.widget_check).getAlpha(),0f);
         }
     }
 
@@ -217,5 +217,49 @@ public class TaskWidgetTest {
     private void task(String title, String listName, String dueDate, String plannedDate,
                       String status, String... labels) {
         store.add(title, listName, dueDate, Arrays.asList(labels), status, plannedDate, "UNSET", 0);
+    }
+
+    @Test public void scrollableWidgetHasNoRowCapAndOnlyShowsToday() throws Exception {
+        String today=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(),tomorrow=LocalDate.parse(today).plusDays(1).toString();
+        for(int i=0;i<40;i++)store.add("Today row "+i,"Work",today);
+        store.add("Future task","Work",tomorrow);store.add("Undated task","Work","");store.add("Hidden completed","Work",today);
+        for(TaskStore.Task task:store.all())if(task.title.equals("Hidden completed"))store.complete(task.id);
+        TaskWidgetProvider.preferences(context,17).edit().putBoolean("today",false).putString("list","Work").commit();
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();
+        assertEquals(40,factory.getCount());assertTrue(factory.hasStableIds());
+        android.view.View last=factory.getViewAt(39).apply(context,null);
+        assertEquals("Today",((android.widget.TextView)last.findViewById(R.id.widget_due)).getText().toString());assertEquals(android.view.View.VISIBLE,last.findViewById(R.id.widget_due).getVisibility());
+        long firstId=factory.getItemId(0);String other=TaskWidgetProvider.todayTasks(context,"Work","").get(3).id;store.complete(other);factory.onDataSetChanged();assertEquals(39,factory.getCount());assertEquals(firstId,factory.getItemId(0));
+        assertTrue(store.all().stream().anyMatch(t->t.title.equals("Hidden completed")&&t.done));
+    }
+    @Test public void widgetHeaderIsTodayAndRowsUseANativeScrollingList() {
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        TaskWidgetProvider.preferences(context,id).edit().putString("title","My tasks").putBoolean("today",false).commit();TaskWidgetProvider.update(context,manager,id);
+        android.view.View view=Shadows.shadowOf(manager).getViewFor(id);
+        assertEquals("Today",((android.widget.TextView)view.findViewById(R.id.widget_title)).getText().toString());assertTrue(view.findViewById(R.id.widget_rows) instanceof android.widget.ListView);assertTrue(view.findViewById(R.id.widget_rows).isVerticalScrollBarEnabled());
+        assertEquals(0,context.getResources().getIdentifier("widget_summary","id",context.getPackageName()));
+    }
+    @Test public void todaySnapshotExcludesHiddenFutureAndOldDailyRows() throws Exception {
+        LocalDate today=LocalDate.now(java.time.ZoneId.of("America/New_York"));String day=today.toString(),yesterday=today.minusDays(1).toString(),tomorrow=today.plusDays(1).toString();
+        org.json.JSONArray rows=new org.json.JSONArray();
+        rows.put(widgetRow("today",day,day,true,false,false,day));
+        rows.put(widgetRow("hidden",day,day,true,true,false,day));
+        rows.put(widgetRow("not-today",day,day,false,false,false,day));
+        rows.put(widgetRow("future",tomorrow,tomorrow,false,false,false,day).put("status",TaskStore.IN_PROGRESS));
+        rows.put(widgetRow("old-daily",yesterday,yesterday,true,false,true,yesterday));
+        rows.put(widgetRow("new-daily",day,day,false,false,true,yesterday));
+        rows.put(widgetRow("carry",yesterday,yesterday,true,false,false,yesterday));
+        store.replaceReferenceTasks(rows.toString());
+        assertEquals(new HashSet<>(Arrays.asList("today","new-daily","carry")),new HashSet<>(titles(TaskWidgetProvider.todayTasks(context,"",""))));assertEquals(7,store.all().size());
+    }
+    @Test public void collectionCompletionIsPersistentAndStaleTapCannotReopen() throws Exception {
+        String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();String id=new ReferenceStore(context).addCustomTask("Scroll complete",Arrays.asList("At home"),"HIGH",false);
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.ITEM_ACTION,"complete").putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:"+id+":"+day);
+        new TaskWidgetProvider().onReceive(context,tap);new TaskWidgetProvider().onReceive(context,tap);
+        assertTrue(new org.json.JSONObject(new ReferenceStore(context).readState()).getJSONObject("completed").getBoolean(id+":"+day));assertTrue(TaskWidgetProvider.todayTasks(context,"","").isEmpty());
+    }
+    private org.json.JSONObject widgetRow(String id,String planned,String stateDate,boolean onToday,boolean done,boolean daily,String snapshot) throws Exception {
+        return new org.json.JSONObject().put("id","html:"+id+":"+stateDate).put("title",id).put("listName","My tasks").put("dueDate",planned).put("plannedDate",planned).put("done",done).put("status",done?TaskStore.DONE:TaskStore.NEXT).put("labels",new org.json.JSONArray()).put("onToday",onToday).put("recurringDaily",daily).put("stateDate",stateDate).put("snapshotDate",snapshot);
     }
 }

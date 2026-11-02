@@ -31,10 +31,9 @@ import java.util.List;
 /** Standard launcher configuration activity; edits are committed only with Save. */
 public final class WidgetConfigActivity extends Activity {
     private int widgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
-    private EditText titleInput;
-    private Spinner listInput, labelInput, viewInput, colorInput;
+    private Spinner listInput, labelInput, colorInput;
     private SeekBar opacityInput;
-    private TextView opacityLabel, previewTitle, previewSummary, previewTask;
+    private TextView opacityLabel, previewTitle, previewTask;
     private LinearLayout preview;
     private final List<String> lists = new ArrayList<>();
     private final List<String> contexts = new ArrayList<>();
@@ -86,29 +85,20 @@ public final class WidgetConfigActivity extends Activity {
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);
         scroll.addView(content);
-        TextView intro = text("Choose what appears on this home-screen widget. Each widget can have different settings.", 14, MUTED);
+        TextView intro = text("Shows only today’s open tasks. Choose a checklist, context, colors and transparency.", 14, MUTED);
         intro.setPadding(0, dp(8), 0, dp(14)); content.addView(intro);
 
         preview = new LinearLayout(this); preview.setOrientation(LinearLayout.VERTICAL); preview.setPadding(dp(18), dp(14), dp(18), dp(14));
         previewTitle = text("", 18, NAVY); previewTitle.setTypeface(null, Typeface.BOLD);
-        previewSummary = text("", 11, BLUE); previewSummary.setPadding(0, dp(7), 0, dp(12));
         previewTask = text("", 14, NAVY); previewTask.setPadding(0, dp(6), 0, dp(6));
-        preview.addView(previewTitle); preview.addView(previewSummary); preview.addView(previewTask);
+        preview.addView(previewTitle); preview.addView(previewTask);
         LinearLayout previewBackdrop = new LinearLayout(this);
         previewBackdrop.setPadding(dp(12), dp(12), dp(12), dp(12));
         previewBackdrop.setBackgroundColor(SURFACE);
         previewBackdrop.addView(preview, new LinearLayout.LayoutParams(-1, -2));
         content.addView(previewBackdrop);
-        TextView previewNote = text("Preview · Resize on your home screen to show more tasks.", 11, MUTED);
+        TextView previewNote = text("Preview · Scroll the widget to see all of today’s tasks.", 11, MUTED);
         previewNote.setPadding(0,dp(6),0,dp(8)); content.addView(previewNote);
-
-        label(content, "Widget title");
-        titleInput = new EditText(this); titleInput.setSingleLine(true); titleInput.setTextColor(FOREGROUND);
-        titleInput.setHintTextColor(MUTED);
-        titleInput.setBackgroundTintList(android.content.res.ColorStateList.valueOf(ACCENT));
-        titleInput.setFilters(new InputFilter[] { new InputFilter.LengthFilter(40) });
-        titleInput.setText(prefs.getString("title", "My checklist")); titleInput.setHint("My checklist");
-        content.addView(titleInput, new LinearLayout.LayoutParams(-1, dp(52)));
 
         lists.add(""); contexts.add("");
         try {
@@ -132,7 +122,6 @@ public final class WidgetConfigActivity extends Activity {
         labelInput.setSelection(Math.max(0, contexts.indexOf(selectedContext)));
         labelInput.setContentDescription("Filter widget tasks by context label");
         content.addView(labelInput);
-        label(content, "Tasks to show"); viewInput = spinner(java.util.Arrays.asList("All open tasks", "Today and overdue")); viewInput.setSelection(prefs.getBoolean("today", false) ? 1 : 0); content.addView(viewInput);
         label(content, "Colors"); colorInput = spinner(java.util.Arrays.asList("Paper — white and navy", "Night — navy and light blue")); colorInput.setSelection(prefs.getBoolean("dark", true) ? 1 : 0); content.addView(colorInput);
         opacityLabel = text("", 14, FOREGROUND); opacityLabel.setPadding(0, dp(20), 0, dp(5)); content.addView(opacityLabel);
         opacityInput = new SeekBar(this); opacityInput.setMax(100); opacityInput.setProgress(prefs.getInt("opacity",100)); content.addView(opacityInput, new LinearLayout.LayoutParams(-1, dp(48)));
@@ -145,16 +134,11 @@ public final class WidgetConfigActivity extends Activity {
         Button save = new Button(this); save.setText("Save widget"); save.setTextColor(BACKGROUND); save.setBackgroundTintList(android.content.res.ColorStateList.valueOf(ACCENT));
         root.addView(save, new LinearLayout.LayoutParams(-1, dp(54)));
         save.setOnClickListener(v -> save());
-        titleInput.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { updatePreview(); }
-            @Override public void afterTextChanged(Editable s) { }
-        });
         AdapterView.OnItemSelectedListener changed = new AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) { updatePreview(); }
             @Override public void onNothingSelected(AdapterView<?> parent) { }
         };
-        listInput.setOnItemSelectedListener(changed); labelInput.setOnItemSelectedListener(changed); viewInput.setOnItemSelectedListener(changed); colorInput.setOnItemSelectedListener(changed);
+        listInput.setOnItemSelectedListener(changed); labelInput.setOnItemSelectedListener(changed); colorInput.setOnItemSelectedListener(changed);
         opacityInput.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int value, boolean user) { updatePreview(); }
             @Override public void onStartTrackingTouch(SeekBar bar) { }
@@ -162,11 +146,9 @@ public final class WidgetConfigActivity extends Activity {
         });
         ready = true;
         if (state != null) {
-            titleInput.setText(state.getString("title", "My checklist"));
             String savedList = state.getString("list", "");
             listInput.setSelection(Math.max(0, lists.indexOf(savedList)));
             labelInput.setSelection(Math.max(0, contexts.indexOf(state.getString("label", ""))));
-            viewInput.setSelection(state.getBoolean("today",false) ? 1 : 0);
             colorInput.setSelection(state.getBoolean("dark",true) ? 1 : 0);
             opacityInput.setProgress(state.getInt("opacity",100));
         }
@@ -178,22 +160,16 @@ public final class WidgetConfigActivity extends Activity {
         boolean dark = colorInput.getSelectedItemPosition() == 1;
         int opacity = opacityInput.getProgress();
         opacityLabel.setText("Background opacity · " + opacity + "%" + (opacity == 0 ? " · Fully transparent" : ""));
-        String title = titleInput.getText().toString().trim();
-        previewTitle.setText(title.isEmpty() ? "My checklist" : title);
+        previewTitle.setText("Today");
         previewTitle.setTextColor(dark ? Color.rgb(243,247,252) : NAVY);
-        previewSummary.setTextColor(dark ? Color.rgb(186,201,217) : BLUE);
         previewTask.setTextColor(dark ? Color.rgb(243,247,252) : NAVY);
         String list = lists.get(listInput.getSelectedItemPosition());
         String context = contexts.get(labelInput.getSelectedItemPosition());
-        boolean today = viewInput.getSelectedItemPosition() == 1;
         try {
-            List<TaskStore.Task> tasks = TaskWidgetProvider.selectedTasks(this, list, today, context);
-            previewSummary.setText(tasks.size() + " open" + (context.isEmpty() ? "" : " · " + TaskStore.contextEmoji(this,context))
-                    + " · " + (today ? "Today + overdue" : list.isEmpty() ? "All lists" : list));
+            List<TaskStore.Task> tasks = TaskWidgetProvider.todayTasks(this, list, context);
             previewTask.setText(tasks.isEmpty() ? "No open tasks. Add one in the app."
                     : (TaskStore.IN_PROGRESS.equals(tasks.get(0).status) ? "▶  " : "○  ") + tasks.get(0).title);
         } catch (RuntimeException unavailable) {
-            previewSummary.setText("Checklist unavailable");
             previewTask.setText("Open the app to check your saved tasks.");
         }
         GradientDrawable background = new GradientDrawable(); background.setCornerRadius(dp(18));
@@ -204,13 +180,11 @@ public final class WidgetConfigActivity extends Activity {
     }
 
     private void save() {
-        String title = titleInput.getText().toString().trim();
-        if (title.isEmpty()) title = "My checklist";
         TaskWidgetProvider.preferences(this, widgetId).edit()
-                .putString("title", title)
+                .putString("title", "Today")
                 .putString("list", lists.get(listInput.getSelectedItemPosition()))
                 .putString("label", contexts.get(labelInput.getSelectedItemPosition()))
-                .putBoolean("today", viewInput.getSelectedItemPosition() == 1)
+                .putBoolean("today", true)
                 .putBoolean("dark", colorInput.getSelectedItemPosition() == 1)
                 .putInt("opacity", opacityInput.getProgress())
                 .putBoolean("configured", true).apply();
@@ -222,10 +196,10 @@ public final class WidgetConfigActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
         if (!ready) return;
-        state.putString("title", titleInput.getText().toString());
+        state.putString("title", "Today");
         state.putString("list", lists.get(listInput.getSelectedItemPosition()));
         state.putString("label", contexts.get(labelInput.getSelectedItemPosition()));
-        state.putBoolean("today", viewInput.getSelectedItemPosition() == 1);
+        state.putBoolean("today", true);
         state.putBoolean("dark", colorInput.getSelectedItemPosition() == 1);
         state.putInt("opacity", opacityInput.getProgress());
     }
