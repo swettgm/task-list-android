@@ -1,21 +1,21 @@
-# Tasks 0.30.0 verification
+# Tasks 0.31.0 verification
 
-[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41512812383), source commit `fe484e34dce3977a51eae466b64e53ba9d6ae020`.
+[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41515882639), source commit `88193ac0d34eaea8a35fc2a19d278d241a8e8764`.
 
-101 Android tests, 452 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+102 Android tests, 457 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-A reminder already armed for 2 PM could be cancelled by an unrelated save after 2 PM when Android had delayed delivery. Rescheduling now preserves the earliest still-valid undelivered alarm for up to 24 hours and requests prompt catch-up delivery. Due records are acknowledged after delivery so they do not repeat. Notify off, changed time/date/recurrence, completed tasks and expired reminders are excluded. Canonical task identities and completion history remain unchanged.
+Completed tasks now sort newest first within their existing completion-day sections. App and widget completions record durable per-occurrence timestamps, including parent and checklist keys. Strict ordering handles multiple completions in the same millisecond. Duplicate widget completion taps preserve the original time. Undo clears the timestamp, and recompletion receives a new one and returns to the top.
 
-On Android 12 and newer Settings offers Allow precise reminders when permission is needed. The app uses exact alarms when permitted and safely falls back to inexact alarms if unavailable or revoked. It replans on permission-grant broadcasts and app resume. Notifications permission remains separate. Settings also detects a blocked Scheduled task reminders channel, even if general notifications are enabled.
+No task identities or historical completion dates are replaced. Old records without exact times retain their completion-day grouping and use saved completion-key order as a fallback; precise historical times cannot be reconstructed. Checklist completion uses the most recent parent/step timestamp. Other saves preserve these timestamps. Failed app completion saves restore the prior timestamp map alongside completion state.
 
-Native regressions reproduce a delayed alarm followed by an unrelated state save, verify delivery and acknowledgement, check an existing Use hair serum override at 2 PM, reject cancelled/edited/completed/expired reminders, and exercise precise-alarm permission and the Android settings intent. Existing notification, recurrence, widget, progress, completion and layout checks remain enabled.
+Browser regressions complete Alpha then Zulu and verify Zulu is first despite title/priority, reload persistence, timestamp removal on undo, and moving Alpha to the top when completed again. Native regressions verify ordered widget timestamps and idempotent duplicate taps. Existing undo, history, checklist, native-state, reminder, widget and layout checks remain enabled. Reload checks use a stable HTTP fixture origin for their mock native storage.
 
-[Download Tasks-v0.30.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.30.0.apk).
+[Download Tasks-v0.31.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.31.0.apk).
 
-Package `com.personal.tasklist.preview`, version 0.30.0, code 30; minimum API 26, target 35; size 203,741 bytes.
+Package `com.personal.tasklist.preview`, version 0.31.0, code 31; minimum API 26, target 35; size 207,837 bytes.
 
-SHA-256: `06eba1278f270c352b3c7182a7cffb7c5bc115e4c977a2067915f893298a8e45`.
+SHA-256: `0d673589bce5c696f5106a01a2143256769a5a4f2014d0ba307041614d8a89c0`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. Packaged UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
-No physical phone was used. Checks establish the scheduling regression and its fix, not the cause of a specific missed notification on the user’s device. Android permission settings, channel settings, Do Not Disturb, force-stop and device policies can affect delivery; exact alarms require user permission on Android 12 and newer.
+No physical phone or Android launcher was used. Browser checks run in Chromium; native controls and widget behavior use Robolectric and view inflation.
