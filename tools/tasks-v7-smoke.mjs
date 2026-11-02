@@ -119,7 +119,7 @@ try{
  await futureRows(ids.future).first().locator(':scope > .form-check > input[type=checkbox]').click();
  state=await page.evaluate(()=>__v7.getState());
  check(state.completed[ids.future+':'+dates.tomorrow]===true&&state.completedOn[ids.future+':'+dates.tomorrow]===dates.today,'Upcoming completion saves immediately with today as actual completion date');
- await page.waitForTimeout(600);
+ await page.waitForTimeout(2200);
  check(await futureRows(ids.future).count()===0,'Completed future task leaves Upcoming after its completion pause');
  await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
  check(await page.locator('#pt-today').isVisible()&&!await page.locator('#pt-upcoming').isVisible(),'Reopening Tasks always selects Today');
@@ -143,10 +143,30 @@ try{
  check(state.completed[ids.dailyA+':'+dates.today]===true&&state.completed[ids.dailyB+':'+dates.today]===true,'A local checkbox save merges its change without undoing an unseen native completion');
  check(state.completedOn[ids.dailyB+':'+dates.today]===dates.today&&state.customTasks.some(task=>task.id===remoteId),'Stale-page persistence preserves the remote completion date and newly added task');
  await page.evaluate(()=>TaskListApp.setContextFilter('V7 QA'));
- await page.waitForTimeout(600);await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
+ await page.waitForTimeout(2200);await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
  state=await page.evaluate(()=>__v7.getState());
  check(state.completed[ids.dailyA+':'+dates.today]===true&&state.completed[ids.dailyB+':'+dates.today]===true,'Local and previously unseen remote completions both survive context changes and a full reload');
  check(await todayRow(remoteId).isVisible()&&!await todayRow(ids.dailyA).isVisible()&&!await todayRow(ids.dailyB).isVisible(),'Reload displays the companion task and keeps both completed tasks hidden');
+ for(const mode of ['daily','weekends']){
+  await page.evaluate(()=>TaskListApp.addTask());
+  await editor.locator('input[type=text]').first().fill('Shortcut repeat '+mode);
+  await editor.locator('[data-field=repeat] input[value='+mode+']').check();
+  await editor.getByRole('button',{name:'Save task',exact:true}).click();
+  const task=await page.evaluate(mode=>__v7.getState().customTasks.find(t=>t.title==='Shortcut repeat '+mode),mode);
+  check(mode==='daily'?task.repeat?.amount===1&&task.repeat?.unit==='day':JSON.stringify(task.days)==='[0,6]',mode+' shortcut persists the correct schedule');
+ }
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ await editor.locator('[aria-label="New context"]').fill('Workshop');await editor.getByRole('button',{name:'Add context',exact:true}).click();
+ await editor.getByRole('button',{name:'Close',exact:true}).click();
+ await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
+ await page.evaluate(()=>TaskListApp.addTask());
+ check(await editor.locator('label[aria-label="Workshop"]').count()===1,'Custom contexts added in Settings survive reload and can be assigned');
+ await editor.getByRole('button',{name:'Cancel',exact:true}).click();
+ for(const full of [false,true]){
+  if(full)await page.evaluate(()=>TaskListApp.addTask());else await page.getByRole('button',{name:'Add task',exact:true}).click();
+  const box=await editor.boundingBox();await page.mouse.click(2,Math.max(2,box.y-3));
+  check(await page.locator('dialog').count()===0,(full?'Full editor':'Quick add')+' closes when tapping the backdrop');
+ }
  check(errors.length===0,'No page errors in Tasks v7 behavior checks');
  console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();}

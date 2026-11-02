@@ -87,7 +87,7 @@ try {
   check(afterFirst.hint, 'Completing task tells the user it can be unchecked to undo');
   check(Math.abs(afterFirst.x - firstPoint.x) < 2 && Math.abs(afterFirst.y - firstPoint.y) < 2,
     'Completing an active task keeps the checkbox at the same touch coordinates');
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(2200);
   let saved = await state();
   check(saved.completed[keys.touch] === false && await row(ids.touch).isVisible(), 'Second real touch at the same coordinates cancels disappearance');
   check(!saved.completedOn?.[keys.touch], 'Touch undo clears its completion-day marker');
@@ -100,7 +100,7 @@ try {
   await page.mouse.click(heldPoint.x, heldPoint.y);
   await page.mouse.move(heldPoint.x, heldPoint.y);
   await page.mouse.down();
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(2200);
   check(await row(ids.hold).isVisible(), 'A checkbox is not removed while an undo pointer is held across the deadline');
   const held = await row(ids.hold).evaluate(element => {
     const input = element.querySelector(':scope > .form-check > input');
@@ -110,7 +110,7 @@ try {
   });
   check(held.enabled && held.opacity >= .95, 'Undo checkbox remains enabled and fully visible during the pause');
   await page.mouse.up();
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(2200);
   saved = await state();
   check(saved.completed[keys.hold] === false && await row(ids.hold).isVisible(), 'Releasing the held pointer completes undo instead of losing the task');
   await reload();
@@ -122,7 +122,7 @@ try {
   saved = await state();
   check(saved.completed[keys.overdue] === true && saved.completedOn[keys.overdue] === dates.today,
     'Overdue task records the actual New York completion date immediately');
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(2200);
   check(!await row(ids.overdue).isVisible(), 'Completed overdue task leaves the pending list after the pause');
   await showCompleted();
   const highlighted = row(ids.overdue, '#pt-completed-list');

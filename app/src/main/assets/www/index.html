@@ -1983,7 +1983,7 @@ main{max-width:100%;margin:0;padding:0}
     return result;
   }
   function allContexts() {
-    return [...new Set([...DEFAULT_CONTEXTS, ...(scope ? scope.tasks.flatMap(derivedContexts) : [])])];
+    return [...new Set([...DEFAULT_CONTEXTS, ...(readCanonical().contextOptions || []), ...(scope ? scope.tasks.flatMap(derivedContexts) : [])])];
   }
   function matches(task) { return !selectedContext || derivedContexts(task).includes(selectedContext); }
   function rebuild() {
@@ -2089,6 +2089,10 @@ main{max-width:100%;margin:0;padding:0}
     document.body.append(dialog);
     const close = () => { if (dialog.open && dialog.close) dialog.close(); dialog.remove(); };
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
+    const outside=event=>{const box=dialog.getBoundingClientRect();return event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom;};
+    let backdropPressed=false;
+    dialog.addEventListener('pointerdown',event=>{backdropPressed=event.target===dialog&&outside(event);});
+    dialog.addEventListener('click',event=>{if(backdropPressed&&event.target===dialog&&outside(event))close();backdropPressed=false;});
     if (dialog.showModal) dialog.showModal(); else dialog.setAttribute('open', '');
     return { dialog, form, close };
   }
@@ -2126,11 +2130,10 @@ main{max-width:100%;margin:0;padding:0}
       return { label, check };
     });
     group.append(grid);
-    const custom = node('input', 'form-control tl-other-contexts'); custom.type = 'text';
-    custom.placeholder = 'Other contexts, separated by commas'; custom.setAttribute('aria-label', 'Other contexts'); group.append(custom);
     form.append(group);
-    return () => [...new Set([...inputs.filter(x => x.check.checked).map(x => x.label), ...custom.value.split(',').map(x => x.trim()).filter(Boolean)])];
+    return () => inputs.filter(x => x.check.checked).map(x => x.label);
   }
+
   function editTask(task, item, prefill) {
     if (!scope) return;
     const isNew = !task; const original = task ? clone(task) : {};
@@ -2141,7 +2144,11 @@ main{max-width:100%;margin:0;padding:0}
     const schedule = node('div', 'tl-schedule-grid'); form.append(schedule);
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
-    const time = inputField(schedule, 'Time', 'text', original.time || ''); time.placeholder = 'Any time';
+    const shortcuts=node('div','tl-date-shortcuts');date.parentElement.append(shortcuts);
+    shortcuts.append(action('Tomorrow',()=>{date.value=scope.addDays(scope.today,1);}),action('Weekend',()=>{const day=new Date(scope.today+'T12:00:00Z').getUTCDay();date.value=scope.addDays(scope.today,(6-day+7)%7||7);}));
+    const toPicker=value=>{const match=String(value||'').match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);if(!match)return '';let h=Number(match[1]);if(match[3])h=h%12+(/pm/i.test(match[3])?12:0);return h<24?String(h).padStart(2,'0')+':'+match[2]:'';};
+    const time = inputField(schedule, 'Time', 'time', toPicker(original.time)); time.placeholder = 'Any time';time.setAttribute('aria-label','Time');
+    time.parentElement.append(action('Clear',()=>{time.value='';},'btn tl-clear-time'));
     const durationGroup=node('div','tl-duration-group');durationGroup.append(node('span','tl-duration-caption','Duration'));
     const durationRow=node('div','tl-duration-row');durationGroup.append(durationRow);schedule.append(durationGroup);
     const hours=inputField(durationRow,'Hours','number',original.minutes===undefined?'':Math.floor(original.minutes/60));hours.placeholder='Hours';hours.min='0';hours.step='1';hours.setAttribute('aria-label','Hours');
@@ -2149,9 +2156,9 @@ main{max-width:100%;margin:0;padding:0}
     const urgentWrap = node('label', 'tl-context-choice tl-urgent'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
     urgentWrap.append(urgent, node('span', '', 'Urgent')); schedule.append(urgentWrap);
     const oldSpec=global.TasksSchedule.fromTask(original,initialDate);
-    const oldMode=oldSpec.mode;
-    if(oldMode==='repeat')date.value=oldSpec.start;
-    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['weekdays','Weekdays'],['repeat','Every…']], oldMode);
+    const oldMode=oldSpec.mode==='repeat'&&oldSpec.unit==='day'&&oldSpec.amount===1?'daily':(oldSpec.mode==='weekdays'&&JSON.stringify(oldSpec.weekdays)==='[0,6]'?'weekends':oldSpec.mode);
+    if(oldSpec.mode==='repeat')date.value=oldSpec.start;
+    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['daily','Daily'],['weekdays','Weekdays'],['weekends','Weekends'],['repeat','Every…']], oldMode);
     const repeatRow=node('div','tl-repeat-row');
     repeatRow.append(node('span','','Every'));
     const amount=node('input','form-control tl-repeat-amount');amount.type='number';amount.min='1';amount.step='1';amount.value=oldSpec.amount||1;amount.setAttribute('aria-label','Repeat amount');
@@ -2168,7 +2175,7 @@ main{max-width:100%;margin:0;padding:0}
     const selected = task ? derivedContexts(task) : (prefill && (prefill.labels || [prefill.label || prefill.widget_label].filter(Boolean))) || (selectedContext ? [selectedContext] : []);
     const readContexts = contextsField(form, selected);
     const readLinks = linkedTasksField(form, task, item?item.date:scope.today);
-    const extra = node('details', 'tl-extra-fields'); extra.append(node('summary', '', 'Notes & checklist')); extra.open = !!original.notes;
+    const extra = node('section', 'tl-extra-fields');
     const extraGrid = node('div', 'tl-notes-grid'); extra.append(extraGrid); form.append(extra);
     const notes = inputField(extraGrid, 'Notes', 'textarea', original.notes || ''); notes.placeholder = 'Add notes';
     const steps = isNew ? inputField(extraGrid, 'Checklist', 'textarea', '') : null;
@@ -2184,7 +2191,7 @@ main{max-width:100%;margin:0;padding:0}
       if(recurrence.value==='repeat'&&(!/^\d+$/.test(amount.value)||Number(amount.value)<1)){error.textContent='Repeat amount must be at least 1.';return;}
       const next = Object.assign({}, original, { id: original.id || 'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9), title: title.value.trim(), priority: urgent.checked ? 'HIGHEST' : priority.value, _contexts: readContexts() });
       if(hours.value||minutes.value)next.minutes=Number(hours.value)*60+Number(minutes.value);else delete next.minutes;
-      if (time.value.trim()) next.time = time.value.trim(); else delete next.time;
+      if(time.value){const [h,m]=time.value.split(':').map(Number);next.time=(h%12||12)+':'+String(m).padStart(2,'0')+(h>=12?' PM':' AM');}else delete next.time;
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
       delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
@@ -2193,6 +2200,8 @@ main{max-width:100%;margin:0;padding:0}
       if(isNew||changedSchedule){
         ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence','repeat','startsOn'].forEach(key=>delete next[key]);
         if(recurrence.value==='once')next.due=date.value;
+        if(recurrence.value==='daily'){next.repeat={amount:1,unit:'day',start:date.value};next.recurrence='Daily';}
+        if(recurrence.value==='weekends'){next.days=[0,6];next.startsOn=date.value;next.recurrence='Weekends';}
         if(recurrence.value==='weekdays'){next.days=chosenDays;next.startsOn=date.value;next.recurrence=global.TasksSchedule.weekdaysLabel(chosenDays);}
         if(recurrence.value==='repeat'){next.repeat={amount:Number(amount.value),unit:unit.value,start:date.value};if(unit.value==='week'&&chosenDays.length)next.repeat.weekdays=chosenDays;next.recurrence=global.TasksSchedule.describe(next);}
       }else if(item&&recurrence.value!=='repeat'&&date.value!==initialDate){
@@ -2278,6 +2287,11 @@ main{max-width:100%;margin:0;padding:0}
   function showSettings() {
     const { form, close } = modal('Settings'); form.classList.add('tl-settings-form');
     global.TasksTheme.renderSettings(form,{readState:readCanonical,persistState:persist,native});
+    const contexts=node('section','tl-context-settings');contexts.append(node('h3','','Contexts'));
+    const list=node('p','text-muted');const refresh=()=>{list.textContent=allContexts().map(label=>contextIcon(label)+' '+label).join(' · ');};refresh();contexts.append(list);
+    const custom=inputField(contexts,'New context','text','');custom.placeholder='Context name';custom.setAttribute('aria-label','New context');
+    contexts.append(action('Add context',()=>{const labels=custom.value.split(',').map(x=>x.trim()).filter(Boolean);if(!labels.length)return;persist({contextOptions:[...new Set([...(readCanonical().contextOptions||[]),...labels])]});custom.value='';refresh();updateContextOptions();}));form.append(contexts);
+
     if (native && native.showWidgetSettings) {
       form.append(action('Add home-screen widget', () => { close(); native.showWidgetSettings(); }, 'btn tl-widget-settings'));
     }
@@ -3116,7 +3130,7 @@ main{max-width:100%;margin:0;padding:0}
         movedTo[id]=addDays(today,1);
         delete rolloverCompletedOn[id];
         saveLocalState();renderToday();renderFuture();
-        find('pt-status').textContent='Moved to tomorrow · saved locally';
+        find('pt-status').textContent='';
       });
       return button;
     };
@@ -3192,7 +3206,7 @@ main{max-width:100%;margin:0;padding:0}
         if(!wasDone&&isDone(task,date,saved)){
           const entry={...presentation,active:previousActive!==inProgress?previousActive:null,
             bannerHeight:find('pt-current').getBoundingClientRect().height,timer:null};
-          entry.timer=setTimeout(()=>expireCompletion(key,entry),450);
+          entry.timer=setTimeout(()=>expireCompletion(key,entry),2000);
           completing.set(key,entry);
         }
       }catch(error){
@@ -3528,7 +3542,7 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 .tl-quick-form .tl-form-error:empty,.tl-settings-form .tl-form-error:empty{display:none}
 
 #today-task-list-20261023 .tm-completing{animation:none}
-#today-task-list-20261023 .tm-completing>.form-check>.form-check-label{animation:task-completed 450ms ease-out both}
+#today-task-list-20261023 .tm-completing>.form-check>.form-check-label{animation:task-completed 2000ms ease-out both}
 #today-task-list-20261023 .tm-completing>.form-check .tm-title{ text-decoration:line-through }
 @keyframes task-completed{0%,45%{opacity:1}100%{opacity:.25}}
 @media(prefers-reduced-motion:reduce){#today-task-list-20261023 .tm-completing>.form-check>.form-check-label{animation:none}}
@@ -3583,3 +3597,10 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 #today-task-list-20261023 .tm-day-heading,#today-task-list-20261023 .tm-day[open]>.tm-day-heading{border:0!important;box-shadow:none!important;margin:0 0 6px;padding:8px 0}
 #today-task-list-20261023 details.tm-day{margin:10px 0 14px}
 </style></body></html>
+
+<style>
+.tl-duration-group{grid-column:1/-1}.tl-duration-row{gap:12px}.tl-duration-row .tl-field>span{font-size:14px}.tl-duration-row input{min-height:48px;font-size:18px}
+.tl-notes-grid{display:flex;flex-direction:column;gap:12px}.tl-notes-grid textarea{min-height:80px}.tl-extra-fields{display:block}
+.tl-date-shortcuts{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}.tl-date-shortcuts .btn{padding:7px;font-size:13px;min-width:0}.tl-clear-time{margin-top:6px;padding:7px;font-size:13px}
+.tl-context-settings{margin-top:16px}.tl-context-settings h3{font-size:17px}.tl-context-settings p{overflow-wrap:anywhere}
+</style>
