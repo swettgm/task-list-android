@@ -3089,7 +3089,8 @@ main{max-width:100%;margin:0;padding:0}
       return task.title;
     };
     const saveLocalState=()=>{
-      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
+      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,updatedAt:new Date().toISOString()}));return true;}catch(error){storageAvailable=false;}
+      return false;
     };
     const progressButton=(key,title,completed=false)=>{
       const active=inProgress===key;
@@ -3150,7 +3151,7 @@ main{max-width:100%;margin:0;padding:0}
       Object.entries(movedTo).forEach(([id,target])=>{
         const parsed=occurrenceFromId(id);if(!parsed)return;
         const [taskId,stateDate]=parsed,task=tasks.find(t=>t.id===taskId);
-        if(!task || task.retired || target===stateDate || isDaily(task))return;
+        if(!task || task.retired || target===stateDate)return;
         const done=isDone(task,stateDate,saved),completedHere=rolloverCompletedOn[id]===date;
         if(done && completedHere){add(instance(task,date,stateDate,date>stateDate,true));return;}
         if(target>date)return;
@@ -3203,6 +3204,7 @@ main{max-width:100%;margin:0;padding:0}
       window.TasksSchedule.describe(task)?'🔁 '+window.TasksSchedule.describe(task):null
     ].filter(Boolean).join(' · ');
     const originNote=item=>{
+      if(item.moved&&item.date<item.stateDate&&!isDone(item.task,item.stateDate,draft))return 'Moved from '+labelDate(item.stateDate);
       if(!item.carried || isDone(item.task,item.stateDate,draft))return null;
       const target=movedTo[occurrenceId(item.task,item.stateDate)];
       if(item.moved && target && item.date>target)return 'Overdue · moved to '+labelDate(target)+' from '+labelDate(item.stateDate);
@@ -3221,6 +3223,16 @@ main{max-width:100%;margin:0;padding:0}
         find('pt-status').textContent='';
       });
       return button;
+    };
+    const doTodayButton=item=>{
+      if(isDone(item.task,item.stateDate,draft))return null;
+      const button=el('button','tm-move-control tl-do-today','Do today '),arrow=el('span','tl-today-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.type='button';button.setAttribute('aria-label','Move '+item.task.title+' to today');
+      button.addEventListener('click',()=>{
+        const previousMoved={...movedTo},previousRollover={...rolloverCompletedOn};
+        movedTo[occurrenceId(item.task,item.stateDate)]=today;delete rolloverCompletedOn[occurrenceId(item.task,item.stateDate)];
+        if(!saveLocalState()){movedTo=previousMoved;rolloverCompletedOn=previousRollover;const message='Couldn’t move this task. Please reopen the app and try again.';find('pt-status').textContent=message;const error=el('span','tm-task-note',message);error.setAttribute('role','alert');button.parentElement.append(error);return;}
+        find('pt-status').textContent='';renderToday();renderFuture();window.TaskListBridge.queueSnapshot();
+      });return button;
     };
     const openChecklists=new Set();
     const completing=new Map();
@@ -3387,7 +3399,7 @@ main{max-width:100%;margin:0;padding:0}
       label.append(input,text);
       const controls=el('div','tm-item-actions');
       controls.append(progressButton(progressKey(task,stateDate),task.title,isDone(task,stateDate,draft)));
-      const move=completed||upcoming?null:moveButton(item);if(move)controls.append(move);
+      const move=completed?null:upcoming?doTodayButton(item):moveButton(item);if(move)controls.append(move);
       const taskDetails=el('div','tm-task-details');
       const titleBadges=el('div','tm-task-badges');
       Array.from(titleMain.children).filter(child=>child!==title).forEach(child=>titleBadges.append(child));
@@ -3486,11 +3498,11 @@ main{max-width:100%;margin:0;padding:0}
       const container=find('pt-future-list');
       container.querySelectorAll('details.tm-day').forEach(section=>{if(section.open)futureOpenDates.add(section.dataset.date);else futureOpenDates.delete(section.dataset.date);});
       container.replaceChildren();
-      const todayIds=new Set(dueToday().filter(item=>!isDone(item.task,item.stateDate,saved)||isCompleting(item.task,item.stateDate)).map(item=>item.task.id));
+      const todayItems=dueToday().filter(item=>!isDone(item.task,item.stateDate,saved)||isCompleting(item.task,item.stateDate)),todayIds=new Set(todayItems.map(item=>item.task.id)),todayOccurrences=new Set(todayItems.map(item=>progressKey(item.task,item.stateDate)));
       const seen=new Set();
       for(let offset=1;offset<=14;offset++){
         const date=addDays(today,offset);
-        const candidates=withCompleting(onDate(date),'future',date).filter(item=>(!todayIds.has(item.task.id)||isDaily(item.task))&&(!isDone(item.task,item.stateDate,saved)||isCompleting(item.task,item.stateDate))&&window.TaskListBridge.contextMatches(item.task));
+        const candidates=withCompleting(onDate(date),'future',date).filter(item=>!todayOccurrences.has(progressKey(item.task,item.stateDate))&&(!todayIds.has(item.task.id)||isDaily(item.task))&&(!isDone(item.task,item.stateDate,saved)||isCompleting(item.task,item.stateDate))&&window.TaskListBridge.contextMatches(item.task));
         const items=candidates.filter(item=>{const key=progressKey(item.task,item.stateDate);if(seen.has(key))return false;seen.add(key);return true;});
         if(!items.length&&offset!==1)continue;
         const section=el('details','tm-day');section.dataset.date=date;section.open=futureOpenDates.has(date);
@@ -3814,4 +3826,8 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 #today-task-list-20261023 .tm-view-animating{isolation:isolate}
 #today-task-list-20261023 .tm-view-animating>[role=tabpanel]{pointer-events:none}
 #today-task-list-20261023 .tm-view-leaving{position:absolute;top:0;left:0;width:100%}
+</style>
+
+<style>
+#today-task-list-20261023 .tl-today-arrow{display:inline-block;transform:rotate(180deg)}
 </style>

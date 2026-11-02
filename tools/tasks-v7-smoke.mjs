@@ -125,8 +125,25 @@ try{
  check(state.completed[ids.future+':'+dates.tomorrow]===true&&state.completedOn[ids.future+':'+dates.tomorrow]===dates.today,'Upcoming completion saves immediately with today as actual completion date');
  await page.waitForTimeout(2200);
  check(await futureRows(ids.future).count()===0,'Completed future task leaves Upcoming after its completion pause');
+ const moveToday=futureRows(ids.second).first().locator('.tl-do-today');
+ check(await moveToday.textContent()==='Do today ➜'&&await moveToday.locator('.tl-today-arrow').evaluate(n=>getComputedStyle(n).transform==='matrix(-1, 0, 0, -1, 0, 0)'),'Upcoming has a Do today button with the matching thick arrow facing back');
+ const moveStyle=await moveToday.evaluate(n=>{const gear=n.closest('.tm-item-actions').querySelector('.tl-edit-button'),a=getComputedStyle(n),b=getComputedStyle(gear);return a.height===b.height&&a.borderTopColor===b.borderTopColor&&a.color===b.color;});check(moveStyle,'Do today matches the other task controls');
+ await moveToday.click();state=await page.evaluate(()=>__v7.getState());
+ check(state.movedTo[ids.second+':'+dates.second]===dates.today&&state.customTasks.find(t=>t.id===ids.second).due===dates.second,'Do today saves an occurrence move without replacing the original task date');
+ check(await futureRows(ids.second).count()===0&&await todayRow(ids.second).getAttribute('data-state-date')===dates.second&&await todayRow(ids.second).getAttribute('data-display-date')===dates.today,'Moved task appears on Today with its original identity and leaves Upcoming');
+ await page.waitForFunction(({id,date})=>__v7.snapshot.some(t=>t.id==='html:'+id+':'+date&&t.onToday),{id:ids.second,date:dates.second});check(true,'The home widget receives the moved Today occurrence');
+ // Test both legacy daily schedules and Every 1 day without altering the main fixture.
+ const dailyPage=await newPage(state);await dailyPage.evaluate(()=>TaskListApp.setContextFilter('V7 QA'));await dailyPage.getByRole('tab',{name:'Upcoming',exact:true}).click();
+ for(const id of [ids.dailyA,ids.futureRepeat]){
+  const before=await dailyPage.evaluate(id=>__v7.getState().customTasks.find(t=>t.id===id),id);
+  await dailyPage.locator('#pt-future-list [data-task-id="'+id+'"][data-state-date="'+dates.tomorrow+'"]').locator('.tl-do-today').click();
+  const saved=await dailyPage.evaluate(()=>__v7.getState());check(saved.movedTo[id+':'+dates.tomorrow]===dates.today&&JSON.stringify(saved.customTasks.find(t=>t.id===id))===JSON.stringify(before),'Do today moves one '+id+' occurrence and preserves its full repeating definition');
+  check(await dailyPage.locator('#pt-list [data-task-id="'+id+'"][data-state-date="'+dates.tomorrow+'"]').count()===1&&await dailyPage.locator('#pt-future-list [data-task-id="'+id+'"][data-state-date="'+dates.tomorrow+'"]').count()===0&&await dailyPage.locator('#pt-future-list [data-task-id="'+id+'"]').count()===13,'A moved daily occurrence leaves Upcoming while later daily dates remain');
+ }
+ await dailyPage.getByRole('tab',{name:'Today',exact:true}).click();await dailyPage.locator('#pt-list [data-task-id="'+ids.dailyA+'"][data-state-date="'+dates.tomorrow+'"] > .form-check > input').click();const dailySaved=await dailyPage.evaluate(()=>__v7.getState());check(dailySaved.completed[ids.dailyA+':'+dates.tomorrow]===true&&!dailySaved.completed[ids.dailyA+':'+dates.today],'Completing an advanced daily occurrence keeps the original Today occurrence independent');await dailyPage.close();
  await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
  check(await page.locator('#pt-today').isVisible()&&!await page.locator('#pt-upcoming').isVisible(),'Reopening Tasks always selects Today');
+ check(await todayRow(ids.second).isVisible()&&await todayRow(ids.second).getAttribute('data-state-date')===dates.second,'Do today persists after a full reload');
  await page.screenshot({path:path.join(output,'tasks-today-v7.png'),fullPage:false});
  await page.getByRole('tab',{name:'Upcoming',exact:true}).click();
  await page.screenshot({path:path.join(output,'tasks-upcoming-v7.png'),fullPage:false});
