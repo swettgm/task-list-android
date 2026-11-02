@@ -3490,7 +3490,7 @@ main{max-width:100%;margin:0;padding:0}
       const seen=new Set();
       for(let offset=1;offset<=14;offset++){
         const date=addDays(today,offset);
-        const candidates=withCompleting(onDate(date),'future',date).filter(item=>!todayIds.has(item.task.id)&&(!isDone(item.task,item.stateDate,saved)||isCompleting(item.task,item.stateDate))&&window.TaskListBridge.contextMatches(item.task));
+        const candidates=withCompleting(onDate(date),'future',date).filter(item=>(!todayIds.has(item.task.id)||isDaily(item.task))&&(!isDone(item.task,item.stateDate,saved)||isCompleting(item.task,item.stateDate))&&window.TaskListBridge.contextMatches(item.task));
         const items=candidates.filter(item=>{const key=progressKey(item.task,item.stateDate);if(seen.has(key))return false;seen.add(key);return true;});
         if(!items.length&&offset!==1)continue;
         const section=el('details','tm-day');section.dataset.date=date;section.open=futureOpenDates.has(date);
@@ -3809,8 +3809,9 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 </style>
 
 <style>
-#today-task-list-20261023 .tm-view-stack{position:relative;min-width:0}
-#today-task-list-20261023 .tm-view-animating{overflow:hidden;isolation:isolate}
+#today-task-list-20261023 .tm-view-stack{position:relative;min-width:0;display:flow-root;overflow:hidden}
+#today-task-list-20261023 .tm-view-stack>[role=tabpanel]:not([hidden]){display:flow-root}
+#today-task-list-20261023 .tm-view-animating{isolation:isolate}
 #today-task-list-20261023 .tm-view-animating>[role=tabpanel]{pointer-events:none}
 #today-task-list-20261023 .tm-view-leaving{position:absolute;top:0;left:0;width:100%}
 </style>

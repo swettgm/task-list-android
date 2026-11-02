@@ -144,7 +144,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_today_compact);
         views.setImageViewResource(R.id.widget_background,dark?R.drawable.widget_background_dark:R.drawable.widget_background_light);
         views.setInt(R.id.widget_background,"setImageAlpha",Math.round(255*Math.max(0,Math.min(100,prefs.getInt("opacity",100)))/100f));
-        views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setTextColor(R.id.widget_empty,secondary);views.setTextColor(R.id.widget_add,accent);views.setInt(R.id.widget_add,"setBackgroundColor",Color.TRANSPARENT);
+        views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setTextColor(R.id.widget_empty,secondary);views.setTextColor(R.id.widget_add,accent);views.setInt(R.id.widget_add,"setBackgroundColor",Color.TRANSPARENT);views.setInt(R.id.widget_add,"setGravity",android.view.Gravity.END|android.view.Gravity.CENTER_VERTICAL);
         views.setViewVisibility(R.id.widget_context_icon,TaskStore.usesGuildImage(context,label)?View.VISIBLE:View.GONE);views.setContentDescription(R.id.widget_context_icon,label);
         String empty="No open tasks for today.";try{todayTasks(context,list,label);}catch(RuntimeException unavailable){empty="Open the app to check your saved tasks.";}views.setTextViewText(R.id.widget_empty,empty);
         Intent service=new Intent(context,TaskWidgetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).setData(Uri.parse("tasklist-widget://rows/"+id));

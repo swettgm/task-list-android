@@ -20,7 +20,7 @@
         android:orientation="vertical"
         android:paddingStart="4dp"
         android:paddingTop="2dp"
-        android:paddingEnd="4dp"
+        android:paddingEnd="0dp"
         android:paddingBottom="2dp">
 
         <LinearLayout
@@ -48,7 +48,7 @@
                 android:id="@+id/widget_add"
                 android:layout_width="48dp"
                 android:layout_height="match_parent"
-                android:gravity="center"
+                android:gravity="end|center_vertical"
                 android:text="+"
                 android:textColor="#195B7E"
                 android:textSize="24sp"

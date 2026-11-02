@@ -98,7 +98,11 @@ try{
  check(await page.locator('#pt-list .form-check .tm-meta').count()===0,'Checkbox label contains the title rather than the metadata block');
  // Upcoming has its own complete controls and visible grouping.
  await page.getByRole('tab',{name:'Upcoming',exact:true}).click();
- check(await futureRows(ids.dailyA).count()===0&&await futureRows(ids.dailyB).count()===0,'Tasks being done today are excluded from Upcoming');
+ check(await futureRows(ids.dailyA).count()===14&&await futureRows(ids.dailyB).count()===14,'Daily tasks pending on Today also show each of the next fourteen occurrences in Upcoming');
+ check(await futureRows(durationTask.id).count()===0,'Nonrecurring tasks pending on Today stay excluded from Upcoming');
+ const dailyDates=await futureRows(ids.dailyB).evaluateAll(nodes=>nodes.map(n=>n.dataset.stateDate));check(dailyDates[0]===dates.tomorrow&&!dailyDates.includes(dates.today)&&new Set(dailyDates).size===14,'Upcoming daily tasks start tomorrow with unique dates');
+ await futureRows(ids.dailyB).first().locator(':scope > .form-check > input[type=checkbox]').click();state=await page.evaluate(()=>__v7.getState());check(state.completed[ids.dailyB+':'+dates.tomorrow]===true&&!state.completed[ids.dailyB+':'+dates.today],'Completing a future daily occurrence leaves today uncompleted');
+ await futureRows(ids.dailyB).first().locator(':scope > .form-check > input[type=checkbox]').click();
  check(await futureRows(ids.future).count()===1,'An unfinished carried future occurrence is shown once');
  const repeatDates=await futureRows(ids.futureRepeat).evaluateAll(nodes=>nodes.map(n=>n.dataset.stateDate));
  check(repeatDates.length>1&&new Set(repeatDates).size===repeatDates.length,'Distinct future repeat occurrences remain available without duplicate dates');

@@ -40,17 +40,24 @@ try{
  check(await page.locator('.tm-urgent-badge').first().evaluate(n=>getComputedStyle(n).backgroundColor==='rgb(165, 29, 45)'&&n.textContent.includes('🔴')),'Urgent marker is red');
  check(await page.locator('.form-check-input').first().evaluate(n=>getComputedStyle(n).borderTopColor===getComputedStyle(document.documentElement).getPropertyValue('--tl-accent').trim().replace('#68b7ff','rgb(104, 183, 255)')),'Unchecked checkboxes use the accent color');
  const cdp=await page.context().newCDPSession(page);
+ const panelOffsets=()=>page.evaluate(()=>{const stack=document.querySelector('.tm-view-stack').getBoundingClientRect();return Object.fromEntries([...document.querySelectorAll('.tm-view-stack>[role=tabpanel]:not([hidden])')].map(panel=>[panel.id,panel.querySelector('.tm-summary,.tm-day-heading').getBoundingClientRect().top-stack.top]));});
  async function swipe(from,to,vertical=false){
+  const before=await panelOffsets();
   const box=await page.locator('[role=tabpanel]:not([hidden]) .tm-task-item .tm-title').first().boundingBox(),y=box.y+box.height/2;
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from,y}]});
   for(let step=1;step<=5;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:vertical?from:from+(to-from)*step/5,y:vertical?y+step*20:y}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   const motion=await page.evaluate(()=>[...document.querySelectorAll('.tm-view-stack>[role=tabpanel]')].flatMap(n=>n.getAnimations().map(a=>({id:n.id,frames:a.effect.getKeyframes().map(k=>k.transform)}))));
+  const during=await panelOffsets();await page.waitForTimeout(100);const middle=await panelOffsets();
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
-  await page.waitForTimeout(450);return{motion,overflow};
+  await page.waitForTimeout(450);const after=await panelOffsets();return{motion,overflow,before,during,middle,after};
  }
  const left=await swipe(290,70);check(left.motion.some(a=>a.id==='pt-upcoming'&&a.frames[0]==='translateX(100%)')&&left.motion.some(a=>a.id==='pt-today'&&a.frames.at(-1)==='translateX(-100%)')&&!left.overflow,'Swipe left slides both panels in the matching direction without horizontal overflow');check(await page.locator('#pt-upcoming').isVisible(),'Swipe left opens Upcoming');
  const right=await swipe(70,290);check(right.motion.some(a=>a.id==='pt-today'&&a.frames[0]==='translateX(-100%)')&&right.motion.some(a=>a.id==='pt-upcoming'&&a.frames.at(-1)==='translateX(100%)')&&!right.overflow,'Swipe right reverses the slide direction');check(await page.locator('#pt-today').isVisible(),'Swipe right opens Today');
+ for(const [name,result,incoming,outgoing]of [['left',left,'pt-upcoming','pt-today'],['right',right,'pt-today','pt-upcoming']]){
+  check(Math.abs(result.during[incoming]-result.after[incoming])<.5&&Math.abs(result.middle[incoming]-result.after[incoming])<.5,'Incoming panel holds its final vertical position throughout the '+name+' slide');
+  check(Math.abs(result.before[outgoing]-result.during[outgoing])<.5&&Math.abs(result.before[outgoing]-result.middle[outgoing])<.5,'Outgoing panel stays at its resting vertical position during the '+name+' slide');
+ }
  await swipe(240,240,true);check(await page.locator('#pt-today').isVisible(),'Vertical scroll does not change tabs');
  check(await page.locator('.tm-view-animating,.tm-view-leaving,[inert]').count()===0&&await page.locator('[role=tabpanel]:not([hidden])').count()===1,'Finished transitions clean up animation state and leave one interactive panel');
  await page.emulateMedia({reducedMotion:'reduce'});const reduced=await swipe(290,70);check(reduced.motion.length===0&&await page.locator('#pt-upcoming').isVisible(),'Reduced motion skips the slide while retaining swipe navigation');
