@@ -100,6 +100,7 @@ public final class ReferenceStore {
                 current.put("customTasks", custom).put("updatedAt", Instant.now().toString());
                 appendMissingCustomMirrors(records, current);
                 applyPersistedCompletions(records, current);
+            applyPersistedProgress(records,current);
                 String stateJson = current.toString(), snapshotJson = records.toString();
                 checkSize(stateJson); snapshot(snapshotJson);
                 taskStore.all(); // Reject damaged native storage before committing either addition.
@@ -198,6 +199,32 @@ public final class ReferenceStore {
         synchronized (MIRROR_LOCK) { taskStore.complete(taskId); }
         TaskReminders.reschedule(appContext);
         return true;
+    }
+
+    /** Persist widget Do now/Stop in the same occurrence state read by the app. */
+    public boolean setTaskInProgress(String taskId, boolean start) {
+        if(taskId==null||!taskId.startsWith("html:")||taskId.length()==5)return false;
+        synchronized(LOCK){
+            JSONArray records=storedSnapshot();String beforeSnapshot=records.toString();JSONObject target=null;
+            try{
+                for(int i=0;i<records.length();i++)if(taskId.equals(records.getJSONObject(i).getString("id"))){target=records.getJSONObject(i);break;}
+                if(target==null)return false;JSONObject current=state();applyPersistedCompletions(records,current);
+                Object raw=current.opt("inProgress");if(raw!=null&&raw!=JSONObject.NULL&&!(raw instanceof String))throw new IllegalStateException("The saved active task could not be read.");
+                String active=raw instanceof String?(String)raw:null,next=active,progress=target.getString("progressKey");boolean done=target.optBoolean("done")||TaskStore.DONE.equals(target.optString("status"));
+                if(!done&&start)next=progress;else if(matches(active,progress))next=null;
+                boolean changed=active==null?next!=null:!active.equals(next);if(!done&&!current.optBoolean("progressStateInitialized"))changed=true;
+                if(changed){current.put("inProgress",next==null?JSONObject.NULL:next).put("progressStateInitialized",true).put("updatedAt",Instant.now().toString());}
+                applyPersistedProgress(records,current);String serialized=current.toString(),snapshotJson=records.toString();checkSize(serialized);checkSize(snapshotJson);TaskStore.validateReferenceTasks(snapshotJson);
+                if(changed||!beforeSnapshot.equals(snapshotJson)){SharedPreferences.Editor editor=prefs.edit().putString("snapshot",snapshotJson);if(changed)editor.putString("state",serialized).putLong("revision",nextRevision());commit(editor);}
+            }catch(JSONException invalid){throw new IllegalStateException("The saved widget task could not be read.",invalid);}
+        }
+        replaceLatestMirror();return true;
+    }
+
+    private static void applyPersistedProgress(JSONArray records,JSONObject state){
+        if(!state.has("inProgress")&&!state.optBoolean("progressStateInitialized"))return;
+        Object raw=state.opt("inProgress");if(raw!=null&&raw!=JSONObject.NULL&&!(raw instanceof String))throw new IllegalStateException("The saved active task could not be read.");String active=raw instanceof String?(String)raw:null;
+        try{for(int i=0;i<records.length();i++){JSONObject record=records.getJSONObject(i);if(record.optBoolean("done")||TaskStore.DONE.equals(record.optString("status")))continue;if(matches(active,record.getString("progressKey")))record.put("status",TaskStore.IN_PROGRESS);else if(TaskStore.IN_PROGRESS.equals(record.optString("status")))record.put("status",TaskStore.NEXT);}}catch(JSONException invalid){throw invalidSnapshot(invalid);}
     }
 
     private void replaceLatestMirror() {

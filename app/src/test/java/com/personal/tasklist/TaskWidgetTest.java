@@ -282,6 +282,15 @@ public class TaskWidgetTest {
             android.graphics.drawable.ColorDrawable divider=(android.graphics.drawable.ColorDrawable)header.findViewById(R.id.widget_priority_divider).getBackground();assertTrue(android.graphics.Color.alpha(divider.getColor())<=24);
         }
     }
+    @Test public void widgetDoNowUpdatesAppStateAndStopDoesNotReopenCompletedTasks() throws Exception {
+        ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(),id=reference.addCustomTask("Widget progress task",java.util.Collections.emptyList(),"UNSET",false),key=id+":"+day;
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:"+key).putExtra(TaskWidgetProvider.ITEM_ACTION,"start");new TaskWidgetProvider().onReceive(context,tap);new TaskWidgetProvider().onReceive(context,tap);assertEquals(key,new org.json.JSONObject(reference.readState()).getString("inProgress"));assertNull(Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity());
+        org.robolectric.android.controller.ActivityController<MainActivity> controller=org.robolectric.Robolectric.buildActivity(MainActivity.class).setup();assertEquals(key,new org.json.JSONObject(controller.get().taskBridgeForTests().readState()).getString("inProgress"));
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,widget);factory.onCreate();android.view.View row=factory.getViewAt(1).apply(context,null);assertEquals("■",((android.widget.TextView)row.findViewById(R.id.widget_progress)).getText().toString());assertEquals(13.5f,((android.widget.TextView)row.findViewById(R.id.widget_task_title)).getTextSize()/context.getResources().getDisplayMetrics().scaledDensity,.01f);
+        tap.putExtra(TaskWidgetProvider.ITEM_ACTION,"stop");new TaskWidgetProvider().onReceive(context,tap);new TaskWidgetProvider().onReceive(context,tap);assertTrue(new org.json.JSONObject(controller.get().taskBridgeForTests().readState()).isNull("inProgress"));
+        tap.putExtra(TaskWidgetProvider.ITEM_ACTION,"complete");new TaskWidgetProvider().onReceive(context,tap);tap.putExtra(TaskWidgetProvider.ITEM_ACTION,"start");new TaskWidgetProvider().onReceive(context,tap);assertTrue(new org.json.JSONObject(reference.readState()).isNull("inProgress"));assertTrue(new org.json.JSONObject(reference.readState()).getJSONObject("completed").getBoolean(key));controller.pause().stop().destroy();
+    }
+
     @Test public void widgetHeaderPlusAddsAndHeaderTitleOpensTheApp() {
         AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,id);
         android.view.View view=Shadows.shadowOf(manager).getViewFor(id);

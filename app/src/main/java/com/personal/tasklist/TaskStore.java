@@ -141,7 +141,7 @@ public final class TaskStore {
         refreshWidgets();
     }
 
-    public void doNow(String id) { changeStatus(id, IN_PROGRESS, LocalDate.now().toString()); }
+    public void doNow(String id) { changeStatus(id, IN_PROGRESS, LocalDate.now(java.time.ZoneId.of("America/New_York")).toString()); }
     public void doTomorrow(String id) { changeStatus(id, NEXT, LocalDate.now().plusDays(1).toString()); }
     public void setStatus(String id, String status) {
         requireStatus(status);

@@ -56,14 +56,17 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
             if(registered&&ACTION_ITEM.equals(intent.getAction())&&"open".equals(intent.getStringExtra(ITEM_ACTION))){
                 SharedPreferences widget=preferences(context,id);context.startActivity(new Intent(context,MainActivity.class).putExtra("widget_label",widget.getString("label","")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));return;
             }
-            if(ACTION_ITEM.equals(intent.getAction())&&!"complete".equals(intent.getStringExtra(ITEM_ACTION)))return;
+            String itemAction=intent.getStringExtra(ITEM_ACTION);
+            if(ACTION_ITEM.equals(intent.getAction())&&!"complete".equals(itemAction)&&!"start".equals(itemAction)&&!"stop".equals(itemAction))return;
             String taskId = intent.getStringExtra(EXTRA_TASK_ID);
             if(registered&&ACTION_ITEM.equals(intent.getAction())){try{SharedPreferences widget=preferences(context,id);boolean visible=false;for(TaskStore.Task row:todayTasks(context,widget.getString("list",""),widget.getString("label","")))if(row.id.equals(taskId)){visible=true;break;}if(!visible){refreshAll(context);return;}}catch(RuntimeException unavailable){refreshAll(context);return;}}
             if (registered && taskId != null) {
                 TaskStore store = new TaskStore(context);
                 // The store atomically completes it; stale taps must never reopen a task.
                 try {
-                    if (!new ReferenceStore(context).completeTask(taskId)) store.complete(taskId);
+                    if(ACTION_ITEM.equals(intent.getAction())&&("start".equals(itemAction)||"stop".equals(itemAction))){
+                        if(!new ReferenceStore(context).setTaskInProgress(taskId,"start".equals(itemAction)))store.setStatus(taskId,"start".equals(itemAction)?TaskStore.IN_PROGRESS:TaskStore.NEXT);
+                    }else if (!new ReferenceStore(context).completeTask(taskId)) store.complete(taskId);
                 }
                 catch (RuntimeException unavailable) { refreshAll(context); }
             }

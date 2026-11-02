@@ -39,12 +39,13 @@ public final class TaskWidgetService extends RemoteViewsService {
                 header.setInt(R.id.widget_priority_divider,"setBackgroundColor",dark?Color.argb(24,255,255,255):Color.argb(18,0,0,0));
                 return header;
             }
-            TaskStore.Task task=entry.task;RemoteViews row=new RemoteViews(context.getPackageName(),R.layout.widget_task_row);
+            TaskStore.Task task=entry.task;RemoteViews row=new RemoteViews(context.getPackageName(),R.layout.widget_task_row_progress);
             row.setTextViewText(R.id.widget_task_title,(TaskStore.IN_PROGRESS.equals(task.status)?"▶ ":"")+task.title);
             row.setTextColor(R.id.widget_task_title,Color.parseColor(dark?"#F3F7FC":"#1F2B40"));
             row.setTextColor(R.id.widget_check,Color.parseColor(dark?"#8FC6E7":"#195B7E"));
             row.setTextColor(R.id.widget_due,Color.parseColor(dark?"#BAC9D9":"#56677F"));
             row.setTextViewText(R.id.widget_due,"Today");row.setContentDescription(R.id.widget_task_title,task.title+", Today, "+task.status);row.setContentDescription(R.id.widget_check,"Complete "+task.title);
+            boolean active=TaskStore.IN_PROGRESS.equals(task.status);row.setTextViewText(R.id.widget_progress,active?"■":"▶");row.setTextColor(R.id.widget_progress,PopupAppearance.read(context).accent);row.setContentDescription(R.id.widget_progress,(active?"Stop Do now for ":"Do now: ")+task.title);row.setOnClickFillInIntent(R.id.widget_progress,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,active?"stop":"start"));
             row.setOnClickFillInIntent(R.id.widget_check,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,"complete"));
             return row;
         }

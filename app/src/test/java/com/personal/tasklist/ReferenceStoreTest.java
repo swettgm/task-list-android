@@ -41,6 +41,24 @@ public class ReferenceStoreTest {
         JSONObject reopened=new JSONObject(new ReferenceStore(context).readState());assertEquals(projects.toString(),reopened.getJSONObject("projects").toString());assertEquals("2026-11-02",reopened.getJSONObject("projectDeleted").getString("deleted-project"));assertEquals(1,tasks.all().size());assertEquals("Actual task",tasks.all().get(0).title);
     }
 
+    @Test public void widgetProgressIsSharedIdempotentAndWinsOverStaleSnapshots() throws Exception {
+        String day=LocalDate.now(ZoneId.of("America/New_York")).toString(),a="widget-a:"+day,b="widget-b:"+day;
+        JSONObject projects=new JSONObject().put("keep",new JSONObject().put("id","keep").put("title","Keep project"));
+        reference.writeState(new JSONObject().put("completed",new JSONObject().put("keep:old",true)).put("projects",projects).put("inProgress",JSONObject.NULL).put("progressStateInitialized",true).toString());
+        JSONArray rows=new JSONArray().put(snapshot(a,day,true,a)).put(snapshot(b,day,true,b));String stale=rows.toString();reference.updateSnapshot(stale);
+        assertTrue(reference.setTaskInProgress("html:"+a,true));assertEquals(a,new JSONObject(new ReferenceStore(context).readState()).getString("inProgress"));assertEquals(TaskStore.IN_PROGRESS,find("html:"+a).status);long revision=reference.revision();
+        reference.setTaskInProgress("html:"+a,true);assertEquals(revision,reference.revision());assertEquals(a,new JSONObject(reference.readState()).getString("inProgress"));
+        reference.setTaskInProgress("html:"+b,true);assertEquals(TaskStore.NEXT,find("html:"+a).status);assertEquals(b,new JSONObject(reference.readState()).getString("inProgress"));reference.setTaskInProgress("html:"+a,false);assertEquals(b,new JSONObject(reference.readState()).getString("inProgress"));
+        reference.updateSnapshot(stale);assertEquals(TaskStore.IN_PROGRESS,find("html:"+b).status);reference.setTaskInProgress("html:"+b,false);rows.getJSONObject(1).put("status",TaskStore.IN_PROGRESS);reference.updateSnapshot(rows.toString());assertTrue(new JSONObject(reference.readState()).isNull("inProgress"));assertEquals(TaskStore.NEXT,find("html:"+b).status);
+        reference.completeTask("html:"+a);reference.setTaskInProgress("html:"+a,true);JSONObject saved=new JSONObject(reference.readState());assertTrue(saved.isNull("inProgress"));assertTrue(saved.getJSONObject("completed").getBoolean(a));assertTrue(saved.getJSONObject("completed").getBoolean("keep:old"));assertEquals(projects.toString(),saved.getJSONObject("projects").toString());
+    }
+
+    @Test public void widgetStopClearsAnActiveChildWithoutChangingItsChecklist() throws Exception {
+        String day=LocalDate.now(ZoneId.of("America/New_York")).toString(),key="widget-parent:"+day;
+        reference.writeState(new JSONObject().put("completed",new JSONObject().put(key+":step:0",true)).put("inProgress",key+":step:1").put("progressStateInitialized",true).toString());reference.updateSnapshot(new JSONArray().put(snapshot(key,day,true,key+":step:0",key+":step:1")).toString());assertEquals(TaskStore.IN_PROGRESS,find("html:"+key).status);
+        reference.setTaskInProgress("html:"+key,false);JSONObject saved=new JSONObject(reference.readState());assertTrue(saved.isNull("inProgress"));assertTrue(saved.getJSONObject("completed").getBoolean(key+":step:0"));assertFalse(saved.getJSONObject("completed").optBoolean(key+":step:1"));assertEquals(TaskStore.NEXT,find("html:"+key).status);
+    }
+
     @Test public void emptyStoreDoesNotInventTasksOrState() {
         assertEquals("{}", reference.readState());
         assertEquals(0, reference.revision());
