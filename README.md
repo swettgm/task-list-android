@@ -15,7 +15,7 @@ A personal Android checklist based on the supplied task list. The app includes t
 - Saves check commit results and reject unreadable state rather than resetting it. Local storage cannot guarantee against uninstalling, clearing data or device loss.
 - Link unfinished tasks by title in the editor. Links display immediately and remain attached to repeating task definitions.
 - Settings includes hex fields, swatches/color wheels, optional gradients, and a slate gradient preset. A separate viewport-sized background layer keeps the gradient visible while scrolling long lists in either tab; controls use translucent surfaces.
-- Customize the interactive home widget, including a fully transparent 0% background. Its plus opens a small home-screen form.
+- The interactive home widget is a native scrollable Today list with all open Today rows, no fixed row cap, no completed/history or upcoming rows, and a simple Today header without counts or list-name subtitles. Every row keeps its Today badge. Context/checklist filters, colors and fully transparent 0% backgrounds remain configurable; its plus opens a small home-screen form. Existing widgets switch to the new layout on update.
 
 The app is called Tasks and uses the white icon with black checklist lines. Windows development and pairing are deferred; this Android update requests no internet permission.
 

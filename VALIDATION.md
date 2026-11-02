@@ -1,19 +1,21 @@
-# Tasks 0.15.0 verification
+# Tasks 0.16.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41441232629), source commit `46650b5b395874fddaee3a3a8a6686972614815a`.
+[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41444152194), source commit `f0acd5716d990c0540726e2a9968445d97130e99`.
 
-77 Android tests, 288 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+81 Android tests, 288 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-The Guild crest is about 12% larger in the web interface (1.25em to 1.4em), with comparable increases in native pickers (18sp to 20sp) and widget summary (14dp to 16dp). Its original GIF first-frame PNG is unchanged. Shared label boxes, row spacing, checkbox alignment and filter width remain intact; the final screenshot was inspected.
+The home widget now uses a native ListView and a protected RemoteViewsService. Its factory returns every selected open Today row, without the former 12-row cap. The header is always Today; task-count and checklist-name subtitles are removed. Each row keeps its Today label, including narrow widgets. The collection uses stable IDs and scoped fill-in click intents; completion stays persistent and idempotent. Context/checklist filters, colors, 0% opacity, quick add and the enlarged Guild crest remain available.
 
-A next-day recurrence test assigns an additional label and edits notes, duration, scheduled time and Notify, then verifies them on the following day's task. It also verifies that edited checklist steps carry forward with fresh per-day completion, while occurrences before the checklist edit retain their original steps. Labels, ordinary task fields and manual links belong to the task definition; completing or rescheduling an occurrence does not rewrite its recurrence definition.
+Tests cover 40 scrollable rows, excluding future/undated/completed rows, retaining completed records in storage, stable row identity after a completion, per-row Today labels, the fixed header and native list type, fresh snapshot flags, current-day recurring rows versus old daily history, old snapshot compatibility, and collection completion with stale-tap protection. Existing widget-opacity/configuration, notification, daily-edit recurrence, checklist, crest, gradient and mobile layout checks pass.
 
-[Download Tasks-v0.15.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.15.0.apk).
+A distinct widget layout ID causes installed widget hosts to rebuild the old fixed-row layout when the update is applied. No physical Android launcher or device was used: collection behavior was tested with Robolectric and native view inflation.
 
-Package `com.personal.tasklist.preview`, version 0.15.0, code 15; minimum API 26, target 35; size 161,261 bytes.
+[Download Tasks-v0.16.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.16.0.apk).
 
-SHA-256: `99026aaa50a8508d44acd4ff347d4a1afcd9e53a5365e2eae8e02014f6c2a4c4`.
+Package `com.personal.tasklist.preview`, version 0.16.0, code 16; minimum API 26, target 35; size 161,334 bytes.
 
-Archive hashes, ZIP CRCs and CI checksum passed. Packaged UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
+SHA-256: `277c9e49191a0b003baa6f0d0b4478f78bda633fb252d55f1de49812071e2f9a`.
 
-No physical phone or Android emulator was used. Android policies can delay notifications; force-stop blocks alarms until reopening. Local data is still subject to device loss, uninstalling, clearing app data, storage failures and software defects; tests are not a 100% reliability guarantee.
+Artifact hashes, ZIP CRCs and CI checksum passed. UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
+
+Android policies can delay notifications and widget refreshes; force-stop blocks alarms until reopening. Local data remains subject to device loss, uninstalling, clearing app data, storage failure and software defects; tests are not a 100% reliability guarantee.
