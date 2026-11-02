@@ -27,25 +27,26 @@ public final class QuickAddActivity extends Activity {
         LinearLayout form = new LinearLayout(this); form.setOrientation(LinearLayout.VERTICAL);form.setPadding(dp(20),dp(16),dp(20),dp(12));
         form.setBackgroundColor(Color.TRANSPARENT);
         TextView heading = new TextView(this);heading.setText("Add task");heading.setTextSize(20);heading.setTextColor(appearance.accent);form.addView(heading);
-        title = new EditText(this);title.setContentDescription("Task title");title.setHint("What needs doing?");title.setTextColor(appearance.foreground);title.setHintTextColor(appearance.muted);title.setBackgroundTintList(null);title.setBackground(appearance.control(this,false));title.setPadding(dp(12),dp(8),dp(12),dp(8));title.setSingleLine(true);title.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        form.addView(title,new LinearLayout.LayoutParams(-1,dp(56)));
+        title = new EditText(this);title.setContentDescription("Task title");title.setHint("What needs doing?");title.setTextColor(appearance.foreground);title.setHintTextColor(appearance.muted);title.setBackgroundTintList(null);title.setBackground(appearance.control(this,false));title.setPadding(dp(12),dp(8),dp(12),dp(8));title.setTextSize(16);title.setSingleLine(true);title.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        form.addView(title,fieldParams());
         contexts.add("No label");contexts.addAll(new TaskStore(this).labels());
         String selected=getIntent().getStringExtra("widget_label");if(selected!=null&&!selected.isEmpty()&&!contexts.contains(selected))contexts.add(selected);
         List<CharSequence> displayedContexts=new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextDisplay(this,value));
-        context=spinner("Context label",displayedContexts);if(selected!=null)context.setSelection(Math.max(0,contexts.indexOf(selected)));form.addView(context);
+        context=spinner("Context label",displayedContexts);if(selected!=null)context.setSelection(Math.max(0,contexts.indexOf(selected)));form.addView(context,fieldParams());
         LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
         priority=spinner("Priority",Arrays.asList("Highest","High","Medium","Low","Lowest","Not set"));priority.setSelection(5);
         when=spinner("When to do it",Arrays.asList("Today","Tomorrow"));
-        options.addView(priority,new LinearLayout.LayoutParams(0,dp(48),1));options.addView(when,new LinearLayout.LayoutParams(0,dp(48),1));form.addView(options);
+        LinearLayout.LayoutParams priorityParams=new LinearLayout.LayoutParams(0,dp(40),1);priorityParams.setMarginEnd(dp(8));
+        options.addView(priority,priorityParams);options.addView(when,new LinearLayout.LayoutParams(0,dp(40),1));form.addView(options,fieldParams());
         LinearLayout actions=new LinearLayout(this);actions.setGravity(Gravity.END);
-        Button cancel=new Button(this);cancel.setText("Cancel");cancel.setAllCaps(false);cancel.setTextColor(appearance.foreground);cancel.setBackgroundTintList(null);cancel.setBackground(appearance.control(this,false));cancel.setPadding(dp(14),dp(8),dp(14),dp(8));cancel.setOnClickListener(v->finish());actions.addView(cancel);
-        Button save=new Button(this);save.setText("Add task");save.setAllCaps(false);save.setTextColor(appearance.accentInk);save.setBackgroundTintList(null);save.setBackground(appearance.control(this,true));save.setPadding(dp(14),dp(8),dp(14),dp(8));save.setOnClickListener(v->save());actions.addView(save);form.addView(actions);
+        Button cancel=new Button(this);cancel.setText("Cancel");cancel.setAllCaps(false);cancel.setTextColor(appearance.foreground);cancel.setBackgroundTintList(null);cancel.setBackground(appearance.control(this,false));cancel.setPadding(dp(14),dp(8),dp(14),dp(8));cancel.setOnClickListener(v->finish());LinearLayout.LayoutParams cancelParams=new LinearLayout.LayoutParams(-2,dp(42));cancelParams.setMarginEnd(dp(8));actions.addView(cancel,cancelParams);
+        Button save=new Button(this);save.setText("Add task");save.setAllCaps(false);save.setTextColor(appearance.accentInk);save.setBackgroundTintList(null);save.setBackground(appearance.control(this,true));save.setPadding(dp(14),dp(8),dp(14),dp(8));save.setOnClickListener(v->save());actions.addView(save,new LinearLayout.LayoutParams(-2,dp(42)));LinearLayout.LayoutParams actionParams=new LinearLayout.LayoutParams(-1,dp(42));actionParams.topMargin=dp(8);form.addView(actions,actionParams);
         ScrollView scroll=new ScrollView(this);scroll.setBackground(appearance.background(this));scroll.setClipToOutline(true);scroll.addView(form);setContentView(scroll);title.requestFocus();
         title.setOnEditorActionListener((v,action,event)->{if(action==EditorInfo.IME_ACTION_DONE){save();return true;}return false;});
     }
     @Override protected void onStart(){super.onStart();getWindow().setLayout((int)(getResources().getDisplayMetrics().widthPixels*.92),WindowManager.LayoutParams.WRAP_CONTENT);}
     private Spinner spinner(String description,List<? extends CharSequence> items){Spinner s=new Spinner(this);s.setContentDescription(description);ArrayAdapter<CharSequence>a=new ArrayAdapter<CharSequence>(this,android.R.layout.simple_spinner_dropdown_item,new ArrayList<CharSequence>(items)){
-        @Override public android.view.View getView(int position,android.view.View reused,android.view.ViewGroup parent){android.view.View view=super.getView(position,reused,parent);if(view instanceof TextView)((TextView)view).setTextColor(appearance.foreground);return view;}
+        @Override public android.view.View getView(int position,android.view.View reused,android.view.ViewGroup parent){android.view.View view=super.getView(position,reused,parent);if(view instanceof TextView){((TextView)view).setTextColor(appearance.foreground);((TextView)view).setTextSize(16);view.setPadding(0,0,0,0);}return view;}
         @Override public android.view.View getDropDownView(int position,android.view.View reused,android.view.ViewGroup parent){android.view.View view=super.getDropDownView(position,reused,parent);view.setBackgroundColor(Color.TRANSPARENT);view.setMinimumHeight(dp(48));if(view instanceof TextView)((TextView)view).setTextColor(appearance.foreground);return view;}
     };android.graphics.drawable.GradientDrawable popup=appearance.control(this,false);popup.setColor(appearance.surface);s.setPopupBackgroundDrawable(popup);s.setBackgroundTintList(null);s.setBackground(appearance.dropdown(this));s.setPadding(dp(12),0,dp(36),0);s.setAdapter(a);s.setLayoutParams(new LinearLayout.LayoutParams(-1,dp(48)));return s;}
     private void save(){
@@ -60,5 +61,6 @@ public final class QuickAddActivity extends Activity {
             finish();
         }catch(Exception error){title.setError("Couldn’t save. Please try again.");}
     }
+    private LinearLayout.LayoutParams fieldParams(){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(40));p.topMargin=dp(8);return p;}
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
 }

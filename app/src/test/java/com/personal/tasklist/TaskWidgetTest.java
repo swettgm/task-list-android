@@ -285,7 +285,7 @@ public class TaskWidgetTest {
     @Test public void widgetHeaderPlusAddsAndHeaderTitleOpensTheApp() {
         AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,id);
         android.view.View view=Shadows.shadowOf(manager).getViewFor(id);
-        assertEquals("+",((android.widget.TextView)view.findViewById(R.id.widget_add)).getText().toString());
+        assertEquals("+",((android.widget.TextView)view.findViewById(R.id.widget_add)).getText().toString());assertEquals(android.graphics.Color.TRANSPARENT,((android.graphics.drawable.ColorDrawable)view.findViewById(R.id.widget_add).getBackground()).getColor());
         assertEquals(0,context.getResources().getIdentifier("widget_settings","id",context.getPackageName()));
         assertEquals(0,context.getResources().getIdentifier("widget_open","id",context.getPackageName()));
         view.findViewById(R.id.widget_title).performClick();Intent opened=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();assertEquals(MainActivity.class.getName(),opened.getComponent().getClassName());

@@ -178,6 +178,15 @@ public class QuickAddActivityTest {
         background.setBounds(0,0,400,300);android.graphics.Outline outline=new android.graphics.Outline();background.getOutline(outline);assertTrue(outline.getRadius()>0);
         android.widget.EditText title=findDescription(activity.getWindow().getDecorView(),"Task title",android.widget.EditText.class);assertEquals(background.appearance.foreground,title.getCurrentTextColor());assertNull(title.getBackgroundTintList());assertTrue(title.getBackground() instanceof android.graphics.drawable.GradientDrawable);assertTrue(((android.graphics.drawable.GradientDrawable)title.getBackground()).getCornerRadius()>0);Button add=findButton(activity.getWindow().getDecorView(),"Add task");assertNull(add.getBackgroundTintList());assertEquals(background.appearance.accent,((android.graphics.drawable.GradientDrawable)add.getBackground()).getColor().getDefaultColor());assertTrue(title.hasFocus());controller.pause().stop().destroy();
     }
+    @Test public void popupFieldsHaveVisibleGapsWithoutGrowingThePanel() {
+        ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();QuickAddActivity activity=controller.get();View decor=activity.getWindow().getDecorView();
+        EditText title=findDescription(decor,"Task title",EditText.class);Spinner label=findDescription(decor,"Context label",Spinner.class),priority=findDescription(decor,"Priority",Spinner.class),when=findDescription(decor,"When to do it",Spinner.class);Button cancel=findButton(decor,"Cancel"),save=findButton(decor,"Add task");
+        ViewGroup form=(ViewGroup)title.getParent();float density=activity.getResources().getDisplayMetrics().density;int width=Math.round(320*density),gap=Math.round(8*density);
+        form.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));form.layout(0,0,width,form.getMeasuredHeight());
+        assertEquals(Math.round(40*density),title.getHeight());assertEquals(title.getHeight(),label.getHeight());assertEquals(title.getHeight(),priority.getHeight());assertEquals(title.getHeight(),when.getHeight());
+        assertEquals(gap,label.getTop()-title.getBottom());assertEquals(gap,((View)priority.getParent()).getTop()-label.getBottom());assertEquals(gap,when.getLeft()-priority.getRight());assertEquals(gap,save.getLeft()-cancel.getRight());
+        assertEquals(gap,((View)cancel.getParent()).getTop()-((View)priority.getParent()).getBottom());assertTrue(form.getMeasuredHeight()<=Math.round(260*density));assertEquals(Math.round(20*density),form.getPaddingLeft());assertEquals(Math.round(20*density),form.getPaddingRight());controller.pause().stop().destroy();
+    }
     @Test public void widgetPopupMatchesSolidLightThemeWhenGradientIsOff() throws Exception {
         reference.writeState("{\"uiTheme\":{\"background\":\"#ffffff\",\"accent\":\"#123\",\"gradient\":false}}");
         ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();QuickAddActivity activity=controller.get();
