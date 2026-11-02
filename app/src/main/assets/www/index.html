@@ -3348,8 +3348,8 @@ main{max-width:100%;margin:0;padding:0}
       const details=el('span','tm-meta'),repeat=window.TasksSchedule.describe(task);
       const field=(component,text)=>{const button=el('button','tl-meta-edit tl-meta-'+component,text);button.type='button';button.setAttribute('aria-label','Edit '+component+' for '+task.title);button.addEventListener('click',()=>window.TaskListBridge.editComponent(task,item,component));return button;};
       const schedule=el('span','tl-meta-schedule');schedule.append(field('duration',task.minutes===undefined?'⏰ No duration':'⏰ '+durationText(task.minutes)));
-      if(repeat){schedule.append(el('span','tl-meta-separator','·'),field('frequency','🔁 '+repeat));}
-      const time=el('span','tl-meta-time-wrap');time.append(document.createTextNode(' · '),field('time',task.time||'Any time'));details.append(schedule,time);return details;
+      if(repeat){schedule.append(el('span','tl-meta-separator','\u00a0·\u00a0'),field('frequency','🔁 '+repeat));}
+      const time=el('span','tl-meta-time-wrap');time.append(document.createTextNode('\u00a0·\u00a0'),field('time',task.time||'Any time'));details.append(schedule,time);return details;
     };
     const originNote=item=>{
       if(item.moved&&item.date<item.stateDate&&!isDone(item.task,item.stateDate,draft))return 'Moved from '+labelDate(item.stateDate);
