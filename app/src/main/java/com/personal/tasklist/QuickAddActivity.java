@@ -16,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 public final class QuickAddActivity extends Activity {
     private PopupAppearance appearance;
     private EditText title;
+    private ScrollView panel;
+    private android.animation.ValueAnimator savedBorder;
     private Spinner context, priority, when;
     private final List<String> contexts = new ArrayList<>();
     @Override public void onCreate(Bundle state) {
@@ -41,7 +43,7 @@ public final class QuickAddActivity extends Activity {
         LinearLayout actions=new LinearLayout(this);actions.setGravity(Gravity.END);
         Button cancel=new Button(this);cancel.setText("Cancel");cancel.setAllCaps(false);cancel.setTextColor(appearance.foreground);cancel.setBackgroundTintList(null);cancel.setBackground(appearance.control(this,false));cancel.setPadding(dp(14),dp(8),dp(14),dp(8));cancel.setOnClickListener(v->finish());LinearLayout.LayoutParams cancelParams=new LinearLayout.LayoutParams(-2,dp(42));cancelParams.setMarginEnd(dp(8));actions.addView(cancel,cancelParams);
         Button save=new Button(this);save.setText("Add task");save.setAllCaps(false);save.setTextColor(appearance.accentInk);save.setBackgroundTintList(null);save.setBackground(appearance.control(this,true));save.setPadding(dp(14),dp(8),dp(14),dp(8));save.setOnClickListener(v->save());actions.addView(save,new LinearLayout.LayoutParams(-2,dp(42)));LinearLayout.LayoutParams actionParams=new LinearLayout.LayoutParams(-1,dp(42));actionParams.topMargin=dp(8);form.addView(actions,actionParams);
-        ScrollView scroll=new ScrollView(this);scroll.setBackground(appearance.background(this));scroll.setClipToOutline(true);scroll.addView(form);setContentView(scroll);title.requestFocus();
+        ScrollView scroll=new ScrollView(this);panel=scroll;scroll.setVerticalScrollBarEnabled(false);scroll.setHorizontalScrollBarEnabled(false);scroll.setBackground(appearance.background(this));scroll.setClipToOutline(true);scroll.addView(form);setContentView(scroll);title.requestFocus();
         title.setOnEditorActionListener((v,action,event)->{if(action==EditorInfo.IME_ACTION_DONE){save();return true;}return false;});
     }
     @Override protected void onStart(){super.onStart();getWindow().setLayout((int)(getResources().getDisplayMetrics().widthPixels*.92),WindowManager.LayoutParams.WRAP_CONTENT);}
@@ -58,9 +60,15 @@ public final class QuickAddActivity extends Activity {
             }
             List<String> labels=context.getSelectedItemPosition()==0?Collections.emptyList():Collections.singletonList(contexts.get(context.getSelectedItemPosition()));
             store.addCustomTask(title.getText().toString(),labels,TaskStore.PRIORITIES.get(priority.getSelectedItemPosition()),when.getSelectedItemPosition()==1);
-            finish();
+            title.getText().clear();title.setError(null);title.requestFocus();flashSavedBorder();android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);if(keyboard!=null)keyboard.showSoftInput(title,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
         }catch(Exception error){title.setError("Couldn’t save. Please try again.");}
     }
+    private void flashSavedBorder(){
+        if(savedBorder!=null)savedBorder.cancel();if(!android.animation.ValueAnimator.areAnimatorsEnabled())return;
+        android.graphics.drawable.GradientDrawable border=new android.graphics.drawable.GradientDrawable();border.setColor(Color.TRANSPARENT);border.setCornerRadius(dp(24));panel.setForeground(border);
+        android.animation.ValueAnimator animation=android.animation.ValueAnimator.ofFloat(0,1,3,1,3,0);savedBorder=animation;animation.setDuration(800);animation.setInterpolator(new android.view.animation.LinearInterpolator());animation.addUpdateListener(value->border.setStroke(Math.round(dp(1)*(Float)value.getAnimatedValue()),Color.WHITE));animation.addListener(new android.animation.AnimatorListenerAdapter(){@Override public void onAnimationEnd(android.animation.Animator value){if(savedBorder==value){savedBorder=null;panel.setForeground(null);}}});animation.start();
+    }
+    @Override protected void onDestroy(){if(savedBorder!=null)savedBorder.cancel();super.onDestroy();}
     private LinearLayout.LayoutParams fieldParams(){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(40));p.topMargin=dp(8);return p;}
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
 }

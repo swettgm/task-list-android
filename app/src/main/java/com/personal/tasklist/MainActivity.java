@@ -54,7 +54,7 @@ public final class MainActivity extends Activity {
                     insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             return insets;
         });
-        web = new WebView(this);
+        web = new WebView(this);web.setVerticalScrollBarEnabled(false);web.setHorizontalScrollBarEnabled(false);
         web.setBackgroundColor(Color.rgb(16, 21, 31));
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);

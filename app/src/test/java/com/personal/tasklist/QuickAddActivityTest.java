@@ -64,7 +64,7 @@ public class QuickAddActivityTest {
         save.performClick();
         idleMainLooper();
 
-        assertTrue(activity.isFinishing());
+        assertFalse(activity.isFinishing());assertEquals("",title.getText().toString());assertTrue(title.hasFocus());
         assertNull("Quick add must not navigate to MainActivity", Shadows.shadowOf(activity).getNextStartedActivity());
         JSONObject state = new JSONObject(reference.readState());
         assertEquals("keep", state.getString("futureField"));
@@ -88,6 +88,12 @@ public class QuickAddActivityTest {
         assertEquals(tomorrow, mirrored.plannedDate);
         assertTrue(mirrored.labels.contains("On the phone"));
         controller.pause().stop().destroy();
+    }
+
+    @Test public void quickAddKeepsPopupOpenForConsecutiveTasksAndClearsItsSuccessBorder() throws Exception {
+        reference.writeState("{\"customTasks\":[],\"completed\":{\"keep:old\":true}}");ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();QuickAddActivity activity=controller.get();View decor=activity.getWindow().getDecorView();EditText title=findDescription(decor,"Task title",EditText.class);Button add=findButton(decor,"Add task");
+        title.setText("First batch task");add.performClick();idleMainLooper();assertFalse(activity.isFinishing());assertEquals("",title.getText().toString());title.setText("Second batch task");title.onEditorAction(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);idleMainLooper();JSONObject saved=new JSONObject(reference.readState());JSONArray tasks=saved.getJSONArray("customTasks");assertEquals(2,tasks.length());assertNotEquals(tasks.getJSONObject(0).getString("id"),tasks.getJSONObject(1).getString("id"));assertEquals("",title.getText().toString());assertTrue(title.hasFocus());assertTrue(saved.getJSONObject("completed").getBoolean("keep:old"));assertFalse(activity.isFinishing());
+        android.widget.ScrollView panel=(android.widget.ScrollView)((ViewGroup)activity.findViewById(android.R.id.content)).getChildAt(0);assertFalse(panel.isVerticalScrollBarEnabled());assertFalse(panel.isHorizontalScrollBarEnabled());Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(1200));assertNull(panel.getForeground());title.setText("Unsaved third task");findButton(decor,"Cancel").performClick();assertTrue(activity.isFinishing());assertEquals(2,new JSONObject(reference.readState()).getJSONArray("customTasks").length());controller.pause().stop().destroy();
     }
 
     @Test public void cancelLeavesCanonicalStateUntouched() {

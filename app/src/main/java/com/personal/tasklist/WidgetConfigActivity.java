@@ -80,7 +80,7 @@ public final class WidgetConfigActivity extends Activity {
         heading.addView(cancel);
         root.addView(heading);
 
-        ScrollView scroll = new ScrollView(this);
+        ScrollView scroll = new ScrollView(this);scroll.setVerticalScrollBarEnabled(false);scroll.setHorizontalScrollBarEnabled(false);
         scroll.setFillViewport(true);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);

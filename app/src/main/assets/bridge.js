@@ -122,7 +122,7 @@
     }));
   }
   function saveDefinition(task, isNew) {
-    const state = readCanonical();
+    const state = clone(readCanonical());
     if (isNew) {
       const custom = Array.isArray(state.customTasks) ? state.customTasks.slice() : [];
       custom.push(clone(task)); state.customTasks = custom;
@@ -211,7 +211,7 @@
     const heading = node('h2', '', title); dialog.append(heading);
     const form = node('form'); form.method = 'dialog'; dialog.append(form);
     document.body.append(dialog);
-    const close = () => { if (dialog.open && dialog.close) dialog.close(); dialog.remove(); };
+    const close = () => { for(const animation of dialog.getAnimations?.()||[])animation.cancel();if (dialog.open && dialog.close) dialog.close(); dialog.remove(); };
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
     const outside=event=>{const box=dialog.getBoundingClientRect();return event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom;};
     let backdropPressed=false;
@@ -483,15 +483,16 @@
   }
   function applyTheme(){return global.TasksTheme.apply(readCanonical(),native);}
   function quickAddTask(prefill = {}) {
-    const { form, close } = modal('Quick add'); form.classList.add('tl-quick-form');
+    const { dialog, form, close } = modal('Quick add'); form.classList.add('tl-quick-form');
     const title = inputField(form, 'Task', 'text', prefill.title || ''); title.placeholder = 'What needs doing?';
     const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
-    const labels = prefill.labels || (selectedContext ? [selectedContext] : []);
+    const labels = prefill.labels || (selectedContext ? [selectedContext] : []);let flash=null;
+    const savedFlash=()=>{if(flash)flash.cancel();if(!dialog.animate)return;const shadow=getComputedStyle(dialog).boxShadow,base=shadow==='none'?'':shadow+', ',reduced=global.matchMedia('(prefers-reduced-motion: reduce)').matches;const widths=reduced?[1,0]:[0,1,3,1,3,0];flash=dialog.animate(widths.map(width=>({boxShadow:base+'inset 0 0 0 '+width+'px rgba(255,255,255,'+(width?1:0)+')'})),{duration:reduced?180:800,easing:'linear'});flash.finished.catch(()=>{});};
     const save = () => {
       if (!title.value.trim()) { error.textContent = 'Enter a task title.'; title.focus(); return; }
       const next = { id:'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9),
         title:title.value.trim(), priority:'UNSET', due:prefill.dueDate || scope.today, _contexts:labels };
-      scope.tasks.push(next); saveDefinition(next, true); close();
+      try{saveDefinition(next,true);title.value='';error.textContent='';title.focus();savedFlash();}catch(e){if(flash)flash.cancel();cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();error.textContent='Couldn’t add this task. Please try again.';title.focus();}
     };
     const actions = node('div', 'tl-dialog-actions');
     actions.append(action('Cancel', close), action('Details', () => {

@@ -185,7 +185,10 @@ const result = await page.evaluate(async () => {
   dialog.querySelector('input').value='Quick entry QA';
   dialog.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await tick();
   let quick=__nativeQA.getState().customTasks.find(task=>task.title==='Quick entry QA');
-  check(quick&&quick.due===original.today&&quick._contexts.includes('On the phone')&&!document.querySelector('dialog'),'Quick add saves with today and the selected context');
+  check(quick&&quick.due===original.today&&quick._contexts.includes('On the phone')&&dialog.open&&dialog.querySelector('input').value===''&&document.activeElement===dialog.querySelector('input'),'Quick add saves and clears its title while keeping the popup and keyboard focus');
+  const firstQuickBox=dialog.getBoundingClientRect();check(dialog.getAnimations().length>0,'Successful quick add flashes the popup border');
+  dialog.querySelector('input').value='Second quick entry QA';clickText(dialog,'Add');await tick();check(__nativeQA.getState().customTasks.filter(task=>['Quick entry QA','Second quick entry QA'].includes(task.title)).length===2&&dialog.open&&dialog.querySelector('input').value==='','The same quick-add popup can save another distinct task');
+  const nextQuickBox=dialog.getBoundingClientRect();check(Math.abs(firstQuickBox.width-nextQuickBox.width)<1&&Math.abs(firstQuickBox.height-nextQuickBox.height)<1,'Border pulses do not resize the quick-add popup');clickText(dialog,'Cancel');
   document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');dialog.querySelector('input').value='Keep this title';
   clickText(dialog,'Details');dialog=document.querySelector('dialog');
   check(dialog.querySelector('input[type=text]').value==='Keep this title','Quick add can open full details without losing the title');
@@ -212,7 +215,7 @@ const result = await page.evaluate(async () => {
   clickText(dialog,'Close');
   // Rapid completions and undo have independent presentation timers, while saving immediately.
   for(const title of ['Delay task A','Delay task B']){
-    TaskListApp.quickAddTask();const quickDialog=document.querySelector('dialog');quickDialog.querySelector('input').value=title;clickText(quickDialog,'Add');await tick();
+    TaskListApp.quickAddTask();const quickDialog=document.querySelector('dialog');quickDialog.querySelector('input').value=title;clickText(quickDialog,'Add');await tick();clickText(quickDialog,'Cancel');
   }
   const byTitle=title=>rows().find(row=>row.querySelector('.tm-title').textContent===title);
   byTitle('Delay task A').querySelector(':scope > .form-check > input').click();await tick();

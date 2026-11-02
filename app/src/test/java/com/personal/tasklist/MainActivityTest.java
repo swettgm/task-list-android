@@ -27,7 +27,7 @@ public class MainActivityTest {
         context.getSharedPreferences("reference_state", Context.MODE_PRIVATE).edit().clear().commit();
     }
     @Test public void priorityHoldUsesNativeLongPressHapticsWithoutChangingTaskState() {
-        ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity activity=controller.get();String before=activity.taskBridgeForTests().readState();
+        ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity activity=controller.get();String before=activity.taskBridgeForTests().readState();assertFalse(activity.webForTests().isVerticalScrollBarEnabled());assertFalse(activity.webForTests().isHorizontalScrollBarEnabled());
         activity.taskBridgeForTests().priorityHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();assertEquals(android.view.HapticFeedbackConstants.LONG_PRESS,Shadows.shadowOf(activity.webForTests()).lastHapticFeedbackPerformed());assertEquals(before,activity.taskBridgeForTests().readState());controller.pause().stop().destroy();activity.taskBridgeForTests().priorityHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
     }
     @Test public void nativeStateSurvivesActivityRecreation() throws Exception {

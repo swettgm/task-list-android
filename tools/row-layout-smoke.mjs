@@ -84,5 +84,6 @@ try{
  const completionBeforeDrag=await page.evaluate(()=>JSON.stringify(__layout.get().completed||{}));
  await swipe(100,200,false,0,'#pt-future-list [data-task-id="layout-frequency-future"] > .form-check > input');check(await page.locator('#pt-today').isVisible()&&await page.evaluate(()=>JSON.stringify(__layout.get().completed||{}))===completionBeforeDrag,'Swiping from a task checkbox navigates without completing it');
  await swipe(200,100,false,0,'#pt-list [data-task-id="layout-frequency"] .tl-edit-button');check(await page.locator('#pt-upcoming').isVisible()&&await page.locator('dialog').count()===0,'Swiping from the task gear navigates without opening Edit task');
+ check(await page.evaluate(()=>getComputedStyle(document.documentElement).scrollbarWidth==='none'&&getComputedStyle(document.documentElement,'::-webkit-scrollbar').display==='none'),'App scrollbars are hidden while content remains scrollable');
  check(!errors.length,'Layout interactions have no page errors');console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();}
