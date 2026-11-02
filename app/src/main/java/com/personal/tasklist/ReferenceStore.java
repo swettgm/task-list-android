@@ -48,6 +48,17 @@ public final class ReferenceStore {
         }
     }
 
+    /** Apply a sync result only if no task or widget edit happened after it was read. */
+    boolean compareAndWriteState(long expectedRevision, String json) {
+        String normalized = object(json).toString();
+        synchronized (LOCK) {
+            if (revision() != expectedRevision) return false;
+            if (normalized.equals(state().toString()) && prefs.contains("state")) return true;
+            commit(prefs.edit().putString("state", normalized).putLong("revision", nextRevision()));
+            return true;
+        }
+    }
+
     public long revision() {
         synchronized (LOCK) {
             try {

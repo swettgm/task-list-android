@@ -127,6 +127,7 @@ public final class MainActivity extends Activity {
 
     private void applyIntent() {
         if (!pageReady || web == null) return;
+        web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()", null);
         if (contextFilter != null) web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.setContextFilter(" + JSONObject.quote(contextFilter) + ")", null);
         if (addRequested) {
             addRequested = false;
@@ -145,6 +146,7 @@ public final class MainActivity extends Activity {
         if (web != null) {
             web.onResume();
             if (pageReady && (reference.revision() != loadedRevision || !loadedDay.equals(LocalDate.now(ZoneId.of("America/New_York")).toString()))) loadTaskList();
+            else if(pageReady)web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()",null);
         }
     }
     @Override protected void onPause() { if (web != null) web.onPause(); super.onPause(); }
@@ -251,7 +253,7 @@ public final class MainActivity extends Activity {
     private void showWidgetHelp() {
         AppWidgetManager manager = AppWidgetManager.getInstance(this);
         AlertDialog.Builder dialog = new AlertDialog.Builder(this).setTitle("Home-screen checklist")
-                .setMessage("Touch and hold an empty home-screen area, choose Widgets, then add Task List Dark checklist. "
+                .setMessage("Touch and hold an empty home-screen area, choose Widgets, then add Tasks checklist. "
                     + "Use its settings icon to choose a context, title, colors, and transparency. "
                     + "Ticking a task in the widget also saves its completion in this task list.")
                 .setNegativeButton("Close", null);

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark"><title>Task List</title><style>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark"><title>Tasks</title><style>
 :root {
   color-scheme: light dark;
   background-color: var(
@@ -1570,6 +1570,318 @@ main{max-width:100%;margin:0;padding:0}
 @media(max-width:360px){body{padding-left:10px!important;padding-right:10px!important}#pt-date{font-size:1rem}#today-task-list-20261023 .nav-link{padding:5px 7px}}
 
 </style><script>
+/* Shared calendar rules for Tasks on Android and PC. Dates are calendar days,
+   evaluated in UTC so daylight-saving changes cannot move an occurrence. */
+(function (global) {
+  'use strict';
+  const DAY = 86400000;
+  const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dates = new Map();
+
+  function parseDate(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    if (dates.has(value)) return dates.get(value);
+    const date = new Date(value + 'T12:00:00Z');
+    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== value) return null;
+    const result = { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1,
+      day: date.getUTCDate(), weekday: date.getUTCDay(), ordinal: Math.floor(date.getTime() / DAY) };
+    if (dates.size >= 512) dates.delete(dates.keys().next().value);
+    dates.set(value, result);
+    return result;
+  }
+
+  function validAmount(value) {
+    if (typeof value !== 'number' && (typeof value !== 'string' || !/^\d+$/.test(value.trim()))) return null;
+    const number = Number(value);
+    return Number.isSafeInteger(number) && number > 0 ? number : null;
+  }
+
+  function weekdays(value) {
+    if (value == null) return [];
+    if (!Array.isArray(value) || value.some(day => !Number.isInteger(day) || day < 0 || day > 6)) return null;
+    return [...new Set(value)].sort((a, b) => a - b);
+  }
+
+  function normalize(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const amount = validAmount(value.amount);
+    const unit = typeof value.unit === 'string' ? value.unit.trim().toLowerCase().replace(/s$/, '') : '';
+    const days = weekdays(value.weekdays);
+    if (!amount || !['day', 'week', 'month', 'year'].includes(unit) || !parseDate(value.start) || !days) return null;
+    return { amount, unit, start: value.start, weekdays: days };
+  }
+
+  function monthLength(year, month) {
+    const date = new Date(0);
+    date.setUTCHours(12, 0, 0, 0);
+    date.setUTCFullYear(year, month, 0);
+    return date.getUTCDate();
+  }
+
+  function matches(task, day) {
+    const repeat = normalize(task && task.repeat), target = parseDate(day);
+    if (!repeat || !target) return false;
+    const start = parseDate(repeat.start);
+    if (target.ordinal < start.ordinal) return false;
+    if (repeat.unit === 'day') {
+      return (target.ordinal - start.ordinal) % repeat.amount === 0
+        && (!repeat.weekdays.length || repeat.weekdays.includes(target.weekday));
+    }
+    if (repeat.unit === 'week') {
+      // Monday-based calendar weeks preserve the existing Sunday-anchored
+      // alternate-weekend cycle: Sunday 0, Saturday 13, Sunday 14.
+      const startMonday = start.ordinal - (start.weekday + 6) % 7;
+      const targetMonday = target.ordinal - (target.weekday + 6) % 7;
+      const weekDifference = (targetMonday - startMonday) / 7;
+      const selected = repeat.weekdays.length ? repeat.weekdays : [start.weekday];
+      return weekDifference % repeat.amount === 0 && selected.includes(target.weekday);
+    }
+    if (repeat.unit === 'month') {
+      const difference = (target.year - start.year) * 12 + target.month - start.month;
+      return difference % repeat.amount === 0 && target.day === Math.min(start.day, monthLength(target.year, target.month));
+    }
+    const difference = target.year - start.year;
+    return difference % repeat.amount === 0 && target.month === start.month
+      && target.day === Math.min(start.day, monthLength(target.year, start.month));
+  }
+
+  function weekdaysLabel(value) {
+    const days = weekdays(value);
+    if (!days || !days.length) return '';
+    if (days.length === 7) return 'Daily';
+    const selected = new Set(days);
+    const starts = days.filter(day => !selected.has((day + 6) % 7));
+    const runs = starts.map(first => {
+      const run = [first];
+      while (selected.has((run[run.length - 1] + 1) % 7)) run.push((run[run.length - 1] + 1) % 7);
+      return run.length > 1 ? names[first] + '–' + names[run[run.length - 1]] : names[first];
+    });
+    return runs.join(', ');
+  }
+
+  function describe(task) {
+    if (!task || typeof task !== 'object') return '';
+    const repeat = normalize(task.repeat);
+    if (repeat) {
+      const selected = repeat.weekdays;
+      if (repeat.unit === 'day' && repeat.amount === 1) return selected.length ? weekdaysLabel(selected) : 'Daily';
+      if (repeat.unit === 'week' && repeat.amount === 1 && selected.length) return weekdaysLabel(selected);
+      const label = 'Every ' + (repeat.amount === 1 ? '' : repeat.amount + ' ') + repeat.unit + (repeat.amount === 1 ? '' : 's');
+      return label + (repeat.unit === 'week' && selected.length ? ' · ' + weekdaysLabel(selected) : '');
+    }
+    if (task.weekendCycleStart) return 'Every 2 weeks · Saturday–Sunday';
+    const interval = validAmount(task.intervalDays);
+    if (interval) return interval === 1 ? 'Daily' : 'Every ' + interval + ' days';
+    const days = weekdays(task.days);
+    if (days && days.length) return weekdaysLabel(days);
+    return typeof task.recurrence === 'string'
+      ? task.recurrence.trim().replace(/^Daily\s*[,·:]\s*(?=\S)/i, '') : '';
+  }
+
+  function today() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  }
+
+  function fromTask(task, day) {
+    task = task && typeof task === 'object' ? task : {};
+    const fallback = parseDate(day) ? day : today();
+    const repeat = normalize(task.repeat);
+    if (repeat) return { mode: repeat.unit === 'week' && repeat.amount === 1 && repeat.weekdays.length ? 'weekdays' : 'repeat', ...repeat };
+    if (parseDate(task.weekendCycleStart)) return { mode: 'repeat', amount: 2, unit: 'week', start: task.weekendCycleStart, weekdays: [0, 6] };
+    const interval = validAmount(task.intervalDays);
+    if (interval) return { mode: 'repeat', amount: interval, unit: 'day', start: parseDate(task.intervalStart) ? task.intervalStart : fallback, weekdays: [] };
+    const days = weekdays(task.days);
+    if (days && days.length === 7) return { mode: 'repeat', amount: 1, unit: 'day', start: fallback, weekdays: [] };
+    if (days && days.length) return { mode: 'weekdays', amount: 1, unit: 'week', start: fallback, weekdays: days };
+    return { mode: 'once', amount: 1, unit: 'day', start: parseDate(task.due) ? task.due : fallback, weekdays: [] };
+  }
+
+  global.TasksSchedule = Object.freeze({ matches, describe, fromTask, normalize, weekdaysLabel });
+})(typeof window === 'object' ? window : globalThis);
+
+/* Shared, dependency-free appearance controls for Android WebView and the PC app. */
+(function (global) {
+  'use strict';
+  const DEFAULTS = Object.freeze({ accent:'#68b7ff', background:'#10151f', gradient:false, gradientEnd:'#46525d', gradientAngle:180 });
+  const PALETTE = ['#68b7ff','#5865f2','#a78bfa','#ec4899','#fb7185','#f97316','#facc15','#4ade80','#2dd4bf','#ffffff','#47535c','#10151f'];
+  const node = (tag, className, text) => { const item = document.createElement(tag); if (className) item.className = className; if (text !== undefined) item.textContent = text; return item; };
+  const button = (text, action, className) => { const item = node('button', className || 'btn', text); item.type = 'button'; item.addEventListener('click', action); return item; };
+  function hex(value) {
+    const text = String(value || '').trim().replace(/^#/, '');
+    if (/^[0-9a-f]{3}$/i.test(text)) return '#' + [...text].map(c => c + c).join('').toLowerCase();
+    return /^[0-9a-f]{6}$/i.test(text) ? '#' + text.toLowerCase() : null;
+  }
+  const channels = value => [1,3,5].map(i => parseInt(value.slice(i, i + 2), 16));
+  const fromChannels = values => '#' + values.map(value => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0')).join('');
+  function mix(a, b, amount) { const left = channels(a), right = channels(b); return fromChannels(left.map((value, i) => value * (1 - amount) + right[i] * amount)); }
+  function luminance(color) {
+    const values = channels(color).map(value => value / 255).map(value => value <= .04045 ? value / 12.92 : Math.pow((value + .055) / 1.055, 2.4));
+    return values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
+  }
+  function contrast(a, b) { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+  function foreground(colors) {
+    const dark = '#10151f', light = '#f3f6fb';
+    const darkScore = Math.min(...colors.map(color => contrast(color, dark)));
+    const lightScore = Math.min(...colors.map(color => contrast(color, light)));
+    return darkScore > lightScore ? dark : light;
+  }
+  function normalize(value) {
+    const stored = value && typeof value === 'object' ? value : {};
+    const angle = Number(stored.gradientAngle);
+    return { accent:hex(stored.accent) || DEFAULTS.accent, background:hex(stored.background) || DEFAULTS.background,
+      gradient:stored.gradient === true, gradientEnd:hex(stored.gradientEnd) || DEFAULTS.gradientEnd,
+      gradientAngle:Number.isFinite(angle) ? Math.max(0, Math.min(360, Math.round(angle))) : DEFAULTS.gradientAngle };
+  }
+  function paint(theme) { return theme.gradient ? 'linear-gradient(' + theme.gradientAngle + 'deg, ' + theme.background + ', ' + theme.gradientEnd + ')' : theme.background; }
+  function ensureStyles() {
+    if (document.getElementById('tasks-theme-controls-style')) return;
+    const style = node('style'); style.id = 'tasks-theme-controls-style';
+    style.textContent = `
+      .tasks-theme-settings{min-width:0;margin:0 0 14px;border:1px solid var(--tl-border);border-radius:8px;padding:8px}
+      .tasks-theme-settings>summary{font-size:14px;font-weight:650;cursor:pointer;min-height:30px;color:var(--tl-text)}
+      .tasks-theme-settings *{box-sizing:border-box}
+      .tasks-color-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px}
+      .tasks-color-field{min-width:0;max-width:100%}
+      .tasks-color-field>label{display:block;font-size:12px;color:var(--tl-muted);margin-bottom:4px}
+      .tasks-color-entry{display:flex;gap:5px;min-width:0;align-items:stretch}
+      .tasks-color-entry input{flex:1;width:0;min-width:0;max-width:100%;height:38px;padding:6px;font-family:ui-monospace,monospace;font-size:13px}
+      .tasks-color-entry .tasks-color-open{width:38px;height:38px;min-width:38px;min-height:38px;flex:none;border:2px solid var(--tl-border);border-radius:6px;padding:0;box-shadow:inset 0 0 0 2px #ffffff33;cursor:pointer}
+      .tasks-color-picker{margin-top:6px;padding:8px;border:1px solid var(--tl-border);border-radius:7px;background:var(--tl-surface);min-width:0}
+      .tasks-color-picker[hidden],.tasks-gradient-options[hidden]{display:none!important}
+      .tasks-color-palette{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-bottom:8px}
+      .tasks-color-palette button{padding:0;min-width:0;width:100%;min-height:25px;height:25px;border:1px solid #ffffff66;border-radius:4px;cursor:pointer}
+      .tasks-color-palette button[aria-pressed=true]{outline:2px solid var(--tl-accent);outline-offset:1px}
+      .tasks-rgb-label{display:grid;grid-template-columns:14px minmax(0,1fr) 25px;gap:4px;align-items:center;font-size:11px;min-width:0;color:var(--tl-text);margin:3px 0}
+      .tasks-rgb-label input{width:100%;min-width:0;max-width:100%;height:25px;accent-color:var(--tl-accent);padding:0}
+      .tasks-rgb-label output{text-align:right}
+      .tasks-color-picker .tasks-color-done{display:block;margin:5px 0 0 auto;min-height:30px;height:30px;padding:3px 8px;font-size:12px}
+      .tasks-gradient-toggle{display:flex;align-items:center;gap:7px;margin:12px 0 7px;font-size:13px;color:var(--tl-text)}
+      .tasks-gradient-toggle input{width:18px;height:18px;flex:none;margin:0;accent-color:var(--tl-accent)}
+      .tasks-gradient-options{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:end;min-width:0}
+      .tasks-gradient-angle{display:block;margin:0;font-size:12px;min-width:0;color:var(--tl-muted)}
+      .tasks-gradient-angle input{display:block;width:100%;min-width:0;max-width:100%;height:38px;accent-color:var(--tl-accent);margin:0}
+      .tasks-theme-preview{min-height:88px;border:1px solid var(--tl-border);border-radius:8px;padding:12px;margin:10px 0;overflow-wrap:anywhere}
+      .tasks-theme-preview strong{display:block;font-size:18px;margin-bottom:8px}
+      .tasks-theme-preview .tasks-preview-chip{display:inline-block;border-radius:5px;font-size:12px;padding:5px 9px}
+      .tasks-theme-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+      .tasks-theme-actions .btn{font-size:12px;padding:5px 8px;min-height:36px}
+      .tasks-theme-settings .tasks-theme-error{color:#ff9388;font-size:12px;margin:8px 0}
+      .tasks-theme-error:empty{display:none}
+      @media(max-width:350px){.tasks-color-fields,.tasks-gradient-options{gap:6px}.tasks-theme-settings{padding:7px}.tasks-color-entry input{font-size:12px;padding:5px}.tasks-color-entry .tasks-color-open{width:32px;min-width:32px}}
+    `;
+    document.head.append(style);
+  }
+  function apply(state, native) {
+    ensureStyles();
+    const theme = normalize(state && state.uiTheme);
+    const colors = theme.gradient ? [theme.background, theme.gradientEnd] : [theme.background];
+    const text = foreground(colors), middle = theme.gradient ? mix(theme.background, theme.gradientEnd, .5) : theme.background;
+    const surface = theme.background === DEFAULTS.background && !theme.gradient ? '#172131' : mix(middle, text, .07);
+    const variables = { '--tl-accent':theme.accent, '--tl-background':theme.background, '--tl-surface':surface,
+      '--tl-ink':foreground([theme.accent]), '--tl-text':text, '--tl-muted':mix(middle, text, .7),
+      '--tl-border':mix(middle, text, .25), '--tl-selected':mix(middle, theme.accent, .18) };
+    Object.entries(variables).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
+    document.documentElement.style.colorScheme = text === '#10151f' ? 'light' : 'dark';
+    document.documentElement.style.setProperty('background', theme.background, 'important');
+    if (document.body) {
+      document.body.style.setProperty('background', paint(theme), 'important');
+      document.body.style.backgroundAttachment = theme.gradient ? 'fixed' : '';
+      document.body.style.backgroundRepeat = 'no-repeat';
+      document.body.style.backgroundSize = theme.gradient ? '100% 100vh' : '';
+      document.body.style.minHeight = '100vh';
+    }
+    const root = document.getElementById('today-task-list-20261023');
+    if (root) root.style.setProperty('background', 'transparent', 'important');
+    if (native && typeof native.setThemeColors === 'function') native.setThemeColors(theme.background);
+    return theme;
+  }
+  function renderSettings(form, options) {
+    ensureStyles();
+    const readState = options.readState, persistState = options.persistState, native = options.native;
+    const current = normalize(readState().uiTheme);
+    const appearance = node('details', 'tasks-theme-settings'); appearance.open = true;
+    appearance.append(node('summary', '', 'Appearance')); form.append(appearance);
+    const fields = node('div', 'tasks-color-fields'); appearance.append(fields);
+    const pickers = [];
+    let updatePreview = () => {};
+    function colorField(parent, name, value, placeholder) {
+      const box = node('div', 'tasks-color-field');
+      const label = node('label', '', name + ' hex');
+      const input = node('input', 'form-control'); input.type = 'text'; input.value = value;
+      input.placeholder = placeholder; input.spellcheck = false; input.autocapitalize = 'off'; input.setAttribute('aria-label', name + ' hex');
+      const id = 'tasks-color-' + name.toLowerCase().replace(/\W+/g, '-'); input.id = id; label.htmlFor = id;
+      const entry = node('div', 'tasks-color-entry');
+      const picker = node('div', 'tasks-color-picker'); picker.hidden = true; picker.id = id + '-picker';
+      const open = button('', () => { picker.hidden = !picker.hidden; open.setAttribute('aria-expanded', String(!picker.hidden)); }, 'tasks-color-open');
+      open.style.background = value; open.title = 'Pick ' + name.toLowerCase() + ' color'; open.setAttribute('aria-label', open.title); open.setAttribute('aria-expanded', 'false'); open.setAttribute('aria-controls', picker.id);
+      entry.append(input, open); box.append(label, entry, picker); parent.append(box);
+      const palette = node('div', 'tasks-color-palette'); picker.append(palette);
+      const swatches = PALETTE.map(color => {
+        const swatch = button('', () => setValue(color), 'tasks-color-swatch'); swatch.style.background = color; swatch.dataset.color = color;
+        swatch.setAttribute('aria-label', name + ' ' + color); palette.append(swatch); return swatch;
+      });
+      const sliders = ['Red','Green','Blue'].map((channel, i) => {
+        const row = node('label', 'tasks-rgb-label'); row.append(node('span', '', channel[0]));
+        const slider = node('input'); slider.type = 'range'; slider.min = '0'; slider.max = '255'; slider.step = '1'; slider.setAttribute('aria-label', name + ' ' + channel.toLowerCase());
+        const output = node('output'); row.append(slider, output); picker.append(row);
+        slider.addEventListener('input', () => { setValue(fromChannels(sliders.map(item => Number(item.slider.value)))); });
+        return {slider,output};
+      });
+      picker.append(button('Done', () => { picker.hidden = true; open.setAttribute('aria-expanded','false'); open.focus(); }, 'btn tasks-color-done'));
+      function sync() {
+        const parsed = hex(input.value); if (!parsed) return;
+        open.style.background = parsed;
+        const values = channels(parsed); sliders.forEach((item, i) => { item.slider.value = values[i]; item.output.textContent = String(values[i]); });
+        swatches.forEach(item => item.setAttribute('aria-pressed', String(item.dataset.color === parsed)));
+      }
+      function setValue(value) { input.value = value; sync(); updatePreview(); }
+      input.addEventListener('input', () => { sync(); updatePreview(); }); sync();
+      const result = {input,setValue,sync}; pickers.push(result); return result;
+    }
+    const accent = colorField(fields, 'Accent', current.accent, '#68B7FF');
+    const background = colorField(fields, 'Background', current.background, '#10151F');
+    const gradientLabel = node('label', 'tasks-gradient-toggle'), gradient = node('input'); gradient.type = 'checkbox'; gradient.checked = current.gradient; gradient.setAttribute('aria-label','Gradient background');
+    gradientLabel.append(gradient, node('span', '', 'Gradient background')); appearance.append(gradientLabel);
+    const gradientOptions = node('div', 'tasks-gradient-options'); gradientOptions.hidden = !gradient.checked; appearance.append(gradientOptions);
+    const end = colorField(gradientOptions, 'Gradient end', current.gradientEnd, '#46525D');
+    const angleLabel = node('label', 'tasks-gradient-angle'); angleLabel.append(node('span', '', 'Angle '));
+    const angleOutput = node('output'), angle = node('input'); angle.type = 'range'; angle.min = '0'; angle.max = '360'; angle.step = '1'; angle.value = String(current.gradientAngle); angle.setAttribute('aria-label','Gradient angle'); angleLabel.append(angleOutput, angle); gradientOptions.append(angleLabel);
+    const preview = node('div', 'tasks-theme-preview'); preview.setAttribute('aria-label','Theme preview'); preview.append(node('strong', '', 'Tasks')); const chip = node('span', 'tasks-preview-chip', 'Your colors'); preview.append(chip); appearance.append(preview);
+    const error = node('p', 'tasks-theme-error'); error.setAttribute('role','alert'); appearance.append(error);
+    function draft() {
+      const a = hex(accent.input.value), b = hex(background.input.value), e = hex(end.input.value);
+      if (!a || !b || (gradient.checked && !e)) return null;
+      return {accent:a, background:b, gradient:gradient.checked, gradientEnd:e || DEFAULTS.gradientEnd, gradientAngle:Number(angle.value)};
+    }
+    updatePreview = () => {
+      gradientOptions.hidden = !gradient.checked; angleOutput.textContent = angle.value + '°';
+      const theme = draft(); if (!theme) return;
+      preview.style.background = paint(theme); preview.style.color = foreground(theme.gradient ? [theme.background,theme.gradientEnd] : [theme.background]); preview.style.borderColor = theme.accent;
+      chip.style.background = theme.accent; chip.style.color = foreground([theme.accent]);
+    };
+    gradient.addEventListener('change', updatePreview); angle.addEventListener('input', updatePreview);
+    function save() {
+      const theme = draft();
+      if (!theme) { error.textContent = 'Use a hex color such as #68B7FF.'; return; }
+      try {
+        const state = readState();
+        persistState(Object.assign({}, state, {uiTheme:Object.assign({}, state.uiTheme || {}, theme)}));
+        apply(readState(), native); error.textContent = '';
+        accent.setValue(theme.accent); background.setValue(theme.background); end.setValue(theme.gradientEnd);
+      } catch (_) { error.textContent = 'Couldn’t save colors. Please try again.'; }
+    }
+    const actions = node('div', 'tasks-theme-actions');
+    actions.append(button('Slate gradient', () => {
+      background.setValue('#1e2935'); end.setValue('#47535c'); gradient.checked = true; angle.value = '180'; updatePreview();
+    }), button('Apply colors', save, 'btn btn-primary'), button('Reset colors', () => {
+      accent.setValue(DEFAULTS.accent); background.setValue(DEFAULTS.background); end.setValue(DEFAULTS.gradientEnd); gradient.checked = false; angle.value = String(DEFAULTS.gradientAngle); updatePreview(); save();
+    }));
+    appearance.append(actions); updatePreview();
+    return { element:appearance, apply:save, getDraft:draft };
+  }
+  global.TasksTheme = Object.freeze({ apply, renderSettings, normalize, defaults:DEFAULTS });
+})(window);
+
 /* Generic Android integration. Personal task definitions and history are supplied
    privately in the installed document; this file contains no personal task data. */
 (function (global) {
@@ -1580,6 +1892,7 @@ main{max-width:100%;margin:0;padding:0}
   let fallback = null;
   try { fallback = global.localStorage; } catch (_) {}
   let cached = null;
+  let lastCanonical = null;
   let scope = null;
   let selectedContext = '';
   let snapshotTimer = 0;
@@ -1590,28 +1903,46 @@ main{max-width:100%;margin:0;padding:0}
     let value = null;
     try { if (native && native.readState) value = native.readState(); } catch (_) {}
     if (!value && fallback) { try { value = fallback.getItem(KEY); } catch (_) {} }
-    cached = parse(value);
+    cached = parse(value);lastCanonical=clone(cached);
     return cached;
   }
+  function equalState(a,b){
+    if(a===b)return true;
+    if(!a||!b||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;
+    const ak=Object.keys(a).sort(),bk=Object.keys(b).sort();return ak.length===bk.length&&ak.every((key,i)=>key===bk[i]&&equalState(a[key],b[key]));
+  }
+  function mergeState(base,local,remote,key){
+    if(equalState(base,local))return remote===undefined?undefined:clone(remote);
+    if(local===undefined)return undefined;
+    if(key==='linkPeers'&&Array.isArray(local)){
+      const before=new Set(Array.isArray(base)?base:[]),after=new Set(local),current=new Set(Array.isArray(remote)?remote:[]);
+      before.forEach(peer=>{if(!after.has(peer))current.delete(peer);});after.forEach(peer=>{if(!before.has(peer))current.add(peer);});return Array.from(current);
+    }
+    if(key==='customTasks'&&Array.isArray(local)){
+      const index=list=>new Map((Array.isArray(list)?list:[]).filter(item=>item&&typeof item.id==='string').map(item=>[item.id,item]));
+      const before=index(base),after=index(local),current=index(remote);
+      new Set([...before.keys(),...after.keys()]).forEach(id=>{const merged=mergeState(before.get(id),after.get(id),current.get(id),'task');if(merged===undefined)current.delete(id);else current.set(id,merged);});return Array.from(current.values());
+    }
+    if(local&&typeof local==='object'&&!Array.isArray(local)){
+      const before=base&&typeof base==='object'&&!Array.isArray(base)?base:{};
+      const current=remote&&typeof remote==='object'&&!Array.isArray(remote)?clone(remote):{};
+      new Set([...Object.keys(before),...Object.keys(local)]).forEach(name=>{const merged=mergeState(before[name],local[name],current[name],key==='manualLinks'?'linkPeers':name);if(merged===undefined)delete current[name];else current[name]=merged;});return current;
+    }
+    return clone(local);
+  }
   function persist(value) {
-    let fresh = {};
-    try { if (native && native.readState) fresh = parse(native.readState()); } catch (_) {}
-    const previous = readCanonical();
-    const next = Object.assign({}, fresh, previous, value);
-    // A launcher popup can add a task while this page is paused. Preserve its
-    // new IDs when the older page later saves a checkbox or context change.
-    const mergedTasks = new Map();
-    [fresh.customTasks, previous.customTasks, value.customTasks].forEach(items => {
-      if (Array.isArray(items)) items.forEach(task => { if (task && typeof task.id === 'string') mergedTasks.set(task.id, clone(task)); });
-    });
-    if (mergedTasks.size) next.customTasks = Array.from(mergedTasks.values());
-    next.taskOverrides = Object.assign({}, fresh.taskOverrides, previous.taskOverrides, value.taskOverrides);
-    next.pairOverrides = Object.assign({}, fresh.pairOverrides, previous.pairOverrides, value.pairOverrides);
+    const previous=readCanonical(),before=lastCanonical||clone(previous);
+    let fresh=previous;
+    try{if(native&&native.readState)fresh=parse(native.readState());}catch(_){}
+    const desired=Object.assign({},previous,value);
+    const next=mergeState(before,desired,fresh,'state');
+    if(typeof desired.uiContext==='string')next.uiContext=desired.uiContext;
     let succeeded = false;
     if (native && native.writeState) { native.writeState(JSON.stringify(next)); succeeded = true; }
     if (fallback) { try { fallback.setItem(KEY, JSON.stringify(next)); succeeded = true; } catch (_) {} }
     if (!succeeded) throw new Error('Task storage is unavailable');
-    cached = next;
+    cached = next;lastCanonical=clone(next);
+    if(scope){scope.setState(next);applyDefinitions(next);}
     return next;
   }
   global.TaskListStorage = {
@@ -1638,6 +1969,7 @@ main{max-width:100%;margin:0;padding:0}
     const result = node('button', className || 'btn', text);
     result.type = 'button'; result.addEventListener('click', fn); return result;
   }
+  const contextIcon=label=>({'At home':'🏠','On the road':'🚗','On the phone':'📱','On the computer':'💻','Outdoors':'🌳'}[label]||'🏷️');
   function derivedContexts(task) {
     if (Array.isArray(task._contexts)) return [...new Set(task._contexts.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))];
     if (Array.isArray(task.labels)) return [...new Set(task.labels.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))];
@@ -1712,7 +2044,7 @@ main{max-width:100%;margin:0;padding:0}
     applyDefinitions(readCanonical());
     rebuild();
   }
-  function linkedTasksField(form, task) {
+  function linkedTasksField(form, task, occurrenceDate) {
     const selected = new Set(task ? scope.pairWith[task.id] || [] : []);
     const group = node('fieldset', 'tl-context-options tl-links');
     group.append(node('legend', '', 'Linked tasks'));
@@ -1721,14 +2053,20 @@ main{max-width:100%;margin:0;padding:0}
     select.setAttribute('aria-label', 'Choose a task to link');
     const add = action('Link task', () => { if (select.value) { selected.add(select.value); render(); } }, 'btn tl-link-add');
     const list = node('div', 'tl-linked-list');
-    const candidates = scope.tasks.filter(candidate => !task || candidate.id !== task.id)
+    const atDate=scope.onDate(occurrenceDate||scope.today);
+    const available=candidate=>{
+      const occurrences=atDate.filter(item=>item.task.id===candidate.id);
+      if(occurrences.length)return occurrences.some(item=>!scope.isDone(candidate,item.stateDate));
+      if(candidate.due)return !scope.isDone(candidate,candidate.due);
+      return !candidate.retired;
+    };
+    const candidates = scope.tasks.filter(candidate => !candidate.retired&&(!task || candidate.id !== task.id))
       .slice().sort((a, b) => a.title.localeCompare(b.title));
     function render() {
       select.replaceChildren();
       const placeholder = node('option', '', 'Choose a task…'); placeholder.value = ''; select.append(placeholder);
-      candidates.filter(candidate => !selected.has(candidate.id)).forEach(candidate => {
-        const date = candidate.due || candidate.recurrence;
-        const option = node('option', '', candidate.title + (date ? ' · ' + date : ''));
+      candidates.filter(candidate => !selected.has(candidate.id)&&available(candidate)).forEach(candidate => {
+        const option = node('option', '', candidate.title);
         option.value = candidate.id; select.append(option);
       });
       add.disabled = !select.value;
@@ -1784,7 +2122,7 @@ main{max-width:100%;margin:0;padding:0}
     const grid = node('div', 'tl-choice-grid');
     const inputs = choices.map(label => {
       const row = node('label', 'tl-context-choice'); const check = node('input'); check.type = 'checkbox';
-      check.checked = (selected || []).includes(label); row.append(check, node('span', '', label)); grid.append(row);
+      check.checked = (selected || []).includes(label); row.setAttribute('aria-label',label);row.title=label;row.append(check, node('span', '', contextIcon(label))); grid.append(row);
       return { label, check };
     });
     group.append(grid);
@@ -1804,22 +2142,32 @@ main{max-width:100%;margin:0;padding:0}
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
     const time = inputField(schedule, 'Time', 'text', original.time || ''); time.placeholder = 'Any time';
-    const duration = inputField(schedule, 'Duration', 'number', original.minutes); duration.placeholder = 'Minutes'; duration.min = '1'; duration.step = '1';
+    const durationGroup=node('div','tl-duration-group');durationGroup.append(node('span','tl-duration-caption','Duration'));
+    const durationRow=node('div','tl-duration-row');durationGroup.append(durationRow);schedule.append(durationGroup);
+    const hours=inputField(durationRow,'Hours','number',original.minutes===undefined?'':Math.floor(original.minutes/60));hours.placeholder='Hours';hours.min='0';hours.step='1';hours.setAttribute('aria-label','Hours');
+    const minutes=inputField(durationRow,'Minutes','number',original.minutes===undefined?'':original.minutes%60);minutes.placeholder='Minutes';minutes.min='0';minutes.max='59';minutes.step='1';minutes.setAttribute('aria-label','Minutes');
     const urgentWrap = node('label', 'tl-context-choice tl-urgent'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
     urgentWrap.append(urgent, node('span', '', 'Urgent')); schedule.append(urgentWrap);
-    const oldMode = original.weekendCycleStart ? 'weekends' : original.intervalDays ? 'interval' : original.days && original.days.length ? (original.days.length === 7 ? 'daily' : 'weekdays') : 'once';
-    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['daily','Daily'],['weekdays','Weekdays'],['interval','Every N days'],['weekends','Alternate weekends']], oldMode);
+    const oldSpec=global.TasksSchedule.fromTask(original,initialDate);
+    const oldMode=oldSpec.mode;
+    if(oldMode==='repeat')date.value=oldSpec.start;
+    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['weekdays','Weekdays'],['repeat','Every…']], oldMode);
+    const repeatRow=node('div','tl-repeat-row');
+    repeatRow.append(node('span','','Every'));
+    const amount=node('input','form-control tl-repeat-amount');amount.type='number';amount.min='1';amount.step='1';amount.value=oldSpec.amount||1;amount.setAttribute('aria-label','Repeat amount');
+    const unit=node('select','form-control tl-repeat-unit');unit.setAttribute('aria-label','Repeat unit');
+    [['day','Day'],['week','Week'],['month','Month'],['year','Year']].forEach(([value,label])=>{const option=node('option','',label);option.value=value;unit.append(option);});unit.value=oldSpec.unit||'day';
+    repeatRow.append(amount,unit);recurrence.append(repeatRow);
     const week = node('div', 'tl-weekdays');
     const weekChecks = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((name, index) => {
-      const label = node('label', 'tl-context-choice'), check = node('input'); check.type = 'checkbox'; check.checked = (original.days || []).includes(index);
+      const label = node('label', 'tl-context-choice'), check = node('input'); check.type = 'checkbox'; check.checked = (oldSpec.weekdays || []).includes(index);
       check.setAttribute('aria-label', name); label.append(check, node('span', '', name.slice(0, 3))); week.append(label); return check;
     }); recurrence.append(week);
-    const interval = inputField(recurrence, 'Every', 'number', original.intervalDays || 2); interval.placeholder = 'Days'; interval.min = '1'; interval.step = '1';
-    const toggleRepeat = () => { week.hidden = recurrence.value !== 'weekdays'; interval.closest('label').hidden = recurrence.value !== 'interval'; };
-    recurrence.addEventListener('change', toggleRepeat); toggleRepeat();
+    const toggleRepeat = () => {repeatRow.hidden=recurrence.value!=='repeat';week.hidden=recurrence.value!=='weekdays'&&!(recurrence.value==='repeat'&&unit.value==='week');};
+    recurrence.addEventListener('change',toggleRepeat);unit.addEventListener('change',toggleRepeat);toggleRepeat();
     const selected = task ? derivedContexts(task) : (prefill && (prefill.labels || [prefill.label || prefill.widget_label].filter(Boolean))) || (selectedContext ? [selectedContext] : []);
     const readContexts = contextsField(form, selected);
-    const readLinks = linkedTasksField(form, task);
+    const readLinks = linkedTasksField(form, task, item?item.date:scope.today);
     const extra = node('details', 'tl-extra-fields'); extra.append(node('summary', '', 'Notes & checklist')); extra.open = !!original.notes;
     const extraGrid = node('div', 'tl-notes-grid'); extra.append(extraGrid); form.append(extra);
     const notes = inputField(extraGrid, 'Notes', 'textarea', original.notes || ''); notes.placeholder = 'Add notes';
@@ -1831,26 +2179,24 @@ main{max-width:100%;margin:0;padding:0}
     buttons.append(action('Cancel', close), action('Save task', () => {
       if (!title.value.trim()) { error.textContent = 'Enter a task title.'; title.focus(); return; }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date.value)) { error.textContent = 'Choose a valid date.'; return; }
-      if (duration.value && (!/^\d+$/.test(duration.value) || Number(duration.value) < 1)) { error.textContent = 'Duration must be a positive number of minutes.'; return; }
+      if((hours.value&&!/^\d+$/.test(hours.value))||(minutes.value&&!/^\d+$/.test(minutes.value))||Number(minutes.value)>59||((hours.value||minutes.value)&&Number(hours.value)*60+Number(minutes.value)<1)){error.textContent='Enter hours and 0–59 minutes.';return;}
       if (recurrence.value === 'weekdays' && !weekChecks.some(check => check.checked)) { error.textContent = 'Select at least one weekday.'; return; }
-      if (recurrence.value === 'interval' && (!/^\d+$/.test(interval.value) || Number(interval.value) < 1)) { error.textContent = 'Repeat interval must be at least one day.'; return; }
+      if(recurrence.value==='repeat'&&(!/^\d+$/.test(amount.value)||Number(amount.value)<1)){error.textContent='Repeat amount must be at least 1.';return;}
       const next = Object.assign({}, original, { id: original.id || 'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9), title: title.value.trim(), priority: urgent.checked ? 'HIGHEST' : priority.value, _contexts: readContexts() });
-      if (duration.value) next.minutes = Number(duration.value); else delete next.minutes;
+      if(hours.value||minutes.value)next.minutes=Number(hours.value)*60+Number(minutes.value);else delete next.minutes;
       if (time.value.trim()) next.time = time.value.trim(); else delete next.time;
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
       delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
-      const changedSchedule = recurrence.value !== oldMode || (recurrence.value === 'weekdays' && JSON.stringify(weekChecks.flatMap((check, i) => check.checked ? [i] : [])) !== JSON.stringify(original.days || [])) || (recurrence.value === 'interval' && Number(interval.value) !== original.intervalDays);
-      if (isNew || changedSchedule) {
-        ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence'].forEach(key => delete next[key]);
-        if (recurrence.value === 'once') next.due = date.value;
-        if (recurrence.value === 'daily') { next.days = [0,1,2,3,4,5,6]; next.recurrence = 'Daily'; }
-        if (recurrence.value === 'weekdays') { next.days = weekChecks.flatMap((check, index) => check.checked ? [index] : []); next.recurrence = next.days.map(day => ['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'][day]).join(', '); }
-        if (recurrence.value === 'interval') { next.intervalDays = Number(interval.value); next.intervalStart = date.value; next.recurrence = 'Every ' + interval.value + ' days'; }
-        if (recurrence.value === 'weekends') { const weekday = new Date(date.value + 'T12:00:00Z').getUTCDay(); next.weekendCycleStart = scope.addDays(date.value, (7 - weekday) % 7); next.recurrence = 'Every other Saturday and Sunday'; }
-      } else if (item && date.value !== initialDate) {
-        // Move this occurrence; keep its original occurrence/history keys intact.
-        scope.moveOccurrence(task, item.stateDate, date.value);
+      const chosenDays=weekChecks.flatMap((check,index)=>check.checked?[index]:[]);
+      const changedSchedule=recurrence.value!==oldMode||(recurrence.value==='weekdays'&&JSON.stringify(chosenDays)!==JSON.stringify(oldSpec.weekdays||[]))||(recurrence.value==='repeat'&&(Number(amount.value)!==oldSpec.amount||unit.value!==oldSpec.unit||date.value!==oldSpec.start||(unit.value==='week'&&JSON.stringify(chosenDays)!==JSON.stringify(oldSpec.weekdays||[]))));
+      if(isNew||changedSchedule){
+        ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence','repeat','startsOn'].forEach(key=>delete next[key]);
+        if(recurrence.value==='once')next.due=date.value;
+        if(recurrence.value==='weekdays'){next.days=chosenDays;next.startsOn=date.value;next.recurrence=global.TasksSchedule.weekdaysLabel(chosenDays);}
+        if(recurrence.value==='repeat'){next.repeat={amount:Number(amount.value),unit:unit.value,start:date.value};if(unit.value==='week'&&chosenDays.length)next.repeat.weekdays=chosenDays;next.recurrence=global.TasksSchedule.describe(next);}
+      }else if(item&&recurrence.value!=='repeat'&&date.value!==initialDate){
+        scope.moveOccurrence(task,item.stateDate,date.value);
       }
       if (steps) { const names = steps.value.split('\n').map(x => x.trim()).filter(Boolean); if (names.length) next.steps = names; }
       if (isNew) scope.tasks.push(next); else scope.tasks[scope.tasks.findIndex(t => t.id === task.id)] = next;
@@ -1862,7 +2208,7 @@ main{max-width:100%;margin:0;padding:0}
     const select = document.getElementById('tl-context-filter'); if (!select) return;
     const wanted = ['', ...allContexts()]; const existing = Array.from(select.options).map(o => o.value);
     if (JSON.stringify(wanted) !== JSON.stringify(existing)) {
-      select.replaceChildren(); wanted.forEach(label => { const option = node('option', '', label || 'All contexts'); option.value = label; select.append(option); });
+      select.replaceChildren(); wanted.forEach(label => { const option = node('option', '', label?contextIcon(label):'All contexts'); option.value = label; select.append(option); });
     }
     select.value = selectedContext;
   }
@@ -1870,7 +2216,7 @@ main{max-width:100%;margin:0;padding:0}
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
     const text = wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
     const labels = derivedContexts(task);
-    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => badges.append(node('span', 'tl-context-badge', label))); text.append(badges); }
+    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=node('span','tl-context-icon',contextIcon(label));icon.setAttribute('aria-label',label);icon.title=label;badges.append(icon);}); text.append(badges); }
     const controls = wrapper.querySelector('.tm-item-actions');
     if (controls) {
       const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
@@ -1904,37 +2250,7 @@ main{max-width:100%;margin:0;padding:0}
     const snapshot = Array.from(rows.values()); global.TaskListBridge.lastSnapshot = snapshot;
     if (native && native.updateSnapshot) { try { native.updateSnapshot(JSON.stringify(snapshot)); } catch (error) { console.error('Could not update the home widget', error); } }
   }
-  const DEFAULT_THEME = { accent:'#68b7ff', background:'#10151f' };
-  function normalizeHex(value) {
-    const text = String(value || '').trim().replace(/^#/, '');
-    if (/^[0-9a-f]{3}$/i.test(text)) return '#' + text.split('').map(c => c + c).join('').toLowerCase();
-    return /^[0-9a-f]{6}$/i.test(text) ? '#' + text.toLowerCase() : null;
-  }
-  function mix(a, b, ratio) {
-    const channels = value => [1,3,5].map(i => parseInt(value.slice(i, i + 2), 16));
-    const left = channels(a), right = channels(b);
-    return '#' + left.map((v, i) => Math.round(v * (1 - ratio) + right[i] * ratio).toString(16).padStart(2, '0')).join('');
-  }
-  function ink(color) {
-    const values = [1,3,5].map(i => parseInt(color.slice(i,i + 2),16) / 255)
-      .map(v => v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4));
-    const luminance = values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
-    return luminance > .179 ? '#10151f' : '#f3f6fb';
-  }
-  function applyTheme() {
-    const stored = readCanonical().uiTheme || {};
-    const accent = normalizeHex(stored.accent) || DEFAULT_THEME.accent;
-    const background = normalizeHex(stored.background) || DEFAULT_THEME.background;
-    const text = ink(background), light = text === '#10151f';
-    const surface = background === DEFAULT_THEME.background ? '#172131' : mix(background, text, .07);
-    const variables = { '--tl-accent':accent, '--tl-background':background, '--tl-surface':surface,
-      '--tl-ink':ink(accent), '--tl-text':text, '--tl-muted':mix(background, text, .7),
-      '--tl-border':mix(background, text, .25), '--tl-selected':mix(background, accent, .18) };
-    Object.entries(variables).forEach(([name, value]) => document.documentElement.style.setProperty(name, value));
-    document.documentElement.style.colorScheme = light ? 'light' : 'dark';
-    if (native && native.setThemeColors) native.setThemeColors(background);
-    return {accent,background};
-  }
+  function applyTheme(){return global.TasksTheme.apply(readCanonical(),native);}
   function quickAddTask(prefill = {}) {
     const { form, close } = modal('Quick add'); form.classList.add('tl-quick-form');
     const title = inputField(form, 'Task', 'text', prefill.title || ''); title.placeholder = 'What needs doing?';
@@ -1961,27 +2277,7 @@ main{max-width:100%;margin:0;padding:0}
   }
   function showSettings() {
     const { form, close } = modal('Settings'); form.classList.add('tl-settings-form');
-    const theme = applyTheme();
-    const colors = node('div', 'tl-schedule-grid'); form.append(colors);
-    const accent = inputField(colors, 'Accent hex', 'text', theme.accent); accent.placeholder = '#68B7FF'; accent.spellcheck = false;
-    const background = inputField(colors, 'Background hex', 'text', theme.background); background.placeholder = '#10151F'; background.spellcheck = false;
-    const preview = node('div', 'tl-color-preview', 'Color preview'); form.append(preview);
-    const previewColors = () => {
-      const a = normalizeHex(accent.value), b = normalizeHex(background.value);
-      if (a && b) { preview.style.background = b; preview.style.color = a; preview.style.borderColor = a; }
-    };
-    accent.addEventListener('input', previewColors); background.addEventListener('input', previewColors); previewColors();
-    const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
-    const save = () => {
-      const a = normalizeHex(accent.value), b = normalizeHex(background.value);
-      if (!a || !b) { error.textContent = 'Use a hex color such as #68B7FF.'; return; }
-      persist(Object.assign({}, readCanonical(), { uiTheme:{accent:a,background:b} }));
-      applyTheme(); error.textContent = ''; accent.value = a; background.value = b; previewColors();
-    };
-    const colorsActions = node('div', 'tl-color-actions');
-    colorsActions.append(action('Apply colors', save, 'btn btn-primary'), action('Reset colors', () => {
-      accent.value = DEFAULT_THEME.accent; background.value = DEFAULT_THEME.background; save();
-    })); form.append(colorsActions);
+    global.TasksTheme.renderSettings(form,{readState:readCanonical,persistState:persist,native});
     if (native && native.showWidgetSettings) {
       form.append(action('Add home-screen widget', () => { close(); native.showWidgetSettings(); }, 'btn tl-widget-settings'));
     }
@@ -2004,9 +2300,11 @@ main{max-width:100%;margin:0;padding:0}
       applyDefinitions(state); applyTheme(); addToolbar();
       global.TaskListApp = {
         quickAddTask, handleBack,
+        showToday(){scope.showView('today');},
+        isInteracting(){return scope.isInteracting();},
         addTask(prefill) { try { if (typeof prefill === 'string') prefill = JSON.parse(prefill || '{}'); } catch (_) { prefill = {}; } editTask(null, null, prefill || {}); },
         setContextFilter(label) { selectedContext = typeof label === 'string' ? label : ''; saveExtras(); rebuild(); },
-        reloadFromNative() { cached = null; const latest = readCanonical(); scope.setState(latest); applyDefinitions(latest); selectedContext = typeof latest.uiContext === 'string' ? latest.uiContext : ''; applyTheme(); rebuild(); },
+        reloadFromNative() { cached = null;lastCanonical=null; const latest = readCanonical(); scope.setState(latest); applyDefinitions(latest); selectedContext = typeof latest.uiContext === 'string' ? latest.uiContext : ''; applyTheme(); rebuild(); },
         debugSummary() { return { definitions: scope.tasks.length, savedKeys: Object.keys(scope.getState().completed).length, moves: Object.keys(scope.getState().movedTo).length, active: scope.getState().inProgress, today: scope.today, contexts: allContexts(), snapshot: global.TaskListBridge.lastSnapshot.length }; }
       };
       queueSnapshot();
@@ -2716,11 +3014,12 @@ main{max-width:100%;margin:0;padding:0}
     };
     if(inProgressIsDone(saved)){inProgress=null;saveLocalState();}
     const instance = (task,date,stateDate=date,carried=false,moved=false) => ({task,date,stateDate,carried,moved});
-    const isDaily = task => task.recurrence==='Daily' || (task.days && task.days.length===7);
-    const isRecurring = task => Boolean(task.recurrence || (task.days && task.days.length) || task.intervalDays || task.weekendCycleStart);
+    const isDaily = task => task.repeat?(task.repeat.unit==='day'&&Number(task.repeat.amount)===1&&!task.repeat.weekdays?.length):(task.recurrence==='Daily' || (task.days && task.days.length===7));
+    const isRecurring = task => Boolean(task.repeat || task.recurrence || (task.days && task.days.length) || task.intervalDays || task.weekendCycleStart);
     const carryBlocked = (task,date) => Boolean(task.skipCarryDays && task.skipCarryDays.includes(dateObject(date).getUTCDay()));
     const scheduledOn = date => tasks.filter(task => {
-      if(task.retired)return false;
+      if(task.retired||task.startsOn&&date<task.startsOn)return false;
+      if(task.repeat)return window.TasksSchedule.matches(task,date);
       const isIntervalOccurrence=task.intervalDays && task.intervalStart && date>=task.intervalStart && Math.round((dateObject(date)-dateObject(task.intervalStart))/86400000)%task.intervalDays===0;
       const weekendCycleOccurrence=task.weekendCycleStart && (()=>{
         const daysFromStart=Math.round((dateObject(date)-dateObject(task.weekendCycleStart))/86400000);
@@ -2792,12 +3091,14 @@ main{max-width:100%;margin:0;padding:0}
         inProgress.startsWith(progressKey(item.task,item.stateDate)) &&
         !isDone(item.task,item.stateDate,draft));
     };
-    const meta=(task,number)=>[
-      number?'#'+number:null,
-      task.minutes===undefined?'⏰ No duration':'⏰ '+task.minutes+' min'+(hasSubtasks(task)?' total':''),
+    const durationText=minutes=>{
+      const h=Math.floor(minutes/60),m=minutes%60;
+      return [h?h+' hr':null,m?m+' min':null].filter(Boolean).join(' ')||'0 min';
+    };
+    const meta=task=>[
+      task.minutes===undefined?'⏰ No duration':'⏰ '+durationText(task.minutes),
       task.time||'Any time',
-      task.recurrence?'🔁 '+task.recurrence:null,
-      task.place,task.device
+      window.TasksSchedule.describe(task)?'🔁 '+window.TasksSchedule.describe(task):null
     ].filter(Boolean).join(' · ');
     const originNote=item=>{
       if(!item.carried || isDone(item.task,item.stateDate,draft))return null;
@@ -2951,9 +3252,9 @@ main{max-width:100%;margin:0;padding:0}
       updateCount();
       return details;
     };
-    const row=(item,completed=false,number)=>{
+    const row=(item,completed=false,number,upcoming=false)=>{
       const {task,stateDate}=item;
-      const wrapper=el('div','tm-task-item');
+      const wrapper=el('div',upcoming?'tm-task-item tm-future':'tm-task-item');
       if(!completed&&isCompleting(task,stateDate))wrapper.classList.add('tm-completing');
       const finishedToday=completed&&completionDate(task,stateDate)===today;
       if(finishedToday)wrapper.classList.add('tm-completed-today');
@@ -2984,7 +3285,7 @@ main{max-width:100%;margin:0;padding:0}
       label.append(input,text);
       const controls=el('div','tm-item-actions');
       controls.append(progressButton(progressKey(task,stateDate),task.title,isDone(task,stateDate,draft)));
-      const move=completed?null:moveButton(item);if(move)controls.append(move);
+      const move=completed||upcoming?null:moveButton(item);if(move)controls.append(move);
       wrapper.append(label,controls);
       if(hasSubtasks(task)){
         const count=subtaskCount(task,stateDate),unit=task.children?'subtasks':'steps';
@@ -3061,51 +3362,30 @@ main{max-width:100%;margin:0;padding:0}
       }
 
     };
+    const futureOpenDates=new Set([addDays(today,1)]);
     const renderFuture=()=>{
-      const container=find('pt-future-list');container.replaceChildren();
+      const container=find('pt-future-list');
+      container.querySelectorAll('details.tm-day').forEach(section=>{if(section.open)futureOpenDates.add(section.dataset.date);else futureOpenDates.delete(section.dataset.date);});
+      container.replaceChildren();
+      const todayIds=new Set(dueToday().filter(item=>!isDone(item.task,item.stateDate,saved)||isCompleting(item.task,item.stateDate)).map(item=>item.task.id));
+      const seen=new Set();
       for(let offset=1;offset<=14;offset++){
-        const date=addDays(today,offset),items=withCompleting(onDate(date),'future',date).filter(i=>(!isDone(i.task,i.stateDate,saved)||isCompleting(i.task,i.stateDate))&&window.TaskListBridge.contextMatches(i.task));if(!items.length)continue;
-        const taskNumbers=new Map();
-        groups.forEach(([priority])=>items.filter(i=>i.task.priority===priority).forEach(i=>taskNumbers.set(progressKey(i.task,i.stateDate),taskNumbers.size+1)));
-        const section=el('section','tm-day');section.append(el('div','tm-group',labelDate(date,true)));
+        const date=addDays(today,offset);
+        const candidates=withCompleting(onDate(date),'future',date).filter(item=>!todayIds.has(item.task.id)&&(!isDone(item.task,item.stateDate,saved)||isCompleting(item.task,item.stateDate))&&window.TaskListBridge.contextMatches(item.task));
+        const items=candidates.filter(item=>{const key=progressKey(item.task,item.stateDate);if(seen.has(key))return false;seen.add(key);return true;});
+        if(!items.length&&offset!==1)continue;
+        const section=el('details','tm-day');section.dataset.date=date;section.open=futureOpenDates.has(date);
+        const summary=el('summary','tm-day-heading',(offset===1?'Tomorrow · ':'')+labelDate(date,true)+' · '+items.length);section.append(summary);
+        section.addEventListener('toggle',()=>{if(!section.isConnected)return;if(section.open)futureOpenDates.add(date);else futureOpenDates.delete(date);});
+        if(!items.length)section.append(el('p','text-muted','No tasks scheduled.'));
         groups.forEach(([priority,heading])=>{
-          const matching=items.filter(i=>i.task.priority===priority);if(!matching.length)return;
+          const matching=items.filter(item=>item.task.priority===priority);if(!matching.length)return;
           section.append(el('div','tm-group text-small',heading));
           const rows=el('div','tm-list');
-          matching.forEach(i=>{
-            const card=el('div','tm-future-card');
-            if(isCompleting(i.task,i.stateDate))card.classList.add('tm-completing');
-            const line=el('div','tm-task-item tm-future');
-            const active=inProgress===progressKey(i.task,i.stateDate);
-            if(active)line.classList.add('tm-in-progress-item');
-            const linkedActive=linkedInProgress(i.task,date);
-            if(linkedActive)line.classList.add('tm-linked-active');
-            const content=el('div','tm-future-content');
-            const title=el('span','tm-title',i.task.title);
-            if(active)title.classList.add('tm-in-progress-title');
-            const titleLine=el('span','tm-title-line'),titleMain=el('span','tm-title-main');titleMain.append(title);
-            if(linkedActive)titleMain.append(el('span','tm-linked-chain','🔗'));
-            if(i.task.urgent)titleMain.append(el('span','tm-in-progress-badge','🟢 URGENT'));
-            if(active)titleMain.append(el('span','tm-in-progress-badge','🟢 IN PROGRESS'));
-            titleLine.append(titleMain);
-            content.append(titleLine,el('span','tm-meta',meta(i.task,taskNumbers.get(progressKey(i.task,i.stateDate)))));
-            if(i.task.instruction)content.append(el('span','tm-task-note',i.task.instruction));
-            const origin=originNote(i);if(origin)content.append(el('span','tm-meta tm-overdue',origin));
-            const pairing=pairNote(i.task,date);if(pairing)content.append(pairing);
-            if(i.task.notes)content.setAttribute('data-tooltip',i.task.notes);
-            const futureControls=el('div','tm-item-actions');
-            futureControls.append(progressButton(progressKey(i.task,i.stateDate),i.task.title,isDone(i.task,i.stateDate,draft)));
-            line.append(content,futureControls);
-            card.append(line);
-            if(hasSubtasks(i.task))card.append(checklistDetails(i.task,i.stateDate,null,null));
-            window.TaskListBridge.decorateRow(card,i.task,i,false);
-            if(card.classList.contains('tm-completing'))card.querySelectorAll('button').forEach(button=>button.disabled=true);
-            rows.append(card);
-          });
+          matching.forEach(item=>{const card=el('div','tm-future-card');card.append(row(item,false,undefined,true));rows.append(card);});
           section.append(rows);
         });container.append(section);
       }
-      if(!container.children.length)container.append(el('p',undefined,'No upcoming tasks in the next two weeks.'));
     };
     find('pt-toggle-hidden').addEventListener('click',()=>{
       find('pt-completed').hidden=!find('pt-completed').hidden;renderToday();
@@ -3122,7 +3402,7 @@ main{max-width:100%;margin:0;padding:0}
     find('pt-today-tab').addEventListener('click',()=>showView('today'));
     find('pt-upcoming-tab').addEventListener('click',()=>showView('upcoming'));
     window.TaskListBridge.attach({
-      root,tasks,pairWith,children,groups,today,addDays,progressKey,occurrenceKey,childKey,
+      root,tasks,pairWith,children,groups,today,addDays,progressKey,occurrenceKey,childKey,showView,isInteracting:()=>taskPointers.size>0,
       subtaskCount,hasSubtasks,dueToday,overdue,onDate,isDone,isRecurring,renderToday,renderFuture,
       getState:()=>({version:2026103022,completed:{...saved},inProgress,progressStateInitialized,movedTo:{...movedTo},rolloverCompletedOn:{...rolloverCompletedOn},completedOn:{...completedOn},updatedAt:new Date().toISOString()}),
       setState:state=>{
@@ -3135,7 +3415,7 @@ main{max-width:100%;margin:0;padding:0}
         const key=occurrenceId(task,date);movedTo[key]=target;delete rolloverCompletedOn[key];saveLocalState();
       }
     });
-    renderToday();renderFuture();
+    renderToday();renderFuture();showView('today');
   })();
   </script>
 </div>
@@ -3253,4 +3533,23 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 #today-task-list-20261023 .tm-completed-today{background:var(--tl-selected);border:1px solid var(--tl-accent)!important;border-left-width:3px!important;border-radius:7px;padding:8px}
 #today-task-list-20261023 .tm-today-badge{font-size:10px;font-weight:650;color:var(--tl-text);border:1px solid var(--tl-accent);border-radius:5px;padding:1px 5px}
 #today-task-list-20261023 .tm-history-heading{font-weight:650}
+.tl-duration-caption{display:block;font-size:12px;color:var(--tl-muted);margin-bottom:3px}
+.tl-duration-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.tl-duration-row .tl-field>span{font-size:10px}
+.tl-repeat-row{display:flex;align-items:center;gap:8px;min-width:0;margin-top:6px}
+.tl-repeat-row .tl-repeat-amount{width:70px;flex:none}
+.tl-repeat-row .tl-repeat-unit{flex:1;min-width:0;width:0}
+#today-task-list-20261023 details.tm-day{border:1px solid var(--tl-border);border-radius:9px;padding:8px 10px;margin-top:12px}
+#today-task-list-20261023 .tm-day-heading{font-size:17px;font-weight:700;color:var(--tl-accent);min-height:40px;padding:6px 0;line-height:1.45}
+#today-task-list-20261023 .tm-day[open]>.tm-day-heading{border-bottom:1px solid var(--tl-border);margin-bottom:8px}
+#today-task-list-20261023 .tm-future .tm-item-actions{padding-left:32px}
+.tl-sync-settings{margin-top:14px;min-width:0}
+.tl-sync-settings p{font-size:12px;overflow-wrap:anywhere}
+#today-task-list-20261023 .form-check{display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:8px;align-items:start}
+#today-task-list-20261023 .form-check-input{margin:0!important;align-self:start}
+#today-task-list-20261023 .tm-title-main{min-height:24px;line-height:24px}
+#today-task-list-20261023 .tl-context-icon{font-size:14px;line-height:20px;border:0;background:none;padding:0}
+#today-task-list-20261023 .tl-context-badges{gap:7px}
+.tl-dialog .tl-context-grid .tl-choice-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.tl-dialog .tl-context-grid .tl-context-choice{font-size:19px}
 </style></body></html>

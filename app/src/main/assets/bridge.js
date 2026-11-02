@@ -8,6 +8,7 @@
   let fallback = null;
   try { fallback = global.localStorage; } catch (_) {}
   let cached = null;
+  let lastCanonical = null;
   let scope = null;
   let selectedContext = '';
   let snapshotTimer = 0;
@@ -18,28 +19,46 @@
     let value = null;
     try { if (native && native.readState) value = native.readState(); } catch (_) {}
     if (!value && fallback) { try { value = fallback.getItem(KEY); } catch (_) {} }
-    cached = parse(value);
+    cached = parse(value);lastCanonical=clone(cached);
     return cached;
   }
+  function equalState(a,b){
+    if(a===b)return true;
+    if(!a||!b||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;
+    const ak=Object.keys(a).sort(),bk=Object.keys(b).sort();return ak.length===bk.length&&ak.every((key,i)=>key===bk[i]&&equalState(a[key],b[key]));
+  }
+  function mergeState(base,local,remote,key){
+    if(equalState(base,local))return remote===undefined?undefined:clone(remote);
+    if(local===undefined)return undefined;
+    if(key==='linkPeers'&&Array.isArray(local)){
+      const before=new Set(Array.isArray(base)?base:[]),after=new Set(local),current=new Set(Array.isArray(remote)?remote:[]);
+      before.forEach(peer=>{if(!after.has(peer))current.delete(peer);});after.forEach(peer=>{if(!before.has(peer))current.add(peer);});return Array.from(current);
+    }
+    if(key==='customTasks'&&Array.isArray(local)){
+      const index=list=>new Map((Array.isArray(list)?list:[]).filter(item=>item&&typeof item.id==='string').map(item=>[item.id,item]));
+      const before=index(base),after=index(local),current=index(remote);
+      new Set([...before.keys(),...after.keys()]).forEach(id=>{const merged=mergeState(before.get(id),after.get(id),current.get(id),'task');if(merged===undefined)current.delete(id);else current.set(id,merged);});return Array.from(current.values());
+    }
+    if(local&&typeof local==='object'&&!Array.isArray(local)){
+      const before=base&&typeof base==='object'&&!Array.isArray(base)?base:{};
+      const current=remote&&typeof remote==='object'&&!Array.isArray(remote)?clone(remote):{};
+      new Set([...Object.keys(before),...Object.keys(local)]).forEach(name=>{const merged=mergeState(before[name],local[name],current[name],key==='manualLinks'?'linkPeers':name);if(merged===undefined)delete current[name];else current[name]=merged;});return current;
+    }
+    return clone(local);
+  }
   function persist(value) {
-    let fresh = {};
-    try { if (native && native.readState) fresh = parse(native.readState()); } catch (_) {}
-    const previous = readCanonical();
-    const next = Object.assign({}, fresh, previous, value);
-    // A launcher popup can add a task while this page is paused. Preserve its
-    // new IDs when the older page later saves a checkbox or context change.
-    const mergedTasks = new Map();
-    [fresh.customTasks, previous.customTasks, value.customTasks].forEach(items => {
-      if (Array.isArray(items)) items.forEach(task => { if (task && typeof task.id === 'string') mergedTasks.set(task.id, clone(task)); });
-    });
-    if (mergedTasks.size) next.customTasks = Array.from(mergedTasks.values());
-    next.taskOverrides = Object.assign({}, fresh.taskOverrides, previous.taskOverrides, value.taskOverrides);
-    next.pairOverrides = Object.assign({}, fresh.pairOverrides, previous.pairOverrides, value.pairOverrides);
+    const previous=readCanonical(),before=lastCanonical||clone(previous);
+    let fresh=previous;
+    try{if(native&&native.readState)fresh=parse(native.readState());}catch(_){}
+    const desired=Object.assign({},previous,value);
+    const next=mergeState(before,desired,fresh,'state');
+    if(typeof desired.uiContext==='string')next.uiContext=desired.uiContext;
     let succeeded = false;
     if (native && native.writeState) { native.writeState(JSON.stringify(next)); succeeded = true; }
     if (fallback) { try { fallback.setItem(KEY, JSON.stringify(next)); succeeded = true; } catch (_) {} }
     if (!succeeded) throw new Error('Task storage is unavailable');
-    cached = next;
+    cached = next;lastCanonical=clone(next);
+    if(scope){scope.setState(next);applyDefinitions(next);}
     return next;
   }
   global.TaskListStorage = {
@@ -66,6 +85,7 @@
     const result = node('button', className || 'btn', text);
     result.type = 'button'; result.addEventListener('click', fn); return result;
   }
+  const contextIcon=label=>({'At home':'🏠','On the road':'🚗','On the phone':'📱','On the computer':'💻','Outdoors':'🌳'}[label]||'🏷️');
   function derivedContexts(task) {
     if (Array.isArray(task._contexts)) return [...new Set(task._contexts.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))];
     if (Array.isArray(task.labels)) return [...new Set(task.labels.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))];
@@ -140,7 +160,7 @@
     applyDefinitions(readCanonical());
     rebuild();
   }
-  function linkedTasksField(form, task) {
+  function linkedTasksField(form, task, occurrenceDate) {
     const selected = new Set(task ? scope.pairWith[task.id] || [] : []);
     const group = node('fieldset', 'tl-context-options tl-links');
     group.append(node('legend', '', 'Linked tasks'));
@@ -149,14 +169,20 @@
     select.setAttribute('aria-label', 'Choose a task to link');
     const add = action('Link task', () => { if (select.value) { selected.add(select.value); render(); } }, 'btn tl-link-add');
     const list = node('div', 'tl-linked-list');
-    const candidates = scope.tasks.filter(candidate => !task || candidate.id !== task.id)
+    const atDate=scope.onDate(occurrenceDate||scope.today);
+    const available=candidate=>{
+      const occurrences=atDate.filter(item=>item.task.id===candidate.id);
+      if(occurrences.length)return occurrences.some(item=>!scope.isDone(candidate,item.stateDate));
+      if(candidate.due)return !scope.isDone(candidate,candidate.due);
+      return !candidate.retired;
+    };
+    const candidates = scope.tasks.filter(candidate => !candidate.retired&&(!task || candidate.id !== task.id))
       .slice().sort((a, b) => a.title.localeCompare(b.title));
     function render() {
       select.replaceChildren();
       const placeholder = node('option', '', 'Choose a task…'); placeholder.value = ''; select.append(placeholder);
-      candidates.filter(candidate => !selected.has(candidate.id)).forEach(candidate => {
-        const date = candidate.due || candidate.recurrence;
-        const option = node('option', '', candidate.title + (date ? ' · ' + date : ''));
+      candidates.filter(candidate => !selected.has(candidate.id)&&available(candidate)).forEach(candidate => {
+        const option = node('option', '', candidate.title);
         option.value = candidate.id; select.append(option);
       });
       add.disabled = !select.value;
@@ -212,7 +238,7 @@
     const grid = node('div', 'tl-choice-grid');
     const inputs = choices.map(label => {
       const row = node('label', 'tl-context-choice'); const check = node('input'); check.type = 'checkbox';
-      check.checked = (selected || []).includes(label); row.append(check, node('span', '', label)); grid.append(row);
+      check.checked = (selected || []).includes(label); row.setAttribute('aria-label',label);row.title=label;row.append(check, node('span', '', contextIcon(label))); grid.append(row);
       return { label, check };
     });
     group.append(grid);
@@ -232,22 +258,32 @@
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
     const time = inputField(schedule, 'Time', 'text', original.time || ''); time.placeholder = 'Any time';
-    const duration = inputField(schedule, 'Duration', 'number', original.minutes); duration.placeholder = 'Minutes'; duration.min = '1'; duration.step = '1';
+    const durationGroup=node('div','tl-duration-group');durationGroup.append(node('span','tl-duration-caption','Duration'));
+    const durationRow=node('div','tl-duration-row');durationGroup.append(durationRow);schedule.append(durationGroup);
+    const hours=inputField(durationRow,'Hours','number',original.minutes===undefined?'':Math.floor(original.minutes/60));hours.placeholder='Hours';hours.min='0';hours.step='1';hours.setAttribute('aria-label','Hours');
+    const minutes=inputField(durationRow,'Minutes','number',original.minutes===undefined?'':original.minutes%60);minutes.placeholder='Minutes';minutes.min='0';minutes.max='59';minutes.step='1';minutes.setAttribute('aria-label','Minutes');
     const urgentWrap = node('label', 'tl-context-choice tl-urgent'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
     urgentWrap.append(urgent, node('span', '', 'Urgent')); schedule.append(urgentWrap);
-    const oldMode = original.weekendCycleStart ? 'weekends' : original.intervalDays ? 'interval' : original.days && original.days.length ? (original.days.length === 7 ? 'daily' : 'weekdays') : 'once';
-    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['daily','Daily'],['weekdays','Weekdays'],['interval','Every N days'],['weekends','Alternate weekends']], oldMode);
+    const oldSpec=global.TasksSchedule.fromTask(original,initialDate);
+    const oldMode=oldSpec.mode;
+    if(oldMode==='repeat')date.value=oldSpec.start;
+    const recurrence = choiceField(form, 'Repeat', [['once','Once'],['weekdays','Weekdays'],['repeat','Every…']], oldMode);
+    const repeatRow=node('div','tl-repeat-row');
+    repeatRow.append(node('span','','Every'));
+    const amount=node('input','form-control tl-repeat-amount');amount.type='number';amount.min='1';amount.step='1';amount.value=oldSpec.amount||1;amount.setAttribute('aria-label','Repeat amount');
+    const unit=node('select','form-control tl-repeat-unit');unit.setAttribute('aria-label','Repeat unit');
+    [['day','Day'],['week','Week'],['month','Month'],['year','Year']].forEach(([value,label])=>{const option=node('option','',label);option.value=value;unit.append(option);});unit.value=oldSpec.unit||'day';
+    repeatRow.append(amount,unit);recurrence.append(repeatRow);
     const week = node('div', 'tl-weekdays');
     const weekChecks = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((name, index) => {
-      const label = node('label', 'tl-context-choice'), check = node('input'); check.type = 'checkbox'; check.checked = (original.days || []).includes(index);
+      const label = node('label', 'tl-context-choice'), check = node('input'); check.type = 'checkbox'; check.checked = (oldSpec.weekdays || []).includes(index);
       check.setAttribute('aria-label', name); label.append(check, node('span', '', name.slice(0, 3))); week.append(label); return check;
     }); recurrence.append(week);
-    const interval = inputField(recurrence, 'Every', 'number', original.intervalDays || 2); interval.placeholder = 'Days'; interval.min = '1'; interval.step = '1';
-    const toggleRepeat = () => { week.hidden = recurrence.value !== 'weekdays'; interval.closest('label').hidden = recurrence.value !== 'interval'; };
-    recurrence.addEventListener('change', toggleRepeat); toggleRepeat();
+    const toggleRepeat = () => {repeatRow.hidden=recurrence.value!=='repeat';week.hidden=recurrence.value!=='weekdays'&&!(recurrence.value==='repeat'&&unit.value==='week');};
+    recurrence.addEventListener('change',toggleRepeat);unit.addEventListener('change',toggleRepeat);toggleRepeat();
     const selected = task ? derivedContexts(task) : (prefill && (prefill.labels || [prefill.label || prefill.widget_label].filter(Boolean))) || (selectedContext ? [selectedContext] : []);
     const readContexts = contextsField(form, selected);
-    const readLinks = linkedTasksField(form, task);
+    const readLinks = linkedTasksField(form, task, item?item.date:scope.today);
     const extra = node('details', 'tl-extra-fields'); extra.append(node('summary', '', 'Notes & checklist')); extra.open = !!original.notes;
     const extraGrid = node('div', 'tl-notes-grid'); extra.append(extraGrid); form.append(extra);
     const notes = inputField(extraGrid, 'Notes', 'textarea', original.notes || ''); notes.placeholder = 'Add notes';
@@ -259,26 +295,24 @@
     buttons.append(action('Cancel', close), action('Save task', () => {
       if (!title.value.trim()) { error.textContent = 'Enter a task title.'; title.focus(); return; }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date.value)) { error.textContent = 'Choose a valid date.'; return; }
-      if (duration.value && (!/^\d+$/.test(duration.value) || Number(duration.value) < 1)) { error.textContent = 'Duration must be a positive number of minutes.'; return; }
+      if((hours.value&&!/^\d+$/.test(hours.value))||(minutes.value&&!/^\d+$/.test(minutes.value))||Number(minutes.value)>59||((hours.value||minutes.value)&&Number(hours.value)*60+Number(minutes.value)<1)){error.textContent='Enter hours and 0–59 minutes.';return;}
       if (recurrence.value === 'weekdays' && !weekChecks.some(check => check.checked)) { error.textContent = 'Select at least one weekday.'; return; }
-      if (recurrence.value === 'interval' && (!/^\d+$/.test(interval.value) || Number(interval.value) < 1)) { error.textContent = 'Repeat interval must be at least one day.'; return; }
+      if(recurrence.value==='repeat'&&(!/^\d+$/.test(amount.value)||Number(amount.value)<1)){error.textContent='Repeat amount must be at least 1.';return;}
       const next = Object.assign({}, original, { id: original.id || 'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9), title: title.value.trim(), priority: urgent.checked ? 'HIGHEST' : priority.value, _contexts: readContexts() });
-      if (duration.value) next.minutes = Number(duration.value); else delete next.minutes;
+      if(hours.value||minutes.value)next.minutes=Number(hours.value)*60+Number(minutes.value);else delete next.minutes;
       if (time.value.trim()) next.time = time.value.trim(); else delete next.time;
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
       delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
-      const changedSchedule = recurrence.value !== oldMode || (recurrence.value === 'weekdays' && JSON.stringify(weekChecks.flatMap((check, i) => check.checked ? [i] : [])) !== JSON.stringify(original.days || [])) || (recurrence.value === 'interval' && Number(interval.value) !== original.intervalDays);
-      if (isNew || changedSchedule) {
-        ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence'].forEach(key => delete next[key]);
-        if (recurrence.value === 'once') next.due = date.value;
-        if (recurrence.value === 'daily') { next.days = [0,1,2,3,4,5,6]; next.recurrence = 'Daily'; }
-        if (recurrence.value === 'weekdays') { next.days = weekChecks.flatMap((check, index) => check.checked ? [index] : []); next.recurrence = next.days.map(day => ['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'][day]).join(', '); }
-        if (recurrence.value === 'interval') { next.intervalDays = Number(interval.value); next.intervalStart = date.value; next.recurrence = 'Every ' + interval.value + ' days'; }
-        if (recurrence.value === 'weekends') { const weekday = new Date(date.value + 'T12:00:00Z').getUTCDay(); next.weekendCycleStart = scope.addDays(date.value, (7 - weekday) % 7); next.recurrence = 'Every other Saturday and Sunday'; }
-      } else if (item && date.value !== initialDate) {
-        // Move this occurrence; keep its original occurrence/history keys intact.
-        scope.moveOccurrence(task, item.stateDate, date.value);
+      const chosenDays=weekChecks.flatMap((check,index)=>check.checked?[index]:[]);
+      const changedSchedule=recurrence.value!==oldMode||(recurrence.value==='weekdays'&&JSON.stringify(chosenDays)!==JSON.stringify(oldSpec.weekdays||[]))||(recurrence.value==='repeat'&&(Number(amount.value)!==oldSpec.amount||unit.value!==oldSpec.unit||date.value!==oldSpec.start||(unit.value==='week'&&JSON.stringify(chosenDays)!==JSON.stringify(oldSpec.weekdays||[]))));
+      if(isNew||changedSchedule){
+        ['due','days','intervalDays','intervalStart','weekendCycleStart','recurrence','repeat','startsOn'].forEach(key=>delete next[key]);
+        if(recurrence.value==='once')next.due=date.value;
+        if(recurrence.value==='weekdays'){next.days=chosenDays;next.startsOn=date.value;next.recurrence=global.TasksSchedule.weekdaysLabel(chosenDays);}
+        if(recurrence.value==='repeat'){next.repeat={amount:Number(amount.value),unit:unit.value,start:date.value};if(unit.value==='week'&&chosenDays.length)next.repeat.weekdays=chosenDays;next.recurrence=global.TasksSchedule.describe(next);}
+      }else if(item&&recurrence.value!=='repeat'&&date.value!==initialDate){
+        scope.moveOccurrence(task,item.stateDate,date.value);
       }
       if (steps) { const names = steps.value.split('\n').map(x => x.trim()).filter(Boolean); if (names.length) next.steps = names; }
       if (isNew) scope.tasks.push(next); else scope.tasks[scope.tasks.findIndex(t => t.id === task.id)] = next;
@@ -290,7 +324,7 @@
     const select = document.getElementById('tl-context-filter'); if (!select) return;
     const wanted = ['', ...allContexts()]; const existing = Array.from(select.options).map(o => o.value);
     if (JSON.stringify(wanted) !== JSON.stringify(existing)) {
-      select.replaceChildren(); wanted.forEach(label => { const option = node('option', '', label || 'All contexts'); option.value = label; select.append(option); });
+      select.replaceChildren(); wanted.forEach(label => { const option = node('option', '', label?contextIcon(label):'All contexts'); option.value = label; select.append(option); });
     }
     select.value = selectedContext;
   }
@@ -298,7 +332,7 @@
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
     const text = wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
     const labels = derivedContexts(task);
-    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => badges.append(node('span', 'tl-context-badge', label))); text.append(badges); }
+    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=node('span','tl-context-icon',contextIcon(label));icon.setAttribute('aria-label',label);icon.title=label;badges.append(icon);}); text.append(badges); }
     const controls = wrapper.querySelector('.tm-item-actions');
     if (controls) {
       const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
@@ -332,37 +366,7 @@
     const snapshot = Array.from(rows.values()); global.TaskListBridge.lastSnapshot = snapshot;
     if (native && native.updateSnapshot) { try { native.updateSnapshot(JSON.stringify(snapshot)); } catch (error) { console.error('Could not update the home widget', error); } }
   }
-  const DEFAULT_THEME = { accent:'#68b7ff', background:'#10151f' };
-  function normalizeHex(value) {
-    const text = String(value || '').trim().replace(/^#/, '');
-    if (/^[0-9a-f]{3}$/i.test(text)) return '#' + text.split('').map(c => c + c).join('').toLowerCase();
-    return /^[0-9a-f]{6}$/i.test(text) ? '#' + text.toLowerCase() : null;
-  }
-  function mix(a, b, ratio) {
-    const channels = value => [1,3,5].map(i => parseInt(value.slice(i, i + 2), 16));
-    const left = channels(a), right = channels(b);
-    return '#' + left.map((v, i) => Math.round(v * (1 - ratio) + right[i] * ratio).toString(16).padStart(2, '0')).join('');
-  }
-  function ink(color) {
-    const values = [1,3,5].map(i => parseInt(color.slice(i,i + 2),16) / 255)
-      .map(v => v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4));
-    const luminance = values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
-    return luminance > .179 ? '#10151f' : '#f3f6fb';
-  }
-  function applyTheme() {
-    const stored = readCanonical().uiTheme || {};
-    const accent = normalizeHex(stored.accent) || DEFAULT_THEME.accent;
-    const background = normalizeHex(stored.background) || DEFAULT_THEME.background;
-    const text = ink(background), light = text === '#10151f';
-    const surface = background === DEFAULT_THEME.background ? '#172131' : mix(background, text, .07);
-    const variables = { '--tl-accent':accent, '--tl-background':background, '--tl-surface':surface,
-      '--tl-ink':ink(accent), '--tl-text':text, '--tl-muted':mix(background, text, .7),
-      '--tl-border':mix(background, text, .25), '--tl-selected':mix(background, accent, .18) };
-    Object.entries(variables).forEach(([name, value]) => document.documentElement.style.setProperty(name, value));
-    document.documentElement.style.colorScheme = light ? 'light' : 'dark';
-    if (native && native.setThemeColors) native.setThemeColors(background);
-    return {accent,background};
-  }
+  function applyTheme(){return global.TasksTheme.apply(readCanonical(),native);}
   function quickAddTask(prefill = {}) {
     const { form, close } = modal('Quick add'); form.classList.add('tl-quick-form');
     const title = inputField(form, 'Task', 'text', prefill.title || ''); title.placeholder = 'What needs doing?';
@@ -389,27 +393,7 @@
   }
   function showSettings() {
     const { form, close } = modal('Settings'); form.classList.add('tl-settings-form');
-    const theme = applyTheme();
-    const colors = node('div', 'tl-schedule-grid'); form.append(colors);
-    const accent = inputField(colors, 'Accent hex', 'text', theme.accent); accent.placeholder = '#68B7FF'; accent.spellcheck = false;
-    const background = inputField(colors, 'Background hex', 'text', theme.background); background.placeholder = '#10151F'; background.spellcheck = false;
-    const preview = node('div', 'tl-color-preview', 'Color preview'); form.append(preview);
-    const previewColors = () => {
-      const a = normalizeHex(accent.value), b = normalizeHex(background.value);
-      if (a && b) { preview.style.background = b; preview.style.color = a; preview.style.borderColor = a; }
-    };
-    accent.addEventListener('input', previewColors); background.addEventListener('input', previewColors); previewColors();
-    const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
-    const save = () => {
-      const a = normalizeHex(accent.value), b = normalizeHex(background.value);
-      if (!a || !b) { error.textContent = 'Use a hex color such as #68B7FF.'; return; }
-      persist(Object.assign({}, readCanonical(), { uiTheme:{accent:a,background:b} }));
-      applyTheme(); error.textContent = ''; accent.value = a; background.value = b; previewColors();
-    };
-    const colorsActions = node('div', 'tl-color-actions');
-    colorsActions.append(action('Apply colors', save, 'btn btn-primary'), action('Reset colors', () => {
-      accent.value = DEFAULT_THEME.accent; background.value = DEFAULT_THEME.background; save();
-    })); form.append(colorsActions);
+    global.TasksTheme.renderSettings(form,{readState:readCanonical,persistState:persist,native});
     if (native && native.showWidgetSettings) {
       form.append(action('Add home-screen widget', () => { close(); native.showWidgetSettings(); }, 'btn tl-widget-settings'));
     }
@@ -432,9 +416,11 @@
       applyDefinitions(state); applyTheme(); addToolbar();
       global.TaskListApp = {
         quickAddTask, handleBack,
+        showToday(){scope.showView('today');},
+        isInteracting(){return scope.isInteracting();},
         addTask(prefill) { try { if (typeof prefill === 'string') prefill = JSON.parse(prefill || '{}'); } catch (_) { prefill = {}; } editTask(null, null, prefill || {}); },
         setContextFilter(label) { selectedContext = typeof label === 'string' ? label : ''; saveExtras(); rebuild(); },
-        reloadFromNative() { cached = null; const latest = readCanonical(); scope.setState(latest); applyDefinitions(latest); selectedContext = typeof latest.uiContext === 'string' ? latest.uiContext : ''; applyTheme(); rebuild(); },
+        reloadFromNative() { cached = null;lastCanonical=null; const latest = readCanonical(); scope.setState(latest); applyDefinitions(latest); selectedContext = typeof latest.uiContext === 'string' ? latest.uiContext : ''; applyTheme(); rebuild(); },
         debugSummary() { return { definitions: scope.tasks.length, savedKeys: Object.keys(scope.getState().completed).length, moves: Object.keys(scope.getState().movedTo).length, active: scope.getState().inProgress, today: scope.today, contexts: allContexts(), snapshot: global.TaskListBridge.lastSnapshot.length }; }
       };
       queueSnapshot();
