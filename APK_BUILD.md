@@ -1,9 +1,10 @@
 # Install Tasks
 
-1. Download [Tasks-v0.11.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.11.0.apk).
+1. Download [Tasks-v0.12.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.12.0.apk).
 2. Open the APK on your Android phone and install it over your current app. Existing tasks and settings remain saved.
 3. The launcher label is now **Tasks**. The app always opens on Today.
-4. Add a widget through Settings → Add home-screen widget, or your launcher’s Widgets menu. Background opacity can be set to 0% in the widget’s settings.
+4. Allow notifications when Android prompts. Scheduled notifications require a set task time plus Notify checked; the separate daily reminder starts at 9 AM and is configurable in Settings. Android may delay alerts while idle; force-stopping the app blocks alarms until reopened.
+5. Add a widget through Settings → Add home-screen widget, or your launcher’s Widgets menu. Background opacity can be set to 0% in the widget’s settings.
 
 Requires Android 8.0 or newer. This remains a debug build for personal use. No Windows companion or pairing is included in this update.
 

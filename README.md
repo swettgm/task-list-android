@@ -8,6 +8,9 @@ A personal Android checklist based on the supplied task list. The app includes t
 - Use the native time picker and Tomorrow / Weekend shortcuts alongside the date picker. Edit duration with larger, full-width Hours and Minutes boxes. Notes and Checklist stay expanded on separate rows. Lists show durations without numbering or the word total.
 - Repeat with Every X days, weeks, months, or years, or choose Daily, Weekdays, or Weekends. Clean out truck shows Sunday–Thursday.
 - Upcoming excludes work currently pending on Today. Tomorrow is expanded with a simple Tomorrow heading; later dates have full-date headings in separate frameless dropdowns without divider lines. Upcoming tasks have checkboxes and visible Do now state.
+- Add, rename, reorder or remove checklist steps in Edit task. Stable step identities preserve checkmarks and completion dates; occurrences before the edit retain their original checklist.
+- Set a task time and check Notify beside Urgent for a scheduled notification. Settings has a separate daily reminder, initially 9 AM, and independent controls for both reminder types. Android notification permission is required. Alarms resume after restart and app updates; power-saving mode or force-stop can delay/block delivery.
+- Saves check commit results and reject unreadable state rather than resetting it. Local storage cannot guarantee against uninstalling, clearing data or device loss.
 - Link unfinished tasks by title in the editor. Links display immediately and remain attached to repeating task definitions.
 - Settings includes hex fields, swatches/color wheels, optional gradients, and a slate gradient preset. A separate viewport-sized background layer keeps the gradient visible while scrolling long lists in either tab; controls use translucent surfaces.
 - Customize the interactive home widget, including a fully transparent 0% background. Its plus opens a small home-screen form.

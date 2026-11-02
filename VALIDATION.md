@@ -1,19 +1,21 @@
-# Tasks 0.11.0 verification
+# Tasks 0.12.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41387636667), source commit `806de6432ba3d8b6bf8063fc94451d69cbcaa965`.
+[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41432323349), source commit `11ff29a08600d256f52e2426aa321a2e5eaf4645`.
 
-59 Android tests, 223 browser checks and 26 calendar recurrence tests passed; lint reported zero errors.
+73 Android tests, 255 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-Mobile Chromium checks enable a coarse touch pointer and the phone viewport. They reproduce the old 44px title-span minimum height, verify its removal, compare Today and Upcoming row dimensions at 320/390/600px and 15/20/25px text, and check the 2px optical checkbox adjustment. Real touch events verify left/right navigation and vertical-scroll isolation. Screenshots of both tabs were inspected.
+Checklist checks cover adding steps in Edit task, repopulating original and grouped checklists, reordering without transferring completion, renaming, removal, completion dates, recurring future occurrences, dated history, clearing completed checklists and removing active steps. Browser notification checks verify that Notify is disabled without a time, never enabled automatically by setting a time, persists when chosen, clears with the time, and is independent of daily reminder settings.
 
-A separate fixed layer keeps the gradient viewport-sized after scrolling a 2500px page. Transparent list surfaces and translucent controls expose it in both tabs. Settings and task editors retain the chosen gradient. Urgent markers are red; checkbox borders and checked backgrounds use the accent color. The completion hint is removed while completion undo remains tested. Tomorrow has a simple heading and later groups show full dates.
+Native reminder tests cover opt-in plus time requirements, 12/24-hour input, completed-task suppression, moved dates with original completion keys, repeated tasks, monthly clamping, weekly phase, stable checklist keys, simultaneous tasks, canonical overrides, separate daily enablement, and boot rescheduling without state changes.
 
-[Download Tasks-v0.11.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.11.0.apk).
+The app requests Android notification permission on Android 13+. Alarms use setAndAllowWhileIdle without exact-alarm access; Android power-saving policies can delay them and force-stop blocks them until reopening. Notification delivery, permission dialogs and reboot behavior were tested with Robolectric; no physical phone or Android emulator was used. The app uses its existing America/New_York task calendar for reminder times.
 
-Package `com.personal.tasklist.preview`, version 0.11.0, code 11; minimum API 26, target 35; size 124,236 bytes.
+Saves check commit results, preserve unknown extension fields, and reject unreadable stored state rather than replacing it with an empty list. These protections and tests are not a 100% reliability guarantee: local data can still be lost through uninstalling, clearing app data, device loss, storage failure or software defects. Android system backup availability depends on the phone's backup settings.
 
-SHA-256: `137dc8f1b9a6212cfbfea5d7a5cf4092d16f44c615c3ba9d8515ae579f3a737c`.
+[Download Tasks-v0.12.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.12.0.apk).
 
-Downloaded archive hashes, ZIP CRCs and CI APK checksum passed. UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. All non-signature entries match the tested CI APK. Install over the existing app to retain tasks and settings.
+Package `com.personal.tasklist.preview`, version 0.12.0, code 12; minimum API 26, target 35; size 136,602 bytes.
 
-No physical phone or Android emulator was used. Android WebView and launcher behavior remain device checks. This is a debug build for personal use.
+SHA-256: `8022d6976ed675fe554677a0df2c38b7e229d4bc983d3fb0ca2d46bf56e53c48`.
+
+Downloaded archive hashes, ZIP CRCs and CI checksum passed. Packaged UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
