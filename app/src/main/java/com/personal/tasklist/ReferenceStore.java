@@ -26,10 +26,12 @@ public final class ReferenceStore {
     private static final int MAX_BYTES = 2 * 1024 * 1024;
     private static final ZoneId REFERENCE_ZONE = ZoneId.of("America/New_York");
     private final SharedPreferences prefs;
+    private final Context appContext;
     private final TaskStore taskStore;
 
     public ReferenceStore(Context context) {
         Context app = context.getApplicationContext();
+        appContext=app;
         prefs = app.getSharedPreferences("reference_state", Context.MODE_PRIVATE);
         taskStore = new TaskStore(app);
     }
@@ -46,6 +48,7 @@ public final class ReferenceStore {
             if (normalized.equals(previous) && prefs.contains("state")) return;
             commit(prefs.edit().putString("state", normalized).putLong("revision", nextRevision()));
         }
+        TaskReminders.reschedule(appContext);
     }
 
     /** Apply a sync result only if no task or widget edit happened after it was read. */
@@ -192,6 +195,7 @@ public final class ReferenceStore {
         }
         // Avoid holding both store locks during widget refreshes or launcher callbacks.
         synchronized (MIRROR_LOCK) { taskStore.complete(taskId); }
+        TaskReminders.reschedule(appContext);
         return true;
     }
 

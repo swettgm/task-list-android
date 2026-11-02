@@ -80,6 +80,7 @@ public final class MainActivity extends Activity {
                 pageReady = true;
                 loadedRevision = reference.revision();
                 applyIntent();
+                requestReminderPermission(false);
             }
         });
         readIntent(getIntent());
@@ -183,12 +184,25 @@ public final class MainActivity extends Activity {
         runOnUiThread(() -> { if (!destroyed) Toast.makeText(this, value, Toast.LENGTH_LONG).show(); });
     }
 
+    private void requestReminderPermission(boolean explicit) {
+        if(android.os.Build.VERSION.SDK_INT<33)return;
+        if(checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)==android.content.pm.PackageManager.PERMISSION_GRANTED)return;
+        android.content.SharedPreferences prefs=TaskReminders.prefs(this);
+        if(!explicit&&prefs.getBoolean("permissionRequested",false))return;
+        prefs.edit().putBoolean("permissionRequested",true).apply();
+        requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},302);
+    }
+
     /** Only the packaged offline document receives this narrow native interface. */
     public final class TaskBridge {
         @JavascriptInterface public String readState() { return reference.readState(); }
         @JavascriptInterface public void writeState(String json) {
             reference.writeState(json); loadedRevision = reference.revision();
         }
+        @JavascriptInterface public void updateReminders(String json) { TaskReminders.definitions(MainActivity.this,json); }
+        @JavascriptInterface public void requestNotificationPermission() { runOnUiThread(()->requestReminderPermission(true)); }
+        @JavascriptInterface public String notificationStatus() { return TaskReminders.allowed(MainActivity.this)?"Notifications allowed":"Notifications are blocked in Android settings"; }
+        @JavascriptInterface public void openNotificationSettings() { runOnUiThread(()->startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()))); }
         @JavascriptInterface public void updateSnapshot(String json) { reference.updateSnapshot(json); }
         @JavascriptInterface public void setThemeColors(String background) {
             if (background == null || !background.matches("#[0-9a-fA-F]{6}")) return;

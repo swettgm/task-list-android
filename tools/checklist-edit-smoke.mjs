@@ -12,7 +12,7 @@ async function openPage(initial,fixedTime){
  await page.addInitScript(({initial,fixedTime})=>{
   if(fixedTime){const RealDate=Date;window.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[fixedTime]));}static now(){return fixedTime;}};}
   let state=JSON.parse(sessionStorage.getItem('checklist-qa')||JSON.stringify(initial));window.__checklist={get:()=>JSON.parse(JSON.stringify(state)),set:s=>{state=JSON.parse(JSON.stringify(s));sessionStorage.setItem('checklist-qa',JSON.stringify(state));},snapshot:[]};
-  window.TaskListNative={readState:()=>JSON.stringify(state),writeState:s=>__checklist.set(JSON.parse(s)),updateSnapshot:s=>__checklist.snapshot=JSON.parse(s),setThemeColors(){},showWidgetSettings(){}};
+  window.TaskListNative={readState:()=>JSON.stringify(state),writeState:s=>__checklist.set(JSON.parse(s)),updateSnapshot:s=>__checklist.snapshot=JSON.parse(s),setThemeColors(){},showWidgetSettings(){},updateReminders:s=>__checklist.definitions=JSON.parse(s),notificationStatus:()=>"Notifications allowed",requestNotificationPermission(){}};
  },{initial,fixedTime});
  await page.goto(pathToFileURL(file).href);await page.waitForFunction(()=>window.TaskListApp&&__checklist.snapshot.length);return page;
 }
@@ -25,13 +25,30 @@ try{
   s.completed={...s.completed,['edit-steps:'+d.today+':step:0']:true,['edit-steps:'+d.yesterday+':step:0']:true,['edit-groups:'+d.today+':child:0']:true};s.completedOn={...s.completedOn,['edit-steps:'+d.today+':step:0']:d.today};
   __checklist.set(s);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('Checklist QA');
  },dates);
- const row=id=>page.locator('#pt-list > .tm-task-item[data-task-id="'+id+'"]');
+ const row=id=>page.locator('#pt-list .tm-task-item[data-task-id="'+id+'"]');
  const editor=page.locator('dialog'),field=()=>editor.locator('textarea[placeholder="One step per line"]');
  const edit=async id=>{await row(id).locator('.tl-edit-button').click();await field().waitFor({state:'visible'});};
  const save=()=>editor.getByRole('button',{name:'Save task',exact:true}).click();
  const state=()=>page.evaluate(()=>__checklist.get());
  const boxes=id=>row(id).locator('.tm-children .form-check-input');
  const openSteps=async id=>{await row(id).locator('.tm-children').evaluate(n=>n.open=true);};
+ await edit('edit-plain');
+ const notify=()=>editor.locator('[aria-label="Notify at scheduled time"]');
+ check(await notify().isDisabled()&&!await notify().isChecked(),'Notify is disabled for Any time tasks');
+ await editor.locator('input[type=time]').fill('09:30');check(await notify().isEnabled()&&!await notify().isChecked(),'Setting a time enables Notify without opting in automatically');
+ await notify().check();await save();
+ check((await state()).customTasks.find(t=>t.id==='edit-plain').notify===true,'Per-task reminder opt-in is saved');
+ await page.waitForFunction(()=>__checklist.definitions?.some(t=>t.id==='edit-plain'&&t.notify&&t.time==='9:30 AM'));
+ check(true,'Reminder definitions sent to Android include the selected task time');
+ await edit('edit-plain');check(await notify().isChecked(),'Saved reminder opt-in repopulates the editor');
+ await editor.getByRole('button',{name:'Clear',exact:true}).click();check(await notify().isDisabled()&&!await notify().isChecked(),'Clearing time also clears Notify');await save();
+ check(!(await state()).customTasks.find(t=>t.id==='edit-plain').notify,'Any time tasks cannot retain timed notification opt-in');
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ const daily=editor.locator('[aria-label="Daily reminder"]'),timed=editor.locator('[aria-label="Scheduled task reminders"]');
+ check(await daily.isChecked()&&await timed.isChecked()&&await editor.locator('[aria-label="Daily reminder time"]').inputValue()==='09:00','Daily and scheduled reminders default on with a separate 9 AM daily time');
+ await timed.uncheck();await editor.getByRole('button',{name:'Save reminders',exact:true}).click();check((await state()).reminders.daily&&!(await state()).reminders.scheduled,'Daily reminder remains enabled when timed reminders are off');
+ await timed.check();await daily.uncheck();await editor.getByRole('button',{name:'Save reminders',exact:true}).click();check(!(await state()).reminders.daily&&(await state()).reminders.scheduled,'Timed reminders remain enabled when the daily reminder is off');
+ await daily.check();await editor.getByRole('button',{name:'Save reminders',exact:true}).click();await editor.getByRole('button',{name:'Close',exact:true}).click();
  await edit('edit-plain');check(await field().inputValue()==='','Editing a plain task offers an empty checklist field');
  await field().fill('One\n\nTwo');await save();await openSteps('edit-plain');
  check(await boxes('edit-plain').count()===2,'Subtasks can be added to an existing plain task');
@@ -57,11 +74,11 @@ try{
  check((await state()).customTasks.find(t=>t.id==='edit-steps').checklistRevisions.at(-1).items[1].key===beforeRename,'Renaming a step retains its identity');
  const saved=await state();
  const tomorrow=await openPage(saved,Date.parse(dates.tomorrow+'T17:00:00Z'));
- await tomorrow.locator('#pt-list > [data-task-id="edit-steps"] .tm-children').evaluate(n=>n.open=true);
- const tomorrowSteps=tomorrow.locator('#pt-list > [data-task-id="edit-steps"] .tm-children .form-check-input');
+ await tomorrow.locator('#pt-list [data-task-id="edit-steps"] .tm-children').evaluate(n=>n.open=true);
+ const tomorrowSteps=tomorrow.locator('#pt-list [data-task-id="edit-steps"] .tm-children .form-check-input');
  check(await tomorrowSteps.count()===2&&!await tomorrowSteps.nth(0).isChecked(),'Repeating tasks keep edited steps with fresh progress on the next day');await tomorrow.close();
  const yesterday=await openPage(saved,Date.parse(dates.yesterday+'T17:00:00Z'));
- await yesterday.locator('#pt-list > [data-task-id="edit-steps"] .tl-edit-button').click();
+ await yesterday.locator('#pt-list [data-task-id="edit-steps"] .tl-edit-button').click();
  check(await yesterday.locator('dialog textarea[placeholder="One step per line"]').inputValue()==='Alpha\nBeta','Occurrences before the edit keep their original checklist');await yesterday.close();
  await edit('edit-steps');await field().fill('');await save();
  check(await row('edit-steps').locator('.tm-children').count()===0,'Clearing the field removes the checklist');

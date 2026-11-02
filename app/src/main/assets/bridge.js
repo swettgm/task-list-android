@@ -264,13 +264,15 @@
     shortcuts.append(action('Tomorrow',()=>{date.value=scope.addDays(scope.today,1);}),action('Weekend',()=>{const day=new Date(scope.today+'T12:00:00Z').getUTCDay();date.value=scope.addDays(scope.today,(6-day+7)%7||7);}));
     const toPicker=value=>{const match=String(value||'').match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);if(!match)return '';let h=Number(match[1]);if(match[3])h=h%12+(/pm/i.test(match[3])?12:0);return h<24?String(h).padStart(2,'0')+':'+match[2]:'';};
     const time = inputField(schedule, 'Time', 'time', toPicker(original.time)); time.placeholder = 'Any time';time.setAttribute('aria-label','Time');
-    time.parentElement.append(action('Clear',()=>{time.value='';},'btn tl-clear-time'));
+    time.parentElement.append(action('Clear',()=>{time.value='';time.dispatchEvent(new Event('input'));},'btn tl-clear-time'));
     const durationGroup=node('div','tl-duration-group');durationGroup.append(node('span','tl-duration-caption','Duration'));
     const durationRow=node('div','tl-duration-row');durationGroup.append(durationRow);schedule.append(durationGroup);
     const hours=inputField(durationRow,'Hours','number',original.minutes===undefined?'':Math.floor(original.minutes/60));hours.placeholder='Hours';hours.min='0';hours.step='1';hours.setAttribute('aria-label','Hours');
     const minutes=inputField(durationRow,'Minutes','number',original.minutes===undefined?'':original.minutes%60);minutes.placeholder='Minutes';minutes.min='0';minutes.max='59';minutes.step='1';minutes.setAttribute('aria-label','Minutes');
     const urgentWrap = node('label', 'tl-context-choice tl-urgent'), urgent = node('input'); urgent.type = 'checkbox'; urgent.checked = !!original.urgent;
-    urgentWrap.append(urgent, node('span', '', 'Urgent')); schedule.append(urgentWrap);
+    urgentWrap.append(urgent, node('span', '', 'Urgent'));
+    const flags=node('div','tl-task-flags'),notifyWrap=node('label','tl-context-choice tl-notify'),notify=node('input');notify.type='checkbox';notify.checked=original.notify===true;notify.setAttribute('aria-label','Notify at scheduled time');notifyWrap.append(notify,node('span','','Notify'));flags.append(urgentWrap,notifyWrap);schedule.append(flags);
+    const syncNotify=()=>{notify.disabled=!time.value;if(!time.value)notify.checked=false;notifyWrap.title=time.value?'Send a reminder at this time':'Set a time to enable notifications';};time.addEventListener('input',syncNotify);time.addEventListener('change',syncNotify);syncNotify();
     const oldSpec=global.TasksSchedule.fromTask(original,initialDate);
     const oldMode=oldSpec.mode==='repeat'&&oldSpec.unit==='day'&&oldSpec.amount===1?'daily':(oldSpec.mode==='weekdays'&&JSON.stringify(oldSpec.weekdays)==='[0,6]'?'weekends':oldSpec.mode);
     if(oldSpec.mode==='repeat')date.value=oldSpec.start;
@@ -313,6 +315,7 @@
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
       delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
+      if(notify.checked&&time.value)next.notify=true;else delete next.notify;
       const chosenDays=weekChecks.flatMap((check,index)=>check.checked?[index]:[]);
       const changedSchedule=recurrence.value!==oldMode||(recurrence.value==='weekdays'&&JSON.stringify(chosenDays)!==JSON.stringify(oldSpec.weekdays||[]))||(recurrence.value==='repeat'&&(Number(amount.value)!==oldSpec.amount||unit.value!==oldSpec.unit||date.value!==oldSpec.start||(unit.value==='week'&&JSON.stringify(chosenDays)!==JSON.stringify(oldSpec.weekdays||[]))));
       if(isNew||changedSchedule){
@@ -390,6 +393,7 @@
     scope.dueToday().forEach(item => push(item, true)); scope.overdue().forEach(item => push(item, false));
     for (let day = 1; day <= 14; day++) scope.onDate(scope.addDays(scope.today, day)).forEach(item => push(item, false));
     const snapshot = Array.from(rows.values()); global.TaskListBridge.lastSnapshot = snapshot;
+    if(native&&native.updateReminders){try{native.updateReminders(JSON.stringify(scope.tasks));}catch(error){console.error('Could not update task reminders',error);}}
     if (native && native.updateSnapshot) { try { native.updateSnapshot(JSON.stringify(snapshot)); } catch (error) { console.error('Could not update the home widget', error); } }
   }
   function applyTheme(){return global.TasksTheme.apply(readCanonical(),native);}
@@ -419,6 +423,16 @@
   }
   function showSettings() {
     const { form, close } = modal('Settings'); form.classList.add('tl-settings-form');
+    const reminders=node('section','tl-notification-settings');reminders.append(node('h3','','Notifications'));
+    const reminderSettings=readCanonical().reminders||{};
+    const dailyLabel=node('label','tl-context-choice'),daily=node('input');daily.type='checkbox';daily.checked=reminderSettings.daily!==false;daily.setAttribute('aria-label','Daily reminder');dailyLabel.append(daily,node('span','','Daily reminder'));reminders.append(dailyLabel);
+    const dailyTime=inputField(reminders,'Daily reminder time','time',reminderSettings.dailyTime||'09:00');dailyTime.setAttribute('aria-label','Daily reminder time');
+    const timedLabel=node('label','tl-context-choice'),timed=node('input');timed.type='checkbox';timed.checked=reminderSettings.scheduled!==false;timed.setAttribute('aria-label','Scheduled task reminders');timedLabel.append(timed,node('span','','Scheduled task reminders'));reminders.append(timedLabel);
+    reminders.append(node('p','text-muted','Only tasks with a set time and Notify checked send scheduled reminders. Android may delay reminders in power-saving mode.'));
+    const reminderMessage=node('p','text-muted');if(native&&native.notificationStatus)reminderMessage.textContent=native.notificationStatus();
+    reminders.append(action('Save reminders',()=>{if(daily.checked&&!dailyTime.value){reminderMessage.textContent='Choose a daily reminder time.';return;}persist({reminders:{daily:daily.checked,dailyTime:dailyTime.value||'09:00',scheduled:timed.checked}});queueSnapshot();reminderMessage.textContent='Reminder settings saved';if((daily.checked||timed.checked)&&native&&native.requestNotificationPermission)native.requestNotificationPermission();}));
+    if(native&&native.openNotificationSettings)reminders.append(action('Android notification settings',()=>native.openNotificationSettings()));reminders.append(reminderMessage);form.append(reminders);
+
     global.TasksTheme.renderSettings(form,{readState:readCanonical,persistState:persist,native});
     const contexts=node('section','tl-context-settings');contexts.append(node('h3','','Contexts'));
     const list=node('p','text-muted');const refresh=()=>{list.textContent=allContexts().map(label=>contextIcon(label)+' '+label).join(' · ');};refresh();contexts.append(list);
