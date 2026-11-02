@@ -1,6 +1,6 @@
 # Install Tasks
 
-1. Download [Tasks-v0.9.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.9.0.apk).
+1. Download [Tasks-v0.10.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.10.0.apk).
 2. Open the APK on your Android phone and install it over your current app. Existing tasks and settings remain saved.
 3. The launcher label is now **Tasks**. The app always opens on Today.
 4. Add a widget through Settings → Add home-screen widget, or your launcher’s Widgets menu. Background opacity can be set to 0% in the widget’s settings.

@@ -1,15 +1,15 @@
-# Tasks 0.9.0 verification
+# Tasks 0.10.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41384179956), source commit `2d7c2aa44935663ad134074a772dfbd355c8191c`.
+[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41386126759), source commit `68c807d7529ffabb322fc2b8b8686f1a3164b310`.
 
-59 Android tests,197 browser checks, and26 calendar recurrence tests passed; lint reported zero errors. New layout checks compare Today and Upcoming at320,390,600 CSS pixels and15,20,25px title text. They verify checkbox centers against actual title bounds, identical row dimensions/fonts/spacing, and no date-heading dividers. Identical task fixtures were also visually inspected in both screens. Existing undo, history, recurrence, color, gradient, widget, and persistence checks continue to pass.
+59 Android tests, 217 browser checks, and 26 calendar recurrence tests passed; lint reported zero errors. Checks cover native time/date inputs, Tomorrow and Weekend shortcuts, Daily and Weekends recurrence, wider duration fields, expanded stacked notes/checklist, contexts saved through Settings, backdrop dismissal, completion undo and history, color-wheel pointer/keyboard input, and a shared gradient across Today, Upcoming, task editors and Settings. Existing row alignment, recurrence, linking, persistence and widget checks pass.
 
-[Download Tasks-v0.9.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.9.0.apk).
+[Download Tasks-v0.10.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.10.0.apk).
 
-Package `com.personal.tasklist.preview`, version0.9.0, code9; minimum API26, target35; size120,140 bytes.
+Package `com.personal.tasklist.preview`, version 0.10.0, code 10; minimum API 26, target 35; size 124,236 bytes.
 
-SHA-256: `388f23aeda5b17da60f66578d5ad45025c55506263bf93d2808d67b70ed72fb0`.
+SHA-256: `4bf50d7c9344eace47eba1bf211b08e39829b9294cce4f95100a74305abb424e`.
 
-The downloaded artifact hashes, ZIP CRCs and CI APK checksum passed. Packaged UI assets match source. The published APK retains the previous signing certificate and passed signature, ZIP alignment, and package/version checks. All code/resources/task entries match the tested CI APK. Install over the existing app to retain tasks and settings.
+Downloaded artifact hashes, ZIP CRCs and CI APK checksum passed. Packaged UI assets match source. The published APK retains the prior signing certificate and passed signature, ZIP alignment, and package/version checks. All non-signature APK entries match the tested CI APK. Install over the existing app to retain tasks and settings.
 
-No physical phone or Android emulator was used; actual phone font, keyboard, and launcher behavior remain device checks. This is a debug build for personal use.
+No physical phone or Android emulator was used; phone time-picker, keyboard and launcher behavior remain device checks. This is a debug build for personal use.
