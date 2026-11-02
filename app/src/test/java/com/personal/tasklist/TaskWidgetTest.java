@@ -236,7 +236,7 @@ public class TaskWidgetTest {
         AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
         TaskWidgetProvider.preferences(context,id).edit().putString("title","My tasks").putBoolean("today",false).commit();TaskWidgetProvider.update(context,manager,id);
         android.view.View view=Shadows.shadowOf(manager).getViewFor(id);
-        assertEquals("Today",((android.widget.TextView)view.findViewById(R.id.widget_title)).getText().toString());assertTrue(view.findViewById(R.id.widget_rows) instanceof android.widget.ListView);assertTrue(view.findViewById(R.id.widget_rows).isVerticalScrollBarEnabled());
+        assertEquals("Today",((android.widget.TextView)view.findViewById(R.id.widget_title)).getText().toString());assertTrue(view.findViewById(R.id.widget_rows) instanceof android.widget.ListView);assertFalse(view.findViewById(R.id.widget_rows).isVerticalScrollBarEnabled());assertFalse(view.findViewById(R.id.widget_rows).isHorizontalScrollBarEnabled());
         assertEquals(0,context.getResources().getIdentifier("widget_summary","id",context.getPackageName()));
     }
     @Test public void todaySnapshotExcludesHiddenFutureAndOldDailyRows() throws Exception {
