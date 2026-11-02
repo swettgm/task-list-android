@@ -40,17 +40,18 @@ public final class TaskWidgetService extends RemoteViewsService {
                 header.setInt(R.id.widget_priority_divider,"setBackgroundColor",dark?Color.argb(24,255,255,255):Color.argb(18,0,0,0));
                 return header;
             }
-            TaskStore.Task task=entry.task;RemoteViews row=new RemoteViews(context.getPackageName(),R.layout.widget_task_row_badge);
+            TaskStore.Task task=entry.task;RemoteViews row=new RemoteViews(context.getPackageName(),R.layout.widget_task_row_green_badge);
             row.setTextViewText(R.id.widget_task_title,task.title);
             row.setTextViewTextSize(R.id.widget_task_title,android.util.TypedValue.COMPLEX_UNIT_SP,13.5f);
             row.setTextColor(R.id.widget_task_title,Color.parseColor(dark?"#F3F7FC":"#1F2B40"));
             row.setTextColor(R.id.widget_check,Color.parseColor(dark?"#8FC6E7":"#195B7E"));
             row.setTextColor(R.id.widget_due,Color.parseColor(dark?"#BAC9D9":"#56677F"));
             boolean active=TaskStore.IN_PROGRESS.equals(task.status);
-            row.setTextViewText(R.id.widget_due,active?"In progress":"Today");
-            row.setTextColor(R.id.widget_due,active?PopupAppearance.read(context).accent:Color.parseColor(dark?"#BAC9D9":"#56677F"));
-            row.setContentDescription(R.id.widget_task_title,task.title+", "+(active?"In progress":"Today"));row.setContentDescription(R.id.widget_check,"Complete "+task.title);
-            row.setContentDescription(R.id.widget_due,(active?"Stop Do now for ":"Do now: ")+task.title);row.setOnClickFillInIntent(R.id.widget_due,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,active?"stop":"start"));
+            row.setTextViewText(R.id.widget_due,active?"🟢 IN PROGRESS":"Today");
+            row.setTextColor(R.id.widget_due,active?Color.WHITE:Color.parseColor(dark?"#BAC9D9":"#56677F"));
+            row.setInt(R.id.widget_due,"setBackgroundResource",active?R.drawable.widget_progress_badge:0);
+            row.setContentDescription(R.id.widget_task_title,task.title+", "+(active?"🟢 IN PROGRESS":"Today"));row.setContentDescription(R.id.widget_check,"Complete "+task.title);
+            row.setContentDescription(R.id.widget_status_toggle,(active?"Stop Do now for ":"Do now: ")+task.title);row.setOnClickFillInIntent(R.id.widget_status_toggle,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,active?"stop":"start"));
             row.setOnClickFillInIntent(R.id.widget_check,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,"complete"));
             return row;
         }
