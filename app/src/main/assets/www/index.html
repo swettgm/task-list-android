@@ -3677,3 +3677,8 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 #today-task-list-20261023 .form-check:not(.form-switch) .form-check-input[type=checkbox]:checked{background:var(--tl-accent)!important}
 #today-task-list-20261023 .form-check:not(.form-switch) .form-check-input[type=checkbox]:checked::before{background:var(--tl-ink)!important}
 </style>
+
+<style>
+/* The outer label and checkbox provide the touch target. The title span must not inherit the mobile control minimum height. */
+#today-task-list-20261023 .tm-task-item>.form-check>.form-check-label{min-height:0!important;min-width:0!important;padding:0;margin:0}
+</style>
