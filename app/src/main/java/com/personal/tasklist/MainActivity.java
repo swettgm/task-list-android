@@ -217,6 +217,7 @@ public final class MainActivity extends Activity {
                 int flags = getWindow().getDecorView().getSystemUiVisibility() & ~light;
                 if (Color.luminance(color) > .5) flags |= light;
                 getWindow().getDecorView().setSystemUiVisibility(flags);
+                TaskWidgetProvider.refreshAll(MainActivity.this);
             });
         }
         @JavascriptInterface public void copyText(String text) {
