@@ -3254,7 +3254,7 @@ main{max-width:100%;margin:0;padding:0}
     };
     const row=(item,completed=false,number,upcoming=false)=>{
       const {task,stateDate}=item;
-      const wrapper=el('div',upcoming?'tm-task-item tm-future':'tm-task-item');
+      const wrapper=el('div','tm-task-item');
       if(!completed&&isCompleting(task,stateDate))wrapper.classList.add('tm-completing');
       const finishedToday=completed&&completionDate(task,stateDate)===today;
       if(finishedToday)wrapper.classList.add('tm-completed-today');
@@ -3287,6 +3287,9 @@ main{max-width:100%;margin:0;padding:0}
       controls.append(progressButton(progressKey(task,stateDate),task.title,isDone(task,stateDate,draft)));
       const move=completed||upcoming?null:moveButton(item);if(move)controls.append(move);
       const taskDetails=el('div','tm-task-details');
+      const titleBadges=el('div','tm-task-badges');
+      Array.from(titleMain.children).filter(child=>child!==title).forEach(child=>titleBadges.append(child));
+      if(titleBadges.childNodes.length)taskDetails.append(titleBadges);
       Array.from(text.children).filter(child=>child!==titleLine).forEach(child=>taskDetails.append(child));
       wrapper.append(label,taskDetails,controls);
       if(hasSubtasks(task)){
@@ -3384,7 +3387,7 @@ main{max-width:100%;margin:0;padding:0}
           const matching=items.filter(item=>item.task.priority===priority);if(!matching.length)return;
           section.append(el('div','tm-group text-small',heading));
           const rows=el('div','tm-list');
-          matching.forEach(item=>{const card=el('div','tm-future-card');card.append(row(item,false,undefined,true));rows.append(card);});
+          matching.forEach(item=>rows.append(row(item,false,undefined,true)));
           section.append(rows);
         });container.append(section);
       }
@@ -3566,4 +3569,17 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 #today-task-list-20261023 .tm-day-heading{font-size:18px;line-height:1.5;padding:10px 0;min-height:46px;border-bottom:1px solid var(--tl-border);margin:0 0 8px}
 #today-task-list-20261023 .tm-day:not([open])>.tm-day-heading{margin-bottom:0}
 #today-task-list-20261023 .tm-day .tm-group{margin-top:10px}
+/* Identical task markup and sizing in both views, including system text scaling. */
+#today-task-list-20261023 .tm-task-item{font-size:15px;line-height:1.45}
+#today-task-list-20261023 .form-check{align-items:center!important;min-height:24px}
+#today-task-list-20261023 .form-check-input{margin:0!important;align-self:center!important}
+#today-task-list-20261023 .form-check-label{font-size:15px;line-height:1.4}
+#today-task-list-20261023 .tm-title-line{min-height:0;line-height:inherit}
+#today-task-list-20261023 .tm-title-main{display:block;min-height:0;line-height:inherit}
+#today-task-list-20261023 .tm-title{display:block;line-height:1.4}
+#today-task-list-20261023 .tm-task-badges{display:flex;gap:5px;flex-wrap:wrap;margin:2px 0}
+#today-task-list-20261023 .tm-task-details{padding-left:32px;font-size:12px;line-height:1.5}
+#today-task-list-20261023 .tm-item-actions{padding-left:32px;max-width:100%;gap:5px}
+#today-task-list-20261023 .tm-day-heading,#today-task-list-20261023 .tm-day[open]>.tm-day-heading{border:0!important;box-shadow:none!important;margin:0 0 6px;padding:8px 0}
+#today-task-list-20261023 details.tm-day{margin:10px 0 14px}
 </style></body></html>
