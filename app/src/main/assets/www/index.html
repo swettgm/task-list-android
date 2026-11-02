@@ -1751,9 +1751,11 @@ main{max-width:100%;margin:0;padding:0}
       .tasks-color-palette{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-bottom:8px}
       .tasks-color-palette button{padding:0;min-width:0;width:100%;min-height:25px;height:25px;border:1px solid #ffffff66;border-radius:4px;cursor:pointer}
       .tasks-color-palette button[aria-pressed=true]{outline:2px solid var(--tl-accent);outline-offset:1px}
-      .tasks-rgb-label{display:grid;grid-template-columns:14px minmax(0,1fr) 25px;gap:4px;align-items:center;font-size:11px;min-width:0;color:var(--tl-text);margin:3px 0}
-      .tasks-rgb-label input{width:100%;min-width:0;max-width:100%;height:25px;accent-color:var(--tl-accent);padding:0}
-      .tasks-rgb-label output{text-align:right}
+      .tasks-color-field:has(.tasks-color-picker:not([hidden])){grid-column:1/-1}
+      .tasks-color-wheel{display:block;width:220px;max-width:100%;height:auto;aspect-ratio:1;margin:8px auto;touch-action:none;border-radius:50%;cursor:crosshair}
+      .tasks-color-brightness{display:block;width:100%;height:28px;touch-action:none;border-radius:5px;cursor:crosshair;margin:6px 0}
+      .tasks-wheel-caption{font-size:12px;color:var(--tl-muted);margin:4px 0}
+      .tasks-color-wheel:focus-visible,.tasks-color-brightness:focus-visible{outline:2px solid var(--tl-accent);outline-offset:3px}
       .tasks-color-picker .tasks-color-done{display:block;margin:5px 0 0 auto;min-height:30px;height:30px;padding:3px 8px;font-size:12px}
       .tasks-gradient-toggle{display:flex;align-items:center;gap:7px;margin:12px 0 7px;font-size:13px;color:var(--tl-text)}
       .tasks-gradient-toggle input{width:18px;height:18px;flex:none;margin:0;accent-color:var(--tl-accent)}
@@ -1820,18 +1822,29 @@ main{max-width:100%;margin:0;padding:0}
         const swatch = button('', () => setValue(color), 'tasks-color-swatch'); swatch.style.background = color; swatch.dataset.color = color;
         swatch.setAttribute('aria-label', name + ' ' + color); palette.append(swatch); return swatch;
       });
-      const sliders = ['Red','Green','Blue'].map((channel, i) => {
-        const row = node('label', 'tasks-rgb-label'); row.append(node('span', '', channel[0]));
-        const slider = node('input'); slider.type = 'range'; slider.min = '0'; slider.max = '255'; slider.step = '1'; slider.setAttribute('aria-label', name + ' ' + channel.toLowerCase());
-        const output = node('output'); row.append(slider, output); picker.append(row);
-        slider.addEventListener('input', () => { setValue(fromChannels(sliders.map(item => Number(item.slider.value)))); });
-        return {slider,output};
-      });
+      let hue=0,saturation=0,brightness=1;
+      const hsvColor=(h,s,v)=>{const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;const rgb=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];return fromChannels(rgb.map(n=>(n+m)*255));};
+      const wheel=node('canvas','tasks-color-wheel');wheel.width=240;wheel.height=240;wheel.tabIndex=0;wheel.setAttribute('role','slider');wheel.setAttribute('aria-label',name+' color wheel');wheel.setAttribute('aria-valuemin','0');wheel.setAttribute('aria-valuemax','360');
+      const shade=node('canvas','tasks-color-brightness');shade.width=280;shade.height=28;shade.tabIndex=0;shade.setAttribute('role','slider');shade.setAttribute('aria-label',name+' brightness');shade.setAttribute('aria-valuemin','0');shade.setAttribute('aria-valuemax','100');
+      picker.append(node('p','tasks-wheel-caption','Color wheel'),wheel,node('p','tasks-wheel-caption','Brightness'),shade);
+      const wheelBase=node('canvas');wheelBase.width=240;wheelBase.height=240;
+      {const ctx=wheelBase.getContext('2d'),image=ctx.createImageData(240,240);for(let y=0;y<240;y++)for(let x=0;x<240;x++){const dx=x-120,dy=y-120,r=Math.hypot(dx,dy);if(r>118)continue;const h=(Math.atan2(dy,dx)*180/Math.PI+360)%360,c=channels(hsvColor(h,r/118,1));const i=(y*240+x)*4;image.data[i]=c[0];image.data[i+1]=c[1];image.data[i+2]=c[2];image.data[i+3]=255;}ctx.putImageData(image,0,0);}
+      function drawWheel(){
+        const ctx=wheel.getContext('2d');ctx.clearRect(0,0,240,240);ctx.drawImage(wheelBase,0,0);ctx.save();ctx.globalCompositeOperation='source-atop';ctx.fillStyle='rgba(0,0,0,'+(1-brightness)+')';ctx.fillRect(0,0,240,240);ctx.restore();const angle=hue*Math.PI/180;ctx.beginPath();ctx.arc(120+Math.cos(angle)*saturation*118,120+Math.sin(angle)*saturation*118,6,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();ctx.strokeStyle='#111';ctx.lineWidth=1;ctx.stroke();
+        const sc=shade.getContext('2d'),gradient=sc.createLinearGradient(0,0,280,0);gradient.addColorStop(0,'#000');gradient.addColorStop(1,hsvColor(hue,saturation,1));sc.fillStyle=gradient;sc.fillRect(0,0,280,28);const cursor=Math.max(2,Math.min(278,brightness*280));sc.strokeStyle='#fff';sc.lineWidth=3;sc.strokeRect(cursor-2,1,4,26);
+        wheel.setAttribute('aria-valuenow',String(Math.round(hue)));wheel.setAttribute('aria-valuetext',hex(input.value)+', saturation '+Math.round(saturation*100)+' percent');shade.setAttribute('aria-valuenow',String(Math.round(brightness*100)));
+      }
+      function updateWheel(){input.value=hsvColor(hue,saturation,brightness);open.style.background=input.value;swatches.forEach(item=>item.setAttribute('aria-pressed',String(item.dataset.color===input.value)));drawWheel();updatePreview();}
+      function track(canvas,change){let dragging=false;const update=event=>{const rect=canvas.getBoundingClientRect();change((event.clientX-rect.left)/rect.width,(event.clientY-rect.top)/rect.height);updateWheel();};canvas.addEventListener('pointerdown',event=>{event.preventDefault();dragging=true;canvas.setPointerCapture(event.pointerId);update(event);});canvas.addEventListener('pointermove',event=>{if(dragging)update(event);});canvas.addEventListener('pointerup',()=>{dragging=false;});canvas.addEventListener('pointercancel',()=>{dragging=false;});}
+      track(wheel,(x,y)=>{const dx=x-.5,dy=y-.5;hue=(Math.atan2(dy,dx)*180/Math.PI+360)%360;saturation=Math.min(1,Math.hypot(dx,dy)*240/118);if(brightness===0)brightness=1;});
+      track(shade,x=>{brightness=Math.max(0,Math.min(1,x));});
+      wheel.addEventListener('keydown',event=>{const step=event.shiftKey?10:1;if(event.key==='ArrowLeft')hue=(hue-step+360)%360;else if(event.key==='ArrowRight')hue=(hue+step)%360;else if(event.key==='ArrowUp')saturation=Math.min(1,saturation+step/100);else if(event.key==='ArrowDown')saturation=Math.max(0,saturation-step/100);else return;event.preventDefault();if(brightness===0)brightness=1;updateWheel();});
+      shade.addEventListener('keydown',event=>{if(!['Home','End','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;event.preventDefault();brightness=event.key==='Home'?0:event.key==='End'?1:Math.max(0,Math.min(1,brightness+(['ArrowRight','ArrowUp'].includes(event.key)?.01:-.01)));updateWheel();});
       picker.append(button('Done', () => { picker.hidden = true; open.setAttribute('aria-expanded','false'); open.focus(); }, 'btn tasks-color-done'));
       function sync() {
         const parsed = hex(input.value); if (!parsed) return;
         open.style.background = parsed;
-        const values = channels(parsed); sliders.forEach((item, i) => { item.slider.value = values[i]; item.output.textContent = String(values[i]); });
+        const [r,g,b]=channels(parsed).map(n=>n/255),max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;brightness=max;saturation=max?delta/max:0;if(delta)hue=((max===r?(g-b)/delta:max===g?(b-r)/delta+2:(r-g)/delta+4)*60+360)%360;drawWheel();
         swatches.forEach(item => item.setAttribute('aria-pressed', String(item.dataset.color === parsed)));
       }
       function setValue(value) { input.value = value; sync(); updatePreview(); }
