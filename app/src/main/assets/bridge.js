@@ -411,11 +411,32 @@
     const preview=document.getElementById('tl-context-filter-preview');if(preview){const image=selectedContext&&contextIcon(selectedContext)===GUILD_ICON_TOKEN;preview.replaceChildren();preview.hidden=!image;select.classList.toggle('tl-image-filter',!!image);if(image)preview.append(contextGlyph(selectedContext));}
   }
   function changePriority(task,offset) {
-    const levels=scope.groups.map(([key])=>key);const found=levels.indexOf(task.priority||'MEDIUM');const current=found<0?levels.length-1:found;const target=Math.max(0,Math.min(levels.length-1,current+offset));if(target===current)return;
+    const levels=scope.groups.map(([key])=>key);const found=levels.indexOf(task.priority||'MEDIUM');const current=found<0?levels.length-1:found;const target=Math.max(0,Math.min(levels.length-1,current+offset));if(target===current)return false;
     const next={...clone(task),priority:levels[target]};if(next.priority!=='HIGH')delete next.urgent;
     const status=document.getElementById('pt-status');
-    try{saveDefinition(next,false);if(status)status.textContent='';}
-    catch(error){cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();if(status)status.textContent='Couldn’t change priority. Please try again.';}
+    try{saveDefinition(next,false);if(status)status.textContent='';return true;}
+    catch(error){cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();if(status)status.textContent='Couldn’t change priority. Please try again.';return false;}
+  }
+  let priorityHoldActive=false,priorityHoldUntil=0,priorityHoldCancel=null;
+  const releasePriorityHold=()=>{if(priorityHoldCancel)priorityHoldCancel();if(priorityHoldActive){priorityHoldActive=false;priorityHoldUntil=performance.now()+450;}};
+  document.addEventListener('pointerup',releasePriorityHold,true);document.addEventListener('pointercancel',releasePriorityHold,true);global.addEventListener('blur',releasePriorityHold);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)releasePriorityHold();});
+  document.addEventListener('click',event=>{if(event.target.closest?.('.tl-priority-button')&&(priorityHoldActive||performance.now()<priorityHoldUntil)){event.preventDefault();event.stopImmediatePropagation();}},true);
+  function priorityButton(task,direction,offset,label,rank,levels){
+    let timer=null,start=null,held=false,cancelled=false;
+    const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}if(priorityHoldCancel===clear)priorityHoldCancel=null;};
+    const button=action('',event=>{if(held||cancelled||priorityHoldActive||performance.now()<priorityHoldUntil){event.preventDefault();return;}clear();changePriority(task,offset);},'tm-move-control tl-priority-button tl-priority-'+direction);
+    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Low');button.disabled=direction==='up'?rank===0:rank===levels.length-1;
+    button.addEventListener('pointerdown',event=>{
+      if(button.disabled||event.button!==0||event.isPrimary===false)return;
+      if(priorityHoldCancel)priorityHoldCancel();held=false;cancelled=false;start={x:event.clientX,y:event.clientY};priorityHoldCancel=clear;
+      timer=setTimeout(()=>{timer=null;if(!button.isConnected||button.disabled)return;held=true;priorityHoldActive=true;priorityHoldUntil=performance.now()+450;
+        if(changePriority(task,offset<0?-levels.length:levels.length)){try{if(native&&native.priorityHaptic)native.priorityHaptic();}catch(_){}}
+      },450);
+    },{passive:true});
+    button.addEventListener('pointermove',event=>{if(start&&Math.hypot(event.clientX-start.x,event.clientY-start.y)>10){cancelled=true;clear();}},{passive:true});
+    button.addEventListener('pointerleave',()=>{cancelled=true;clear();});button.addEventListener('pointercancel',()=>{cancelled=true;clear();});button.addEventListener('pointerup',clear);
+    button.addEventListener('contextmenu',event=>event.preventDefault());return button;
   }
   function decorateRow(wrapper, task, item, completed) {
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
@@ -428,7 +449,7 @@
       edit.setAttribute('aria-label', 'Edit ' + task.title); edit.title = 'Edit task';
       const tools=node('span','tl-priority-tools'),levels=scope.groups.map(([key])=>key),rank=levels.indexOf(task.priority||'MEDIUM');
       [['up',-1,'Raise'],['down',1,'Lower']].forEach(([direction,offset,label])=>{
-        const button=action('',()=>changePriority(task,offset),'tm-move-control tl-priority-button tl-priority-'+direction);const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority';button.disabled=direction==='up'?rank===0:rank===levels.length-1;tools.append(button);
+        tools.append(priorityButton(task,direction,offset,label,rank,levels));
       });tools.append(edit);controls.append(tools);
     }
     queueSnapshot();
