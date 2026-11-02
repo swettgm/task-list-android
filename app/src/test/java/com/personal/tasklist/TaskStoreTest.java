@@ -288,4 +288,17 @@ public class TaskStoreTest {
     private TaskStore.Task find(String id) {
         return store.all().stream().filter(task -> task.id.equals(id)).findFirst().orElseThrow(() -> new AssertionError("Missing task: " + id));
     }
+
+    @Test public void chosenLabelEmojiAndUnusedLabelReachNativePickers() throws Exception {
+        new ReferenceStore(context).writeState("{\"contextOptions\":[\"Guild\"],\"contextIcons\":{\"Guild\":\"⚔️\"}}");
+        assertTrue(store.labels().contains("Guild"));
+        assertEquals("⚔️",TaskStore.contextEmoji(context,"Guild"));
+        assertEquals("🏠",TaskStore.contextEmoji(context,"At home"));
+    }
+    @Test public void iconFallbackDoesNotResetUnreadableTaskState() {
+        SharedPreferences reference=context.getSharedPreferences("reference_state",Context.MODE_PRIVATE);
+        reference.edit().putString("state","[").commit();
+        assertEquals("🏠",TaskStore.contextEmoji(context,"At home"));
+        assertEquals("[",reference.getString("state",""));
+    }
 }

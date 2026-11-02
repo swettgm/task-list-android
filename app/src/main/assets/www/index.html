@@ -1993,7 +1993,7 @@ main{max-width:100%;margin:0;padding:0}
     const result = node('button', className || 'btn', text);
     result.type = 'button'; result.addEventListener('click', fn); return result;
   }
-  const contextIcon=label=>({'At home':'🏠','On the road':'🚗','On the phone':'📱','On the computer':'💻','Outdoors':'🌳'}[label]||'🏷️');
+  const contextIcon=label=>{const stored=readCanonical().contextIcons||{},defaults={'At home':'🏠','On the road':'🚗','On the phone':'📱','On the computer':'💻','Outdoors':'🌳'};if(Object.prototype.hasOwnProperty.call(stored,label)&&typeof stored[label]==='string'&&stored[label].trim())return stored[label];return Object.prototype.hasOwnProperty.call(defaults,label)?defaults[label]:'🏷️';};
   function derivedContexts(task) {
     if (Array.isArray(task._contexts)) return [...new Set(task._contexts.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))];
     if (Array.isArray(task.labels)) return [...new Set(task.labels.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))];
@@ -2345,7 +2345,14 @@ main{max-width:100%;margin:0;padding:0}
     const contexts=node('section','tl-context-settings');contexts.append(node('h3','','Contexts'));
     const list=node('p','text-muted');const refresh=()=>{list.textContent=allContexts().map(label=>contextIcon(label)+' '+label).join(' · ');};refresh();contexts.append(list);
     const custom=inputField(contexts,'New context','text','');custom.placeholder='Context name';custom.setAttribute('aria-label','New context');
-    contexts.append(action('Add context',()=>{const labels=custom.value.split(',').map(x=>x.trim()).filter(Boolean);if(!labels.length)return;persist({contextOptions:[...new Set([...(readCanonical().contextOptions||[]),...labels])]});custom.value='';refresh();updateContextOptions();}));form.append(contexts);
+    const emoji=inputField(contexts,'Emoji','text','🏷️');emoji.placeholder='Choose an emoji';emoji.setAttribute('aria-label','Label emoji');emoji.classList.add('tl-emoji-input');
+    const emojiChoices=node('div','tl-emoji-choices');emojiChoices.setAttribute('aria-label','Choose a label emoji');
+    const emojiButtons=['🏷️','🏠','🚗','📱','💻','🌳','⚔️','🎮','🛡️','👑','🏰','🧰','💼','📚','💪','🐾','🛒','🧹','🍽️','📝','📞','❤️','⭐','🎯'].map(value=>{const pick=action(value,()=>{emoji.value=value;refreshEmoji();},'btn tl-emoji-choice');pick.setAttribute('aria-label','Choose emoji '+value);pick.dataset.emoji=value;emojiChoices.append(pick);return pick;});
+    const refreshEmoji=()=>{emojiButtons.forEach(pick=>pick.setAttribute('aria-pressed',String(pick.dataset.emoji===emoji.value.trim())));};emoji.addEventListener('input',refreshEmoji);refreshEmoji();contexts.append(emojiChoices);
+    contexts.append(node('p','text-muted','Choose an emoji above or enter one from your keyboard. Enter an existing label name to change its emoji.'));
+    const contextError=node('p','tl-context-error');contextError.setAttribute('role','alert');contexts.append(contextError);
+    const validEmoji=value=>{if(!value||value.length>64||!/[\p{Extended_Pictographic}\p{Regional_Indicator}\u20e3]/u.test(value))return false;if(global.Intl&&Intl.Segmenter)return Array.from(new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(value)).length===1;return !/\s/.test(value);};
+    contexts.append(action('Add context',()=>{const labels=custom.value.split(',').map(x=>x.trim()).filter(Boolean);if(!labels.length){contextError.textContent='Enter a label name.';return;}const icon=emoji.value.trim();if(!validEmoji(icon)){contextError.textContent='Choose one emoji for this label.';return;}const icons={...(readCanonical().contextIcons||{})};labels.forEach(label=>{Object.defineProperty(icons,label,{value:icon,enumerable:true,writable:true,configurable:true});});persist({contextOptions:[...new Set([...(readCanonical().contextOptions||[]),...labels])],contextIcons:icons});custom.value='';contextError.textContent='';refresh();rebuild();}));form.append(contexts);
 
     if (native && native.showWidgetSettings) {
       form.append(action('Add home-screen widget', () => { close(); native.showWidgetSettings(); }, 'btn tl-widget-settings'));
@@ -3719,4 +3726,8 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 <style>
 .tl-task-flags{grid-column:1/-1;display:flex;align-items:center;gap:20px;flex-wrap:wrap}.tl-task-form .tl-task-flags .tl-context-choice{min-height:34px;padding:0}.tl-task-form .tl-task-flags input{width:18px;height:18px}.tl-task-flags label:has(input:disabled){opacity:.55}
 .tl-notification-settings{margin:4px 0 16px}.tl-notification-settings h3{font-size:17px;margin:0 0 8px}.tl-notification-settings p{font-size:12px}.tl-notification-settings .tl-context-choice{margin:8px 0}.tl-notification-settings .btn{margin:4px 6px 4px 0}
+</style>
+
+<style>
+.tl-emoji-choices{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;margin:8px 0}.tl-context-settings .tl-emoji-choice{font-size:21px;min-width:0;min-height:38px;padding:3px;display:grid;place-items:center}.tl-context-settings .tl-emoji-choice[aria-pressed=true]{outline:2px solid var(--tl-accent);outline-offset:1px}.tl-context-settings .tl-emoji-input{max-width:110px;font-size:23px;height:44px}.tl-context-error{color:#ff9388;font-size:12px}.tl-context-error:empty{display:none}@media(max-width:350px){.tl-emoji-choices{grid-template-columns:repeat(6,minmax(0,1fr))}}
 </style>

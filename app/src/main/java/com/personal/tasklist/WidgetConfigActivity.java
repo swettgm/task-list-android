@@ -127,7 +127,7 @@ public final class WidgetConfigActivity extends Activity {
         listInput.setContentDescription("Choose the widget checklist");
         String selectedContext = prefs.getString("label", "");
         if (!selectedContext.isEmpty() && !contexts.contains(selectedContext)) contexts.add(selectedContext);
-        List<String> displayedContexts = new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextEmoji(value)); displayedContexts.set(0, "All contexts");
+        List<String> displayedContexts = new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextEmoji(this,value)); displayedContexts.set(0, "All contexts");
         label(content, "Context label"); labelInput = spinner(displayedContexts);
         labelInput.setSelection(Math.max(0, contexts.indexOf(selectedContext)));
         labelInput.setContentDescription("Filter widget tasks by context label");
@@ -188,7 +188,7 @@ public final class WidgetConfigActivity extends Activity {
         boolean today = viewInput.getSelectedItemPosition() == 1;
         try {
             List<TaskStore.Task> tasks = TaskWidgetProvider.selectedTasks(this, list, today, context);
-            previewSummary.setText(tasks.size() + " open" + (context.isEmpty() ? "" : " · " + TaskStore.contextEmoji(context))
+            previewSummary.setText(tasks.size() + " open" + (context.isEmpty() ? "" : " · " + TaskStore.contextEmoji(this,context))
                     + " · " + (today ? "Today + overdue" : list.isEmpty() ? "All lists" : list));
             previewTask.setText(tasks.isEmpty() ? "No open tasks. Add one in the app."
                     : (TaskStore.IN_PROGRESS.equals(tasks.get(0).status) ? "▶  " : "○  ") + tasks.get(0).title);

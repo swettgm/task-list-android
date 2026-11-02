@@ -82,6 +82,7 @@ public final class TaskStore {
     public List<String> labels() {
         LinkedHashSet<String> values = new LinkedHashSet<>(DEFAULT_LABELS);
         for (Task task : all()) values.addAll(task.labels);
+        try { JSONArray saved=new JSONObject(new ReferenceStore(context).readState()).optJSONArray("contextOptions");if(saved!=null)for(int i=0;i<saved.length();i++)if(!saved.optString(i).trim().isEmpty())values.add(saved.optString(i).trim()); } catch(JSONException|RuntimeException unavailable) { /* Rendering a picker must not overwrite damaged state. */ }
         return new ArrayList<>(values);
     }
 
@@ -353,6 +354,10 @@ public final class TaskStore {
         Object value = item.get(key);
         if (!(value instanceof Integer) && !(value instanceof Long)) throw new JSONException("Task field must be an integer: " + key);
         return ((Number) value).longValue();
+    }
+    public static String contextEmoji(Context context,String label) {
+        try{JSONObject icons=new JSONObject(new ReferenceStore(context).readState()).optJSONObject("contextIcons");if(icons!=null&&!icons.optString(label).isEmpty())return icons.getString(label);}catch(JSONException|RuntimeException unavailable){/* Keep the saved label identity when an icon cannot be read. */}
+        return contextEmoji(label);
     }
     public static String contextEmoji(String label) {
         switch(label){

@@ -28,7 +28,7 @@ public final class QuickAddActivity extends Activity {
         form.addView(title,new LinearLayout.LayoutParams(-1,dp(56)));
         contexts.add("No label");contexts.addAll(new TaskStore(this).labels());
         String selected=getIntent().getStringExtra("widget_label");if(selected!=null&&!selected.isEmpty()&&!contexts.contains(selected))contexts.add(selected);
-        List<String> displayedContexts=new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextEmoji(value));
+        List<String> displayedContexts=new ArrayList<>();for(String value:contexts)displayedContexts.add(TaskStore.contextEmoji(this,value));
         context=spinner("Context label",displayedContexts);if(selected!=null)context.setSelection(Math.max(0,contexts.indexOf(selected)));form.addView(context);
         LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
         priority=spinner("Priority",Arrays.asList("Highest","High","Medium","Low","Lowest","Not set"));priority.setSelection(5);
