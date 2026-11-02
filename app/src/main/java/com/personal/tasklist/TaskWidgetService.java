@@ -24,7 +24,8 @@ public final class TaskWidgetService extends RemoteViewsService {
             SharedPreferences prefs=TaskWidgetProvider.preferences(context,widgetId);dark=prefs.getBoolean("dark",true);
             List<TaskStore.Task> tasks=TaskWidgetProvider.todayTasks(context,prefs.getString("list",""),prefs.getString("label",""));
             List<Entry> next=new ArrayList<>();
-            for(String priority:TaskStore.PRIORITIES){boolean heading=false;for(TaskStore.Task task:tasks)if(priority.equals(task.priority)){if(!heading){next.add(new Entry(priority,null));heading=true;}next.add(new Entry(priority,task));}}
+            for(TaskStore.Task task:tasks)if(TaskStore.IN_PROGRESS.equals(task.status))next.add(new Entry(task.priority,task));
+            for(String priority:TaskStore.PRIORITIES){boolean heading=false;for(TaskStore.Task task:tasks)if(priority.equals(task.priority)&&!TaskStore.IN_PROGRESS.equals(task.status)){if(!heading){next.add(new Entry(priority,null));heading=true;}next.add(new Entry(priority,task));}}
             rows=next;
         }catch(RuntimeException unavailable){rows=new ArrayList<>();}finally{Binder.restoreCallingIdentity(token);}}
         @Override public void onDestroy(){rows=new ArrayList<>();}
@@ -39,14 +40,17 @@ public final class TaskWidgetService extends RemoteViewsService {
                 header.setInt(R.id.widget_priority_divider,"setBackgroundColor",dark?Color.argb(24,255,255,255):Color.argb(18,0,0,0));
                 return header;
             }
-            TaskStore.Task task=entry.task;RemoteViews row=new RemoteViews(context.getPackageName(),R.layout.widget_task_row_progress);
-            row.setTextViewText(R.id.widget_task_title,(TaskStore.IN_PROGRESS.equals(task.status)?"▶ ":"")+task.title);
+            TaskStore.Task task=entry.task;RemoteViews row=new RemoteViews(context.getPackageName(),R.layout.widget_task_row_badge);
+            row.setTextViewText(R.id.widget_task_title,task.title);
             row.setTextViewTextSize(R.id.widget_task_title,android.util.TypedValue.COMPLEX_UNIT_SP,13.5f);
             row.setTextColor(R.id.widget_task_title,Color.parseColor(dark?"#F3F7FC":"#1F2B40"));
             row.setTextColor(R.id.widget_check,Color.parseColor(dark?"#8FC6E7":"#195B7E"));
             row.setTextColor(R.id.widget_due,Color.parseColor(dark?"#BAC9D9":"#56677F"));
-            row.setTextViewText(R.id.widget_due,"Today");row.setContentDescription(R.id.widget_task_title,task.title+", Today, "+task.status);row.setContentDescription(R.id.widget_check,"Complete "+task.title);
-            boolean active=TaskStore.IN_PROGRESS.equals(task.status);row.setTextViewText(R.id.widget_progress,active?"■":"▶");row.setTextColor(R.id.widget_progress,PopupAppearance.read(context).accent);row.setContentDescription(R.id.widget_progress,(active?"Stop Do now for ":"Do now: ")+task.title);row.setOnClickFillInIntent(R.id.widget_progress,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,active?"stop":"start"));
+            boolean active=TaskStore.IN_PROGRESS.equals(task.status);
+            row.setTextViewText(R.id.widget_due,active?"In progress":"Today");
+            row.setTextColor(R.id.widget_due,active?PopupAppearance.read(context).accent:Color.parseColor(dark?"#BAC9D9":"#56677F"));
+            row.setContentDescription(R.id.widget_task_title,task.title+", "+(active?"In progress":"Today"));row.setContentDescription(R.id.widget_check,"Complete "+task.title);
+            row.setContentDescription(R.id.widget_due,(active?"Stop Do now for ":"Do now: ")+task.title);row.setOnClickFillInIntent(R.id.widget_due,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,active?"stop":"start"));
             row.setOnClickFillInIntent(R.id.widget_check,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,"complete"));
             return row;
         }
