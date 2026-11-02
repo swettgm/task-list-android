@@ -3,8 +3,9 @@ import { chromium } from 'playwright';
 import { readFile,mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { serveFixture } from './browser-fixture-server.mjs';
 const file=path.resolve('app/src/main/assets/www/index.html'),seed=JSON.parse(await readFile(path.join(path.dirname(file),'initial-state.json'),'utf8'));
+const fixture=await serveFixture(file);
 const browser=await chromium.launch({headless:true,executablePath:['/usr/bin/google-chrome','/usr/bin/chromium'].find(existsSync),args:['--no-sandbox','--disable-dev-shm-usage']});
 const checks=[],errors=[];const check=(v,s)=>{if(!v)throw Error(s);checks.push(s);};
 async function openPage(initial,fixedTime){
@@ -14,7 +15,7 @@ async function openPage(initial,fixedTime){
   let state=JSON.parse(sessionStorage.getItem('checklist-qa')||JSON.stringify(initial));window.__checklist={get:()=>JSON.parse(JSON.stringify(state)),set:s=>{state=JSON.parse(JSON.stringify(s));sessionStorage.setItem('checklist-qa',JSON.stringify(state));},snapshot:[]};
   window.TaskListNative={readState:()=>JSON.stringify(state),writeState:s=>__checklist.set(JSON.parse(s)),updateSnapshot:s=>__checklist.snapshot=JSON.parse(s),setThemeColors(){},showWidgetSettings(){},updateReminders:s=>__checklist.definitions=JSON.parse(s),notificationStatus:()=>"Notifications allowed",requestNotificationPermission(){}};
  },{initial,fixedTime});
- await page.goto(pathToFileURL(file).href);await page.waitForFunction(()=>window.TaskListApp&&__checklist.snapshot.length);return page;
+ await page.goto(fixture.url);await page.waitForFunction(()=>window.TaskListApp&&__checklist.snapshot.length);return page;
 }
 const page=await openPage(seed);
 try{
@@ -58,7 +59,7 @@ try{
  await field().fill('Two\nOne\nThree');await save();await openSteps('edit-plain');
  check(!await boxes('edit-plain').nth(0).isChecked()&&await boxes('edit-plain').nth(1).isChecked()&&!await boxes('edit-plain').nth(2).isChecked(),'Reordering keeps completion attached to the matching step');
  check((await state()).completed[firstKey]===true,'Reordering keeps the original stable completion key');
- await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__checklist.snapshot.length);await openSteps('edit-plain');
+ await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__checklist.snapshot.length);check((await state()).customTasks.some(t=>t.id==='edit-plain'),'Native-state fixture survives browser reload on a stable origin');await openSteps('edit-plain');
  check(await boxes('edit-plain').nth(1).isChecked(),'Edited checklist and completion survive reload');
  await row('edit-plain').locator('.tm-children .tm-progress-control').first().click();
  await edit('edit-plain');await field().fill('One\nThree');await save();
@@ -102,4 +103,4 @@ try{
  check((await state()).completedOn['edit-completed:'+dates.today]===dates.today,'Completion date survives converting a checklist back to a plain task');
  await mkdir('build/browser-qa',{recursive:true});await edit('edit-groups');await field().scrollIntoViewIfNeeded();await page.screenshot({path:'build/browser-qa/edit-checklist.png'});
  check(!errors.length,'Checklist edits have no browser errors');console.log(JSON.stringify({passed:checks.length,checks},null,2));
-}finally{await browser.close();}
+}finally{await browser.close();await fixture.close();}
