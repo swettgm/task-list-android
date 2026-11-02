@@ -81,5 +81,8 @@ try{
  await swipe(100,200,false,0,'#pt-future-list [data-task-id="layout-frequency-future"] .tl-meta-frequency');check(await page.locator('#pt-today').isVisible()&&await page.locator('dialog').count()===0,'A swipe starting on repeat frequency changes tabs without opening its editor');
  await page.locator('#pt-list [data-task-id="layout-frequency"] .tl-meta-time').click();check(await page.locator('dialog h2').textContent()==='Time','Tapping the same time shortcut still opens its editor');await page.getByRole('button',{name:'Cancel',exact:true}).click();
  await swipe(100,40,false,0,'#pt-list [data-task-id="layout-frequency"] .tl-label-edit');check(await page.locator('#pt-upcoming').isVisible()&&await page.locator('dialog').count()===0,'A swipe starting on a label emoji navigates without editing labels');
+ const completionBeforeDrag=await page.evaluate(()=>JSON.stringify(__layout.get().completed||{}));
+ await swipe(100,200,false,0,'#pt-future-list [data-task-id="layout-frequency-future"] > .form-check > input');check(await page.locator('#pt-today').isVisible()&&await page.evaluate(()=>JSON.stringify(__layout.get().completed||{}))===completionBeforeDrag,'Swiping from a task checkbox navigates without completing it');
+ await swipe(200,100,false,0,'#pt-list [data-task-id="layout-frequency"] .tl-edit-button');check(await page.locator('#pt-upcoming').isVisible()&&await page.locator('dialog').count()===0,'Swiping from the task gear navigates without opening Edit task');
  check(!errors.length,'Layout interactions have no page errors');console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();}

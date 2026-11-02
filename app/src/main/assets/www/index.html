@@ -3697,7 +3697,8 @@ main{max-width:100%;margin:0;padding:0}
     const cancelSwipe=(animate=true)=>{swipeStart=null;if(viewDrag){const {from,ratio}=viewDrag;showView(from,animate,1-ratio);}};
     root.addEventListener('touchstart',event=>{
       cancelSwipe(false);if(viewTransition)viewTransition.finish();
-      if(event.touches.length!==1||document.querySelector('dialog[open]')||event.target.closest('input,button,select,textarea,a,summary')&&!event.target.closest('.tl-meta-edit,.tl-label-edit'))return;
+      if(event.touches.length!==1||document.querySelector('dialog[open]'))return;
+      const control=event.target.closest('input,button,select,textarea,a,summary');if(control&&(!event.target.closest('#pt-today,#pt-upcoming')||control.matches('select,textarea,input:not([type=checkbox])')))return;
       const t=event.touches[0];swipeStart={x:t.clientX,y:t.clientY,horizontal:false,from:find('pt-today-tab').getAttribute('aria-selected')==='true'?'today':'upcoming'};
     },{passive:true});
     root.addEventListener('touchmove',event=>{
