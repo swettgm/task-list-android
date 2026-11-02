@@ -185,7 +185,13 @@ public class QuickAddActivityTest {
         form.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));form.layout(0,0,width,form.getMeasuredHeight());
         assertEquals(Math.round(40*density),title.getHeight());assertEquals(title.getHeight(),label.getHeight());assertEquals(title.getHeight(),priority.getHeight());assertEquals(title.getHeight(),when.getHeight());
         assertEquals(gap,label.getTop()-title.getBottom());assertEquals(gap,((View)priority.getParent()).getTop()-label.getBottom());assertEquals(gap,when.getLeft()-priority.getRight());assertEquals(gap,save.getLeft()-cancel.getRight());
-        assertEquals(gap,((View)cancel.getParent()).getTop()-((View)priority.getParent()).getBottom());assertTrue(form.getMeasuredHeight()<=Math.round(260*density));assertEquals(Math.round(20*density),form.getPaddingLeft());assertEquals(Math.round(20*density),form.getPaddingRight());controller.pause().stop().destroy();
+        assertEquals(gap,((View)cancel.getParent()).getTop()-((View)priority.getParent()).getBottom());int compactHeight=form.getMeasuredHeight();
+        // Compare against the previous layout at the same width and font scale.
+        android.widget.LinearLayout.LayoutParams titleParams=(android.widget.LinearLayout.LayoutParams)title.getLayoutParams();titleParams.height=Math.round(56*density);titleParams.topMargin=0;title.setLayoutParams(titleParams);
+        android.widget.LinearLayout.LayoutParams labelParams=(android.widget.LinearLayout.LayoutParams)label.getLayoutParams();labelParams.height=Math.round(48*density);labelParams.topMargin=0;label.setLayoutParams(labelParams);
+        View options=(View)priority.getParent(),actions=(View)cancel.getParent();
+        for(View row:new View[]{options,actions}){android.widget.LinearLayout.LayoutParams params=(android.widget.LinearLayout.LayoutParams)row.getLayoutParams();params.height=Math.round(48*density);params.topMargin=0;row.setLayoutParams(params);}
+        form.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));assertTrue("Spaced controls must not enlarge the prior popup",compactHeight<=form.getMeasuredHeight());assertEquals(Math.round(20*density),form.getPaddingLeft());assertEquals(Math.round(20*density),form.getPaddingRight());controller.pause().stop().destroy();
     }
     @Test public void widgetPopupMatchesSolidLightThemeWhenGradientIsOff() throws Exception {
         reference.writeState("{\"uiTheme\":{\"background\":\"#ffffff\",\"accent\":\"#123\",\"gradient\":false}}");
