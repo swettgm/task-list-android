@@ -131,7 +131,11 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
             if(record.optBoolean("recurringDaily","Daily".equals(record.optString("recurrence")))&&!stateDate.equals(today.toString()))continue;
             boolean blocked=false;org.json.JSONArray skips=record.optJSONArray("skipCarryDays");if(stateDate.compareTo(today.toString())<0&&skips!=null)for(int i=0;i<skips.length();i++)if(skips.optInt(i,-1)==today.getDayOfWeek().getValue()%7)blocked=true;
             if(!blocked)result.add(task);
-        }return result;
+        }
+        result.sort(Comparator.comparingInt((TaskStore.Task t)->TaskStore.PRIORITIES.indexOf(t.priority))
+                .thenComparingInt(t->{java.time.LocalTime time=ReminderPlanner.time(t.sourceRecord().optString("time"));return time==null?Integer.MAX_VALUE:time.toSecondOfDay();})
+                .thenComparing(t->t.title,String.CASE_INSENSITIVE_ORDER).thenComparing(t->t.id));
+        return result;
     }
 
     static void update(Context context, AppWidgetManager manager, int id) {

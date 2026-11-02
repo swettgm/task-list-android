@@ -2311,7 +2311,7 @@ main{max-width:100%;margin:0;padding:0}
         id: 'html:' + key, title: task.title, listName: 'My tasks',
         dueDate: task.due || '', plannedDate: item.date || scope.today,
         done, status: done ? 'Done' : active && (active === key || completionKeys.includes(active)) ? 'In progress' : 'Next',
-        labels: derivedContexts(task), priority: task.priority || 'UNSET', minutes: Number(task.minutes) || 0,
+        time:task.time||'', labels: derivedContexts(task), priority: task.priority || 'UNSET', minutes: Number(task.minutes) || 0,
         createdAt: Date.parse(item.stateDate + 'T12:00:00Z') || 0,
         completionKeys, progressKey: key, stateDate: item.stateDate, onToday: !!onToday,
         recurrence: task.recurrence || '', source: 'html', snapshotDate:scope.today, recurringDaily:task.repeat?(task.repeat.unit==='day'&&Number(task.repeat.amount)===1&&!task.repeat.weekdays?.length):(task.recurrence==='Daily'||!!(task.days&&task.days.length===7)), skipCarryDays:task.skipCarryDays||[]
@@ -3412,6 +3412,18 @@ main{max-width:100%;margin:0;padding:0}
       }else if(completed)input.setAttribute('aria-label','Reopen '+task.title);
       return wrapper;
     };
+    const taskTimeRank=task=>{
+      const match=/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i.exec((task.time||'').trim());
+      if(!match)return Infinity;
+      let hour=Number(match[1]);const minute=Number(match[2]);
+      if(minute>59||hour>23||(match[3]&&(hour<1||hour>12)))return Infinity;
+      if(match[3])hour=hour%12+(match[3].toUpperCase()==='PM'?12:0);
+      return hour*60+minute;
+    };
+    const compareTaskItems=(a,b)=>{
+      const at=taskTimeRank(a.task),bt=taskTimeRank(b.task);
+      return (at===bt?0:at<bt?-1:1)||a.task.title.localeCompare(b.task.title,undefined,{sensitivity:'base',numeric:true})||a.task.id.localeCompare(b.task.id);
+    };
     const renderToday=()=>{
       find('pt-date').textContent=labelDate(today,true);
       const items=withCompleting(dueToday(),'today').filter(i=>window.TaskListBridge.contextMatches(i.task)),pending=items.filter(i=>!isDone(i.task,i.stateDate,draft)),done=items.filter(i=>isDone(i.task,i.stateDate,draft));
@@ -3439,7 +3451,7 @@ main{max-width:100%;margin:0;padding:0}
       find('pt-progressbar').setAttribute('aria-valuenow',String(percent));find('pt-progressfill').style.width=percent+'%';
       const list=find('pt-list');list.replaceChildren();
       groups.forEach(([priority,heading])=>{
-        const matching=activeItems.filter(i=>i.task.priority===priority);if(!matching.length)return;
+        const matching=activeItems.filter(i=>i.task.priority===priority).sort(compareTaskItems);if(!matching.length)return;
         list.append(el('div','tm-group text-small',heading));const rows=el('div','tm-list');
         matching.forEach(i=>rows.append(row(i,false,activeNumbers.get(progressKey(i.task,i.stateDate)))));list.append(rows);
       });
@@ -3484,7 +3496,7 @@ main{max-width:100%;margin:0;padding:0}
         section.addEventListener('toggle',()=>{if(!section.isConnected)return;if(section.open)futureOpenDates.add(date);else futureOpenDates.delete(date);});
         if(!items.length)section.append(el('p','text-muted','No tasks scheduled.'));
         groups.forEach(([priority,heading])=>{
-          const matching=items.filter(item=>item.task.priority===priority);if(!matching.length)return;
+          const matching=items.filter(item=>item.task.priority===priority).sort(compareTaskItems);if(!matching.length)return;
           section.append(el('div','tm-group text-small',heading));
           const rows=el('div','tm-list');
           matching.forEach(item=>rows.append(row(item,false,undefined,true)));
@@ -3764,8 +3776,8 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 
 <style>
 #today-task-list-20261023 .tl-priority-tools{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;white-space:nowrap}
-#today-task-list-20261023 .tl-priority-button{width:28px;min-width:28px;padding:0;font-size:18px;line-height:1}
-#today-task-list-20261023 .tl-priority-arrow{display:inline-block;line-height:1;font-weight:800}
+#today-task-list-20261023 .tl-priority-button{width:28px;min-width:28px;padding:0;font-size:.76em;line-height:1}
+#today-task-list-20261023 .tl-priority-arrow{display:flex;align-items:center;justify-content:center;width:1em;height:1em;line-height:1;font:inherit}
 #today-task-list-20261023 .tl-priority-up .tl-priority-arrow{transform:rotate(-90deg)}
 #today-task-list-20261023 .tl-priority-down .tl-priority-arrow{transform:rotate(90deg)}
 #today-task-list-20261023 .tl-priority-button:disabled{opacity:.35;cursor:default}
