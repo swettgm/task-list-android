@@ -128,7 +128,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
             org.json.JSONObject record=task.sourceRecord();
             if(today.toString().equals(record.optString("snapshotDate"))){if(record.optBoolean("onToday"))result.add(task);continue;}
             String stateDate=record.optString("stateDate",planned);
-            if(record.optBoolean("recurringDaily")&&!stateDate.equals(today.toString()))continue;
+            if(record.optBoolean("recurringDaily","Daily".equals(record.optString("recurrence")))&&!stateDate.equals(today.toString()))continue;
             boolean blocked=false;org.json.JSONArray skips=record.optJSONArray("skipCarryDays");if(stateDate.compareTo(today.toString())<0&&skips!=null)for(int i=0;i<skips.length();i++)if(skips.optInt(i,-1)==today.getDayOfWeek().getValue()%7)blocked=true;
             if(!blocked)result.add(task);
         }return result;
@@ -137,7 +137,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     static void update(Context context, AppWidgetManager manager, int id) {
         SharedPreferences prefs=preferences(context,id);String list=prefs.getString("list",""),label=prefs.getString("label","");boolean dark=prefs.getBoolean("dark",true);
         int foreground=Color.parseColor(dark?"#F3F7FC":"#1F2B40"),secondary=Color.parseColor(dark?"#BAC9D9":"#56677F"),accent=Color.parseColor(dark?"#8FC6E7":"#195B7E");
-        RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_tasks);
+        RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_today);
         views.setImageViewResource(R.id.widget_background,dark?R.drawable.widget_background_dark:R.drawable.widget_background_light);
         views.setInt(R.id.widget_background,"setImageAlpha",Math.round(255*Math.max(0,Math.min(100,prefs.getInt("opacity",100)))/100f));
         views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setTextColor(R.id.widget_settings,accent);views.setTextColor(R.id.widget_empty,secondary);views.setTextColor(R.id.widget_open,accent);views.setTextColor(R.id.widget_add,accent);

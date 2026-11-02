@@ -247,10 +247,11 @@ public class TaskWidgetTest {
         rows.put(widgetRow("not-today",day,day,false,false,false,day));
         rows.put(widgetRow("future",tomorrow,tomorrow,false,false,false,day).put("status",TaskStore.IN_PROGRESS));
         rows.put(widgetRow("old-daily",yesterday,yesterday,true,false,true,yesterday));
+        org.json.JSONObject legacy=widgetRow("legacy-daily",yesterday,yesterday,true,false,false,"");legacy.remove("recurringDaily");legacy.put("recurrence","Daily");rows.put(legacy);
         rows.put(widgetRow("new-daily",day,day,false,false,true,yesterday));
         rows.put(widgetRow("carry",yesterday,yesterday,true,false,false,yesterday));
         store.replaceReferenceTasks(rows.toString());
-        assertEquals(new HashSet<>(Arrays.asList("today","new-daily","carry")),new HashSet<>(titles(TaskWidgetProvider.todayTasks(context,"",""))));assertEquals(7,store.all().size());
+        assertEquals(new HashSet<>(Arrays.asList("today","new-daily","carry")),new HashSet<>(titles(TaskWidgetProvider.todayTasks(context,"",""))));assertEquals(8,store.all().size());
     }
     @Test public void collectionCompletionIsPersistentAndStaleTapCannotReopen() throws Exception {
         String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();String id=new ReferenceStore(context).addCustomTask("Scroll complete",Arrays.asList("At home"),"HIGH",false);
