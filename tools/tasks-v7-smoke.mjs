@@ -125,7 +125,7 @@ try{
  check(state.completed[ids.future+':'+dates.tomorrow]===true&&state.completedOn[ids.future+':'+dates.tomorrow]===dates.today,'Upcoming completion saves immediately with today as actual completion date');
  await page.waitForTimeout(2200);
  check(await futureRows(ids.future).count()===0,'Completed future task leaves Upcoming after its completion pause');
- const moveDay=page.locator('#pt-future-list details.tm-day').filter({has:futureRows(ids.second)}).first();await moveDay.locator(':scope > summary').click();
+ const moveDay=page.locator('#pt-future-list details.tm-day[data-date="'+dates.second+'"]');await moveDay.locator(':scope > summary').click();
  const moveToday=futureRows(ids.second).first().locator('.tl-do-today');
  check(await moveToday.textContent()==='Do today ➜'&&await moveToday.locator('.tl-today-arrow').evaluate(n=>getComputedStyle(n).transform==='matrix(-1, 0, 0, -1, 0, 0)'),'Upcoming has a Do today button with the matching thick arrow facing back');
  const moveStyle=await moveToday.evaluate(n=>{const gear=n.closest('.tm-item-actions').querySelector('.tl-edit-button'),a=getComputedStyle(n),b=getComputedStyle(gear);return a.height===b.height&&a.borderTopColor===b.borderTopColor&&a.color===b.color;});check(moveStyle,'Do today matches the other task controls');
