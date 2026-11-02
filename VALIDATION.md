@@ -1,20 +1,20 @@
-# Tasks 0.32.0 verification
+# Tasks 0.33.0 verification
 
-[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41517808566), source commit `b62ddacc8256be42219d1eb6250d962f967c602e`.
+[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41519283721), source commit `45bbe895e2da972d078ccaf9264d3270cff79eb8`.
 
-102 Android tests, 459 browser checks and 26 calendar recurrence checks passed; lint reported zero errors. Updated progress and subtask screenshots were visually reviewed.
+102 Android tests, 463 browser checks and 26 calendar recurrence checks passed; lint reported zero errors. The manual-link screenshot was visually reviewed.
 
-An inline In progress badge now follows the task title with a 4px gap. Its title label sizes to its contents instead of filling spare row width, while the badge and checkbox retain vertical centering. The existing fit check still moves the badge below long titles rather than compressing them.
+The link dropdown previously required a separate Link task press after choosing a task. Selecting a peer now adds it immediately to the editor’s selected chips; the redundant button is removed. Save task persists the definition and reciprocal manualLinks in the same state write. New/existing task writes update the engine from persisted state, and save errors remain visible in the editor.
 
-Subtask disclosure summaries use separate decorative arrow and count elements in a centered flex row. The arrow rotates on expansion and is hidden from accessibility text; native summary keyboard/click behavior remains intact. Native disclosure markers are hidden to prevent duplication. The faint left rule is removed and counts read 0/4 steps without spaces around the slash.
+Linked open task rows show a small 12px muted line such as 🔗 Daily link B underneath their metadata. Rendering uses text nodes, preserving emoji and arbitrary task titles safely. Existing manually saved links continue to render; original automatic suggestions remain disabled. Task identity links remain bidirectional and apply to future recurring instances. The picker still excludes completed tasks, duplicates and self-links. Unlink and Cancel retain their expected behavior.
 
-Browser geometry checks verify the exact title-to-badge gap, vertical centers, long-title fallback, and centered summary arrow with no border in both collapsed and expanded states. The full existing task, widget, history, reminder and layout checks remain enabled. Screenshots capture compact subtask summaries and inline progress spacing.
+Browser regressions verify selecting a peer without another button, immediate chips, cancellation without state changes, atomic reciprocal-link writes, immediate chain/title rendering, reload persistence, next-day recurrence and unlinking. Creation and editing paths are both covered. The link screenshot is visually reviewed. The full existing native and browser checks remain enabled.
 
-[Download Tasks-v0.32.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.32.0.apk).
+[Download Tasks-v0.33.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.33.0.apk).
 
-Package `com.personal.tasklist.preview`, version 0.32.0, code 32; minimum API 26, target 35; size 207,837 bytes.
+Package `com.personal.tasklist.preview`, version 0.33.0, code 33; minimum API 26, target 35; size 207,837 bytes.
 
-SHA-256: `f683accc2910cf4deedd4ef84cc4540f050990eed7d0ea8e21f1bf8a596309f0`.
+SHA-256: `acef26490573825e0128cacd07fc9f1832433479c6de4a853c544d94d1f4864b`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. Packaged UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
