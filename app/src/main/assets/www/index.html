@@ -3336,17 +3336,18 @@ main{max-width:100%;margin:0;padding:0}
         const checkbox=el('input','form-check-input');checkbox.type='checkbox';checkbox.checked=Boolean(draft[key]);
         checkbox.addEventListener('change',()=>{draft[key]=checkbox.checked;saveCompletion(task,date);});
         const childText=el('span','form-check-label');
-        const childTitle=el('span',undefined,name);
+        const childTitle=el('span','tm-title',name);
         const childActive=inProgress===key;
         if(childActive)childTitle.classList.add('tm-in-progress-title');
         const childTitleLine=el('span','tm-title-line'),childTitleMain=el('span','tm-title-main');childTitleMain.append(childTitle);
-        if(childActive)childTitleMain.append(el('span','tm-in-progress-badge','🟢 IN PROGRESS'));
         childTitleLine.append(childTitleMain);
         childText.append(childTitleLine);
         childLabel.append(checkbox,childText);
         const childControls=el('div','tm-item-actions');
         childControls.append(progressButton(key,task.title+' > '+name,Boolean(draft[key])));
-        childItem.append(childLabel,childControls);
+        childItem.append(childLabel);
+        if(childActive){const details=el('div','tm-task-details');details.append(el('span','tm-in-progress-badge','🟢 IN PROGRESS'));childItem.append(details);}
+        childItem.append(childControls);
         childList.append(childItem);
       };
       details.append(summary);
@@ -3758,7 +3759,7 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important}
 #today-task-list-20261023 .tm-task-item{margin:0!important;padding:8px 0 10px;gap:5px!important;border:0!important;border-radius:0}
 #today-task-list-20261023 .tm-task-item>.form-check{display:flex!important;align-items:center!important;gap:8px!important;min-height:24px}
-#today-task-list-20261023 .tm-task-item>.form-check>.form-check-input{width:24px!important;height:24px!important;margin:0!important;align-self:center!important;transform:translateY(-2px);border-color:var(--tl-muted)}
+#today-task-list-20261023 .tm-task-item>.form-check>.form-check-input{width:24px!important;height:24px!important;margin:0!important;align-self:center!important;transform:none;border-color:var(--tl-muted)}
 #today-task-list-20261023 .tm-task-item>.form-check .tm-title{line-height:1.3;font-weight:550}
 #today-task-list-20261023 .tm-task-details,#today-task-list-20261023 .tm-item-actions{padding-left:32px!important;margin:0!important}
 #today-task-list-20261023 .tm-task-details:empty{display:none}

@@ -29,8 +29,17 @@ try{
    await page.evaluate(size=>{let s=document.getElementById('layout-test-font');if(!s){s=document.createElement('style');s.id='layout-test-font';document.head.append(s);}s.textContent='#today-task-list-20261023 .form-check-label{font-size:'+size+'px!important}';},size);
    await page.locator('#pt-today-tab').click();const today=await metric('#pt-list [data-task-id="layout-today"]');
    await page.locator('#pt-upcoming-tab').click();const upcoming=await metric('#pt-future-list [data-task-id="layout-future"]');
-   check(Math.abs(today.offset+2)<1&&Math.abs(upcoming.offset+2)<1,'Checkbox optical center aligns above title line-box center at '+width+'px / '+size+'px text '+JSON.stringify({today,upcoming}));
+   check(Math.abs(today.offset)<.5&&Math.abs(upcoming.offset)<.5,'Checkbox center matches the vertical center of its title at '+width+'px / '+size+'px text '+JSON.stringify({today,upcoming}));
    check(JSON.stringify(today.title)===JSON.stringify(upcoming.title)&&JSON.stringify(today.meta)===JSON.stringify(upcoming.meta)&&JSON.stringify(today.actions)===JSON.stringify(upcoming.actions)&&Math.abs(today.width-upcoming.width)<1&&Math.abs(today.height-upcoming.height)<1,'Today and Upcoming row sizing matches at '+width+'px / '+size+'px text');
+  }
+ }
+ await page.evaluate(()=>{const state=__layout.get();state.customTasks.filter(t=>t.id.startsWith('layout-')).forEach(t=>{t.title='A deliberately long task title that wraps over multiple lines on narrow screens';t.steps=['A checklist step with a long title that also wraps across multiple lines','Second step'];});__layout.set(state);TaskListApp.reloadFromNative();});
+ for(const width of [320,390]){
+  await page.setViewportSize({width,height:844});
+  for(const [tab,panel,id]of [['Today','#pt-list','layout-today'],['Upcoming','#pt-future-list','layout-future']]){
+   await page.getByRole('tab',{name:tab,exact:true}).click();const task=page.locator(panel+' [data-task-id="'+id+'"]');await task.locator('.tm-children summary').click();await task.locator('.tm-child-item .tm-progress-control').first().click();
+   const centered=await task.locator('.form-check').evaluateAll(labels=>labels.every(label=>{const box=label.querySelector('input').getBoundingClientRect(),title=label.querySelector('.tm-title').getBoundingClientRect();return Math.abs(box.y+box.height/2-title.y-title.height/2)<.5;}));check(centered,'Wrapped parent and checklist titles keep centered checkboxes, including an active child, in '+tab+' at '+width+'px');
+   await task.locator('.tm-children summary').click();
   }
  }
  check(await page.locator('#pt-future-list .tm-day-heading').evaluateAll(nodes=>nodes.every(n=>getComputedStyle(n).borderBottomWidth==='0px')),'No dividers between Upcoming dropdowns');
