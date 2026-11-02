@@ -41,7 +41,7 @@ try{
  check(await page.locator('.form-check-input').first().evaluate(n=>getComputedStyle(n).borderTopColor===getComputedStyle(document.documentElement).getPropertyValue('--tl-accent').trim().replace('#68b7ff','rgb(104, 183, 255)')),'Unchecked checkboxes use the accent color');
  const cdp=await page.context().newCDPSession(page);
  async function swipe(from,to,vertical=false){
-  const box=await page.locator('#tl-tools').boundingBox(),y=box.y+box.height+12;
+  const box=await page.locator('[role=tabpanel]:not([hidden]) .tm-task-item .tm-title').first().boundingBox(),y=box.y+box.height/2;
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from,y}]});
   for(let step=1;step<=5;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:vertical?from:from+(to-from)*step/5,y:vertical?y+step*20:y}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
