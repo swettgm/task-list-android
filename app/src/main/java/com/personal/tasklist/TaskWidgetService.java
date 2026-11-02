@@ -54,7 +54,7 @@ public final class TaskWidgetService extends RemoteViewsService {
             row.setContentDescription(R.id.widget_status_toggle,(active?"Stop Do now for ":"Do now: ")+task.title);row.setOnClickFillInIntent(R.id.widget_status_toggle,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,active?"stop":"start"));
             String pending=WidgetCompletions.token(context,task.id);boolean staged=!pending.isEmpty();
             row.setTextViewText(R.id.widget_check,staged?"✓":"○");row.setContentDescription(R.id.widget_check,(staged?"Undo completion of ":"Complete ")+task.title);
-            row.setFloat(R.id.widget_task_title,"setAlpha",staged?.6f:1f);
+            row.setTextColor(R.id.widget_task_title,Color.parseColor(staged?(dark?"#A5AFBA":"#6B7684"):(dark?"#F3F7FC":"#1F2B40")));
             row.setOnClickFillInIntent(R.id.widget_check,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,staged?"undo":"complete").putExtra("completion_token",pending));
             return row;
         }
