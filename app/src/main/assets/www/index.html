@@ -2334,12 +2334,12 @@ main{max-width:100%;margin:0;padding:0}
     let timer=null,start=null,held=false,cancelled=false;
     const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}if(priorityHoldCancel===clear)priorityHoldCancel=null;};
     const button=action('',event=>{if(held||cancelled||priorityHoldActive||performance.now()<priorityHoldUntil){event.preventDefault();return;}clear();changePriority(task,offset);},'tm-move-control tl-priority-button tl-priority-'+direction);
-    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Priority not set');button.disabled=direction==='up'?rank===0:rank===levels.length-1;
+    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Low');button.disabled=direction==='up'?rank===0:rank===levels.length-1;
     button.addEventListener('pointerdown',event=>{
       if(button.disabled||event.button!==0||event.isPrimary===false)return;
       if(priorityHoldCancel)priorityHoldCancel();held=false;cancelled=false;start={x:event.clientX,y:event.clientY};priorityHoldCancel=clear;
       timer=setTimeout(()=>{timer=null;if(!button.isConnected||button.disabled)return;held=true;priorityHoldActive=true;priorityHoldUntil=performance.now()+450;
-        if(changePriority(task,offset<0?-levels.length:levels.length)){try{if(native&&native.priorityHaptic)native.priorityHaptic();}catch(_){}}
+        if(changePriority(task,(offset<0?0:levels.indexOf('LOW'))-rank)){try{if(native&&native.priorityHaptic)native.priorityHaptic();}catch(_){}}
       },450);
     },{passive:true});
     button.addEventListener('pointermove',event=>{if(start&&Math.hypot(event.clientX-start.x,event.clientY-start.y)>10){cancelled=true;clear();}},{passive:true});
@@ -2485,6 +2485,9 @@ main{max-width:100%;margin:0;padding:0}
     }
     rebuild();
   }
+  function projectTrashIcon(){
+    const ns='http://www.w3.org/2000/svg',icon=document.createElementNS(ns,'svg'),path=document.createElementNS(ns,'path');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('width','18');icon.setAttribute('height','18');icon.setAttribute('fill','none');icon.setAttribute('stroke','currentColor');icon.setAttribute('stroke-width','1.8');icon.setAttribute('stroke-linecap','round');icon.setAttribute('stroke-linejoin','round');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');path.setAttribute('d','M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6');icon.append(path);return icon;
+  }
   function editProject(project=null){
     const isNew=!project,original=project?clone(project):{id:'project-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),createdAt:new Date().toISOString(),completed:false};
     const {dialog,form,close}=modal(isNew?'Add project':'Edit project');dialog.classList.add('tl-project-editor');form.classList.add('tl-task-form');
@@ -2497,7 +2500,7 @@ main{max-width:100%;margin:0;padding:0}
       if(date.value){const parsed=new Date(date.value+'T12:00:00Z');if(!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==date.value)throw Error('Choose a valid date.');next.date=date.value;}else delete next.date;
       const total=Number(hours.value)*60+Number(minutes.value);if((hours.value&&!/^\d+$/.test(hours.value))||(minutes.value&&!/^\d+$/.test(minutes.value))||Number(minutes.value)>59||((hours.value||minutes.value)&&(!Number.isSafeInteger(total)||total<1)))throw Error('Enter hours and 0–59 minutes.');if(hours.value||minutes.value)next.minutes=total;else delete next.minutes;return next;};
     const save=mode=>{try{const next=mode==='delete'?clone(original):read();saveProjectRecord(next,isNew,mode);close();}catch(e){error.textContent=e.message||'Couldn’t save this project. Please try again.';}};
-    if(!isNew){let armed=false;const trash=action('🗑',()=>{if(!armed){armed=true;trash.textContent='Are you sure?';trash.classList.add('tl-project-delete-armed');trash.setAttribute('aria-label','Confirm delete project');return;}save('delete');},'btn tl-project-delete');trash.setAttribute('aria-label','Delete project');form.addEventListener('input',()=>{armed=false;trash.textContent='🗑';trash.classList.remove('tl-project-delete-armed');trash.setAttribute('aria-label','Delete project');});actions.append(trash);
+    if(!isNew){let armed=false;const trash=action('',()=>{if(!armed){armed=true;trash.append(node('span','','Are you sure?'));trash.classList.add('tl-project-delete-armed');trash.setAttribute('aria-label','Confirm delete project');return;}save('delete');},'btn tl-project-delete');trash.append(projectTrashIcon());trash.setAttribute('aria-label','Delete project');form.addEventListener('input',()=>{armed=false;trash.replaceChildren(projectTrashIcon());trash.classList.remove('tl-project-delete-armed');trash.setAttribute('aria-label','Delete project');});actions.append(trash);
       actions.append(action(original.completed?'Reopen':'Complete',()=>save(original.completed?'reopen':'complete'),'btn'));
       const make=action(original.convertedTaskId?'Task already created':'Make task',()=>save('task'),'btn');make.disabled=!!original.convertedTaskId;actions.append(make);
     }
@@ -3370,7 +3373,7 @@ main{max-width:100%;margin:0;padding:0}
     };
     const doTodayButton=item=>{
       if(isDone(item.task,item.stateDate,draft))return null;
-      const button=el('button','tm-move-control tl-do-today','Do today '),arrow=el('span','tl-today-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.type='button';button.setAttribute('aria-label','Move '+item.task.title+' to today');
+      const button=el('button','tm-move-control tl-do-today',''),arrow=el('span','tl-today-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow,document.createTextNode('Do today'));button.style.gap='4px';button.type='button';button.setAttribute('aria-label','Move '+item.task.title+' to today');
       button.addEventListener('click',()=>{
         const previousMoved={...movedTo},previousRollover={...rolloverCompletedOn};
         movedTo[occurrenceId(item.task,item.stateDate)]=today;delete rolloverCompletedOn[occurrenceId(item.task,item.stateDate)];
@@ -4023,5 +4026,5 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 .tl-projects-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.tl-projects-header h2{margin:0}
 .tl-project-add{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:var(--tl-accent)!important;border:0!important;padding:0!important}.tl-project-add .tl-plus-glyph{width:26px;height:26px}
 .tl-project-list{display:flex;flex-direction:column;gap:6px}.tl-project-row{display:flex;flex-direction:column;gap:5px;width:100%;text-align:left;border:0;background:transparent;color:var(--tl-text);padding:10px 2px;overflow-wrap:anywhere;cursor:pointer}.tl-project-title{font-size:16px;line-height:1.35}.tl-project-meta,.tl-project-note{font-size:12px;color:var(--tl-muted)}.tl-project-note{white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.tl-project-toggle{margin:12px 0}.tl-project-completed{margin-bottom:12px}.tl-project-actions{display:flex;flex-wrap:wrap;gap:8px}.tl-project-delete{margin-right:auto}.tl-project-delete-armed{background:#b42336!important;border-color:#b42336!important;color:white!important}
+.tl-project-toggle{margin:12px 0}.tl-project-completed{margin-bottom:12px}.tl-project-actions{display:flex;flex-wrap:wrap;gap:8px}.tl-project-delete{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-right:auto;background:#4b5058!important;border-color:#656b75!important;color:#f3f6fb!important}.tl-project-delete-armed:active{background:#b42336!important;border-color:#b42336!important;color:white!important}
 </style>

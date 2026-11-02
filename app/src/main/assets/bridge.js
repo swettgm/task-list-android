@@ -426,12 +426,12 @@
     let timer=null,start=null,held=false,cancelled=false;
     const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}if(priorityHoldCancel===clear)priorityHoldCancel=null;};
     const button=action('',event=>{if(held||cancelled||priorityHoldActive||performance.now()<priorityHoldUntil){event.preventDefault();return;}clear();changePriority(task,offset);},'tm-move-control tl-priority-button tl-priority-'+direction);
-    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Priority not set');button.disabled=direction==='up'?rank===0:rank===levels.length-1;
+    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Low');button.disabled=direction==='up'?rank===0:rank===levels.length-1;
     button.addEventListener('pointerdown',event=>{
       if(button.disabled||event.button!==0||event.isPrimary===false)return;
       if(priorityHoldCancel)priorityHoldCancel();held=false;cancelled=false;start={x:event.clientX,y:event.clientY};priorityHoldCancel=clear;
       timer=setTimeout(()=>{timer=null;if(!button.isConnected||button.disabled)return;held=true;priorityHoldActive=true;priorityHoldUntil=performance.now()+450;
-        if(changePriority(task,offset<0?-levels.length:levels.length)){try{if(native&&native.priorityHaptic)native.priorityHaptic();}catch(_){}}
+        if(changePriority(task,(offset<0?0:levels.indexOf('LOW'))-rank)){try{if(native&&native.priorityHaptic)native.priorityHaptic();}catch(_){}}
       },450);
     },{passive:true});
     button.addEventListener('pointermove',event=>{if(start&&Math.hypot(event.clientX-start.x,event.clientY-start.y)>10){cancelled=true;clear();}},{passive:true});
@@ -577,6 +577,9 @@
     }
     rebuild();
   }
+  function projectTrashIcon(){
+    const ns='http://www.w3.org/2000/svg',icon=document.createElementNS(ns,'svg'),path=document.createElementNS(ns,'path');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('width','18');icon.setAttribute('height','18');icon.setAttribute('fill','none');icon.setAttribute('stroke','currentColor');icon.setAttribute('stroke-width','1.8');icon.setAttribute('stroke-linecap','round');icon.setAttribute('stroke-linejoin','round');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');path.setAttribute('d','M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6');icon.append(path);return icon;
+  }
   function editProject(project=null){
     const isNew=!project,original=project?clone(project):{id:'project-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9),createdAt:new Date().toISOString(),completed:false};
     const {dialog,form,close}=modal(isNew?'Add project':'Edit project');dialog.classList.add('tl-project-editor');form.classList.add('tl-task-form');
@@ -589,7 +592,7 @@
       if(date.value){const parsed=new Date(date.value+'T12:00:00Z');if(!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==date.value)throw Error('Choose a valid date.');next.date=date.value;}else delete next.date;
       const total=Number(hours.value)*60+Number(minutes.value);if((hours.value&&!/^\d+$/.test(hours.value))||(minutes.value&&!/^\d+$/.test(minutes.value))||Number(minutes.value)>59||((hours.value||minutes.value)&&(!Number.isSafeInteger(total)||total<1)))throw Error('Enter hours and 0–59 minutes.');if(hours.value||minutes.value)next.minutes=total;else delete next.minutes;return next;};
     const save=mode=>{try{const next=mode==='delete'?clone(original):read();saveProjectRecord(next,isNew,mode);close();}catch(e){error.textContent=e.message||'Couldn’t save this project. Please try again.';}};
-    if(!isNew){let armed=false;const trash=action('🗑',()=>{if(!armed){armed=true;trash.textContent='Are you sure?';trash.classList.add('tl-project-delete-armed');trash.setAttribute('aria-label','Confirm delete project');return;}save('delete');},'btn tl-project-delete');trash.setAttribute('aria-label','Delete project');form.addEventListener('input',()=>{armed=false;trash.textContent='🗑';trash.classList.remove('tl-project-delete-armed');trash.setAttribute('aria-label','Delete project');});actions.append(trash);
+    if(!isNew){let armed=false;const trash=action('',()=>{if(!armed){armed=true;trash.append(node('span','','Are you sure?'));trash.classList.add('tl-project-delete-armed');trash.setAttribute('aria-label','Confirm delete project');return;}save('delete');},'btn tl-project-delete');trash.append(projectTrashIcon());trash.setAttribute('aria-label','Delete project');form.addEventListener('input',()=>{armed=false;trash.replaceChildren(projectTrashIcon());trash.classList.remove('tl-project-delete-armed');trash.setAttribute('aria-label','Delete project');});actions.append(trash);
       actions.append(action(original.completed?'Reopen':'Complete',()=>save(original.completed?'reopen':'complete'),'btn'));
       const make=action(original.convertedTaskId?'Task already created':'Make task',()=>save('task'),'btn');make.disabled=!!original.convertedTaskId;actions.append(make);
     }
