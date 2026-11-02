@@ -36,8 +36,11 @@
     if (document.getElementById('tasks-theme-controls-style')) return;
     const style = node('style'); style.id = 'tasks-theme-controls-style';
     style.textContent = `
+      #tasks-app-backdrop{position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--tl-app-gradient);width:100%;height:100%;transform:translateZ(0)}
+      body{position:relative}
+      body>main{position:relative;z-index:1}
       html.tasks-app-gradient main,html.tasks-app-gradient #today-task-list-20261023,html.tasks-app-gradient #pt-today,html.tasks-app-gradient #pt-upcoming,html.tasks-app-gradient #pt-future-list{background:transparent!important}
-      html.tasks-app-gradient .tl-dialog{background:var(--tl-app-gradient)!important;background-attachment:fixed!important;background-size:100vw 100vh!important}
+      html.tasks-app-gradient .tl-dialog{background:var(--tl-app-gradient)!important;background-attachment:local!important;background-size:100% 100%!important}
       html.tasks-app-gradient .tl-dialog .tl-task-form .tl-dialog-actions{background:transparent!important}
       .tasks-theme-settings{min-width:0;margin:0 0 14px;border:1px solid var(--tl-border);border-radius:8px;padding:8px}
       .tasks-theme-settings>summary{font-size:14px;font-weight:650;cursor:pointer;min-height:30px;color:var(--tl-text)}
@@ -81,21 +84,22 @@
     const colors = theme.gradient ? [theme.background, theme.gradientEnd] : [theme.background];
     const text = foreground(colors), middle = theme.gradient ? mix(theme.background, theme.gradientEnd, .5) : theme.background;
     const surface = theme.background === DEFAULTS.background && !theme.gradient ? '#172131' : mix(middle, text, .07);
-    const variables = { '--tl-accent':theme.accent, '--tl-background':theme.background, '--tl-surface':surface,
+    const variables = { '--tl-accent':theme.accent, '--tl-background':theme.background, '--tl-surface':theme.gradient?'rgba('+channels(surface).join(',')+',0.42)':surface,
       '--tl-ink':foreground([theme.accent]), '--tl-text':text, '--tl-muted':mix(middle, text, .7),
       '--tl-border':mix(middle, text, .25), '--tl-selected':mix(middle, theme.accent, .18) };
     Object.entries(variables).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
     document.documentElement.style.colorScheme = text === '#10151f' ? 'light' : 'dark';
     document.documentElement.classList.toggle('tasks-app-gradient',theme.gradient);
     document.documentElement.style.setProperty('--tl-app-gradient',paint(theme));
-    document.documentElement.style.setProperty('background',paint(theme),'important');
-    document.documentElement.style.backgroundAttachment=theme.gradient?'fixed':'';
-    document.documentElement.style.backgroundSize=theme.gradient?'100vw 100vh':'';
+    document.documentElement.style.setProperty('background',theme.background,'important');
+    document.documentElement.style.backgroundAttachment='';
+    document.documentElement.style.backgroundSize='';
     if (document.body) {
+      let backdrop=document.getElementById('tasks-app-backdrop');if(!backdrop){backdrop=node('div');backdrop.id='tasks-app-backdrop';backdrop.setAttribute('aria-hidden','true');document.body.prepend(backdrop);}backdrop.hidden=!theme.gradient;
       document.body.style.setProperty('background', paint(theme), 'important');
-      document.body.style.backgroundAttachment = theme.gradient ? 'fixed' : '';
+      document.body.style.backgroundAttachment = 'scroll';
       document.body.style.backgroundRepeat = 'no-repeat';
-      document.body.style.backgroundSize = theme.gradient ? '100% 100vh' : '';
+      document.body.style.backgroundSize = theme.gradient ? '100% 100%' : '';
       document.body.style.minHeight = '100vh';
     }
     const root = document.getElementById('today-task-list-20261023');

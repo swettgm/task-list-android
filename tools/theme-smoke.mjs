@@ -68,7 +68,7 @@ try {
   let saved = (await state()).uiTheme;
   check(saved.accent==='#5865f2'&&saved.background==='#1e2935'&&saved.gradient===true&&saved.gradientEnd==='#47535c'&&saved.gradientAngle===135,'Apply saves both colors, gradient endpoints, and direction');
   check((await page.evaluate(()=>getComputedStyle(document.body).backgroundImage)).includes('135deg'),'Saved gradient is applied to the app background');
-  check(await page.evaluate(()=>document.body.style.backgroundAttachment==='fixed'),'The app gradient stays attached to the screen while the task list scrolls');
+  check(await page.evaluate(()=>document.body.style.backgroundAttachment==='scroll'),'Body uses a fallback beneath the independent gradient layer');
   check(await page.evaluate(()=>getComputedStyle(document.getElementById('today-task-list-20261023')).backgroundColor==='rgba(0, 0, 0, 0)'),'The task-list surface does not cover or repeat the page gradient');
   check(await page.evaluate(()=>__themeNative.background)==='#1e2935','Android receives the base background hex for its system bars');
   await page.getByRole('button',{name:'Close',exact:true}).click();
@@ -76,6 +76,11 @@ try {
   await page.getByRole('tab',{name:'Upcoming',exact:true}).click();
   check(await page.locator('#pt-upcoming').isVisible()&&await page.evaluate(()=>getComputedStyle(document.body).backgroundImage.includes('135deg')&&['main','#today-task-list-20261023','#pt-upcoming','#pt-future-list'].every(selector=>getComputedStyle(document.querySelector(selector)).backgroundColor==='rgba(0, 0, 0, 0)')),'Upcoming shows the same page-wide gradient through every list surface');
   await page.screenshot({path:path.join(output,'gradient-upcoming.png'),fullPage:false});
+  await page.evaluate(()=>{document.querySelector('main').style.minHeight='2500px';window.scrollTo(0,document.documentElement.scrollHeight);});
+  check(await page.locator('#tasks-app-backdrop').evaluate(n=>{const r=n.getBoundingClientRect();return getComputedStyle(n).position==='fixed'&&Math.abs(r.height-innerHeight)<2&&Math.abs(r.top)<1&&Math.abs(r.bottom-innerHeight)<2;}),'Gradient stays fixed to the visible screen after scrolling a long page');
+  await page.screenshot({path:path.join(output,'gradient-scroll-bottom.png')});
+  await page.evaluate(()=>{document.querySelector('main').style.minHeight='';window.scrollTo(0,0);});
+
   await page.evaluate(()=>TaskListApp.addTask());
   check(await page.locator('dialog').evaluate(d=>getComputedStyle(d).backgroundImage.includes('135deg')),'Task editor uses the app gradient');
   await page.getByRole('button',{name:'Cancel',exact:true}).click();

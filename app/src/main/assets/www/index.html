@@ -1737,8 +1737,11 @@ main{max-width:100%;margin:0;padding:0}
     if (document.getElementById('tasks-theme-controls-style')) return;
     const style = node('style'); style.id = 'tasks-theme-controls-style';
     style.textContent = `
+      #tasks-app-backdrop{position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--tl-app-gradient);width:100%;height:100%;transform:translateZ(0)}
+      body{position:relative}
+      body>main{position:relative;z-index:1}
       html.tasks-app-gradient main,html.tasks-app-gradient #today-task-list-20261023,html.tasks-app-gradient #pt-today,html.tasks-app-gradient #pt-upcoming,html.tasks-app-gradient #pt-future-list{background:transparent!important}
-      html.tasks-app-gradient .tl-dialog{background:var(--tl-app-gradient)!important;background-attachment:fixed!important;background-size:100vw 100vh!important}
+      html.tasks-app-gradient .tl-dialog{background:var(--tl-app-gradient)!important;background-attachment:local!important;background-size:100% 100%!important}
       html.tasks-app-gradient .tl-dialog .tl-task-form .tl-dialog-actions{background:transparent!important}
       .tasks-theme-settings{min-width:0;margin:0 0 14px;border:1px solid var(--tl-border);border-radius:8px;padding:8px}
       .tasks-theme-settings>summary{font-size:14px;font-weight:650;cursor:pointer;min-height:30px;color:var(--tl-text)}
@@ -1782,21 +1785,22 @@ main{max-width:100%;margin:0;padding:0}
     const colors = theme.gradient ? [theme.background, theme.gradientEnd] : [theme.background];
     const text = foreground(colors), middle = theme.gradient ? mix(theme.background, theme.gradientEnd, .5) : theme.background;
     const surface = theme.background === DEFAULTS.background && !theme.gradient ? '#172131' : mix(middle, text, .07);
-    const variables = { '--tl-accent':theme.accent, '--tl-background':theme.background, '--tl-surface':surface,
+    const variables = { '--tl-accent':theme.accent, '--tl-background':theme.background, '--tl-surface':theme.gradient?'rgba('+channels(surface).join(',')+',0.42)':surface,
       '--tl-ink':foreground([theme.accent]), '--tl-text':text, '--tl-muted':mix(middle, text, .7),
       '--tl-border':mix(middle, text, .25), '--tl-selected':mix(middle, theme.accent, .18) };
     Object.entries(variables).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
     document.documentElement.style.colorScheme = text === '#10151f' ? 'light' : 'dark';
     document.documentElement.classList.toggle('tasks-app-gradient',theme.gradient);
     document.documentElement.style.setProperty('--tl-app-gradient',paint(theme));
-    document.documentElement.style.setProperty('background',paint(theme),'important');
-    document.documentElement.style.backgroundAttachment=theme.gradient?'fixed':'';
-    document.documentElement.style.backgroundSize=theme.gradient?'100vw 100vh':'';
+    document.documentElement.style.setProperty('background',theme.background,'important');
+    document.documentElement.style.backgroundAttachment='';
+    document.documentElement.style.backgroundSize='';
     if (document.body) {
+      let backdrop=document.getElementById('tasks-app-backdrop');if(!backdrop){backdrop=node('div');backdrop.id='tasks-app-backdrop';backdrop.setAttribute('aria-hidden','true');document.body.prepend(backdrop);}backdrop.hidden=!theme.gradient;
       document.body.style.setProperty('background', paint(theme), 'important');
-      document.body.style.backgroundAttachment = theme.gradient ? 'fixed' : '';
+      document.body.style.backgroundAttachment = 'scroll';
       document.body.style.backgroundRepeat = 'no-repeat';
-      document.body.style.backgroundSize = theme.gradient ? '100% 100vh' : '';
+      document.body.style.backgroundSize = theme.gradient ? '100% 100%' : '';
       document.body.style.minHeight = '100vh';
     }
     const root = document.getElementById('today-task-list-20261023');
@@ -3305,7 +3309,7 @@ main{max-width:100%;margin:0;padding:0}
       if(active)title.classList.add('tm-in-progress-title');
       const titleLine=el('span','tm-title-line'),titleMain=el('span','tm-title-main');titleMain.append(title);
       if(linkedActive)titleMain.append(el('span','tm-linked-chain','🔗'));
-      if(task.urgent)titleMain.append(el('span','tm-in-progress-badge','🟢 URGENT'));
+      if(task.urgent)titleMain.append(el('span','tm-urgent-badge','🔴 URGENT'));
       if(active)titleMain.append(el('span','tm-in-progress-badge','🟢 IN PROGRESS'));
       if(finishedToday)titleMain.append(el('span','tm-today-badge','Completed today'));
       titleLine.append(titleMain);
@@ -3342,7 +3346,7 @@ main{max-width:100%;margin:0;padding:0}
       if(wrapper.classList.contains('tm-completing')){
         input.setAttribute('aria-label','Undo completion of '+task.title);
         wrapper.querySelectorAll('button').forEach(button=>button.disabled=true);
-        controls.append(el('span','tm-undo-hint','Uncheck to undo'));
+
       }else if(completed)input.setAttribute('aria-label','Reopen '+task.title);
       return wrapper;
     };
@@ -3414,7 +3418,7 @@ main{max-width:100%;margin:0;padding:0}
         const items=candidates.filter(item=>{const key=progressKey(item.task,item.stateDate);if(seen.has(key))return false;seen.add(key);return true;});
         if(!items.length&&offset!==1)continue;
         const section=el('details','tm-day');section.dataset.date=date;section.open=futureOpenDates.has(date);
-        const summary=el('summary','tm-day-heading',(offset===1?'Tomorrow · ':'')+labelDate(date,true)+' · '+items.length);section.append(summary);
+        const summary=el('summary','tm-day-heading');const dateText=el('span','tm-day-label');if(offset===1){dateText.append(el('span','tm-day-name','Tomorrow'));}else dateText.append(el('span','tm-day-name',labelDate(date,true)));summary.append(dateText,el('span','tm-day-count',String(items.length)));section.append(summary);
         section.addEventListener('toggle',()=>{if(!section.isConnected)return;if(section.open)futureOpenDates.add(date);else futureOpenDates.delete(date);});
         if(!items.length)section.append(el('p','text-muted','No tasks scheduled.'));
         groups.forEach(([priority,heading])=>{
@@ -3440,6 +3444,28 @@ main{max-width:100%;margin:0;padding:0}
     };
     find('pt-today-tab').addEventListener('click',()=>showView('today'));
     find('pt-upcoming-tab').addEventListener('click',()=>showView('upcoming'));
+    let swipeStart=null,suppressClickUntil=0;
+    root.addEventListener('touchstart',event=>{
+      swipeStart=null;if(event.touches.length!==1||document.querySelector('dialog[open]')||event.target.closest('input,button,select,textarea,a,summary'))return;
+      const t=event.touches[0];swipeStart={x:t.clientX,y:t.clientY,time:Date.now(),horizontal:false};
+    },{passive:true});
+    root.addEventListener('touchmove',event=>{
+      if(!swipeStart)return;if(event.touches.length!==1){swipeStart=null;return;}
+      const t=event.touches[0],dx=t.clientX-swipeStart.x,dy=t.clientY-swipeStart.y;
+      if(!swipeStart.horizontal&&Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx)){swipeStart=null;return;}
+      if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy)*1.5)swipeStart.horizontal=true;
+      if(swipeStart.horizontal&&event.cancelable)event.preventDefault();
+    },{passive:false});
+    root.addEventListener('touchend',event=>{
+      const start=swipeStart;swipeStart=null;if(!start||!event.changedTouches.length)return;
+      const t=event.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
+      if(start.horizontal&&Math.abs(dx)>=55&&Math.abs(dx)>Math.abs(dy)*1.5&&Date.now()-start.time<1000){
+        suppressClickUntil=Date.now()+400;showView(dx<0?'upcoming':'today');window.scrollTo(0,0);
+      }
+    },{passive:true});
+    root.addEventListener('touchcancel',()=>{swipeStart=null;},{passive:true});
+    root.addEventListener('click',event=>{if(Date.now()<suppressClickUntil){event.preventDefault();event.stopImmediatePropagation();}},true);
+
     window.TaskListBridge.attach({
       root,tasks,pairWith,children,groups,today,addDays,progressKey,occurrenceKey,childKey,showView,isInteracting:()=>taskPointers.size>0,
       subtaskCount,hasSubtasks,dueToday,overdue,onDate,isDone,isRecurring,renderToday,renderFuture,
@@ -3623,4 +3649,31 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 .tl-notes-grid{display:flex;flex-direction:column;gap:12px}.tl-notes-grid textarea{min-height:80px}.tl-extra-fields{display:block}
 .tl-date-shortcuts{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}.tl-date-shortcuts .btn{padding:7px;font-size:13px;min-width:0}.tl-clear-time{margin-top:6px;padding:7px;font-size:13px}
 .tl-context-settings{margin-top:16px}.tl-context-settings h3{font-size:17px}.tl-context-settings p{overflow-wrap:anywhere}
+</style>
+
+<style id="tasks-unified-phone-layout">
+html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important}
+#today-task-list-20261023 .tm-task-item{margin:0!important;padding:8px 0 10px;gap:5px!important;border:0!important;border-radius:0}
+#today-task-list-20261023 .tm-task-item>.form-check{display:flex!important;align-items:center!important;gap:8px!important;min-height:24px}
+#today-task-list-20261023 .tm-task-item>.form-check>.form-check-input{width:24px!important;height:24px!important;margin:0!important;align-self:center!important;transform:translateY(-2px);border-color:var(--tl-muted)}
+#today-task-list-20261023 .tm-task-item>.form-check .tm-title{line-height:1.3;font-weight:550}
+#today-task-list-20261023 .tm-task-details,#today-task-list-20261023 .tm-item-actions{padding-left:32px!important;margin:0!important}
+#today-task-list-20261023 .tm-task-details:empty{display:none}
+#today-task-list-20261023 .tm-group,#today-task-list-20261023 .tm-day .tm-group{font-size:13px;font-weight:500;margin:14px 0 6px;line-height:1.4}
+#today-task-list-20261023 .tm-day-heading{display:flex;align-items:center;gap:8px;font-size:17px;line-height:1.3;list-style:none;min-height:42px;margin:0 0 6px;padding:8px 0}
+#today-task-list-20261023 .tm-day-heading::-webkit-details-marker{display:none}
+#today-task-list-20261023 .tm-day-heading::before{content:'▸';font-size:14px;flex:none}
+#today-task-list-20261023 .tm-day[open]>.tm-day-heading::before{content:'▾'}
+#today-task-list-20261023 .tm-day-label{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;overflow-wrap:anywhere}
+#today-task-list-20261023 .tm-day-date{font-size:12px;font-weight:400;color:var(--tl-muted)}
+#today-task-list-20261023 .tm-day-count{font-size:12px;font-weight:500;color:var(--tl-muted);flex:none}
+#today-task-list-20261023 .tm-urgent-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:6px;background:#a51d2d;color:#fff;font-size:11px;font-weight:750;line-height:1.4}
+#today-task-list-20261023 .tm-completed-today{padding:8px!important;border:1px solid var(--tl-accent)!important;border-left-width:3px!important;border-radius:7px}
+#today-task-list-20261023 .tm-in-progress-item{padding:8px!important;border:1px solid #328056!important;border-radius:7px}
+</style>
+
+<style>
+#today-task-list-20261023 .form-check:not(.form-switch) .form-check-input[type=checkbox]{border:2px solid var(--tl-accent)!important;box-shadow:none;background:transparent!important;color:var(--tl-ink)}
+#today-task-list-20261023 .form-check:not(.form-switch) .form-check-input[type=checkbox]:checked{background:var(--tl-accent)!important}
+#today-task-list-20261023 .form-check:not(.form-switch) .form-check-input[type=checkbox]:checked::before{background:var(--tl-ink)!important}
 </style>

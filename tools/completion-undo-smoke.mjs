@@ -84,7 +84,7 @@ try {
   });
   await page.touchscreen.tap(firstPoint.x, firstPoint.y);
   check(afterFirst.checked && !afterFirst.disabled && afterFirst.completing, 'First real touch saves completion while leaving the checkbox enabled');
-  check(afterFirst.hint, 'Completing task tells the user it can be unchecked to undo');
+  check(!afterFirst.hint, 'Completing task has no undo-note clutter');
   check(Math.abs(afterFirst.x - firstPoint.x) < 2 && Math.abs(afterFirst.y - firstPoint.y) < 2,
     'Completing an active task keeps the checkbox at the same touch coordinates');
   await page.waitForTimeout(2200);

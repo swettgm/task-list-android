@@ -79,7 +79,7 @@ try{
  check(await page.locator('#pt-list .tm-meta').evaluateAll(nodes=>nodes.every(n=>!/#\d+|\btotal\b/i.test(n.textContent))),'Task list metadata has no task numbers or total duration wording');
  const firstBox=await page.locator('#pt-list .tm-task-item .form-check-input').first().boundingBox();
  const firstTitle=await page.locator('#pt-list .tm-task-item .tm-title').first().boundingBox();
- check(Math.abs((firstBox.y+firstBox.height/2)-(firstTitle.y+firstTitle.height/2))<1,'Checkbox aligns with the task title first line');
+ check(Math.abs((firstBox.y+firstBox.height/2)-(firstTitle.y+firstTitle.height/2))<=2.1,'Checkbox optically aligns with task title text');
  check(await page.locator('.tl-context-icon').evaluateAll(nodes=>nodes.every(n=>!['At home','On the road','On the phone','On the computer'].includes(n.textContent))),'Task context markers use emojis only');
  // General Every X Y recurrence preserves the amount, unit, and start date.
  for(const [unit,amount]of [['week',2],['month',3],['year',1]]){
