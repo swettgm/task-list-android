@@ -2472,6 +2472,7 @@ main{max-width:100%;margin:0;padding:0}
       <button class="nav-link" type="button" id="pt-upcoming-tab" role="tab" aria-selected="false" aria-controls="pt-upcoming">Upcoming</button>
     </div>
   </div>
+  <div class="tm-view-stack">
   <div id="pt-today" role="tabpanel" aria-labelledby="pt-today-tab">
     <div id="pt-progress" class="tm-summary tabular-nums" aria-live="polite"></div>
     <div id="pt-current" class="tm-current-banner" role="status" aria-live="polite" hidden></div>
@@ -2483,6 +2484,7 @@ main{max-width:100%;margin:0;padding:0}
     <p id="pt-status" class="text-small text-muted" role="status" aria-live="polite"></p>
   </div>
   <div id="pt-upcoming" role="tabpanel" aria-labelledby="pt-upcoming-tab" hidden><div id="pt-future-list"></div></div>
+  </div>
   <script>
   (() => {
     const localStorage = window.TaskListStorage;
@@ -3507,14 +3509,29 @@ main{max-width:100%;margin:0;padding:0}
     find('pt-toggle-hidden').addEventListener('click',()=>{
       find('pt-completed').hidden=!find('pt-completed').hidden;renderToday();
     });
-    const showView=view=>{
-      const todayView=view==='today';
-      find('pt-today').hidden=!todayView;
-      find('pt-upcoming').hidden=todayView;
+    let viewTransition=null;
+    const showView=(view,animate=false)=>{
+      if(viewTransition)viewTransition.finish();
+      const todayView=view==='today',incoming=find(todayView?'pt-today':'pt-upcoming'),outgoing=find(todayView?'pt-upcoming':'pt-today');
+      const changed=incoming.hidden;
+      incoming.hidden=false;outgoing.hidden=true;
+      incoming.setAttribute('aria-hidden','false');outgoing.setAttribute('aria-hidden','true');
       find('pt-today-tab').classList.toggle('active',todayView);
       find('pt-upcoming-tab').classList.toggle('active',!todayView);
       find('pt-today-tab').setAttribute('aria-selected',String(todayView));
       find('pt-upcoming-tab').setAttribute('aria-selected',String(!todayView));
+      if(!animate||!changed||!incoming.animate||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+      const stack=incoming.parentElement,direction=todayView?-1:1;
+      outgoing.hidden=false;outgoing.inert=true;incoming.inert=true;
+      stack.classList.add('tm-view-animating');outgoing.classList.add('tm-view-leaving');
+      const options={duration:240,easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'};
+      const animations=[incoming.animate([{transform:'translateX('+direction*100+'%)'},{transform:'translateX(0)'}],options),outgoing.animate([{transform:'translateX(0)'},{transform:'translateX('+(-direction*100)+'%)'}],options)];
+      const transition={finish(){
+        if(viewTransition!==transition)return;viewTransition=null;
+        animations.forEach(animation=>animation.cancel());outgoing.hidden=true;outgoing.inert=false;incoming.inert=false;
+        outgoing.classList.remove('tm-view-leaving');stack.classList.remove('tm-view-animating');
+      }};viewTransition=transition;
+      Promise.all(animations.map(animation=>animation.finished)).then(()=>transition.finish(),()=>transition.finish());
     };
     find('pt-today-tab').addEventListener('click',()=>showView('today'));
     find('pt-upcoming-tab').addEventListener('click',()=>showView('upcoming'));
@@ -3534,7 +3551,7 @@ main{max-width:100%;margin:0;padding:0}
       const start=swipeStart;swipeStart=null;if(!start||!event.changedTouches.length)return;
       const t=event.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
       if(start.horizontal&&Math.abs(dx)>=55&&Math.abs(dx)>Math.abs(dy)*1.5&&Date.now()-start.time<1000){
-        suppressClickUntil=Date.now()+400;showView(dx<0?'upcoming':'today');window.scrollTo(0,0);
+        suppressClickUntil=Date.now()+400;window.scrollTo(0,0);showView(dx<0?'upcoming':'today',true);
       }
     },{passive:true});
     root.addEventListener('touchcancel',()=>{swipeStart=null;},{passive:true});
@@ -3789,4 +3806,11 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 .tl-dialog{border-radius:18px!important}
 .tl-dialog fieldset,.tl-dialog .tasks-color-picker,.tl-dialog .tasks-theme-settings{border-radius:10px}
 #today-task-list-20261023 input[type=checkbox],.tl-dialog input[type=checkbox]{border-radius:4px}
+</style>
+
+<style>
+#today-task-list-20261023 .tm-view-stack{position:relative;min-width:0}
+#today-task-list-20261023 .tm-view-animating{overflow:hidden;isolation:isolate}
+#today-task-list-20261023 .tm-view-animating>[role=tabpanel]{pointer-events:none}
+#today-task-list-20261023 .tm-view-leaving{position:absolute;top:0;left:0;width:100%}
 </style>

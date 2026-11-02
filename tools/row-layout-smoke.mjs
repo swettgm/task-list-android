@@ -45,10 +45,14 @@ try{
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from,y}]});
   for(let step=1;step<=5;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:vertical?from:from+(to-from)*step/5,y:vertical?y+step*20:y}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  await page.waitForTimeout(450);
+  const motion=await page.evaluate(()=>[...document.querySelectorAll('.tm-view-stack>[role=tabpanel]')].flatMap(n=>n.getAnimations().map(a=>({id:n.id,frames:a.effect.getKeyframes().map(k=>k.transform)}))));
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
+  await page.waitForTimeout(450);return{motion,overflow};
  }
- await swipe(290,70);check(await page.locator('#pt-upcoming').isVisible(),'Swipe left opens Upcoming');
- await swipe(70,290);check(await page.locator('#pt-today').isVisible(),'Swipe right opens Today');
+ const left=await swipe(290,70);check(left.motion.some(a=>a.id==='pt-upcoming'&&a.frames[0]==='translateX(100%)')&&left.motion.some(a=>a.id==='pt-today'&&a.frames.at(-1)==='translateX(-100%)')&&!left.overflow,'Swipe left slides both panels in the matching direction without horizontal overflow');check(await page.locator('#pt-upcoming').isVisible(),'Swipe left opens Upcoming');
+ const right=await swipe(70,290);check(right.motion.some(a=>a.id==='pt-today'&&a.frames[0]==='translateX(-100%)')&&right.motion.some(a=>a.id==='pt-upcoming'&&a.frames.at(-1)==='translateX(100%)')&&!right.overflow,'Swipe right reverses the slide direction');check(await page.locator('#pt-today').isVisible(),'Swipe right opens Today');
  await swipe(240,240,true);check(await page.locator('#pt-today').isVisible(),'Vertical scroll does not change tabs');
+ check(await page.locator('.tm-view-animating,.tm-view-leaving,[inert]').count()===0&&await page.locator('[role=tabpanel]:not([hidden])').count()===1,'Finished transitions clean up animation state and leave one interactive panel');
+ await page.emulateMedia({reducedMotion:'reduce'});const reduced=await swipe(290,70);check(reduced.motion.length===0&&await page.locator('#pt-upcoming').isVisible(),'Reduced motion skips the slide while retaining swipe navigation');
  check(!errors.length,'Layout interactions have no page errors');console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();}
