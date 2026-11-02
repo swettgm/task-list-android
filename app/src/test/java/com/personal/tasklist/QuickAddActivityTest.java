@@ -168,4 +168,19 @@ public class QuickAddActivityTest {
         }
         return null;
     }
+
+    @Test public void widgetPopupUsesSavedGradientAndRoundedClippedPanel() throws Exception {
+        reference.writeState("{\"uiTheme\":{\"accent\":\"#ffffff\",\"background\":\"#123456\",\"gradient\":true,\"gradientEnd\":\"#654321\",\"gradientAngle\":135}}");
+        ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();QuickAddActivity activity=controller.get();
+        android.view.ViewGroup content=activity.findViewById(android.R.id.content);android.widget.ScrollView panel=(android.widget.ScrollView)content.getChildAt(0);
+        assertTrue(panel.getClipToOutline());assertTrue(panel.getBackground() instanceof PopupAppearance.Background);
+        PopupAppearance.Background background=(PopupAppearance.Background)panel.getBackground();assertTrue(background.appearance.gradient);assertEquals(android.graphics.Color.parseColor("#123456"),background.appearance.start);assertEquals(android.graphics.Color.parseColor("#654321"),background.appearance.end);assertEquals(135,background.appearance.angle);
+        background.setBounds(0,0,400,300);android.graphics.Outline outline=new android.graphics.Outline();background.getOutline(outline);assertTrue(outline.getRadius()>0);
+        android.widget.EditText title=findDescription(activity.getWindow().getDecorView(),"Task title",android.widget.EditText.class);assertEquals(background.appearance.foreground,title.getCurrentTextColor());assertTrue(title.hasFocus());controller.pause().stop().destroy();
+    }
+    @Test public void widgetPopupMatchesSolidLightThemeWhenGradientIsOff() throws Exception {
+        reference.writeState("{\"uiTheme\":{\"background\":\"#ffffff\",\"accent\":\"#123\",\"gradient\":false}}");
+        ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();QuickAddActivity activity=controller.get();
+        android.view.ViewGroup content=activity.findViewById(android.R.id.content);PopupAppearance.Background background=(PopupAppearance.Background)content.getChildAt(0).getBackground();assertFalse(background.appearance.gradient);assertEquals(android.graphics.Color.WHITE,background.appearance.start);assertEquals(android.graphics.Color.parseColor("#112233"),background.appearance.accent);assertEquals(android.graphics.Color.parseColor("#10151f"),background.appearance.foreground);controller.pause().stop().destroy();
+    }
 }

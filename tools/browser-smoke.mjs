@@ -60,7 +60,7 @@ const result = await page.evaluate(async () => {
   check(!document.querySelector('#pt-save,#pt-copy,#pt-backup,#pt-copy-full,#pt-copy-box,.tl-export'), 'Manual completion, copy, and backup controls removed');
   check(!document.querySelector('.tm-ai-note,.tm-pair-note,.tm-linked-chain'), 'AI tips and original suggested links are absent');
   check([...document.querySelectorAll('.tm-children')].every(item => !item.open), 'Subtask checklists start collapsed');
-  check(rows().every(row=>[...row.querySelector(':scope > .tm-item-actions').children].every(b=>['Do now','Do tomorrow ➜','⚙'].includes(b.textContent))), 'Task rows only show Do now, Do tomorrow arrow, and gear');
+  check(rows().every(row=>[...row.querySelectorAll(':scope > .tm-item-actions button')].every(b=>['Do now','Do tomorrow ➜','➜','⚙'].includes(b.textContent))), 'Task rows show only scheduling, priority arrows, and gear controls');
   check(rows().every(row=>row.querySelector('.tl-edit-button')?.getAttribute('aria-label').startsWith('Edit ')), 'Gear buttons have accessible task names');
   TaskListApp.setContextFilter('At home'); await tick();
   check(rows().every(row => [...row.querySelectorAll('.tl-context-icon')].some(badge => badge.getAttribute('aria-label') === 'At home')), 'Context filter works');

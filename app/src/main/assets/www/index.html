@@ -2273,6 +2273,13 @@ main{max-width:100%;margin:0;padding:0}
     select.value = selectedContext;
     const preview=document.getElementById('tl-context-filter-preview');if(preview){const image=selectedContext&&contextIcon(selectedContext)===GUILD_ICON_TOKEN;preview.replaceChildren();preview.hidden=!image;select.classList.toggle('tl-image-filter',!!image);if(image)preview.append(contextGlyph(selectedContext));}
   }
+  function changePriority(task,offset) {
+    const levels=scope.groups.map(([key])=>key);const found=levels.indexOf(task.priority||'UNSET');const current=found<0?levels.length-1:found;const target=Math.max(0,Math.min(levels.length-1,current+offset));if(target===current)return;
+    const next={...clone(task),priority:levels[target]};if(next.priority!=='HIGHEST')delete next.urgent;
+    const status=document.getElementById('pt-status');
+    try{saveDefinition(next,false);if(status)status.textContent='';}
+    catch(error){cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();if(status)status.textContent='Couldn’t change priority. Please try again.';}
+  }
   function decorateRow(wrapper, task, item, completed) {
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
     const text = wrapper.querySelector('.tm-task-details') || wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
@@ -2281,7 +2288,11 @@ main{max-width:100%;margin:0;padding:0}
     const controls = wrapper.querySelector('.tm-item-actions');
     if (controls) {
       const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
-      edit.setAttribute('aria-label', 'Edit ' + task.title); edit.title = 'Edit task'; controls.append(edit);
+      edit.setAttribute('aria-label', 'Edit ' + task.title); edit.title = 'Edit task';
+      const tools=node('span','tl-priority-tools'),levels=scope.groups.map(([key])=>key),rank=levels.indexOf(task.priority||'UNSET');
+      [['up',-1,'Raise'],['down',1,'Lower']].forEach(([direction,offset,label])=>{
+        const button=action('',()=>changePriority(task,offset),'tm-move-control tl-priority-button tl-priority-'+direction);const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority';button.disabled=direction==='up'?rank===0:rank===levels.length-1;tools.append(button);
+      });tools.append(edit);controls.append(tools);
     }
     queueSnapshot();
   }
@@ -3749,4 +3760,21 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 
 <style>
 #today-task-list-20261023 .tl-context-filter-wrap #tl-context-filter{width:100%}.tl-context-filter-preview{font-size:14px}
+</style>
+
+<style>
+#today-task-list-20261023 .tl-priority-tools{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;white-space:nowrap}
+#today-task-list-20261023 .tl-priority-button{width:28px;min-width:28px;padding:0;font-size:18px;line-height:1}
+#today-task-list-20261023 .tl-priority-arrow{display:inline-block;line-height:1;font-weight:800}
+#today-task-list-20261023 .tl-priority-up .tl-priority-arrow{transform:rotate(-90deg)}
+#today-task-list-20261023 .tl-priority-down .tl-priority-arrow{transform:rotate(90deg)}
+#today-task-list-20261023 .tl-priority-button:disabled{opacity:.35;cursor:default}
+</style>
+
+<style>
+#today-task-list-20261023 button,#today-task-list-20261023 select,#today-task-list-20261023 .form-control,.tl-dialog button,.tl-dialog select,.tl-dialog input:not([type=radio]):not([type=checkbox]),.tl-dialog textarea{border-radius:9px!important;corner-shape:round!important}
+#today-task-list-20261023 .tl-add-task{border-radius:14px!important}
+.tl-dialog{border-radius:18px!important}
+.tl-dialog fieldset,.tl-dialog .tasks-color-picker,.tl-dialog .tasks-theme-settings{border-radius:10px}
+#today-task-list-20261023 input[type=checkbox],.tl-dialog input[type=checkbox]{border-radius:4px}
 </style>

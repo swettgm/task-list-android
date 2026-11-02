@@ -365,6 +365,13 @@
     select.value = selectedContext;
     const preview=document.getElementById('tl-context-filter-preview');if(preview){const image=selectedContext&&contextIcon(selectedContext)===GUILD_ICON_TOKEN;preview.replaceChildren();preview.hidden=!image;select.classList.toggle('tl-image-filter',!!image);if(image)preview.append(contextGlyph(selectedContext));}
   }
+  function changePriority(task,offset) {
+    const levels=scope.groups.map(([key])=>key);const found=levels.indexOf(task.priority||'UNSET');const current=found<0?levels.length-1:found;const target=Math.max(0,Math.min(levels.length-1,current+offset));if(target===current)return;
+    const next={...clone(task),priority:levels[target]};if(next.priority!=='HIGHEST')delete next.urgent;
+    const status=document.getElementById('pt-status');
+    try{saveDefinition(next,false);if(status)status.textContent='';}
+    catch(error){cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();if(status)status.textContent='Couldn’t change priority. Please try again.';}
+  }
   function decorateRow(wrapper, task, item, completed) {
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
     const text = wrapper.querySelector('.tm-task-details') || wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
@@ -373,7 +380,11 @@
     const controls = wrapper.querySelector('.tm-item-actions');
     if (controls) {
       const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
-      edit.setAttribute('aria-label', 'Edit ' + task.title); edit.title = 'Edit task'; controls.append(edit);
+      edit.setAttribute('aria-label', 'Edit ' + task.title); edit.title = 'Edit task';
+      const tools=node('span','tl-priority-tools'),levels=scope.groups.map(([key])=>key),rank=levels.indexOf(task.priority||'UNSET');
+      [['up',-1,'Raise'],['down',1,'Lower']].forEach(([direction,offset,label])=>{
+        const button=action('',()=>changePriority(task,offset),'tm-move-control tl-priority-button tl-priority-'+direction);const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority';button.disabled=direction==='up'?rank===0:rank===levels.length-1;tools.append(button);
+      });tools.append(edit);controls.append(tools);
     }
     queueSnapshot();
   }

@@ -76,7 +76,7 @@ public final class WidgetConfigActivity extends Activity {
         TextView title = text("Customize widget", 24, FOREGROUND);
         title.setTypeface(null, Typeface.BOLD);
         heading.addView(title, new LinearLayout.LayoutParams(0, dp(52), 1));
-        Button cancel = new Button(this); cancel.setText("Cancel"); cancel.setTextColor(ACCENT); cancel.setOnClickListener(v -> finish());
+        Button cancel = new Button(this);cancel.setBackground(new PopupAppearance(null).control(this,false)); cancel.setText("Cancel"); cancel.setTextColor(ACCENT); cancel.setOnClickListener(v -> finish());
         heading.addView(cancel);
         root.addView(heading);
 
@@ -131,7 +131,7 @@ public final class WidgetConfigActivity extends Activity {
         TextView transparencyNote = text("Text stays readable while the background becomes more transparent.", 12, MUTED);
         transparencyNote.setPadding(0,0,0,dp(20)); content.addView(transparencyNote);
 
-        Button save = new Button(this); save.setText("Save widget"); save.setTextColor(BACKGROUND); save.setBackgroundTintList(android.content.res.ColorStateList.valueOf(ACCENT));
+        Button save = new Button(this);save.setBackground(new PopupAppearance(null).control(this,true)); save.setText("Save widget"); save.setTextColor(BACKGROUND); save.setBackgroundTintList(android.content.res.ColorStateList.valueOf(ACCENT));
         root.addView(save, new LinearLayout.LayoutParams(-1, dp(54)));
         save.setOnClickListener(v -> save());
         AdapterView.OnItemSelectedListener changed = new AdapterView.OnItemSelectedListener() {
@@ -221,7 +221,7 @@ public final class WidgetConfigActivity extends Activity {
             }
         };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
+        spinner.setAdapter(adapter);spinner.setBackground(new PopupAppearance(null).dropdown(this));spinner.setPadding(dp(12),0,dp(36),0);
         GradientDrawable popup = new GradientDrawable(); popup.setColor(SURFACE);
         spinner.setPopupBackgroundDrawable(popup);
         spinner.setMinimumHeight(dp(50));
