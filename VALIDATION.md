@@ -1,20 +1,22 @@
-# Tasks 0.22.0 verification
+# Tasks 0.23.0 verification
 
-[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41473854807), source commit `5314c15048084ee4502d822b1d0c07f89bcb10d8`.
+[Successful CI run](https://github.com/swettgm/task-list-android/actions/runs/41479651446), source commit `ea6ebda73bf661ab85f8005a214831b47c5345ef`.
 
-87 Android tests, 333 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+88 Android tests, 364 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-Swipe panels now contain their top margins in a consistent layout before, during and after the horizontal transition. The clipping container keeps the same formatting behavior at rest and in motion. Browser checks compare the incoming panel's starting and middle vertical offsets with its final offset, and the outgoing panel's resting offset with its offsets during movement, in both swipe directions. Existing horizontal motion, overflow, reduced-motion and equal-row-layout checks remain passing.
+Upcoming tasks have a Do today button with the same styling as Do tomorrow and a left-facing thick arrow. It moves the selected occurrence, retains its completion identity and original definition, updates Today and the widget, and removes that occurrence from Upcoming. Repeating definitions remain unchanged and later daily occurrences remain available. Checks cover one-time moves, legacy Daily and Every 1 day schedules, widget snapshots, independent occurrence completion and persistence after reload.
 
-The widget plus is aligned to the right edge in XML, with zero trailing content padding and its 48dp tap area retained. A fresh widget layout resource causes installed widgets to receive the updated layout. Native tests inflate and measure the updated widget, checking the plus bounds against the outer width, end gravity, tap width, transparent background and add-task routing.
+Checkbox centers now align with the vertical center of task titles without an optical offset. Checks cover Today and Upcoming at multiple widths and text sizes, wrapped parent titles and checklist steps, including active subtasks. Active subtask badges sit below the title with 6dp top and 4dp bottom padding.
 
-Upcoming now shows every future daily occurrence even when that task is pending on Today. Each of the next fourteen dates retains its own task occurrence and completion key. Checks cover all fourteen daily occurrences, unique future dates beginning tomorrow, continued exclusion of nonrecurring Today work, and future daily completion leaving today's task unchecked.
+Only checkbox interaction changes completion. Parent titles, checklist titles, labels and metadata do not. Time, repeat frequency and duration are individual accessible buttons styled as inline metadata. They open focused rounded popups using the existing theme; the full gear editor remains available. Frequency controls are shared with the full editor. Tests cover cancellation, time-only edits, notification clearing when time is removed, duration edits, Every 2 days, reload persistence, Upcoming edits, and retention of notes, links, checklist progress and completion history.
 
-[Download Tasks-v0.22.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.22.0.apk).
+App, widget, quick-add controls and priority arrows now use High, Medium and Low. Medium is the default. Legacy Highest maps to High, Lowest to Low and no priority to Medium; unknown saved task metadata and task identities remain intact. Urgent tasks are High and sort first, before time and alphabetical order, on Today, Upcoming and the widget. Lowering an urgent task clears Urgent. Tests cover legacy priority records, the three editor choices, boundaries, daily persistence, later timed Urgent tasks above earlier High tasks, and widget ordering and headings.
 
-Package `com.personal.tasklist.preview`, version 0.22.0, code 22; minimum API 26, target 35; size 174,027 bytes.
+[Download Tasks-v0.23.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.23.0.apk).
 
-SHA-256: `d36a0f81057b49ef94d2c48e775170f0faa572b5cec9f5b4d08df251af1b8a98`.
+Package `com.personal.tasklist.preview`, version 0.23.0, code 23; minimum API 26, target 35; size 178,123 bytes.
+
+SHA-256: `c2d57495ae3414df307a3c245914c25faff45d79f027b57e725ded673488e42d`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
