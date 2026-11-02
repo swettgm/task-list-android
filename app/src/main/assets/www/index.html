@@ -3266,8 +3266,10 @@ main{max-width:100%;margin:0;padding:0}
     };
     const meta=(task,item)=>{
       const details=el('span','tm-meta'),repeat=window.TasksSchedule.describe(task);
-      const parts=[['duration',task.minutes===undefined?'⏰ No duration':'⏰ '+durationText(task.minutes)],['time',task.time||'Any time']];if(repeat)parts.push(['frequency','🔁 '+repeat]);
-      parts.forEach(([component,text],index)=>{if(index)details.append(document.createTextNode(' · '));const button=el('button','tl-meta-edit tl-meta-'+component,text);button.type='button';button.setAttribute('aria-label','Edit '+component+' for '+task.title);button.addEventListener('click',()=>window.TaskListBridge.editComponent(task,item,component));details.append(button);});return details;
+      const field=(component,text)=>{const button=el('button','tl-meta-edit tl-meta-'+component,text);button.type='button';button.setAttribute('aria-label','Edit '+component+' for '+task.title);button.addEventListener('click',()=>window.TaskListBridge.editComponent(task,item,component));return button;};
+      const schedule=el('span','tl-meta-schedule');schedule.append(field('duration',task.minutes===undefined?'⏰ No duration':'⏰ '+durationText(task.minutes)));
+      if(repeat){schedule.append(el('span','tl-meta-separator','·'),field('frequency','🔁 '+repeat));}
+      const time=el('span','tl-meta-time-wrap');time.append(document.createTextNode(' · '),field('time',task.time||'Any time'));details.append(schedule,time);return details;
     };
     const originNote=item=>{
       if(item.moved&&item.date<item.stateDate&&!isDone(item.task,item.stateDate,draft))return 'Moved from '+labelDate(item.stateDate);
@@ -3588,12 +3590,13 @@ main{max-width:100%;margin:0;padding:0}
     find('pt-toggle-hidden').addEventListener('click',()=>{
       find('pt-completed').hidden=!find('pt-completed').hidden;renderToday();
     });
-    let viewTransition=null;
-    const showView=(view,animate=false)=>{
+    let viewTransition=null,viewDrag=null;
+    const showView=(view,animate=false,progress=0)=>{
       if(viewTransition)viewTransition.finish();
       const todayView=view==='today',incoming=find(todayView?'pt-today':'pt-upcoming'),outgoing=find(todayView?'pt-upcoming':'pt-today');
-      const changed=incoming.hidden;
-      incoming.hidden=false;outgoing.hidden=true;
+      const changed=incoming.hidden||!!viewDrag;
+      if(viewDrag){for(const panel of [viewDrag.incoming,viewDrag.outgoing]){panel.style.transform='';panel.classList.remove('tm-view-leaving');panel.inert=false;}viewDrag.stack.classList.remove('tm-view-animating');viewDrag=null;}
+      incoming.hidden=false;outgoing.hidden=true;incoming.inert=false;outgoing.inert=false;
       incoming.setAttribute('aria-hidden','false');outgoing.setAttribute('aria-hidden','true');
       find('pt-today-tab').classList.toggle('active',todayView);
       find('pt-upcoming-tab').classList.toggle('active',!todayView);
@@ -3603,8 +3606,8 @@ main{max-width:100%;margin:0;padding:0}
       const stack=incoming.parentElement,direction=todayView?-1:1;
       outgoing.hidden=false;outgoing.inert=true;incoming.inert=true;
       stack.classList.add('tm-view-animating');outgoing.classList.add('tm-view-leaving');
-      const options={duration:240,easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'};
-      const animations=[incoming.animate([{transform:'translateX('+direction*100+'%)'},{transform:'translateX(0)'}],options),outgoing.animate([{transform:'translateX(0)'},{transform:'translateX('+(-direction*100)+'%)'}],options)];
+      const options={duration:Math.max(160,240*(1-progress)),easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'};
+      const animations=[incoming.animate([{transform:'translateX('+(direction*(1-progress)*100)+'%)'},{transform:'translateX(0)'}],options),outgoing.animate([{transform:'translateX('+(-direction*progress*100)+'%)'},{transform:'translateX('+(-direction*100)+'%)'}],options)];
       const transition={finish(){
         if(viewTransition!==transition)return;viewTransition=null;
         animations.forEach(animation=>animation.cancel());outgoing.hidden=true;outgoing.inert=false;incoming.inert=false;
@@ -3615,25 +3618,33 @@ main{max-width:100%;margin:0;padding:0}
     find('pt-today-tab').addEventListener('click',()=>showView('today'));
     find('pt-upcoming-tab').addEventListener('click',()=>showView('upcoming'));
     let swipeStart=null,suppressClickUntil=0;
+    const cancelSwipe=(animate=true)=>{swipeStart=null;if(viewDrag){const {from,ratio}=viewDrag;showView(from,animate,1-ratio);}};
     root.addEventListener('touchstart',event=>{
-      swipeStart=null;if(event.touches.length!==1||document.querySelector('dialog[open]')||event.target.closest('input,button,select,textarea,a,summary'))return;
-      const t=event.touches[0];swipeStart={x:t.clientX,y:t.clientY,time:Date.now(),horizontal:false};
+      cancelSwipe(false);if(viewTransition)viewTransition.finish();
+      if(event.touches.length!==1||document.querySelector('dialog[open]')||event.target.closest('input,button,select,textarea,a,summary'))return;
+      const t=event.touches[0];swipeStart={x:t.clientX,y:t.clientY,horizontal:false,from:find('pt-today-tab').getAttribute('aria-selected')==='true'?'today':'upcoming'};
     },{passive:true});
     root.addEventListener('touchmove',event=>{
-      if(!swipeStart)return;if(event.touches.length!==1){swipeStart=null;return;}
+      if(!swipeStart)return;if(event.touches.length!==1){cancelSwipe();return;}
       const t=event.touches[0],dx=t.clientX-swipeStart.x,dy=t.clientY-swipeStart.y;
-      if(!swipeStart.horizontal&&Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx)){swipeStart=null;return;}
+      if(!swipeStart.horizontal&&Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx)){cancelSwipe();return;}
       if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy)*1.5)swipeStart.horizontal=true;
-      if(swipeStart.horizontal&&event.cancelable)event.preventDefault();
+      if(!swipeStart.horizontal)return;if(event.cancelable)event.preventDefault();
+      const direction=swipeStart.from==='today'?1:-1;
+      if(!viewDrag&&-direction*dx>0){
+        const target=swipeStart.from==='today'?'upcoming':'today',incoming=find(target==='today'?'pt-today':'pt-upcoming'),outgoing=find(target==='today'?'pt-upcoming':'pt-today'),stack=incoming.parentElement;
+        incoming.hidden=false;incoming.setAttribute('aria-hidden','true');incoming.inert=true;outgoing.inert=true;stack.classList.add('tm-view-animating');outgoing.classList.add('tm-view-leaving');
+        viewDrag={from:swipeStart.from,target,incoming,outgoing,stack,direction,ratio:0,width:stack.getBoundingClientRect().width};
+      }
+      if(viewDrag){const drag=viewDrag;drag.ratio=Math.max(0,Math.min(1,-drag.direction*dx/drag.width));drag.incoming.style.transform='translateX('+(drag.direction*(1-drag.ratio)*100)+'%)';drag.outgoing.style.transform='translateX('+(-drag.direction*drag.ratio*100)+'%)';}
     },{passive:false});
     root.addEventListener('touchend',event=>{
-      const start=swipeStart;swipeStart=null;if(!start||!event.changedTouches.length)return;
-      const t=event.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
-      if(start.horizontal&&Math.abs(dx)>=55&&Math.abs(dx)>Math.abs(dy)*1.5&&Date.now()-start.time<1000){
-        suppressClickUntil=Date.now()+400;window.scrollTo(0,0);showView(dx<0?'upcoming':'today',true);
-      }
+      const start=swipeStart;swipeStart=null;if(!start)return;
+      if(start.horizontal)suppressClickUntil=Date.now()+400;
+      if(viewDrag){const drag=viewDrag,commit=drag.ratio*drag.width>=Math.min(72,Math.max(40,drag.width*.22));showView(commit?drag.target:drag.from,true,commit?drag.ratio:1-drag.ratio);}
     },{passive:true});
-    root.addEventListener('touchcancel',()=>{swipeStart=null;},{passive:true});
+    root.addEventListener('touchcancel',()=>cancelSwipe(),{passive:true});
+    window.addEventListener('blur',()=>{cancelSwipe(false);if(viewTransition)viewTransition.finish();});
     root.addEventListener('click',event=>{if(Date.now()<suppressClickUntil){event.preventDefault();event.stopImmediatePropagation();}},true);
 
     window.TaskListBridge.attach({
@@ -3920,4 +3931,11 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 
 <style>
 #today-task-list-20261023 .tl-priority-button{touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+</style>
+
+<style>
+#today-task-list-20261023 .tl-meta-schedule{display:inline-flex;align-items:flex-start;gap:4px;max-width:100%;vertical-align:baseline}
+#today-task-list-20261023 .tl-meta-schedule>.tl-meta-duration,#today-task-list-20261023 .tl-meta-separator{flex:0 0 auto;white-space:nowrap}
+#today-task-list-20261023 .tl-meta-schedule>.tl-meta-frequency{flex:0 1 auto;min-width:0;white-space:normal;overflow-wrap:anywhere}
+#today-task-list-20261023 .tl-meta-time-wrap{display:inline-block;white-space:nowrap}
 </style>
