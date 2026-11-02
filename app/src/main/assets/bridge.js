@@ -442,7 +442,7 @@
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
     const text = wrapper.querySelector('.tm-task-details') || wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
     const labels = derivedContexts(task);
-    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=action('',()=>editComponent(task,item,'labels'),'tl-context-icon tl-label-edit');icon.append(...contextGlyph(label).childNodes);icon.setAttribute('aria-label',label);icon.setAttribute('aria-haspopup','dialog');icon.title='Edit labels · '+label;badges.append(icon);}); const separator=node('span','tl-label-separator','\u00a0·\u00a0');separator.setAttribute('aria-hidden','true');(text.querySelector('.tm-meta')||text).append(separator,badges); }
+    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=action('',()=>editComponent(task,item,'labels'),'tl-context-icon tl-label-edit');icon.append(...contextGlyph(label).childNodes);icon.setAttribute('aria-label',label);icon.setAttribute('aria-haspopup','dialog');icon.title='Edit labels · '+label;badges.append(icon);}); const separator=node('span','tl-label-separator','·');separator.setAttribute('aria-hidden','true');badges.prepend(separator);(text.querySelector('.tm-meta')||text).append(badges); }
     const controls = wrapper.querySelector('.tm-item-actions');
     if (controls) {
       const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');

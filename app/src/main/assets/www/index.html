@@ -2350,7 +2350,7 @@ main{max-width:100%;margin:0;padding:0}
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
     const text = wrapper.querySelector('.tm-task-details') || wrapper.querySelector('.form-check-label') || wrapper.querySelector('.tm-future-content');
     const labels = derivedContexts(task);
-    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=action('',()=>editComponent(task,item,'labels'),'tl-context-icon tl-label-edit');icon.append(...contextGlyph(label).childNodes);icon.setAttribute('aria-label',label);icon.setAttribute('aria-haspopup','dialog');icon.title='Edit labels · '+label;badges.append(icon);}); const separator=node('span','tl-label-separator','\u00a0·\u00a0');separator.setAttribute('aria-hidden','true');(text.querySelector('.tm-meta')||text).append(separator,badges); }
+    if (text && labels.length) { const badges = node('span', 'tl-context-badges'); labels.forEach(label => {const icon=action('',()=>editComponent(task,item,'labels'),'tl-context-icon tl-label-edit');icon.append(...contextGlyph(label).childNodes);icon.setAttribute('aria-label',label);icon.setAttribute('aria-haspopup','dialog');icon.title='Edit labels · '+label;badges.append(icon);}); const separator=node('span','tl-label-separator','·');separator.setAttribute('aria-hidden','true');badges.prepend(separator);(text.querySelector('.tm-meta')||text).append(badges); }
     const controls = wrapper.querySelector('.tm-item-actions');
     if (controls) {
       const edit = action('⚙', () => editTask(task, item), 'tm-move-control tl-edit-button');
@@ -3348,8 +3348,8 @@ main{max-width:100%;margin:0;padding:0}
       const details=el('span','tm-meta'),repeat=window.TasksSchedule.describe(task);
       const field=(component,text)=>{const button=el('button','tl-meta-edit tl-meta-'+component,text);button.type='button';button.setAttribute('aria-label','Edit '+component+' for '+task.title);button.addEventListener('click',()=>window.TaskListBridge.editComponent(task,item,component));return button;};
       const schedule=el('span','tl-meta-schedule');schedule.append(field('duration',task.minutes===undefined?'⏰ No duration':'⏰ '+durationText(task.minutes)));
-      if(repeat){schedule.append(el('span','tl-meta-separator','\u00a0·\u00a0'),field('frequency','🔁 '+repeat));}
-      const time=el('span','tl-meta-time-wrap');time.append(document.createTextNode('\u00a0·\u00a0'),field('time',task.time||'Any time'));details.append(schedule,time);return details;
+      if(repeat){schedule.append(el('span','tl-meta-separator','·'),field('frequency','🔁 '+repeat));}
+      const time=el('span','tl-meta-time-wrap');time.append(el('span','tl-meta-separator','·'),field('time',task.time||'Any time'));details.append(schedule,time);return details;
     };
     const originNote=item=>{
       if(item.moved&&item.date<item.stateDate&&!isDone(item.task,item.stateDate,draft))return 'Moved from '+labelDate(item.stateDate);
@@ -4046,4 +4046,13 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 <style>
 #today-task-list-20261023 #tl-context-filter{appearance:none;-webkit-appearance:none;padding-right:40px!important}
 #today-task-list-20261023 .tl-context-filter-wrap::after{content:"";position:absolute;right:16px;top:50%;width:7px;height:7px;border-right:1.5px solid var(--tl-muted);border-bottom:1.5px solid var(--tl-muted);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+</style>
+
+<style>
+#today-task-list-20261023 .tm-task-details>.tm-meta:first-of-type{column-gap:0}
+#today-task-list-20261023 .tl-meta-schedule{align-items:center;gap:0}
+#today-task-list-20261023 .tl-meta-time-wrap{display:inline-flex;align-items:center}
+#today-task-list-20261023 .tm-meta>.tl-context-badges{margin:0;gap:0}
+#today-task-list-20261023 .tl-context-badges>.tl-label-edit+.tl-label-edit{margin-left:7px!important}
+#today-task-list-20261023 .tl-meta-separator,#today-task-list-20261023 .tl-label-separator{display:inline-block;padding:0 6px;font-weight:700;font-size:1.1em;line-height:inherit;flex:0 0 auto}
 </style>

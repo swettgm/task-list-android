@@ -57,14 +57,21 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
                 SharedPreferences widget=preferences(context,id);context.startActivity(new Intent(context,MainActivity.class).putExtra("widget_label",widget.getString("label","")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));return;
             }
             String itemAction=intent.getStringExtra(ITEM_ACTION);
-            if(ACTION_ITEM.equals(intent.getAction())&&!"complete".equals(itemAction)&&!"start".equals(itemAction)&&!"stop".equals(itemAction))return;
+            if(ACTION_ITEM.equals(intent.getAction())&&!"complete".equals(itemAction)&&!"undo".equals(itemAction)&&!"start".equals(itemAction)&&!"stop".equals(itemAction))return;
             String taskId = intent.getStringExtra(EXTRA_TASK_ID);
             if(registered&&ACTION_ITEM.equals(intent.getAction())){try{SharedPreferences widget=preferences(context,id);boolean visible=false;for(TaskStore.Task row:todayTasks(context,widget.getString("list",""),widget.getString("label","")))if(row.id.equals(taskId)){visible=true;break;}if(!visible){refreshAll(context);return;}}catch(RuntimeException unavailable){refreshAll(context);return;}}
             if (registered && taskId != null) {
                 TaskStore store = new TaskStore(context);
                 // The store atomically completes it; stale taps must never reopen a task.
                 try {
-                    if(ACTION_ITEM.equals(intent.getAction())&&("start".equals(itemAction)||"stop".equals(itemAction))){
+                    if(ACTION_ITEM.equals(intent.getAction())&&"undo".equals(itemAction)){
+                        WidgetCompletions.cancel(context,taskId,intent.getStringExtra("completion_token"));refreshAll(context);
+                    }else if(ACTION_ITEM.equals(intent.getAction())&&"complete".equals(itemAction)){
+                        WidgetCompletions.begin(context,taskId);refreshAll(context);
+                        final Context app=context.getApplicationContext();final PendingResult pending=goAsync();
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(()->{try{WidgetCompletions.settleExpired(app);refreshAll(app);}finally{if(pending!=null)pending.finish();}},WidgetCompletions.DELAY_MS+50);
+                    }else if(ACTION_ITEM.equals(intent.getAction())&&("start".equals(itemAction)||"stop".equals(itemAction))){
+                        if(!WidgetCompletions.token(context,taskId).isEmpty())return;
                         if(!new ReferenceStore(context).setTaskInProgress(taskId,"start".equals(itemAction)))store.setStatus(taskId,"start".equals(itemAction)?TaskStore.IN_PROGRESS:TaskStore.NEXT);
                     }else if (!new ReferenceStore(context).completeTask(taskId)) store.complete(taskId);
                 }
@@ -124,7 +131,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
 
     /** Only rows belonging to the app's current Today list; completed history stays in storage. */
     static List<TaskStore.Task> todayTasks(Context context,String listName,String label){
-        LocalDate today=LocalDate.now(java.time.ZoneId.of("America/New_York"));List<TaskStore.Task> result=new ArrayList<>();
+        WidgetCompletions.settleExpired(context);LocalDate today=LocalDate.now(java.time.ZoneId.of("America/New_York"));List<TaskStore.Task> result=new ArrayList<>();
         for(TaskStore.Task task:selectedTasks(context,listName,true,label)){
             String planned=effectiveDate(task);if(planned.isEmpty()||LocalDate.parse(planned).isAfter(today))continue;
             if(!task.id.startsWith("html:")){if(planned.equals(today.toString()))result.add(task);continue;}
