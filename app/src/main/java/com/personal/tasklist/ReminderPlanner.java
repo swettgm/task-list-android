@@ -48,6 +48,23 @@ final class ReminderPlanner {
         if(count==0)return completed.optBoolean(prefix);for(int i=0;i<count;i++)if(!completed.optBoolean(prefix+":step:"+i))return false;return true;
     }
     static JSONArray effective(JSONArray definitions,JSONObject state){Map<String,JSONObject> tasks=new LinkedHashMap<>();for(int i=0;i<definitions.length();i++){JSONObject task=definitions.optJSONObject(i);if(task!=null)tasks.put(task.optString("id"),task);}JSONObject overrides=state.optJSONObject("taskOverrides");if(overrides!=null){Iterator<String> ids=overrides.keys();while(ids.hasNext()){String id=ids.next();JSONObject task=overrides.optJSONObject(id);if(task!=null)tasks.put(id,task);}}JSONArray custom=state.optJSONArray("customTasks");if(custom!=null)for(int i=0;i<custom.length();i++){JSONObject task=custom.optJSONObject(i);if(task!=null)tasks.put(task.optString("id"),task);}return new JSONArray(tasks.values());}
+    /** A previously armed alarm must survive unrelated saves while Android delays delivery. */
+    static JSONArray keepDue(JSONArray previous,JSONArray upcoming,JSONArray tasks,JSONObject state,long now) throws JSONException {
+        JSONArray result=upcoming;long earliest=upcoming.length()==0?Long.MAX_VALUE:upcoming.getJSONObject(0).getLong("at");
+        for(int i=0;i<previous.length();i++){
+            JSONObject reminder=previous.optJSONObject(i);if(reminder==null)continue;long at=reminder.optLong("at",Long.MIN_VALUE);if(at>now||at<now-86400000L||at>earliest)continue;
+            for(int j=0;j<tasks.length();j++){
+                JSONObject task=tasks.getJSONObject(j);if(!task.optString("id").equals(reminder.optString("id"))||task.optBoolean("retired")||!task.optBoolean("notify"))continue;
+                try{
+                    String date=reminder.getString("date"),key=task.getString("id")+":"+date;if(!key.equals(reminder.getString("key"))||done(task,date,state))continue;
+                    LocalDate original=LocalDate.parse(date);JSONObject moved=state.optJSONObject("movedTo");boolean relocated=moved!=null&&moved.has(key);if(!scheduled(task,original)&&!relocated)continue;
+                    LocalDate display=relocated?LocalDate.parse(moved.getString(key)):original;LocalTime time=time(task.optString("time"));if(time==null||display.atTime(time).atZone(ZONE).toInstant().toEpochMilli()!=at)continue;
+                    if(at<earliest){result=new JSONArray();earliest=at;}result.put(reminder);break;
+                }catch(java.time.DateTimeException ignored){}
+            }
+        }
+        return result;
+    }
     static JSONArray next(JSONArray definitions,JSONObject state,long now){
         JSONArray result=new JSONArray();long earliest=Long.MAX_VALUE;LocalDate today=Instant.ofEpochMilli(now).atZone(ZONE).toLocalDate();JSONObject moved=state.optJSONObject("movedTo");
         for(int i=0;i<definitions.length();i++){

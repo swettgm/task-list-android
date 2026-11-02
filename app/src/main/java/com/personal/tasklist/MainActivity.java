@@ -143,7 +143,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onResume() {
-        super.onResume();WidgetCompletions.settleExpired(this);
+        super.onResume();WidgetCompletions.settleExpired(this);TaskReminders.reschedule(this);
         if (web != null) {
             web.onResume();
             if (pageReady && (reference.revision() != loadedRevision || !loadedDay.equals(LocalDate.now(ZoneId.of("America/New_York")).toString()))) loadTaskList();
@@ -202,7 +202,10 @@ public final class MainActivity extends Activity {
         }
         @JavascriptInterface public void updateReminders(String json) { TaskReminders.definitions(MainActivity.this,json); }
         @JavascriptInterface public void requestNotificationPermission() { runOnUiThread(()->requestReminderPermission(true)); }
-        @JavascriptInterface public String notificationStatus() { return TaskReminders.allowed(MainActivity.this)?"Notifications allowed":"Notifications are blocked in Android settings"; }
+        @JavascriptInterface public String notificationStatus() { if(!TaskReminders.allowed(MainActivity.this))return "Notifications are blocked in Android settings";android.app.NotificationChannel channel=getSystemService(android.app.NotificationManager.class).getNotificationChannel(TaskReminders.CHANNEL);return channel!=null&&channel.getImportance()==android.app.NotificationManager.IMPORTANCE_NONE?"Scheduled task reminders are blocked in Android settings":"Notifications allowed"; }
+        @JavascriptInterface public String exactAlarmStatus() { return TaskReminders.precise(MainActivity.this)?"Precise reminders enabled":"Precise reminders need Android permission; reminders may be delayed"; }
+        @JavascriptInterface public boolean exactAlarmsNeedPermission() { return !TaskReminders.precise(MainActivity.this); }
+        @JavascriptInterface public void openExactAlarmSettings() { if(android.os.Build.VERSION.SDK_INT>=31)runOnUiThread(()->{try{startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,android.net.Uri.parse("package:"+getPackageName())));}catch(android.content.ActivityNotFoundException unavailable){startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName())));}}); }
         @JavascriptInterface public void openNotificationSettings() { runOnUiThread(()->startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()))); }
         @JavascriptInterface public void updateSnapshot(String json) { reference.updateSnapshot(json); }
         @JavascriptInterface public void setThemeColors(String background) {
