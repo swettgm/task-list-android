@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.51.0 — 2026-11-03
+
+- Raised the Upcoming list slightly so Tomorrow is vertically aligned with the Today summary during swipes. The Today summary, text sizes and spacing between Upcoming dates are preserved.
+
 ## 0.50.0 — 2026-11-03
 
 - Changed the notification bell to a solid white silhouette and reduced its drawing slightly, preserving its centered alignment and spacing beside the task time.
