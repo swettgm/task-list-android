@@ -33,7 +33,7 @@ public class MainActivityTest {
         android.webkit.WebView web=activity.webForTests();web.getWebViewClient().onPageFinished(web,"https://tasklist.local/");
         assertTrue(Shadows.shadowOf(web).getLastEvaluatedJavascript().contains("editWidgetTask(\"html:serum:2026-11-03\")"));
         activity.taskBridgeForTests().setThemeColors("#ffffff");Shadows.shadowOf(Looper.getMainLooper()).idle();
-        assertEquals(android.graphics.Color.TRANSPARENT,((android.graphics.drawable.ColorDrawable)web.getBackground()).getColor());
+        assertEquals(android.graphics.Color.TRANSPARENT,((android.graphics.drawable.ColorDrawable)((android.view.View)web.getParent()).getBackground()).getColor());
         assertEquals(before,activity.taskBridgeForTests().readState());
         activity.taskBridgeForTests().finishTaskEditor();Shadows.shadowOf(Looper.getMainLooper()).idle();assertTrue(activity.isFinishing());
         controller.pause().stop().destroy();
