@@ -1,13 +1,13 @@
-# Tasks 0.38.0 verification
+# Tasks 0.39.0 verification — signing pending
 
-Source: `b288f3f889faccf4cf8e03e21c65aefab96317dd`. [Successful build and checks](https://github.com/swettgm/task-list-android/actions/runs/41624813708): 114 Android tests, 525 browser checks including 78 layout checks, 26 calendar checks and zero lint errors.
+Source: `d0b396a7efa01b70f791b32da27180fadc47e45e`. [Successful complete build and checks](https://github.com/swettgm/task-list-android/actions/runs/41626541458): Android unit tests and lint passed, 526 browser checks including 79 layout checks, and 26 calendar checks.
 
-Urgent and In progress use the same title-space layout pass. Each badge is measured against the title’s natural width before being placed beside it, with a 4px gap and centered vertical alignment. Urgent is considered first when both badges are present. Badges that do not fit stay in the details area; multiline titles retain their full width. The same pass runs for Today and Upcoming, viewport changes and font updates. Completion, urgency ordering, widget actions and storage behavior are unchanged.
+Urgent now shares the In progress badge's pill radius, padding, typography, line height and alignment. Its background stays red. Existing title-space placement and wrap behavior are retained.
 
-Layout regression checks cover Urgent on Today and Upcoming at 320px, 390px and 600px, both badges together, repeated resizing, long-title wrapping, checkbox alignment and horizontal overflow. The existing native, browser and calendar suites remain enabled.
+The added Chromium geometry check compares the badges' computed shape, spacing, type and rendered height, verifies their separate red/green colors, and runs alongside the existing title wrapping and resize checks.
 
-`Tasks-v0.38.0.apk`: version 0.38.0 / code 38; 220,294 bytes. SHA-256: `d6146bb1b1f7016384b20259942ce5e544d584da8fec2405b045c33b6715c6d7`.
+The personal preview signing workspace was offline when these checks completed. No signed 0.39.0 update has been published. The existing download links remain on 0.38.0. The CI artifact uses a temporary signing key and must be re-signed with the retained preview key before being distributed as an in-place update.
 
-Artifact digests, ZIP integrity, exact packaged assets, package/version, retained signing certificate and all non-signature APK entries passed verification. Install over the current app to retain tasks and settings.
+Before publication: synchronize the tested HTML into the private signing copy, verify artifact digests, ZIP integrity, packaged assets and package/version; sign with the retained key; compare every non-signature APK entry to the tested artifact; publish both versioned and legacy download paths with checksums.
 
-No physical phone was used. Browser checks run in Chromium and native checks in Robolectric. Windows work remains deferred.
+No physical phone was used. Chromium and Robolectric checks do not replace device testing. Windows work remains deferred.
