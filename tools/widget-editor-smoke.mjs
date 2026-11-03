@@ -1,4 +1,5 @@
 import {chromium} from 'playwright';
+import {existsSync} from 'node:fs';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -6,7 +7,7 @@ const source=path.resolve('app/src/main/assets/www/index.html'),dir=path.resolve
 const html=await readFile(source,'utf8');
 await writeFile(path.join(dir,'index.html'),html.replace(/<head>/i,'<head><script>window.TaskListWidgetEditor=true;</script><style>body>main,#tasks-app-backdrop{display:none!important}html,body{min-height:100%!important}</style>'));
 const fixture={url:pathToFileURL(path.join(dir,'index.html')).href,close:async()=>{}};
-const browser=await chromium.launch({executablePath:process.env.CHROME_BIN||'/usr/bin/chromium',args:['--no-sandbox','--disable-dev-shm-usage']});
+const browser=await chromium.launch({executablePath:process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/opt/google/chrome/chrome'].find(existsSync),args:['--no-sandbox','--disable-dev-shm-usage']});
 const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',error=>errors.push(error.message));
 await page.addInitScript(()=>{
  let state={customTasks:[{id:'widget-edit-qa',title:'Widget editing test',repeat:{amount:1,unit:'day',start:'2020-01-01'},recurrence:'Daily',priority:'LOW',minutes:5,notes:'Existing notes',_contexts:['At home'],steps:['First step']}]};
