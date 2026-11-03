@@ -34,7 +34,7 @@ try{
  await page.evaluate(key=>TaskListApp.editWidgetTask(key),key);await page.locator('dialog input[type=text]').first().fill('Unsaved change');await page.getByRole('button',{name:'Cancel',exact:true}).click();
  check(await page.evaluate(()=>__qa.closed===2&&__qa.state().customTasks.find(t=>t.id==='widget-edit-qa').title==='Updated widget title'),'Cancel does not save');
  await page.evaluate(key=>TaskListApp.editWidgetTask(key),key);await page.evaluate(()=>__qa.fail=true);await page.getByRole('button',{name:'Save task',exact:true}).click();
- check(await page.evaluate(()=>!!document.querySelector('dialog[open]')&&__qa.closed===2&&document.querySelector('.tl-form-error').textContent.length>0),'Failed save keeps editor open');
+ check(await page.evaluate(()=>!!document.querySelector('dialog[open]')&&__qa.closed===2&&document.querySelector('dialog .tl-form-error').textContent.length>0),'Failed save keeps editor open');
  await page.evaluate(()=>{__qa.fail=false;TaskListApp.handleBack();});check(await page.evaluate(()=>__qa.closed===3&&!document.querySelector('dialog')),'Back closes popup');
  check(await page.evaluate(()=>!TaskListApp.editWidgetTask('html:missing:2026-11-03')&&!TaskListApp.editWidgetTask('bad')),'Stale identities do not create tasks');
  await page.evaluate(key=>TaskListApp.editWidgetTask(key),key);await page.mouse.click(2,2);check(await page.evaluate(()=>__qa.closed===4&&!document.querySelector('dialog')),'Outside tap closes popup');
