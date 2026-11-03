@@ -7,6 +7,8 @@
 
 - Redrew the chain as rounded interlocking links and the tree as a rounded canopy. Refined the phone cutout after reviewing the remaining icons.
 
+- Rounded the white icon set and standardized its size and visible proportions. Guild and custom emoji sizing stay unchanged.
+
 ## 0.44.0 — 2026-11-03
 
 - Simple clock, repeat and chain-link symbols are larger, with white strokes on a transparent background instead of a white surrounding disk.

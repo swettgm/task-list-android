@@ -356,7 +356,7 @@ public final class TaskStore {
     }
     public static CharSequence contextDisplay(Context context,String label){
         boolean guild=usesGuildImage(context,label);int resource=guild?R.drawable.guild_label:contextSymbolResource(context,label);if(resource==0)return contextEmoji(context,label);
-        android.graphics.drawable.Drawable icon=context.getDrawable(resource);int size=Math.round((guild?22:20)*context.getResources().getDisplayMetrics().scaledDensity);icon.setBounds(0,0,size,size);
+        android.graphics.drawable.Drawable icon=context.getDrawable(resource);int size=Math.round(guild?22*context.getResources().getDisplayMetrics().scaledDensity:24*context.getResources().getDisplayMetrics().density);icon.setBounds(0,0,size,size);
         android.text.SpannableString text=new android.text.SpannableString(label);text.setSpan(new android.text.style.ImageSpan(icon,android.text.style.ImageSpan.ALIGN_BOTTOM),0,text.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);return text;
     }
     public static String contextEmoji(Context context,String label) {
