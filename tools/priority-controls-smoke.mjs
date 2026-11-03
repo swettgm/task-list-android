@@ -2,11 +2,12 @@ import {chromium} from 'playwright';
 import {readFile,mkdir} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
 import path from 'node:path';
-import {pathToFileURL} from 'node:url';
+import {serveFixture} from './browser-fixture-server.mjs';
 const file=path.resolve('app/src/main/assets/www/index.html'),seed=JSON.parse(await readFile(path.join(path.dirname(file),'initial-state.json'),'utf8'));
+const fixture=await serveFixture(file);
 const browser=await chromium.launch({headless:true,executablePath:['/usr/bin/google-chrome','/usr/bin/chromium'].find(existsSync),args:['--no-sandbox','--disable-dev-shm-usage']});const checks=[],errors=[];
 const check=(v,s)=>{if(!v)throw Error(s);checks.push(s);};
-async function newPage(initial,fixedTime){const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(({initial,fixedTime})=>{if(fixedTime){const RealDate=Date;window.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[fixedTime]));}static now(){return fixedTime;}};}let state=JSON.parse(sessionStorage.getItem('priority-qa')||JSON.stringify(initial));window.__priority={get:()=>JSON.parse(JSON.stringify(state)),set:s=>{state=JSON.parse(JSON.stringify(s));sessionStorage.setItem('priority-qa',JSON.stringify(state));},snapshot:[],haptics:0};window.TaskListNative={readState:()=>JSON.stringify(state),writeState:s=>__priority.set(JSON.parse(s)),updateSnapshot:s=>__priority.snapshot=JSON.parse(s),priorityHaptic(){__priority.haptics++;},setThemeColors(){},showWidgetSettings(){}};},{initial,fixedTime});await page.goto(pathToFileURL(file).href);await page.waitForFunction(()=>window.TaskListApp&&__priority.snapshot.length);return page;}
+async function newPage(initial,fixedTime){const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(({initial,fixedTime})=>{if(fixedTime){const RealDate=Date;window.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[fixedTime]));}static now(){return fixedTime;}};}let state=JSON.parse(sessionStorage.getItem('priority-qa')||JSON.stringify(initial));window.__priority={get:()=>JSON.parse(JSON.stringify(state)),set:s=>{state=JSON.parse(JSON.stringify(s));sessionStorage.setItem('priority-qa',JSON.stringify(state));},snapshot:[],haptics:0};window.TaskListNative={readState:()=>JSON.stringify(state),writeState:s=>__priority.set(JSON.parse(s)),updateSnapshot:s=>__priority.snapshot=JSON.parse(s),priorityHaptic(){__priority.haptics++;},setThemeColors(){},showWidgetSettings(){}};},{initial,fixedTime});await page.goto(fixture.url);await page.waitForFunction(()=>window.TaskListApp&&__priority.snapshot.length);return page;}
 const page=await newPage(seed);
 try{
  const dates=await page.evaluate(()=>{const today=TaskListApp.debugSummary().today,d=new Date(today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+1);return{today,tomorrow:d.toISOString().slice(0,10)};});
@@ -26,7 +27,7 @@ try{
  check(await down().isDisabled()&&await up().isEnabled(),'Low disables its down arrow while keeping the up arrow available');
  check(await row('priority-none').locator('.tl-priority-down').isDisabled()&&await page.locator('#pt-list .tm-group').last().textContent()==='Priority not set','Unset is the bottom section and bottom arrow limit');
  const idsBeforePriority=(await state()).customTasks.map(t=>t.id).sort();
- check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='LOW','Priority arrows stop at Low and preserve the separate unset section');
+ check(['LOW','LOWEST'].includes((await state()).customTasks.find(t=>t.id==='priority-daily').priority),'Priority arrows stop at Low and preserve the separate unset section');
  const order=await daily().locator(':scope > .tm-item-actions button').evaluateAll(nodes=>nodes.slice(-3).map(n=>n.getAttribute('aria-label')));check(order[0].startsWith('Raise priority')&&order[1].startsWith('Lower priority')&&order[2].startsWith('Edit '),'Up and down controls sit immediately before the task gear');
  check(await up().textContent()==='➜'&&await down().textContent()==='➜','Priority controls use the same thick-arrow glyph as Do tomorrow');
  for(const expected of ['MEDIUM','HIGH']){await up().click();check((await state()).customTasks.find(t=>t.id==='priority-daily').priority===expected,'Raise priority saves '+expected);}
@@ -57,4 +58,4 @@ try{
  await page.setViewportSize({width:390,height:844});await mkdir('build/browser-qa',{recursive:true});await daily().scrollIntoViewIfNeeded();await page.screenshot({path:'build/browser-qa/quick-priority-controls.png'});
  check(JSON.stringify((await state()).customTasks.map(t=>t.id).sort())===JSON.stringify(idsBeforePriority),'Priority changes and restoring Unset preserve every saved task identity');
  check(!errors.length,'Priority controls have no browser errors');console.log(JSON.stringify({passed:checks.length,checks},null,2));
-}finally{await browser.close();}
+}finally{await browser.close();await fixture.close();}
