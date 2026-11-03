@@ -26,13 +26,13 @@ public class MainActivityTest {
         context.getSharedPreferences("tasks", Context.MODE_PRIVATE).edit().clear().commit();
         context.getSharedPreferences("reference_state", Context.MODE_PRIVATE).edit().clear().commit();
     }
-    @Test public void widgetEditorOpensExactTaskWithoutChangingStateAndClosesSeparately() {
+    @Test @Config(sdk=30) public void widgetEditorOpensExactTaskWithoutChangingStateAndClosesSeparately() {
         Intent intent=new Intent(context,TaskEditorActivity.class).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:serum:2026-11-03");
         ActivityController<TaskEditorActivity> controller=Robolectric.buildActivity(TaskEditorActivity.class,intent).setup();
         TaskEditorActivity activity=controller.get();String before=activity.taskBridgeForTests().readState();
         android.webkit.WebView web=activity.webForTests();web.getWebViewClient().onPageFinished(web,"https://tasklist.local/");
         assertTrue(Shadows.shadowOf(web).getLastEvaluatedJavascript().contains("editWidgetTask(\"html:serum:2026-11-03\")"));
-        android.view.View editorRoot=(android.view.View)web.getParent();editorRoot.dispatchApplyWindowInsets(new android.view.WindowInsets(new android.graphics.Rect(0,24,0,16)));assertEquals(24,editorRoot.getPaddingTop());assertEquals(16,editorRoot.getPaddingBottom());
+        android.view.View editorRoot=(android.view.View)web.getParent();editorRoot.dispatchApplyWindowInsets(new android.view.WindowInsets.Builder().setSystemWindowInsets(android.graphics.Insets.of(0,24,0,16)).build());assertEquals(24,editorRoot.getPaddingTop());assertEquals(16,editorRoot.getPaddingBottom());
         activity.taskBridgeForTests().setThemeColors("#ffffff");Shadows.shadowOf(Looper.getMainLooper()).idle();
         assertEquals(android.graphics.Color.TRANSPARENT,((android.graphics.drawable.ColorDrawable)((android.view.View)web.getParent()).getBackground()).getColor());
         assertEquals(before,activity.taskBridgeForTests().readState());
