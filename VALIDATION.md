@@ -1,15 +1,13 @@
-# Tasks 0.42.0 verification
+# Tasks 0.43.0 verification
 
-Source: fd23f3558a242205080fbc80ed10ec677582df34. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41677744192): 125 Android tests, 626 browser checks, 27 calendar checks and zero lint errors.
+Source: cff4649de8355aaaf89ab84a9848915eae4a1e87. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41681769974): 125 Android tests, 664 browser checks, 27 calendar checks and zero lint errors.
 
-Only High, Medium and Low priorities remain. App quick-add, detailed creation, widget quick-add, native default creation and project-to-task conversion all default to Low. Legacy unset, missing and Lowest priorities normalize to Low; Highest normalizes to High. Existing custom definitions and overrides are normalized when written, including the initial upgrade migration. Task identities, notes, labels, links, completion records and recurring definitions remain intact. The removed section and header count are absent from Today and Upcoming, and the widget groups former unset tasks under Low. Native and browser checks cover legacy records, saved canonical priorities, default creation/reset, widget headings, sorting, metadata preservation and priority-arrow endpoints.
+The full date and Today / Upcoming tabs share one line. The controls are 44 px high inside their 46 px border, with slightly less horizontal padding, a 6 px gap and 2 px more header space on each side. Header text keeps its natural size when it fits. When needed, actual rendered text widths determine a proportional reduction limited to the header. Resize, date changes, active-tab changes and font loading trigger fitting. Checks cover short and long weekday/month labels, 320/390/600 px widths, larger header type, vertical centering, both tabs and preservation of full text size when space allows.
 
-The widget editor now respects Android's top system inset, reducing its usable height by the notification-bar area while retaining the small dialog margin and reserved bottom action row. An Android inset test verifies top and bottom padding, alongside the existing editor scroll and footer geometry checks. The thin border and background scroll lock remain in place.
+Task details retain their existing font size and wrap by duration, time, recurrence, labels and priority. Separators sit in the gap before the following piece and are clipped at the start of each visual line, preventing dots at either side of a line break. Their symmetrical spacing and weight are retained. Checks cover normal and larger detail text, no sideways overflow, consistent separator placement and capitalized Low / Med / High priority text. Editing shortcuts, label selection and horizontal gestures remain covered by the complete workflow.
 
-The complete workflow also checks Trash and permanent-deletion safeguards, recurring task history, global notification templates, detail icons, task ordering, app gestures, widget editing and haptics. Settings Changelog contains 40 published releases including this update.
+`Tasks-v0.43.0.apk`: version 0.43.0 / code 43; 244,937 bytes. SHA-256: `60a8531a636803ad17814c1a1ae80804d4de5f9774672b59aa7c5dc91274259b`.
 
-`Tasks-v0.42.0.apk`: version 0.42.0 / code 42; 240,841 bytes. SHA-256: `da4f2445878a1b38cadf4732545c61832ce6b2a3dc6e17edfd723a723c403531`.
-
-Artifact hashes, ZIP CRCs, CI checksum, package/version, exact packaged UI assets including changelog data, all non-signature APK entries, alignment and the retained preview signer passed verification. The signer matches Tasks 0.41.0, and the original seed state is unchanged. Both download paths contain the same signed APK.
+Artifact hashes, ZIP CRCs, CI checksum, package/version, exact packaged UI assets including changelog data, all non-signature APK entries, alignment and the retained preview signer passed verification. The signer matches Tasks 0.42.0, and the original seed state is unchanged. Both download paths contain the same signed APK. Settings Changelog contains 41 published releases including this update.
 
 No physical phone or launcher was used. Android checks use Robolectric; browser checks use Chromium. Windows work remains deferred.
