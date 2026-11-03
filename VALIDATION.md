@@ -1,23 +1,21 @@
-# Tasks 0.34.0 verification
+# Tasks 0.35.0 verification
 
-[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41553642825), source commit `447f515b43209c6be785af5f25898269f4e15253`.
+[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41570381754), source commit `03f3d604c6c124bc3d7be9d4987b9f25a43d8005`.
 
-108 Android tests, 483 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+108 Android tests, 489 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
 
-Quick add resets all task fields after each successful save and keeps the popup open. The native widget form supports several checked labels, Today/Tomorrow/Weekend/custom dates and an optional time. Tests cover selected-label checks on reopening, independent consecutive saves, reset priority/date/time/labels, native date/time picker callbacks, calendar/time persistence, field spacing and retained task history.
+A touch contact can generate pointer-leave after pointer-up and before its compatibility click. The old handler marked that release as cancelled, discarding ordinary taps. Priority buttons now track whether a contact is still pressed; pointer-leave cancels only an ongoing press. Real cancellation and moving away still cancel pending holds. Taps retain one-level changes, holds jump to endpoints with haptics, release clicks do not double-apply changes, and a fresh tap after holding remains usable.
 
-Weekend tasks appear in Today starting Friday at 6 PM by default. Settings can change the Friday cutoff time. One-off weekend dates, weekends-only weekly repeats and alternate-weekend patterns keep their original occurrence and completion keys. A Saturday/Sunday repeating task previews Saturday first, preserving its separate Sunday recurrence. Daily tasks remain on their usual dates. Explicit task deferrals take precedence. A weekly maintenance alarm refreshes the widget at the cutoff without sending a notification; the app also refreshes open lists. Normal Notify opt-in and scheduled time still control task notifications.
+Upcoming’s Do today factory now uses the same recurrence guard already used by Today’s Do tomorrow factory. Daily, weekday and general repeat definitions have no day-move controls. Existing saved task definitions, occurrences, completion history and earlier explicit moves are preserved. One-time task movement remains available.
 
-Progress now stores multiple active occurrences with a compatible legacy cursor. The app banner joins active titles with commas; completion or Stop removes only matching task/step keys. Native snapshots preserve all active states across stale UI refreshes. Existing single-task state remains readable. The two-second completion undo layout retains its height when another task stays active.
+Browser regressions use touchscreen taps and CDP touch start/end holds, in addition to mouse input. They verify tap up/down, hold up/down, tap immediately after hold, endpoint limits, recurrence controls on both tabs, and one-time movement. The full native, calendar and browser suites remain enabled.
 
-Low disables its down arrow and High disables its up arrow. Holds jump to endpoints; a fresh pointer click after a hold is no longer blocked by the release guard. Unset remains a separate default/editable priority. Linked-task notes use the same font size as duration/time. Upcoming headings use month/day ordinals, including tomorrow, and keep the next day expanded. Empty widgets center the app’s exact flower/rest sentence. Fresh widget layouts refresh existing hosts.
+[Download Tasks-v0.35.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.35.0.apk).
 
-[Download Tasks-v0.34.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.34.0.apk).
+Package `com.personal.tasklist.preview`, version 0.35.0, code 35; minimum API 26, target 35; size 216,110 bytes.
 
-Package `com.personal.tasklist.preview`, version 0.34.0, code 34; minimum API 26, target 35; size 216,110 bytes.
-
-SHA-256: `d076c5beaf8531518e69a388d480e64532a7a4d0b52039b82d8b7a46f691ee5e`.
+SHA-256: `5035df2dfe53f44d7a7bc3d0f2a8358f788384a8b24e80d821358dc9ab5c6de3`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. Packaged UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
-No physical phone or Android launcher was used. Browser checks run in Chromium; native controls and widget behavior use Robolectric and view inflation. Android alarm and background policies still govern refresh timing. Windows development and pairing are deferred.
+No physical phone or Android launcher was used. Browser touch checks run in Chromium; native controls and widget behavior use Robolectric and view inflation. Windows work remains deferred.
