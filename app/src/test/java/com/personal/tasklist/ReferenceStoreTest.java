@@ -500,6 +500,9 @@ public class ReferenceStoreTest {
     @Test public void widgetCompletionRecordsStrictRecencyWithoutRefreshingDuplicateTaps() throws Exception {
         String day=today(),a=reference.addCustomTask("Alpha",Collections.emptyList(),"HIGH",false),b=reference.addCustomTask("Zulu",Collections.emptyList(),"LOW",false);reference.completeTask("html:"+a+":"+day);long first=new JSONObject(reference.readState()).getJSONObject("completedAt").getLong(a+":"+day);reference.completeTask("html:"+b+":"+day);JSONObject times=new JSONObject(reference.readState()).getJSONObject("completedAt");assertTrue(times.getLong(b+":"+day)>first);reference.completeTask("html:"+a+":"+day);assertEquals(first,new JSONObject(reference.readState()).getJSONObject("completedAt").getLong(a+":"+day));assertEquals(day,new JSONObject(reference.readState()).getJSONObject("completedOn").getString(a+":"+day));
     }
+    @Test public void nativeQuickAddSavesSeveralLabelsAndAnExplicitDateAndTime()throws Exception{
+        String id=reference.addCustomTask("Custom scheduled task",java.util.Arrays.asList("At home","On the phone"),"MEDIUM","2026-12-12","14:30",true);JSONObject saved=new JSONObject(reference.readState()).getJSONArray("customTasks").getJSONObject(0);assertEquals(2,saved.getJSONArray("labels").length());assertEquals("2026-12-12",saved.getString("due"));assertEquals("14:30",saved.getString("time"));assertTrue(saved.getBoolean("weekend"));assertEquals("14:30",find("html:"+id+":2026-12-12").sourceRecord().getString("time"));
+    }
     private static String today() { return LocalDate.now(ZoneId.of("America/New_York")).toString(); }
     private SharedPreferences preferences() { return context.getSharedPreferences("reference_state", Context.MODE_PRIVATE); }
     private SharedPreferences taskPreferences() { return context.getSharedPreferences("tasks", Context.MODE_PRIVATE); }

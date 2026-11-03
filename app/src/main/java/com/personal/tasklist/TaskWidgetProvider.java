@@ -136,7 +136,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         for(TaskStore.Task task:selectedTasks(context,listName,false,label)){
             org.json.JSONObject source=task.sourceRecord();String occurrence=source.optString("stateDate",effectiveDate(task)),opening=source.optString("weekendOpening");
             if(opening.isEmpty()&&task.id.startsWith("html:")){String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject definition=definitions.optJSONObject(i);if(definition!=null&&id.equals(definition.optString("id"))){opening=WeekendSchedule.opening(definition,occurrence);break;}}}
-            boolean weekend=WeekendSchedule.visible(opening,occurrence,now,cutoff);if(weekend){result.add(task);continue;}
+            org.json.JSONObject moves=state.optJSONObject("movedTo");boolean weekend=(moves==null||!moves.has(source.optString("progressKey")))&&WeekendSchedule.visible(opening,occurrence,now,cutoff);if(weekend){result.add(task);continue;}
             if(!TaskStore.isForToday(task,today))continue;String planned=effectiveDate(task);if(planned.isEmpty()||LocalDate.parse(planned).isAfter(today))continue;
             if(!task.id.startsWith("html:")){if(planned.equals(today.toString()))result.add(task);continue;}
             org.json.JSONObject record=task.sourceRecord();

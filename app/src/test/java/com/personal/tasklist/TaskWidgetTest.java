@@ -315,6 +315,9 @@ public class TaskWidgetTest {
         }
     }
 
+    @Test public void emptyWidgetMatchesTheCenteredAppRestMessage(){
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,widget);android.widget.TextView message=Shadows.shadowOf(manager).getViewFor(widget).findViewById(R.id.widget_empty);assertEquals("You’re all done! Get some rest 🪻",message.getText().toString());assertEquals(android.view.Gravity.CENTER,message.getGravity());
+    }
     @Test public void widgetHeaderPlusAddsAndHeaderTitleOpensTheApp() {
         AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,id);
         android.view.View view=Shadows.shadowOf(manager).getViewFor(id);

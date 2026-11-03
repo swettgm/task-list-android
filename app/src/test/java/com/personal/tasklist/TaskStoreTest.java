@@ -210,7 +210,7 @@ public class TaskStoreTest {
         assertEquals(30, reopened.minutes);
     }
 
-    @Test public void fullEditorUpdateKeepsIdentityAndEnforcesOneActiveTask() {
+    @Test public void fullEditorUpdateKeepsIdentityAndOtherActiveTasks() {
         store.add("First", "Personal", "");
         String first = store.all().get(0).id;
         store.doNow(first);
@@ -220,7 +220,7 @@ public class TaskStoreTest {
             TaskStore.IN_PROGRESS, LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(), "HIGH", 40);
         TaskStore.Task edited = find(second.id);
         assertEquals(second.createdAt, edited.createdAt);
-        assertEquals(TaskStore.NEXT, find(first).status);
+        assertEquals(TaskStore.IN_PROGRESS, find(first).status);
         assertEquals(TaskStore.IN_PROGRESS, edited.status);
         assertEquals("HIGH", edited.priority);
         assertEquals(40, edited.minutes);
