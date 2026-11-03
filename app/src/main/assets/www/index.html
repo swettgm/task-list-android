@@ -3370,7 +3370,7 @@ main{max-width:100%;margin:0;padding:0}
     const overdue = () => {
       const result=[];
       const supplements=tasks.find(t=>t.id==='supplements');
-      if(!isDone(supplements,'2026-10-19'))result.push(instance(supplements,'2026-10-19'));
+      if(supplements&&!supplements.retired&&!isDone(supplements,'2026-10-19'))result.push(instance(supplements,'2026-10-19'));
       for(let date=baseline;date<today;date=addDays(date,1)){
         scheduledOn(date).filter(i=>isDaily(i.task) && !isDone(i.task,i.stateDate)).forEach(i=>result.push(i));
       }

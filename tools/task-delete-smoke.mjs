@@ -30,6 +30,8 @@ try{
  check(await page.evaluate(()=>!__del.snapshot.some(row=>row.id.startsWith('html:delete-series:'))&&__del.snapshot.some(row=>row.id.startsWith('html:delete-keeper:'))),'Widget immediately drops deleted occurrences and retains other tasks');
  check(await page.evaluate(()=>__del.definitions.find(task=>task.id==='delete-series').retired===true),'Reminder planner receives retired definition');
  await page.getByRole('tab',{name:'Upcoming',exact:true}).click();check(await page.locator('#pt-future-list [data-task-id="delete-series"]').count()===0,'Future daily recurrences no longer appear');
+ await page.evaluate(()=>TaskListApp.editWidgetTask(__del.snapshot.find(row=>row.id.startsWith('html:supplements:')).id));await editor().getByRole('button',{name:'Delete task',exact:true}).click();await editor().getByRole('button',{name:'Confirm delete task',exact:true}).click();await page.waitForTimeout(50);
+ check(await page.evaluate(()=>__del.get().taskOverrides.supplements.retired===true&&!__del.snapshot.some(row=>row.id.startsWith('html:supplements:'))),'Deleting a built-in task removes current occurrences and legacy carryovers');
  await page.evaluate(()=>TaskListApp.reloadFromNative());await page.waitForTimeout(50);check(await page.locator('[data-task-id="delete-series"]').count()===0,'Deleted task stays deleted after reload');
  check(errors.length===0,'No deletion browser errors');console.log(JSON.stringify({passed,suite:'task deletion confirmation'}));
 }finally{await browser.close();}
