@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.49.0 — 2026-11-03
+
+- Tasks with a scheduled notification show a rounded white bell immediately before their time. Tasks without notifications have no bell.
+
 ## 0.48.0 — 2026-11-03
 
 - Removed the literal Checklist size slider. Notes and Checklist now expand directly from a small corner drag handle, with touch, mouse and keyboard support.
