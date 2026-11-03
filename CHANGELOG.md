@@ -2,6 +2,8 @@
 
 ## 0.39.0 — 2026-11-03
 
+- Weekend shortcuts in the app editor and widget quick add now choose Friday instead of Saturday. On Saturday or Sunday they use that weekend’s Friday.
+
 - Urgent now shares In progress’s rounded pill shape, padding, typography and height, while retaining its red color and title-spacing behavior.
 
 ## 0.38.0 — 2026-11-03

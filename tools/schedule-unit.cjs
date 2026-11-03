@@ -133,4 +133,8 @@ test('calendar years below 100 are not accidentally interpreted as 1900s', () =>
   assert.equal(S.matches(task(1, 'year', '0096-02-29'), '0100-02-28'), true);
 });
 
+test('Weekend shortcut targets Friday including the current weekend',()=>{
+  for(const day of ['2026-11-02','2026-11-03','2026-11-04','2026-11-05','2026-11-06','2026-11-07','2026-11-08'])assert.equal(S.nextWeekend(day),'2026-11-06');
+  assert.equal(S.nextWeekend('2026-11-30'),'2026-12-04');
+});
 console.log(JSON.stringify({ passed, suite:'calendar recurrence' }));

@@ -7,7 +7,7 @@ import org.json.*;
 /** Weekend tasks keep their original occurrence keys; Friday evening only changes visibility. */
 final class WeekendSchedule {
     static LocalTime cutoff(JSONObject state){LocalTime time=ReminderPlanner.time(state.optString("weekendStartTime","18:00"));return time==null?LocalTime.of(18,0):time;}
-    static LocalDate saturday(LocalDate date){int day=date.getDayOfWeek().getValue();return day==7?date.minusDays(1):date.plusDays((6-day+7)%7);}
+    static LocalDate friday(LocalDate date){int day=date.getDayOfWeek().getValue();return date.plusDays(5-day);}
     static boolean weekendTask(JSONObject task){
         if(task.optBoolean("weekend")||task.has("weekendCycleStart"))return true;
         JSONObject repeat=task.optJSONObject("repeat");JSONArray days=task.optJSONArray("days");
