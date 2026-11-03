@@ -43,13 +43,14 @@ final class TaskReminders {
     static void receive(Context c,String action){
         synchronized(LOCK){try{
             channels(c);JSONObject state=new JSONObject(new ReferenceStore(c).readState()),settings=state.optJSONObject("reminders");
-            if(DAILY.equals(action)){if(settings==null||settings.optBoolean("daily",true))post(c,"daily","Your daily task reminder","Open Tasks to review today's list.",DAILY_CHANNEL);}
+            if(DAILY.equals(action)){if(settings==null||settings.optBoolean("daily",true))post(c,"daily",settingText(settings,"dailyTitle","Your daily task reminder"),settingText(settings,"dailyBody","Open Tasks to review today's list."),DAILY_CHANNEL);}
             else if(TASK.equals(action)&&(settings==null||settings.optBoolean("scheduled",true))){JSONArray next=new JSONArray(prefs(c).getString("next","[]")),tasks=ReminderPlanner.effective(new JSONArray(prefs(c).getString("definitions","[]")),state);long now=System.currentTimeMillis();for(int i=0;i<next.length();i++){JSONObject reminder=next.getJSONObject(i);long at=reminder.getLong("at");if(now<at||now-at>86400000L)continue;for(int j=0;j<tasks.length();j++){JSONObject task=tasks.getJSONObject(j);if(task.optString("id").equals(reminder.getString("id"))&&task.optBoolean("notify")&&ReminderPlanner.time(task.optString("time"))!=null&&!ReminderPlanner.done(task,reminder.getString("date"),state))post(c,reminder.getString("key"),notificationText(settings,"taskTitle","{task}",task,java.time.Instant.ofEpochMilli(at).atZone(ReminderPlanner.ZONE).toLocalDate().toString()),notificationText(settings,"taskBody","It's time for this task.",task,java.time.Instant.ofEpochMilli(at).atZone(ReminderPlanner.ZONE).toLocalDate().toString()),CHANNEL);}}JSONArray remaining=new JSONArray();for(int i=0;i<next.length();i++)if(next.getJSONObject(i).getLong("at")>now)remaining.put(next.getJSONObject(i));if(!prefs(c).edit().putString("next",remaining.toString()).commit())throw new IllegalStateException("Could not acknowledge reminder delivery");}
         }catch(JSONException|RuntimeException error){Log.e("Tasks","Could not show reminder",error);}}
         reschedule(c);
     }
+    private static String settingText(JSONObject settings,String key,String fallback){return settings==null||settings.isNull(key)?fallback:settings.optString(key,fallback);}
     static String notificationText(JSONObject settings,String key,String fallback,JSONObject task,String date){
-        String template=settings==null||settings.isNull(key)?fallback:settings.optString(key,fallback);
+        String template=settingText(settings,key,fallback);
         java.util.regex.Matcher tokens=java.util.regex.Pattern.compile("\\{(task|time|date)\\}").matcher(template);StringBuffer result=new StringBuffer();
         while(tokens.find()){String name=tokens.group(1),value=name.equals("task")?task.optString("title"):name.equals("time")?task.optString("time"):date;tokens.appendReplacement(result,java.util.regex.Matcher.quoteReplacement(value));}tokens.appendTail(result);return result.toString();
     }
