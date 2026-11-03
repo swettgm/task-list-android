@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.50.0 — 2026-11-03
+
+- Changed the notification bell to a solid white silhouette and reduced its drawing slightly, preserving its centered alignment and spacing beside the task time.
+
 ## 0.49.0 — 2026-11-03
 
 - Tasks with a scheduled notification show a rounded white bell immediately before their time. Tasks without notifications have no bell.
