@@ -5,6 +5,9 @@
 - Added light haptic feedback to widget task actions and opening the app from the widget.
 - Left-aligned buttons, dropdowns and editable fields, with vertically centered control content and centered icon controls.
 - Added this complete update history to Settings.
+- Trash confirmation turns red with no extra text, resets after three seconds and requires a second tap to delete.
+- Detailed task editors keep their action buttons visible in a separate footer while fields scroll above it.
+- Subtask Do now buttons have the same outlined border as main task buttons.
 
 ## 0.39.0 — 2026-11-03
 

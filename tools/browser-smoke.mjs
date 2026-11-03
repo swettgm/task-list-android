@@ -264,8 +264,8 @@ for(const width of [320,360,390,412,600,844]){
   await page.evaluate(()=>TaskListApp.addTask());
   const metrics=await page.evaluate(()=>{const d=document.querySelector('dialog'),r=d.getBoundingClientRect();return{left:r.left,right:r.right,viewport:innerWidth,scroll:d.scrollWidth,client:d.clientWidth};});
   if(metrics.left<0||metrics.right>width+1||metrics.scroll>metrics.client+1)throw Error('Editor overflow '+width+': '+JSON.stringify(metrics));
-  await page.locator('dialog').evaluate(dialog=>{dialog.scrollTop=dialog.scrollHeight;});
-  const actions=await page.locator('dialog').evaluate(dialog=>{const row=dialog.querySelector('.tl-dialog-actions'),last=dialog.querySelector('.tl-extra-fields'),a=row.getBoundingClientRect(),b=last.getBoundingClientRect();return {position:getComputedStyle(row).position,gap:a.top-b.bottom,height:a.height,inside:a.bottom<=dialog.getBoundingClientRect().bottom};});
+  await page.locator('dialog .tl-task-editor-fields').evaluate(fields=>{fields.scrollTop=fields.scrollHeight;});
+  const actions=await page.locator('dialog').evaluate(dialog=>{const row=dialog.querySelector('.tl-dialog-actions'),fields=dialog.querySelector('.tl-task-editor-fields'),a=row.getBoundingClientRect(),b=fields.getBoundingClientRect(),button=row.querySelector('button').getBoundingClientRect();return {position:getComputedStyle(row).position,gap:button.top-b.bottom,height:a.height,inside:a.bottom<=dialog.getBoundingClientRect().bottom&&b.bottom<=a.top+1};});
   if(actions.position!=='static'||actions.gap<8||!actions.inside)throw Error('Editor action row overlaps fields at '+width+': '+JSON.stringify(actions));
   await page.getByRole('button',{name:'Cancel',exact:true}).click();
 }
