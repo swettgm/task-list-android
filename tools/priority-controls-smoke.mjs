@@ -23,13 +23,13 @@ try{
  await page.waitForFunction(()=>__priority.snapshot.some(t=>t.title==='Legacy no priority'&&t.priority==='UNSET'));check(true,'Unset tasks remain visible in their own section');
  check(await page.locator('#pt-list [data-task-id]').first().getAttribute('data-task-id')==='priority-urgent','Urgent stays above an earlier timed High task');
  const daily=()=>row('priority-daily'),up=()=>daily().locator('.tl-priority-up'),down=()=>daily().locator('.tl-priority-down');
- check(await down().isEnabled()&&await up().isEnabled(),'Legacy Lowest tasks stay visible as Low with Unset available below');
+ check(await down().isDisabled()&&await up().isEnabled(),'Low disables its down arrow while keeping the up arrow available');
  check(await row('priority-none').locator('.tl-priority-down').isDisabled()&&await page.locator('#pt-list .tm-group').last().textContent()==='Priority not set','Unset is the bottom section and bottom arrow limit');
  const idsBeforePriority=(await state()).customTasks.map(t=>t.id).sort();
- await down().click();check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='UNSET','A task can be explicitly moved into Priority not set');
+ check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='LOW','Priority arrows stop at Low and preserve the separate unset section');
  const order=await daily().locator(':scope > .tm-item-actions button').evaluateAll(nodes=>nodes.slice(-3).map(n=>n.getAttribute('aria-label')));check(order[0].startsWith('Raise priority')&&order[1].startsWith('Lower priority')&&order[2].startsWith('Edit '),'Up and down controls sit immediately before the task gear');
  check(await up().textContent()==='➜'&&await down().textContent()==='➜','Priority controls use the same thick-arrow glyph as Do tomorrow');
- for(const expected of ['LOW','MEDIUM','HIGH']){await up().click();check((await state()).customTasks.find(t=>t.id==='priority-daily').priority===expected,'Raise priority saves '+expected);}
+ for(const expected of ['MEDIUM','HIGH']){await up().click();check((await state()).customTasks.find(t=>t.id==='priority-daily').priority===expected,'Raise priority saves '+expected);}
  check(await up().isDisabled()&&await down().isEnabled(),'High priority disables the raise arrow without wrapping');
  check(await page.locator('dialog').count()===0,'Quick priority changes do not open Edit task');
  await page.waitForFunction(()=>__priority.snapshot.some(t=>t.title==='Priority daily task'&&t.onToday&&t.priority==='HIGH'));check(true,'Widget snapshot receives the changed task priority');
@@ -44,9 +44,9 @@ try{
  check(await page.evaluate(()=>__priority.haptics)===0,'Ordinary priority taps do not emit long-press haptics');
  const hold=async locator=>{await locator.scrollIntoViewIfNeeded();const box=await locator.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(520);await page.mouse.up();};
  await hold(up());check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='HIGH'&&await page.evaluate(()=>__priority.haptics)===1,'Holding up jumps directly from Low to High with one haptic');
- await down().dispatchEvent('click');check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='HIGH','Release click after a hold cannot apply a second priority change');await page.waitForTimeout(500);
+ await down().dispatchEvent('click');check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='HIGH','Release click after a hold cannot apply a second priority change');await down().click();check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='MEDIUM','A fresh ordinary click immediately after a hold still moves one level');
  await hold(down());check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='LOW'&&await page.evaluate(()=>__priority.haptics)===2,'Holding down stops at Low instead of Priority not set with one haptic');await page.waitForTimeout(500);
- await hold(down());check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='LOW'&&await page.evaluate(()=>__priority.haptics)===2,'Holding down while already Low cannot fall through to Unset on release');await page.waitForTimeout(500);
+ check(await down().isDisabled(),'Low remains disabled after holding down to its endpoint');await page.waitForTimeout(500);
  await up().click();check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='MEDIUM'&&await page.evaluate(()=>__priority.haptics)===2,'A normal tap still moves one level after long-press suppression expires');await down().click();
  await up().scrollIntoViewIfNeeded();const cancelBox=await up().boundingBox();await page.mouse.move(cancelBox.x+cancelBox.width/2,cancelBox.y+cancelBox.height/2);await page.mouse.down();await page.mouse.move(cancelBox.x+cancelBox.width/2,cancelBox.y+cancelBox.height/2+30);await page.waitForTimeout(520);await page.mouse.up();check((await state()).customTasks.find(t=>t.id==='priority-daily').priority==='LOW'&&await page.evaluate(()=>__priority.haptics)===2,'Moving away cancels a pending hold without changing priority or vibrating');
  await page.getByRole('tab',{name:'Upcoming',exact:true}).click();await hold(future().locator('.tl-priority-up'));check((await state()).customTasks.find(t=>t.id==='priority-future').priority==='HIGH'&&await page.evaluate(()=>__priority.haptics)===3,'Upcoming supports the same endpoint hold and haptic behavior');await page.getByRole('tab',{name:'Today',exact:true}).click();

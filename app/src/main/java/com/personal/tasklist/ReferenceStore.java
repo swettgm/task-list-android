@@ -76,6 +76,11 @@ public final class ReferenceStore {
 
     /** Add a one-time task from the small native home-screen popup. */
     public String addCustomTask(String title, List<String> labels, String priority, boolean tomorrow) {
+        return addCustomTask(title,labels,priority,LocalDate.now(REFERENCE_ZONE).plusDays(tomorrow?1:0).toString(),null,false);
+    }
+    public String addCustomTask(String title,List<String> labels,String priority,String date,String time,boolean weekend) {
+        try{LocalDate.parse(date);}catch(Exception invalid){throw new IllegalArgumentException("Choose a valid date.");}
+        if(time!=null&&!time.isEmpty()&&ReminderPlanner.time(time)==null)throw new IllegalArgumentException("Choose a valid time.");
         if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Enter a task title.");
         priority=TaskStore.normalizePriority(priority);
         if (!TaskStore.PRIORITIES.contains(priority)) throw new IllegalArgumentException("Choose a valid priority.");
@@ -86,7 +91,6 @@ public final class ReferenceStore {
             if (!label.trim().isEmpty()) contexts.add(label.trim());
         }
         String id = "custom-" + UUID.randomUUID();
-        String date = LocalDate.now(REFERENCE_ZONE).plusDays(tomorrow ? 1 : 0).toString();
         synchronized (LOCK) {
             try {
                 JSONObject current = state();
@@ -94,8 +98,9 @@ public final class ReferenceStore {
                 JSONObject definition = new JSONObject().put("id", id).put("title", title.trim())
                     .put("priority", priority).put("labels", new JSONArray(contexts))
                     .put("due", date).put("when", "Not set");
+                if(time!=null&&!time.isEmpty())definition.put("time",time);if(weekend)definition.put("weekend",true);
                 JSONArray records = storedSnapshot();
-                records.put(customMirror(definition, !tomorrow));
+                records.put(customMirror(definition,!LocalDate.parse(date).isAfter(LocalDate.now(REFERENCE_ZONE))));
                 custom.put(definition);
                 current.put("customTasks", custom).put("updatedAt", Instant.now().toString());
                 appendMissingCustomMirrors(records, current);
@@ -110,7 +115,7 @@ public final class ReferenceStore {
                 throw new IllegalStateException("Your new task could not be saved.", invalid);
             }
         }
-        replaceLatestMirror();
+        replaceLatestMirror();TaskReminders.reschedule(appContext);
         return id;
     }
 
@@ -152,16 +157,13 @@ public final class ReferenceStore {
                 long finishedAt=System.currentTimeMillis();for(java.util.Iterator<String> it=completedAt.keys();it.hasNext();){Object value=completedAt.opt(it.next());if(value instanceof Number){long previous=((Number)value).longValue();if(previous>=finishedAt&&previous<Long.MAX_VALUE)finishedAt=previous+1;}}
 
                 JSONObject rollover = current.has("rolloverCompletedOn") ? objectField(current, "rolloverCompletedOn") : new JSONObject();
-                Object rawActive = current.opt("inProgress");
-                if (rawActive != null && rawActive != JSONObject.NULL && !(rawActive instanceof String))
-                    throw new IllegalStateException("The saved active task could not be read.");
-                String active = rawActive instanceof String ? (String) rawActive : null;
+                java.util.List<String> active=activeKeys(current);
                 String progress = target.getString("progressKey");
                 JSONArray keys = target.getJSONArray("completionKeys");
                 boolean changed = false;
                 boolean becameComplete = false;
                 String today = LocalDate.now(REFERENCE_ZONE).toString();
-                boolean clearActive = matches(active, progress);
+                boolean clearActive = active.stream().anyMatch(value->matches(value,progress));
                 for (int i = 0; i < keys.length(); i++) {
                     String key = keys.getString(i);
                     if (!Boolean.TRUE.equals(completed.opt(key))) {
@@ -169,14 +171,14 @@ public final class ReferenceStore {
                         completedOn.put(key, today);completedAt.put(key,finishedAt);
                         changed = true; becameComplete = true;
                     }
-                    if (matches(active, key)) clearActive = true;
+                    if (active.stream().anyMatch(value->matches(value,key))) clearActive = true;
                 }
                 if (becameComplete) {
                     completedOn.put(progress, today);completedAt.put(progress,finishedAt);
                     current.put("completedAt",completedAt);
                     current.put("completedOn", completedOn);
                 }
-                if (clearActive) { current.put("inProgress", JSONObject.NULL); changed = true; }
+                if (clearActive) { active.removeIf(value->{if(matches(value,progress))return true;for(int i=0;i<keys.length();i++)if(matches(value,keys.optString(i)))return true;return false;});writeActiveKeys(current,active);changed = true; }
                 if (becameComplete && target.getBoolean("onToday") && !today.equals(target.getString("stateDate"))) {
                     if (!today.equals(rollover.opt(progress))) {
                         rollover.put(progress, today); changed = true;
@@ -207,29 +209,30 @@ public final class ReferenceStore {
     }
 
     /** Persist widget Do now/Stop in the same occurrence state read by the app. */
+    private static java.util.List<String> activeKeys(JSONObject state){
+        Object raw=state.opt("inProgress");if(raw!=null&&raw!=JSONObject.NULL&&!(raw instanceof String))throw new IllegalStateException("The saved active task could not be read.");
+        java.util.LinkedHashSet<String> keys=new java.util.LinkedHashSet<>();Object stored=state.opt("inProgressTasks");if(stored!=null&&!(stored instanceof JSONArray))throw new IllegalStateException("The saved active tasks could not be read.");
+        if(stored instanceof JSONArray){JSONArray values=(JSONArray)stored;for(int i=0;i<values.length();i++){Object value=values.opt(i);if(!(value instanceof String))throw new IllegalStateException("The saved active tasks could not be read.");if(!((String)value).isEmpty())keys.add((String)value);}}
+        if(raw instanceof String){if(!keys.contains(raw)){keys.clear();keys.add((String)raw);}}else if(state.has("inProgress"))keys.clear();
+        return new java.util.ArrayList<>(keys);
+    }
+    private static void writeActiveKeys(JSONObject state,java.util.List<String> keys)throws JSONException{state.put("inProgressTasks",new JSONArray(keys)).put("inProgress",keys.isEmpty()?JSONObject.NULL:keys.get(keys.size()-1));}
     public boolean setTaskInProgress(String taskId, boolean start) {
         if(taskId==null||!taskId.startsWith("html:")||taskId.length()==5)return false;
-        synchronized(LOCK){
-            JSONArray records=storedSnapshot();String beforeSnapshot=records.toString();JSONObject target=null;
+        synchronized(LOCK){JSONArray records=storedSnapshot();String beforeSnapshot=records.toString();JSONObject target=null;
             try{
                 for(int i=0;i<records.length();i++)if(taskId.equals(records.getJSONObject(i).getString("id"))){target=records.getJSONObject(i);break;}
-                if(target==null)return false;JSONObject current=state();applyPersistedCompletions(records,current);
-                Object raw=current.opt("inProgress");if(raw!=null&&raw!=JSONObject.NULL&&!(raw instanceof String))throw new IllegalStateException("The saved active task could not be read.");
-                String active=raw instanceof String?(String)raw:null,next=active,progress=target.getString("progressKey");boolean done=target.optBoolean("done")||TaskStore.DONE.equals(target.optString("status"));
-                if(!done&&start)next=progress;else if(matches(active,progress))next=null;
-                boolean changed=active==null?next!=null:!active.equals(next);if(!done&&!current.optBoolean("progressStateInitialized"))changed=true;
-                if(changed){current.put("inProgress",next==null?JSONObject.NULL:next).put("progressStateInitialized",true).put("updatedAt",Instant.now().toString());}
+                if(target==null)return false;JSONObject current=state();applyPersistedCompletions(records,current);java.util.List<String> active=activeKeys(current),next=new java.util.ArrayList<>(active);String progress=target.getString("progressKey");boolean done=target.optBoolean("done")||TaskStore.DONE.equals(target.optString("status"));
+                if(!done&&start){if(!next.contains(progress))next.add(progress);}else next.removeIf(value->matches(value,progress));
+                boolean changed=!active.equals(next)||(!done&&!current.optBoolean("progressStateInitialized"));if(changed){writeActiveKeys(current,next);current.put("progressStateInitialized",true).put("updatedAt",Instant.now().toString());}
                 applyPersistedProgress(records,current);String serialized=current.toString(),snapshotJson=records.toString();checkSize(serialized);checkSize(snapshotJson);TaskStore.validateReferenceTasks(snapshotJson);
                 if(changed||!beforeSnapshot.equals(snapshotJson)){SharedPreferences.Editor editor=prefs.edit().putString("snapshot",snapshotJson);if(changed)editor.putString("state",serialized).putLong("revision",nextRevision());commit(editor);}
             }catch(JSONException invalid){throw new IllegalStateException("The saved widget task could not be read.",invalid);}
-        }
-        replaceLatestMirror();return true;
+        }replaceLatestMirror();return true;
     }
-
     private static void applyPersistedProgress(JSONArray records,JSONObject state){
-        if(!state.has("inProgress")&&!state.optBoolean("progressStateInitialized"))return;
-        Object raw=state.opt("inProgress");if(raw!=null&&raw!=JSONObject.NULL&&!(raw instanceof String))throw new IllegalStateException("The saved active task could not be read.");String active=raw instanceof String?(String)raw:null;
-        try{for(int i=0;i<records.length();i++){JSONObject record=records.getJSONObject(i);if(record.optBoolean("done")||TaskStore.DONE.equals(record.optString("status")))continue;if(matches(active,record.getString("progressKey")))record.put("status",TaskStore.IN_PROGRESS);else if(TaskStore.IN_PROGRESS.equals(record.optString("status")))record.put("status",TaskStore.NEXT);}}catch(JSONException invalid){throw invalidSnapshot(invalid);}
+        if(!state.has("inProgress")&&!state.has("inProgressTasks")&&!state.optBoolean("progressStateInitialized"))return;java.util.List<String> active=activeKeys(state);
+        try{for(int i=0;i<records.length();i++){JSONObject record=records.getJSONObject(i);if(record.optBoolean("done")||TaskStore.DONE.equals(record.optString("status")))continue;String progress=record.getString("progressKey");if(active.stream().anyMatch(value->matches(value,progress)))record.put("status",TaskStore.IN_PROGRESS);else if(TaskStore.IN_PROGRESS.equals(record.optString("status")))record.put("status",TaskStore.NEXT);}}catch(JSONException invalid){throw invalidSnapshot(invalid);}
     }
 
     private void replaceLatestMirror() {
@@ -288,12 +291,14 @@ public final class ReferenceStore {
     private static JSONObject customMirror(JSONObject definition, boolean onToday) throws JSONException {
         String id = requiredString(definition, "id"), due = requiredString(definition, "due");
         String key = id + ":" + due;
-        return new JSONObject().put("id", "html:" + key).put("title", requiredString(definition, "title"))
+        JSONObject row=new JSONObject().put("id", "html:" + key).put("title", requiredString(definition, "title"))
             .put("listName", TaskStore.DEFAULT_LIST).put("dueDate", due).put("plannedDate", due)
             .put("done", false).put("status", TaskStore.NEXT).put("labels", definition.getJSONArray("labels"))
             .put("priority", requiredString(definition, "priority")).put("minutes", 0)
             .put("createdAt", System.currentTimeMillis()).put("completionKeys", new JSONArray().put(key))
-            .put("progressKey", key).put("stateDate", due).put("onToday", onToday).put("source", "html");
+            .put("progressKey", key).put("stateDate", due).put("onToday", onToday).put("source", "html").put("snapshotDate",LocalDate.now(REFERENCE_ZONE).toString()).put("time",definition.optString("time"));
+        row.put("weekendOpening",WeekendSchedule.opening(definition,due));
+        return row;
     }
 
     private JSONObject state() {

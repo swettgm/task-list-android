@@ -188,6 +188,7 @@ const result = await page.evaluate(async () => {
   check(quick&&quick.due===original.today&&quick._contexts.includes('On the phone')&&dialog.open&&dialog.querySelector('input').value===''&&document.activeElement===dialog.querySelector('input'),'Quick add saves and clears its title while keeping the popup and keyboard focus');
   const firstQuickBox=dialog.getBoundingClientRect();check(dialog.getAnimations().length>0,'Successful quick add flashes the popup border');
   dialog.querySelector('input').value='Second quick entry QA';clickText(dialog,'Add');await tick();check(__nativeQA.getState().customTasks.filter(task=>['Quick entry QA','Second quick entry QA'].includes(task.title)).length===2&&dialog.open&&dialog.querySelector('input').value==='','The same quick-add popup can save another distinct task');
+  check(__nativeQA.getState().customTasks.find(task=>task.title==='Second quick entry QA')._contexts.length===0,'Batch quick add clears inherited labels after a successful save');
   const nextQuickBox=dialog.getBoundingClientRect();check(Math.abs(firstQuickBox.width-nextQuickBox.width)<1&&Math.abs(firstQuickBox.height-nextQuickBox.height)<1,'Border pulses do not resize the quick-add popup');clickText(dialog,'Cancel');
   document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');dialog.querySelector('input').value='Keep this title';
   clickText(dialog,'Details');dialog=document.querySelector('dialog');

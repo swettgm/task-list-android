@@ -13,6 +13,7 @@ import java.time.*;
 /** Two one-shot alarms: next timed task and a daily reminder/maintenance wake-up. */
 final class TaskReminders {
     static final String TASK="com.personal.tasklist.REMIND_TASK",DAILY="com.personal.tasklist.REMIND_DAILY";
+    static final String WEEKEND="com.personal.tasklist.REMIND_WEEKEND";
     static final String CHANNEL="task-times",DAILY_CHANNEL="task-daily";
     private static final Object LOCK=new Object();
     static android.content.SharedPreferences prefs(Context c){return c.getSharedPreferences("task_reminders",Context.MODE_PRIVATE);}
@@ -35,6 +36,7 @@ final class TaskReminders {
             NotificationManager notifications=c.getSystemService(NotificationManager.class);
             for(android.service.notification.StatusBarNotification shown:notifications.getActiveNotifications()){String tag=shown.getTag();if(tag==null)continue;if(tag.equals("daily")){if(!daily)notifications.cancel(tag,0);continue;}for(int i=0;i<tasks.length();i++){JSONObject task=tasks.getJSONObject(i);String prefix=task.optString("id")+":";if(tag.startsWith(prefix)&&(!timed||!task.optBoolean("notify")||ReminderPlanner.done(task,tag.substring(prefix.length()),state)))notifications.cancel(tag,0);}}
             if(next.length()>0)schedule(c,alarms,Math.max(nowMillis+1000,next.getJSONObject(0).getLong("at")),alarm(c,TASK));
+            schedule(c,alarms,WeekendSchedule.nextOpening(ZonedDateTime.now(ReminderPlanner.ZONE),WeekendSchedule.cutoff(state)).toInstant().toEpochMilli(),alarm(c,WEEKEND));
             if(daily||timed){LocalTime time=ReminderPlanner.time(settings==null?"09:00":settings.optString("dailyTime","09:00"));if(time==null)time=LocalTime.of(9,0);ZonedDateTime now=ZonedDateTime.now(ReminderPlanner.ZONE),when=now.toLocalDate().atTime(time).atZone(ReminderPlanner.ZONE);if(!when.isAfter(now))when=now.toLocalDate().plusDays(1).atTime(time).atZone(ReminderPlanner.ZONE);schedule(c,alarms,when.toInstant().toEpochMilli(),alarm(c,DAILY));}
         }catch(JSONException|RuntimeException error){Log.e("Tasks","Could not refresh reminder alarms",error);}}
     }

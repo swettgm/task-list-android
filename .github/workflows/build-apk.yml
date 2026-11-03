@@ -74,6 +74,7 @@ jobs:
           node tools/browser-smoke.mjs
           node tools/completion-undo-smoke.mjs
           node tools/tasks-v7-smoke.mjs
+          node tools/weekend-smoke.mjs
           node tools/theme-smoke.mjs
           node tools/row-layout-smoke.mjs
           node tools/checklist-edit-smoke.mjs

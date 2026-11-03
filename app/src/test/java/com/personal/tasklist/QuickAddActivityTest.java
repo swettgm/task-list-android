@@ -50,11 +50,11 @@ public class QuickAddActivityTest {
         idleMainLooper();
         View decor = activity.getWindow().getDecorView();
         EditText title = findDescription(decor, "Task title", EditText.class);
-        Spinner label = findDescription(decor, "Context label", Spinner.class);
+        Button label = findDescription(decor, "Context labels", Button.class);
         Spinner priority = findDescription(decor, "Priority", Spinner.class);
         Spinner when = findDescription(decor, "When to do it", Spinner.class);
         assertNotNull(title); assertNotNull(label); assertNotNull(priority); assertNotNull(when);
-        assertEquals("📱", label.getSelectedItem().toString());
+        assertEquals("📱", label.getText().toString());
         title.setText("  Call the office  ");
         select(priority, "High");
         select(when, "Tomorrow");
@@ -94,6 +94,11 @@ public class QuickAddActivityTest {
         reference.writeState("{\"customTasks\":[],\"completed\":{\"keep:old\":true}}");ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();QuickAddActivity activity=controller.get();View decor=activity.getWindow().getDecorView();EditText title=findDescription(decor,"Task title",EditText.class);Button add=findButton(decor,"Add task");
         title.setText("First batch task");add.performClick();idleMainLooper();assertFalse(activity.isFinishing());assertEquals("",title.getText().toString());title.setText("Second batch task");title.onEditorAction(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);idleMainLooper();JSONObject saved=new JSONObject(reference.readState());JSONArray tasks=saved.getJSONArray("customTasks");assertEquals(2,tasks.length());assertNotEquals(tasks.getJSONObject(0).getString("id"),tasks.getJSONObject(1).getString("id"));assertEquals("",title.getText().toString());assertTrue(title.hasFocus());assertTrue(saved.getJSONObject("completed").getBoolean("keep:old"));assertFalse(activity.isFinishing());
         android.widget.ScrollView panel=(android.widget.ScrollView)((ViewGroup)activity.findViewById(android.R.id.content)).getChildAt(0);assertFalse(panel.isVerticalScrollBarEnabled());assertFalse(panel.isHorizontalScrollBarEnabled());Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(1200));assertNull(panel.getForeground());title.setText("Unsaved third task");findButton(decor,"Cancel").performClick();assertTrue(activity.isFinishing());assertEquals(2,new JSONObject(reference.readState()).getJSONArray("customTasks").length());controller.pause().stop().destroy();
+    }
+
+    @Test public void multipleLabelsAndTimeAreSavedThenAllFieldsReset() throws Exception {
+        reference.writeState("{\"customTasks\":[]}");ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();QuickAddActivity activity=controller.get();View root=activity.getWindow().getDecorView();Button labels=findDescription(root,"Context labels",Button.class);labels.performClick();android.app.AlertDialog picker=org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();android.widget.ListView list=picker.getListView();for(int index:new int[]{0,2})list.performItemClick(list.getAdapter().getView(index,null,list),index,index);assertTrue(list.isItemChecked(0));assertTrue(list.isItemChecked(2));picker.getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();labels.performClick();picker=org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();assertTrue(picker.getListView().isItemChecked(0));assertTrue(picker.getListView().isItemChecked(2));picker.getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
+        EditText title=findDescription(root,"Task title",EditText.class);title.setText("Multi label task");select(findDescription(root,"Priority",Spinner.class),"High");select(findDescription(root,"When to do it",Spinner.class),"Weekend");idleMainLooper();findButton(root,"Add task").performClick();idleMainLooper();JSONObject first=new JSONObject(reference.readState()).getJSONArray("customTasks").getJSONObject(0);assertEquals(2,first.getJSONArray("labels").length());assertTrue(first.getBoolean("weekend"));assertEquals("HIGH",first.getString("priority"));assertEquals("",title.getText().toString());assertEquals("Labels",labels.getText().toString());assertEquals(3,findDescription(root,"Priority",Spinner.class).getSelectedItemPosition());assertEquals(0,findDescription(root,"When to do it",Spinner.class).getSelectedItemPosition());assertEquals("Any time",findDescription(root,"Task time",Button.class).getText().toString());title.setText("Clean next task");findButton(root,"Add task").performClick();JSONObject next=new JSONObject(reference.readState()).getJSONArray("customTasks").getJSONObject(1);assertEquals(0,next.getJSONArray("labels").length());assertEquals("UNSET",next.getString("priority"));assertFalse(next.has("weekend"));assertFalse(next.has("time"));controller.pause().stop().destroy();
     }
 
     @Test public void cancelLeavesCanonicalStateUntouched() {
@@ -186,12 +191,12 @@ public class QuickAddActivityTest {
     }
     @Test public void popupFieldsHaveVisibleGapsWithoutGrowingThePanel() {
         ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();QuickAddActivity activity=controller.get();View decor=activity.getWindow().getDecorView();
-        EditText title=findDescription(decor,"Task title",EditText.class);Spinner label=findDescription(decor,"Context label",Spinner.class),priority=findDescription(decor,"Priority",Spinner.class),when=findDescription(decor,"When to do it",Spinner.class);Button cancel=findButton(decor,"Cancel"),save=findButton(decor,"Add task");
+        EditText title=findDescription(decor,"Task title",EditText.class);Button label=findDescription(decor,"Context labels",Button.class);Spinner priority=findDescription(decor,"Priority",Spinner.class),when=findDescription(decor,"When to do it",Spinner.class);Button cancel=findButton(decor,"Cancel"),save=findButton(decor,"Add task");
         ViewGroup form=(ViewGroup)title.getParent();float density=activity.getResources().getDisplayMetrics().density;int width=Math.round(320*density),gap=Math.round(8*density);
         form.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));form.layout(0,0,width,form.getMeasuredHeight());
         assertEquals(Math.round(40*density),title.getHeight());assertEquals(title.getHeight(),label.getHeight());assertEquals(title.getHeight(),priority.getHeight());assertEquals(title.getHeight(),when.getHeight());
         assertEquals(gap,label.getTop()-title.getBottom());assertEquals(gap,((View)priority.getParent()).getTop()-label.getBottom());assertEquals(gap,when.getLeft()-priority.getRight());assertEquals(gap,save.getLeft()-cancel.getRight());
-        assertEquals(gap,((View)cancel.getParent()).getTop()-((View)priority.getParent()).getBottom());int compactHeight=form.getMeasuredHeight();
+        View timeRow=(View)findDescription(decor,"Task time",Button.class).getParent();assertEquals(gap,timeRow.getTop()-((View)priority.getParent()).getBottom());assertEquals(gap,((View)cancel.getParent()).getTop()-timeRow.getBottom());int compactHeight=form.getMeasuredHeight();
         // Compare against the previous layout at the same width and font scale.
         android.widget.LinearLayout.LayoutParams titleParams=(android.widget.LinearLayout.LayoutParams)title.getLayoutParams();titleParams.height=Math.round(56*density);titleParams.topMargin=0;title.setLayoutParams(titleParams);
         android.widget.LinearLayout.LayoutParams labelParams=(android.widget.LinearLayout.LayoutParams)label.getLayoutParams();labelParams.height=Math.round(48*density);labelParams.topMargin=0;label.setLayoutParams(labelParams);

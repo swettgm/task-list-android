@@ -132,8 +132,12 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     /** Only rows belonging to the app's current Today list; completed history stays in storage. */
     static List<TaskStore.Task> todayTasks(Context context,String listName,String label){
         WidgetCompletions.settleExpired(context);LocalDate today=LocalDate.now(java.time.ZoneId.of("America/New_York"));List<TaskStore.Task> result=new ArrayList<>();
-        for(TaskStore.Task task:selectedTasks(context,listName,true,label)){
-            String planned=effectiveDate(task);if(planned.isEmpty()||LocalDate.parse(planned).isAfter(today))continue;
+        org.json.JSONObject state;try{state=new org.json.JSONObject(new ReferenceStore(context).readState());}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}java.time.LocalTime cutoff=WeekendSchedule.cutoff(state);java.time.ZonedDateTime now=java.time.ZonedDateTime.now(ReminderPlanner.ZONE);org.json.JSONArray definitions;try{definitions=ReminderPlanner.effective(new org.json.JSONArray(TaskReminders.prefs(context).getString("definitions","[]")),state);}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}
+        for(TaskStore.Task task:selectedTasks(context,listName,false,label)){
+            org.json.JSONObject source=task.sourceRecord();String occurrence=source.optString("stateDate",effectiveDate(task)),opening=source.optString("weekendOpening");
+            if(opening.isEmpty()&&task.id.startsWith("html:")){String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject definition=definitions.optJSONObject(i);if(definition!=null&&id.equals(definition.optString("id"))){opening=WeekendSchedule.opening(definition,occurrence);break;}}}
+            boolean weekend=WeekendSchedule.visible(opening,occurrence,now,cutoff);if(weekend){result.add(task);continue;}
+            if(!TaskStore.isForToday(task,today))continue;String planned=effectiveDate(task);if(planned.isEmpty()||LocalDate.parse(planned).isAfter(today))continue;
             if(!task.id.startsWith("html:")){if(planned.equals(today.toString()))result.add(task);continue;}
             org.json.JSONObject record=task.sourceRecord();
             if(today.toString().equals(record.optString("snapshotDate"))){if(record.optBoolean("onToday"))result.add(task);continue;}
@@ -152,12 +156,12 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     static void update(Context context, AppWidgetManager manager, int id) {
         SharedPreferences prefs=preferences(context,id);String list=prefs.getString("list",""),label=prefs.getString("label","");boolean dark=prefs.getBoolean("dark",true);
         int foreground=Color.parseColor(dark?"#F3F7FC":"#1F2B40"),secondary=Color.parseColor(dark?"#BAC9D9":"#56677F"),accent=Color.parseColor(dark?"#8FC6E7":"#195B7E");
-        RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_today_clean);
+        RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_today_weekend);
         views.setImageViewResource(R.id.widget_background,dark?R.drawable.widget_background_dark:R.drawable.widget_background_light);
         views.setInt(R.id.widget_background,"setImageAlpha",Math.round(255*Math.max(0,Math.min(100,prefs.getInt("opacity",100)))/100f));
         views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setTextColor(R.id.widget_empty,secondary);views.setImageViewBitmap(R.id.widget_add,PlusIcon.render(context));views.setInt(R.id.widget_add,"setBackgroundColor",Color.TRANSPARENT);
         views.setViewVisibility(R.id.widget_context_icon,TaskStore.usesGuildImage(context,label)?View.VISIBLE:View.GONE);views.setContentDescription(R.id.widget_context_icon,label);
-        String empty="No open tasks for today.";try{todayTasks(context,list,label);}catch(RuntimeException unavailable){empty="Open the app to check your saved tasks.";}views.setTextViewText(R.id.widget_empty,empty);
+        String empty=context.getString(R.string.widget_empty);try{todayTasks(context,list,label);}catch(RuntimeException unavailable){empty="Open the app to check your saved tasks.";}views.setTextViewText(R.id.widget_empty,empty);
         Intent service=new Intent(context,TaskWidgetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).setData(Uri.parse("tasklist-widget://rows/"+id));
         views.setRemoteAdapter(R.id.widget_rows,service);views.setEmptyView(R.id.widget_rows,R.id.widget_empty);
         Intent item=new Intent(context,TaskWidgetProvider.class).setAction(ACTION_ITEM).setData(Uri.parse("tasklist-widget://items/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id);

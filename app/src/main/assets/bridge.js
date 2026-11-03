@@ -326,7 +326,7 @@
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
     const shortcuts=node('div','tl-date-shortcuts');date.parentElement.append(shortcuts);
-    shortcuts.append(action('Tomorrow',()=>{date.value=scope.addDays(scope.today,1);}),action('Weekend',()=>{const day=new Date(scope.today+'T12:00:00Z').getUTCDay();date.value=scope.addDays(scope.today,(6-day+7)%7||7);}));
+    shortcuts.append(action('Tomorrow',()=>{date.value=scope.addDays(scope.today,1);}),action('Weekend',()=>{date.value=global.TasksSchedule.nextWeekend(scope.today);date.dataset.weekend='true';}));
     const toPicker=value=>{const match=String(value||'').match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);if(!match)return '';let h=Number(match[1]);if(match[3])h=h%12+(/pm/i.test(match[3])?12:0);return h<24?String(h).padStart(2,'0')+':'+match[2]:'';};
     const time = inputField(schedule, 'Time', 'time', toPicker(original.time)); time.placeholder = 'Any time';time.setAttribute('aria-label','Time');
     time.parentElement.append(action('Clear',()=>{time.value='';time.dispatchEvent(new Event('input'));},'btn tl-clear-time'));
@@ -361,6 +361,7 @@
       const next = Object.assign({}, original, { id: original.id || 'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9), title: title.value.trim(), priority: urgent.checked ? 'HIGH' : priority.value, _contexts: readContexts() });
       if(hours.value||minutes.value)next.minutes=Number(hours.value)*60+Number(minutes.value);else delete next.minutes;
       if(time.value){const [h,m]=time.value.split(':').map(Number);next.time=(h%12||12)+':'+String(m).padStart(2,'0')+(h>=12?' PM':' AM');}else delete next.time;
+      if(date.dataset.weekend==='true')next.weekend=true;else if(next.due&&date.value!==original.due)delete next.weekend;
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
       delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
@@ -389,7 +390,7 @@
           const dates=new Set([checklistDate,...Object.keys(current.completed).filter(key=>key.startsWith(prefix)).map(key=>key.slice(prefix.length,prefix.length+10)).filter(day=>/^\d{4}-\d{2}-\d{2}$/.test(day)&&day>=checklistDate)]);
           dates.forEach(day=>{if(!scope.hasSubtasks(original,day))return;const key=scope.occurrenceKey(original,day),done=scope.isDone(original,day,current.completed);current.completed[key]=done;const finished=Array.from({length:scope.subtaskCount(original,day)},(_,i)=>current.completedOn[scope.childKey(original,day,i)]).filter(Boolean).sort().pop();if(done&&finished)current.completedOn[key]=finished;else if(!done)delete current.completedOn[key];stateChanged=true;});
         }
-        const active=current.inProgress;if(active&&active.startsWith(prefix)&&active.slice(prefix.length,prefix.length+10)>=checklistDate){const activeSuffix=active.slice(prefix.length+10);if(activeSuffix&&!items.some(step=>step.key===activeSuffix)){current.inProgress=null;stateChanged=true;}}
+        const active=current.inProgressTasks||[current.inProgress].filter(Boolean),retained=active.filter(key=>{if(!key.startsWith(prefix)||key.slice(prefix.length,prefix.length+10)<checklistDate)return true;const suffix=key.slice(prefix.length+10);return !suffix||items.some(step=>step.key===suffix);});if(retained.length!==active.length){current.inProgressTasks=retained;current.inProgress=retained.at(-1)||null;stateChanged=true;}
         if(stateChanged)persist(current);
 
       }
@@ -422,9 +423,9 @@
     let timer=null,start=null,held=false,cancelled=false;
     const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}if(priorityHoldCancel===clear)priorityHoldCancel=null;};
     const button=action('',event=>{if(held||cancelled||priorityHoldActive||performance.now()<priorityHoldUntil){event.preventDefault();return;}clear();changePriority(task,offset);},'tm-move-control tl-priority-button tl-priority-'+direction);
-    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Low');button.disabled=direction==='up'?rank===0:rank===levels.length-1;
+    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Low');button.disabled=direction==='up'?rank===0:rank>=levels.indexOf('LOW');
     button.addEventListener('pointerdown',event=>{
-      if(button.disabled||event.button!==0||event.isPrimary===false)return;
+      if(button.disabled||event.button!==0||event.isPrimary===false)return;priorityHoldUntil=0;priorityHoldActive=false;
       if(priorityHoldCancel)priorityHoldCancel();held=false;cancelled=false;start={x:event.clientX,y:event.clientY};priorityHoldCancel=clear;
       timer=setTimeout(()=>{timer=null;if(!button.isConnected||button.disabled)return;held=true;priorityHoldActive=true;priorityHoldUntil=performance.now()+450;
         if(changePriority(task,(offset<0?0:levels.indexOf('LOW'))-rank)){try{if(native&&native.priorityHaptic)native.priorityHaptic();}catch(_){}}
@@ -470,7 +471,7 @@
   }
   function publishSnapshot() {
     if (!scope) return;
-    const rows = new Map(); const active = scope.getState().inProgress;
+    const rows = new Map(); const state=scope.getState(),active=state.inProgressTasks||[state.inProgress].filter(Boolean);
     const push = (item, onToday) => {
       const key = scope.progressKey(item.task, item.stateDate); if (rows.has(key)) return;
       const done = scope.isDone(item.task, item.stateDate); const task = item.task;
@@ -478,11 +479,11 @@
       rows.set(key, {
         id: 'html:' + key, title: task.title, listName: 'My tasks',
         dueDate: task.due || '', plannedDate: item.date || scope.today,
-        done, status: done ? 'Done' : active && (active === key || completionKeys.includes(active)) ? 'In progress' : 'Next',
+        done, status: done ? 'Done' : active.some(value=>value===key||completionKeys.includes(value)) ? 'In progress' : 'Next',
         time:task.time||'', urgent:!!task.urgent, labels: derivedContexts(task), priority: task.priority || 'UNSET', minutes: Number(task.minutes) || 0,
         createdAt: Date.parse(item.stateDate + 'T12:00:00Z') || 0,
         completionKeys, progressKey: key, stateDate: item.stateDate, onToday: !!onToday,
-        recurrence: task.recurrence || '', source: 'html', snapshotDate:scope.today, recurringDaily:task.repeat?(task.repeat.unit==='day'&&Number(task.repeat.amount)===1&&!task.repeat.weekdays?.length):(task.recurrence==='Daily'||!!(task.days&&task.days.length===7)), skipCarryDays:task.skipCarryDays||[]
+        weekendOpening:global.TasksSchedule.weekendOpening(task,item.stateDate),recurrence: task.recurrence || '', source: 'html', snapshotDate:scope.today, recurringDaily:task.repeat?(task.repeat.unit==='day'&&Number(task.repeat.amount)===1&&!task.repeat.weekdays?.length):(task.recurrence==='Daily'||!!(task.days&&task.days.length===7)), skipCarryDays:task.skipCarryDays||[]
       });
     };
     scope.dueToday().forEach(item => push(item, true)); scope.overdue().forEach(item => push(item, false));
@@ -496,13 +497,13 @@
     const { dialog, form, close } = modal('Quick add'); form.classList.add('tl-quick-form');
     const title = inputField(form, 'Task', 'text', prefill.title || ''); title.placeholder = 'What needs doing?';
     const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
-    const labels = prefill.labels || (selectedContext ? [selectedContext] : []);let flash=null;
+    let labels = prefill.labels || (selectedContext ? [selectedContext] : []);let flash=null;
     const savedFlash=()=>{if(flash)flash.cancel();if(!dialog.animate)return;const shadow=getComputedStyle(dialog).boxShadow,base=shadow==='none'?'':shadow+', ',reduced=global.matchMedia('(prefers-reduced-motion: reduce)').matches;const widths=reduced?[1,0]:[0,1,3,1,3,0];flash=dialog.animate(widths.map(width=>({boxShadow:base+'inset 0 0 0 '+width+'px rgba(255,255,255,'+(width?1:0)+')'})),{duration:reduced?180:800,easing:'linear'});flash.finished.catch(()=>{});};
     const save = () => {
       if (!title.value.trim()) { error.textContent = 'Enter a task title.'; title.focus(); return; }
       const next = { id:'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9),
         title:title.value.trim(), priority:'UNSET', due:prefill.dueDate || scope.today, _contexts:labels };
-      try{saveDefinition(next,true);title.value='';error.textContent='';title.focus();savedFlash();}catch(e){if(flash)flash.cancel();cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();error.textContent='Couldn’t add this task. Please try again.';title.focus();}
+      try{saveDefinition(next,true);title.value='';labels=[];prefill={};error.textContent='';title.focus();savedFlash();}catch(e){if(flash)flash.cancel();cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();error.textContent='Couldn’t add this task. Please try again.';title.focus();}
     };
     const actions = node('div', 'tl-dialog-actions');
     actions.append(action('Cancel', close), action('Details', () => {
@@ -522,13 +523,14 @@
     const reminders=node('section','tl-notification-settings');reminders.append(node('h3','','Notifications'));
     const reminderSettings=readCanonical().reminders||{};
     const dailyLabel=node('label','tl-context-choice'),daily=node('input');daily.type='checkbox';daily.checked=reminderSettings.daily!==false;daily.setAttribute('aria-label','Daily reminder');dailyLabel.append(daily,node('span','','Daily reminder'));reminders.append(dailyLabel);
+    const weekendTime=inputField(reminders,'Weekend starts Friday','time',readCanonical().weekendStartTime||'18:00');weekendTime.setAttribute('aria-label','Weekend starts Friday');
     const dailyTime=inputField(reminders,'Daily reminder time','time',reminderSettings.dailyTime||'09:00');dailyTime.setAttribute('aria-label','Daily reminder time');
     const timedLabel=node('label','tl-context-choice'),timed=node('input');timed.type='checkbox';timed.checked=reminderSettings.scheduled!==false;timed.setAttribute('aria-label','Scheduled task reminders');timedLabel.append(timed,node('span','','Scheduled task reminders'));reminders.append(timedLabel);
     reminders.append(node('p','text-muted','Only tasks with a set time and Notify checked send scheduled reminders. Allow precise reminders for delivery at the scheduled time.'));
     if(native&&native.exactAlarmStatus)reminders.append(node('p','text-muted',native.exactAlarmStatus()));
     if(native&&native.exactAlarmsNeedPermission&&native.exactAlarmsNeedPermission())reminders.append(action('Allow precise reminders',()=>native.openExactAlarmSettings()));
     const reminderMessage=node('p','text-muted');if(native&&native.notificationStatus)reminderMessage.textContent=native.notificationStatus();
-    reminders.append(action('Save reminders',()=>{if(daily.checked&&!dailyTime.value){reminderMessage.textContent='Choose a daily reminder time.';return;}persist({reminders:{daily:daily.checked,dailyTime:dailyTime.value||'09:00',scheduled:timed.checked}});queueSnapshot();reminderMessage.textContent='Reminder settings saved';if((daily.checked||timed.checked)&&native&&native.requestNotificationPermission)native.requestNotificationPermission();}));
+    reminders.append(action('Save reminders',()=>{if(daily.checked&&!dailyTime.value){reminderMessage.textContent='Choose a daily reminder time.';return;}persist({weekendStartTime:weekendTime.value||'18:00',reminders:{daily:daily.checked,dailyTime:dailyTime.value||'09:00',scheduled:timed.checked}});queueSnapshot();reminderMessage.textContent='Reminder settings saved';if((daily.checked||timed.checked)&&native&&native.requestNotificationPermission)native.requestNotificationPermission();}));
     if(native&&native.openNotificationSettings)reminders.append(action('Android notification settings',()=>native.openNotificationSettings()));reminders.append(reminderMessage);form.append(reminders);
 
     global.TasksTheme.renderSettings(form,{readState:readCanonical,persistState:persist,native});
@@ -641,7 +643,7 @@
   }
   global.TaskListBridge = {
     editComponent,
-    contextsFor: derivedContexts, contextMatches: matches, decorateRow, queueSnapshot, lastSnapshot: [],
+    weekendStartTime:()=>readCanonical().weekendStartTime||'18:00',contextsFor: derivedContexts, contextMatches: matches, decorateRow, queueSnapshot, lastSnapshot: [],
     attach(context) {
       scope = context;
       if(readCanonical().guildIconVersion!==1){const current=readCanonical(),guild=(current.taskOverrides||{}).guild||scope.tasks.find(task=>task.id==='guild'),overrides={...(current.taskOverrides||{})};if(guild)overrides.guild={...guild,_contexts:[...new Set([...derivedContexts(guild),'Guild'])]};persist({...scope.getState(),guildIconVersion:1,taskOverrides:overrides,contextIcons:{...(current.contextIcons||{}),Guild:GUILD_ICON_TOKEN}});}

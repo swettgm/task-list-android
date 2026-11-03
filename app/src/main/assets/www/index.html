@@ -1696,7 +1696,12 @@ main{max-width:100%;margin:0;padding:0}
     return { mode: 'once', amount: 1, unit: 'day', start: parseDate(task.due) ? task.due : fallback, weekdays: [] };
   }
 
-  global.TasksSchedule = Object.freeze({ matches, describe, fromTask, normalize, weekdaysLabel });
+  function addDay(day,n){const date=new Date(day+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+n);return date.toISOString().slice(0,10);}
+  function occurs(task,day){const date=parseDate(day);if(!date||!task||task.retired||task.startsOn&&day<task.startsOn)return false;if(task.repeat)return matches(task,day);if(task.due===day||task.dates?.includes(day)||task.days?.includes(date.weekday))return true;const start=parseDate(task.intervalStart),amount=validAmount(task.intervalDays);if(start&&amount&&date.ordinal>=start.ordinal&&(date.ordinal-start.ordinal)%amount===0)return true;const weekend=parseDate(task.weekendCycleStart);if(weekend){const diff=date.ordinal-weekend.ordinal;if(diff===0)return date.weekday===0;return diff>=13&&(diff%14===0||diff%14===13);}return false;}
+  function weekendTask(task){if(task.weekend||task.weekendCycleStart)return true;let days=task.days;if(task.repeat){const spec=normalize(task.repeat);if(!spec||spec.unit!=='week')return false;days=spec.weekdays.length?spec.weekdays:[parseDate(spec.start).weekday];}if(days?.length)return days.every(day=>day===0||day===6);const due=parseDate(task.due);return !!due&&(due.weekday===0||due.weekday===6);}
+  function weekendOpening(task,day){const date=parseDate(day);if(!date||!weekendTask(task))return '';if(date.weekday===6)return addDay(day,-1);if(date.weekday===0&&!occurs(task,addDay(day,-1)))return addDay(day,-2);return '';}
+  function nextWeekend(day){const date=parseDate(day);return addDay(day,date.weekday===0?-1:(6-date.weekday+7)%7);}
+  global.TasksSchedule = Object.freeze({ matches, describe, fromTask, normalize, weekdaysLabel,occurs,weekendOpening,nextWeekend });
 })(typeof window === 'object' ? window : globalThis);
 
 /* Shared, dependency-free appearance controls for Android WebView and the PC app. */
@@ -2234,7 +2239,7 @@ main{max-width:100%;margin:0;padding:0}
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
     const shortcuts=node('div','tl-date-shortcuts');date.parentElement.append(shortcuts);
-    shortcuts.append(action('Tomorrow',()=>{date.value=scope.addDays(scope.today,1);}),action('Weekend',()=>{const day=new Date(scope.today+'T12:00:00Z').getUTCDay();date.value=scope.addDays(scope.today,(6-day+7)%7||7);}));
+    shortcuts.append(action('Tomorrow',()=>{date.value=scope.addDays(scope.today,1);}),action('Weekend',()=>{date.value=global.TasksSchedule.nextWeekend(scope.today);date.dataset.weekend='true';}));
     const toPicker=value=>{const match=String(value||'').match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);if(!match)return '';let h=Number(match[1]);if(match[3])h=h%12+(/pm/i.test(match[3])?12:0);return h<24?String(h).padStart(2,'0')+':'+match[2]:'';};
     const time = inputField(schedule, 'Time', 'time', toPicker(original.time)); time.placeholder = 'Any time';time.setAttribute('aria-label','Time');
     time.parentElement.append(action('Clear',()=>{time.value='';time.dispatchEvent(new Event('input'));},'btn tl-clear-time'));
@@ -2269,6 +2274,7 @@ main{max-width:100%;margin:0;padding:0}
       const next = Object.assign({}, original, { id: original.id || 'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9), title: title.value.trim(), priority: urgent.checked ? 'HIGH' : priority.value, _contexts: readContexts() });
       if(hours.value||minutes.value)next.minutes=Number(hours.value)*60+Number(minutes.value);else delete next.minutes;
       if(time.value){const [h,m]=time.value.split(':').map(Number);next.time=(h%12||12)+':'+String(m).padStart(2,'0')+(h>=12?' PM':' AM');}else delete next.time;
+      if(date.dataset.weekend==='true')next.weekend=true;else if(next.due&&date.value!==original.due)delete next.weekend;
       if (notes.value.trim()) next.notes = notes.value.trim(); else delete next.notes;
       delete next.aiHelp;
       if (urgent.checked) next.urgent = true; else delete next.urgent;
@@ -2297,7 +2303,7 @@ main{max-width:100%;margin:0;padding:0}
           const dates=new Set([checklistDate,...Object.keys(current.completed).filter(key=>key.startsWith(prefix)).map(key=>key.slice(prefix.length,prefix.length+10)).filter(day=>/^\d{4}-\d{2}-\d{2}$/.test(day)&&day>=checklistDate)]);
           dates.forEach(day=>{if(!scope.hasSubtasks(original,day))return;const key=scope.occurrenceKey(original,day),done=scope.isDone(original,day,current.completed);current.completed[key]=done;const finished=Array.from({length:scope.subtaskCount(original,day)},(_,i)=>current.completedOn[scope.childKey(original,day,i)]).filter(Boolean).sort().pop();if(done&&finished)current.completedOn[key]=finished;else if(!done)delete current.completedOn[key];stateChanged=true;});
         }
-        const active=current.inProgress;if(active&&active.startsWith(prefix)&&active.slice(prefix.length,prefix.length+10)>=checklistDate){const activeSuffix=active.slice(prefix.length+10);if(activeSuffix&&!items.some(step=>step.key===activeSuffix)){current.inProgress=null;stateChanged=true;}}
+        const active=current.inProgressTasks||[current.inProgress].filter(Boolean),retained=active.filter(key=>{if(!key.startsWith(prefix)||key.slice(prefix.length,prefix.length+10)<checklistDate)return true;const suffix=key.slice(prefix.length+10);return !suffix||items.some(step=>step.key===suffix);});if(retained.length!==active.length){current.inProgressTasks=retained;current.inProgress=retained.at(-1)||null;stateChanged=true;}
         if(stateChanged)persist(current);
 
       }
@@ -2330,9 +2336,9 @@ main{max-width:100%;margin:0;padding:0}
     let timer=null,start=null,held=false,cancelled=false;
     const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}if(priorityHoldCancel===clear)priorityHoldCancel=null;};
     const button=action('',event=>{if(held||cancelled||priorityHoldActive||performance.now()<priorityHoldUntil){event.preventDefault();return;}clear();changePriority(task,offset);},'tm-move-control tl-priority-button tl-priority-'+direction);
-    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Low');button.disabled=direction==='up'?rank===0:rank===levels.length-1;
+    const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Low');button.disabled=direction==='up'?rank===0:rank>=levels.indexOf('LOW');
     button.addEventListener('pointerdown',event=>{
-      if(button.disabled||event.button!==0||event.isPrimary===false)return;
+      if(button.disabled||event.button!==0||event.isPrimary===false)return;priorityHoldUntil=0;priorityHoldActive=false;
       if(priorityHoldCancel)priorityHoldCancel();held=false;cancelled=false;start={x:event.clientX,y:event.clientY};priorityHoldCancel=clear;
       timer=setTimeout(()=>{timer=null;if(!button.isConnected||button.disabled)return;held=true;priorityHoldActive=true;priorityHoldUntil=performance.now()+450;
         if(changePriority(task,(offset<0?0:levels.indexOf('LOW'))-rank)){try{if(native&&native.priorityHaptic)native.priorityHaptic();}catch(_){}}
@@ -2378,7 +2384,7 @@ main{max-width:100%;margin:0;padding:0}
   }
   function publishSnapshot() {
     if (!scope) return;
-    const rows = new Map(); const active = scope.getState().inProgress;
+    const rows = new Map(); const state=scope.getState(),active=state.inProgressTasks||[state.inProgress].filter(Boolean);
     const push = (item, onToday) => {
       const key = scope.progressKey(item.task, item.stateDate); if (rows.has(key)) return;
       const done = scope.isDone(item.task, item.stateDate); const task = item.task;
@@ -2386,11 +2392,11 @@ main{max-width:100%;margin:0;padding:0}
       rows.set(key, {
         id: 'html:' + key, title: task.title, listName: 'My tasks',
         dueDate: task.due || '', plannedDate: item.date || scope.today,
-        done, status: done ? 'Done' : active && (active === key || completionKeys.includes(active)) ? 'In progress' : 'Next',
+        done, status: done ? 'Done' : active.some(value=>value===key||completionKeys.includes(value)) ? 'In progress' : 'Next',
         time:task.time||'', urgent:!!task.urgent, labels: derivedContexts(task), priority: task.priority || 'UNSET', minutes: Number(task.minutes) || 0,
         createdAt: Date.parse(item.stateDate + 'T12:00:00Z') || 0,
         completionKeys, progressKey: key, stateDate: item.stateDate, onToday: !!onToday,
-        recurrence: task.recurrence || '', source: 'html', snapshotDate:scope.today, recurringDaily:task.repeat?(task.repeat.unit==='day'&&Number(task.repeat.amount)===1&&!task.repeat.weekdays?.length):(task.recurrence==='Daily'||!!(task.days&&task.days.length===7)), skipCarryDays:task.skipCarryDays||[]
+        weekendOpening:global.TasksSchedule.weekendOpening(task,item.stateDate),recurrence: task.recurrence || '', source: 'html', snapshotDate:scope.today, recurringDaily:task.repeat?(task.repeat.unit==='day'&&Number(task.repeat.amount)===1&&!task.repeat.weekdays?.length):(task.recurrence==='Daily'||!!(task.days&&task.days.length===7)), skipCarryDays:task.skipCarryDays||[]
       });
     };
     scope.dueToday().forEach(item => push(item, true)); scope.overdue().forEach(item => push(item, false));
@@ -2404,13 +2410,13 @@ main{max-width:100%;margin:0;padding:0}
     const { dialog, form, close } = modal('Quick add'); form.classList.add('tl-quick-form');
     const title = inputField(form, 'Task', 'text', prefill.title || ''); title.placeholder = 'What needs doing?';
     const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
-    const labels = prefill.labels || (selectedContext ? [selectedContext] : []);let flash=null;
+    let labels = prefill.labels || (selectedContext ? [selectedContext] : []);let flash=null;
     const savedFlash=()=>{if(flash)flash.cancel();if(!dialog.animate)return;const shadow=getComputedStyle(dialog).boxShadow,base=shadow==='none'?'':shadow+', ',reduced=global.matchMedia('(prefers-reduced-motion: reduce)').matches;const widths=reduced?[1,0]:[0,1,3,1,3,0];flash=dialog.animate(widths.map(width=>({boxShadow:base+'inset 0 0 0 '+width+'px rgba(255,255,255,'+(width?1:0)+')'})),{duration:reduced?180:800,easing:'linear'});flash.finished.catch(()=>{});};
     const save = () => {
       if (!title.value.trim()) { error.textContent = 'Enter a task title.'; title.focus(); return; }
       const next = { id:'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9),
         title:title.value.trim(), priority:'UNSET', due:prefill.dueDate || scope.today, _contexts:labels };
-      try{saveDefinition(next,true);title.value='';error.textContent='';title.focus();savedFlash();}catch(e){if(flash)flash.cancel();cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();error.textContent='Couldn’t add this task. Please try again.';title.focus();}
+      try{saveDefinition(next,true);title.value='';labels=[];prefill={};error.textContent='';title.focus();savedFlash();}catch(e){if(flash)flash.cancel();cached=null;lastCanonical=null;const state=readCanonical();scope.setState(state);applyDefinitions(state);rebuild();error.textContent='Couldn’t add this task. Please try again.';title.focus();}
     };
     const actions = node('div', 'tl-dialog-actions');
     actions.append(action('Cancel', close), action('Details', () => {
@@ -2430,13 +2436,14 @@ main{max-width:100%;margin:0;padding:0}
     const reminders=node('section','tl-notification-settings');reminders.append(node('h3','','Notifications'));
     const reminderSettings=readCanonical().reminders||{};
     const dailyLabel=node('label','tl-context-choice'),daily=node('input');daily.type='checkbox';daily.checked=reminderSettings.daily!==false;daily.setAttribute('aria-label','Daily reminder');dailyLabel.append(daily,node('span','','Daily reminder'));reminders.append(dailyLabel);
+    const weekendTime=inputField(reminders,'Weekend starts Friday','time',readCanonical().weekendStartTime||'18:00');weekendTime.setAttribute('aria-label','Weekend starts Friday');
     const dailyTime=inputField(reminders,'Daily reminder time','time',reminderSettings.dailyTime||'09:00');dailyTime.setAttribute('aria-label','Daily reminder time');
     const timedLabel=node('label','tl-context-choice'),timed=node('input');timed.type='checkbox';timed.checked=reminderSettings.scheduled!==false;timed.setAttribute('aria-label','Scheduled task reminders');timedLabel.append(timed,node('span','','Scheduled task reminders'));reminders.append(timedLabel);
     reminders.append(node('p','text-muted','Only tasks with a set time and Notify checked send scheduled reminders. Allow precise reminders for delivery at the scheduled time.'));
     if(native&&native.exactAlarmStatus)reminders.append(node('p','text-muted',native.exactAlarmStatus()));
     if(native&&native.exactAlarmsNeedPermission&&native.exactAlarmsNeedPermission())reminders.append(action('Allow precise reminders',()=>native.openExactAlarmSettings()));
     const reminderMessage=node('p','text-muted');if(native&&native.notificationStatus)reminderMessage.textContent=native.notificationStatus();
-    reminders.append(action('Save reminders',()=>{if(daily.checked&&!dailyTime.value){reminderMessage.textContent='Choose a daily reminder time.';return;}persist({reminders:{daily:daily.checked,dailyTime:dailyTime.value||'09:00',scheduled:timed.checked}});queueSnapshot();reminderMessage.textContent='Reminder settings saved';if((daily.checked||timed.checked)&&native&&native.requestNotificationPermission)native.requestNotificationPermission();}));
+    reminders.append(action('Save reminders',()=>{if(daily.checked&&!dailyTime.value){reminderMessage.textContent='Choose a daily reminder time.';return;}persist({weekendStartTime:weekendTime.value||'18:00',reminders:{daily:daily.checked,dailyTime:dailyTime.value||'09:00',scheduled:timed.checked}});queueSnapshot();reminderMessage.textContent='Reminder settings saved';if((daily.checked||timed.checked)&&native&&native.requestNotificationPermission)native.requestNotificationPermission();}));
     if(native&&native.openNotificationSettings)reminders.append(action('Android notification settings',()=>native.openNotificationSettings()));reminders.append(reminderMessage);form.append(reminders);
 
     global.TasksTheme.renderSettings(form,{readState:readCanonical,persistState:persist,native});
@@ -2549,7 +2556,7 @@ main{max-width:100%;margin:0;padding:0}
   }
   global.TaskListBridge = {
     editComponent,
-    contextsFor: derivedContexts, contextMatches: matches, decorateRow, queueSnapshot, lastSnapshot: [],
+    weekendStartTime:()=>readCanonical().weekendStartTime||'18:00',contextsFor: derivedContexts, contextMatches: matches, decorateRow, queueSnapshot, lastSnapshot: [],
     attach(context) {
       scope = context;
       if(readCanonical().guildIconVersion!==1){const current=readCanonical(),guild=(current.taskOverrides||{}).guild||scope.tasks.find(task=>task.id==='guild'),overrides={...(current.taskOverrides||{})};if(guild)overrides.guild={...guild,_contexts:[...new Set([...derivedContexts(guild),'Guild'])]};persist({...scope.getState(),guildIconVersion:1,taskOverrides:overrides,contextIcons:{...(current.contextIcons||{}),Guild:GUILD_ICON_TOKEN}});}
@@ -2855,6 +2862,7 @@ main{max-width:100%;margin:0;padding:0}
     };
     let saved = {...initialCompleted};
     let inProgress = null;
+    let inProgressTasks = [];
     let progressStateInitialized = false;
     let movedTo = {};
     let rolloverCompletedOn = {};
@@ -2873,6 +2881,7 @@ main{max-width:100%;margin:0;padding:0}
       if(value.completedOn&&typeof value.completedOn==='object'&&!Array.isArray(value.completedOn))completedOn={...value.completedOn};
       if(value.completedAt&&typeof value.completedAt==='object'&&!Array.isArray(value.completedAt))completedAt={...value.completedAt};
       if(typeof value.inProgress==='string') inProgress=value.inProgress;
+      if(Array.isArray(value.inProgressTasks))inProgressTasks=value.inProgressTasks.filter(key=>typeof key==='string');
       if(value.progressStateInitialized===true) progressStateInitialized=true;
       localStorage.setItem(storageKey + '-probe','1');
       localStorage.removeItem(storageKey + '-probe');
@@ -2895,7 +2904,7 @@ main{max-width:100%;margin:0;padding:0}
           delete saved[key];
         });
       });
-      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
+      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,inProgressTasks,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
     }
     // Apply the latest chat-saved states by occurrence while retaining all unlisted data.
     const explicitUpdates = {
@@ -3227,11 +3236,14 @@ main{max-width:100%;margin:0;padding:0}
     if(storedVersion<2026103017)Object.assign(saved,october31GroomingSupplementalUpdates,october31LatestUpdates);
     if(storedVersion<2026103018)Object.assign(saved,october31DailyUpdates);
     if(inProgress==='laundry:2026-10-25')inProgress=null;
-    if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
+    if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,inProgressTasks,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));}catch(error){storageAvailable=false;}
     let draft = {...saved};
     const allChildren = (task,date,state) => Array.from({length:subtaskCount(task,date)},(_,i)=>Boolean(state[childKey(task,date,i)])).every(Boolean);
     const isDone = (task,date,state=saved) => hasSubtasks(task,date) ? allChildren(task,date,state) : Boolean(state[occurrenceKey(task,date)]);
     const progressKey = (task,date) => task.id + ':' + date;
+    const setActiveKeys=keys=>{inProgressTasks=[...new Set(keys.filter(key=>typeof key==='string'&&key))];inProgress=inProgressTasks.at(-1)||null;};
+    if(inProgress&&!inProgressTasks.includes(inProgress))setActiveKeys([inProgress]);else if(!inProgress)setActiveKeys([]);
+
     const progressTitle = key => {
       if(!key)return '';
       const parts=key.split(':'),task=tasks.find(t=>t.id===parts[0]);
@@ -3249,11 +3261,11 @@ main{max-width:100%;margin:0;padding:0}
       return task.title;
     };
     const saveLocalState=()=>{
-      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));return true;}catch(error){storageAvailable=false;}
+      if(storageAvailable)try{localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,inProgressTasks,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));return true;}catch(error){storageAvailable=false;}
       return false;
     };
     const progressButton=(key,title,completed=false)=>{
-      const active=inProgress===key;
+      const active=inProgressTasks.includes(key);
       const button=el('button',active?'tm-progress-control tm-progress-control-active':'tm-progress-control','Do now');
       button.type='button';
       button.setAttribute('aria-pressed',String(active));
@@ -3261,37 +3273,26 @@ main{max-width:100%;margin:0;padding:0}
       button.title=active?'Clear the Do now mark':'Mark this as the current task';
       button.disabled=completed&&!active;
       button.addEventListener('click',()=>{
-        inProgress=active?null:key;
+        setActiveKeys(active?inProgressTasks.filter(value=>value!==key):[...inProgressTasks,key]);
         saveLocalState();
         renderToday();
         renderFuture();
       });
       return button;
     };
-    const inProgressIsDone=state=>{
-      if(!inProgress)return false;
-      const parts=inProgress.split(':');
-      if(parts[2]==='child' || parts[2]==='step')return Boolean(state[inProgress]);
+    const inProgressIsDone=(state,key=inProgress)=>{
+      if(!key)return false;
+      const parts=key.split(':');
+      if(parts[2]==='child' || parts[2]==='step')return Boolean(state[key]);
       const task=tasks.find(t=>t.id===parts[0]);
       return task ? isDone(task,parts[1],state) : false;
     };
-    if(inProgressIsDone(saved)){inProgress=null;saveLocalState();}
+    if(inProgressTasks.some(key=>inProgressIsDone(saved,key))){setActiveKeys(inProgressTasks.filter(key=>!inProgressIsDone(saved,key)));saveLocalState();}
     const instance = (task,date,stateDate=date,carried=false,moved=false) => ({task,date,stateDate,carried,moved});
     const isDaily = task => task.repeat?(task.repeat.unit==='day'&&Number(task.repeat.amount)===1&&!task.repeat.weekdays?.length):(task.recurrence==='Daily' || (task.days && task.days.length===7));
     const isRecurring = task => Boolean(task.repeat || task.recurrence || (task.days && task.days.length) || task.intervalDays || task.weekendCycleStart);
     const carryBlocked = (task,date) => Boolean(task.skipCarryDays && task.skipCarryDays.includes(dateObject(date).getUTCDay()));
-    const scheduledOn = date => tasks.filter(task => {
-      if(task.retired||task.startsOn&&date<task.startsOn)return false;
-      if(task.repeat)return window.TasksSchedule.matches(task,date);
-      const isIntervalOccurrence=task.intervalDays && task.intervalStart && date>=task.intervalStart && Math.round((dateObject(date)-dateObject(task.intervalStart))/86400000)%task.intervalDays===0;
-      const weekendCycleOccurrence=task.weekendCycleStart && (()=>{
-        const daysFromStart=Math.round((dateObject(date)-dateObject(task.weekendCycleStart))/86400000);
-        if(daysFromStart===0)return dateObject(date).getUTCDay()===0;
-        const cycleOffset=daysFromStart%14;
-        return daysFromStart>=13 && (cycleOffset===13 || cycleOffset===0);
-      })();
-      return task.due===date || (task.dates && task.dates.includes(date)) || (task.days && task.days.includes(dateObject(date).getUTCDay())) || Boolean(isIntervalOccurrence) || Boolean(weekendCycleOccurrence);
-    }).map(task=>instance(task,date,date));
+    const scheduledOn=date=>tasks.filter(task=>window.TasksSchedule.occurs(task,date)).map(task=>instance(task,date,date));
     const occurrenceFromId = id => {
       const split=id.lastIndexOf(':');
       return split<0?null:[id.slice(0,split),id.slice(split+1)];
@@ -3308,6 +3309,8 @@ main{max-width:100%;margin:0;padding:0}
         if(target && target!==item.stateDate)return;
         add(item);
       });
+      const cutoff=window.TaskListBridge.weekendStartTime(),clock=new Intl.DateTimeFormat('en-GB',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
+      for(let offset=1;offset<=2;offset++){const source=addDays(date,offset);scheduledOn(source).forEach(item=>{const opening=window.TasksSchedule.weekendOpening(item.task,source),key=occurrenceId(item.task,source);if(opening&&date>=opening&&(date>opening||date!==today||clock>=cutoff)&&!movedTo[key]&&!isDone(item.task,source,saved))add(instance(item.task,date,source));});}
       Object.entries(movedTo).forEach(([id,target])=>{
         const parsed=occurrenceFromId(id);if(!parsed)return;
         const [taskId,stateDate]=parsed,task=tasks.find(t=>t.id===taskId);
@@ -3346,14 +3349,10 @@ main{max-width:100%;margin:0;padding:0}
       const peers=linkedIds(task).map(id=>tasks.find(candidate=>candidate.id===id)).filter(Boolean);
       return peers.length?el('span','tm-pair-note','🔗 '+peers.map(peer=>peer.title).join(', ')):null;
     };
-    const linkedInProgress=(task,date)=>{
-      if(!inProgress)return false;
-      const activeId=inProgress.split(':')[0];
-      if(activeId===task.id || !linkedIds(task).includes(activeId))return false;
-      return onDate(date).some(item=>item.task.id===activeId &&
-        inProgress.startsWith(progressKey(item.task,item.stateDate)) &&
-        !isDone(item.task,item.stateDate,draft));
-    };
+    const linkedInProgress=(task,date)=>inProgressTasks.some(active=>{
+      const activeId=active.split(':')[0];if(activeId===task.id||!linkedIds(task).includes(activeId))return false;
+      return onDate(date).some(item=>item.task.id===activeId&&active.startsWith(progressKey(item.task,item.stateDate))&&!isDone(item.task,item.stateDate,saved));
+    });
     const durationText=minutes=>{
       const h=Math.floor(minutes/60),m=minutes%60;
       return [h?h+' hr':null,m?m+' min':null].filter(Boolean).join(' ')||'0 min';
@@ -3448,7 +3447,7 @@ main{max-width:100%;margin:0;padding:0}
       return Array.from(items.values()).sort((a,b)=>Number(completionDate(b.task,b.stateDate)===today)-Number(completionDate(a.task,a.stateDate)===today)||completionDate(b.task,b.stateDate).localeCompare(completionDate(a.task,a.stateDate))||completionTime(b.task,b.stateDate)-completionTime(a.task,a.stateDate)||(legacyOrder.get(progressKey(b.task,b.stateDate))||0)-(legacyOrder.get(progressKey(a.task,a.stateDate))||0)||b.stateDate.localeCompare(a.stateDate)||a.task.title.localeCompare(b.task.title));
     };
     const saveCompletion=(task,date)=>{
-      const previousSaved=saved,previousRollover={...rolloverCompletedOn},previousDates={...completedOn},previousTimes={...completedAt},previousActive=inProgress;
+      const previousSaved=saved,previousRollover={...rolloverCompletedOn},previousDates={...completedOn},previousTimes={...completedAt},previousActive=inProgress,previousActives=[...inProgressTasks];
       const finishedAt=Object.values(completedAt).reduce((latest,value)=>Number.isSafeInteger(value)&&value>=latest?value+1:latest,Date.now());
       const key=progressKey(task,date),wasDone=isDone(task,date,saved);
       const matches=item=>item.task.id===task.id&&item.stateDate===date;
@@ -3465,10 +3464,10 @@ main{max-width:100%;margin:0;padding:0}
       if(isDone(task,date,draft) && date!==today)rolloverCompletedOn[id]=today;
       else if(!isDone(task,date,draft))delete rolloverCompletedOn[id];
       saved={...draft};
-      if(inProgressIsDone(saved))inProgress=null;
+      setActiveKeys(inProgressTasks.filter(active=>!inProgressIsDone(saved,active)));
       try{
         if(!storageAvailable)throw new Error('Storage unavailable');
-        localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));
+        localStorage.setItem(storageKey,JSON.stringify({version:2026103022,completed:saved,inProgress,inProgressTasks,progressStateInitialized,movedTo,rolloverCompletedOn,completedOn,completedAt,updatedAt:new Date().toISOString()}));
         find('pt-status').textContent='';
         if(completing.has(key)){clearTimeout(completing.get(key).timer);completing.delete(key);}
         if(!wasDone&&isDone(task,date,saved)){
@@ -3478,7 +3477,7 @@ main{max-width:100%;margin:0;padding:0}
           completing.set(key,entry);
         }
       }catch(error){
-        saved=previousSaved;draft={...saved};rolloverCompletedOn=previousRollover;completedOn=previousDates;completedAt=previousTimes;inProgress=previousActive;
+        saved=previousSaved;draft={...saved};rolloverCompletedOn=previousRollover;completedOn=previousDates;completedAt=previousTimes;setActiveKeys(previousActives);
         find('pt-status').textContent='Couldn’t save this change. Please try again.';
       }
       renderToday();renderFuture();window.TaskListBridge.queueSnapshot();
@@ -3505,7 +3504,7 @@ main{max-width:100%;margin:0;padding:0}
         checkbox.addEventListener('change',()=>{draft[key]=checkbox.checked;saveCompletion(task,date);});
         const childText=el('span','form-check-label');
         const childTitle=el('span','tm-title',name);
-        const childActive=inProgress===key;
+        const childActive=inProgressTasks.includes(key);
         if(childActive)childTitle.classList.add('tm-in-progress-title');
         const childTitleLine=el('span','tm-title-line'),childTitleMain=el('span','tm-title-main');childTitleMain.append(childTitle);
         childTitleLine.append(childTitleMain);
@@ -3541,7 +3540,7 @@ main{max-width:100%;margin:0;padding:0}
       if(!completed&&isCompleting(task,stateDate))wrapper.classList.add('tm-completing');
       const finishedToday=completed&&completionDate(task,stateDate)===today;
       if(finishedToday)wrapper.classList.add('tm-completed-today');
-      const active=inProgress===progressKey(task,stateDate);
+      const active=inProgressTasks.includes(progressKey(task,stateDate));
       if(active||completing.get(progressKey(task,stateDate))?.active===progressKey(task,stateDate))wrapper.classList.add('tm-in-progress-item');
       const linkedActive=!completed&&!isDone(task,stateDate,draft)&&linkedInProgress(task,item.date);
       if(linkedActive)wrapper.classList.add('tm-linked-active');
@@ -3617,8 +3616,8 @@ main{max-width:100%;margin:0;padding:0}
       const minutes=pending.reduce((n,i)=>n+(i.task.minutes||0),0),untimed=pending.filter(i=>i.task.minutes===undefined).length;
       find('pt-progress').textContent=done.length+' / '+items.length+' completed · '+pending.length+' pending · '+minutes+'m remaining'+(untimed?' + '+untimed+' untimed':'');
       const pendingActive=Array.from(completing.values()).find(entry=>entry.active);
-      const displayActive=inProgress||(pendingActive&&pendingActive.active);
-      const current=find('pt-current'),currentTitle=progressTitle(displayActive);
+      const displayActives=inProgressTasks.length?inProgressTasks:pendingActive?[pendingActive.active]:[],displayActive=displayActives[0];
+      const current=find('pt-current'),currentTitle=displayActives.map(progressTitle).filter(Boolean).join(', ');
       current.style.minHeight=!inProgress&&pendingActive?pendingActive.bannerHeight+'px':'';
       current.hidden=!currentTitle;
       current.replaceChildren();
@@ -3627,7 +3626,7 @@ main{max-width:100%;margin:0;padding:0}
         const currentTask=tasks.find(task=>task.id===displayActive.split(':')[0]);
         const currentTitleLine=el('span','tm-title-line'),currentTitleMain=el('span','tm-title-main',currentTitle);
         currentTitleLine.append(currentTitleMain);
-        if(currentTask){const pairing=pairNote(currentTask,today);if(pairing)currentTitleLine.append(pairing);}
+        if(currentTask&&displayActives.length===1){const pairing=pairNote(currentTask,today);if(pairing)currentTitleLine.append(pairing);}
         current.append(el('span','tm-in-progress-badge',inProgress?'🟢 IN PROGRESS':'✓ Completed'),currentTitleLine);
       }
       const percent=items.length?Math.round(done.length/items.length*100):100;
@@ -3662,6 +3661,7 @@ main{max-width:100%;margin:0;padding:0}
       }
 
     };
+    const weekendTimer=setInterval(()=>{if(!document.hidden&&!document.querySelector('dialog[open]')){renderToday();renderFuture();window.TaskListBridge.queueSnapshot();}},60000);window.addEventListener('pagehide',()=>clearInterval(weekendTimer),{once:true});
     const futureOpenDates=new Set([addDays(today,1)]);
     const renderFuture=()=>{
       const container=find('pt-future-list');
@@ -3675,7 +3675,7 @@ main{max-width:100%;margin:0;padding:0}
         const items=candidates.filter(item=>{const key=progressKey(item.task,item.stateDate);if(seen.has(key))return false;seen.add(key);return true;});
         if(!items.length&&offset!==1)continue;
         const section=el('details','tm-day');section.dataset.date=date;section.open=futureOpenDates.has(date);
-        const summary=el('summary','tm-day-heading');const dateText=el('span','tm-day-label');if(offset===1){dateText.append(el('span','tm-day-name','Tomorrow'));}else dateText.append(el('span','tm-day-name',labelDate(date,true)));summary.append(dateText,el('span','tm-day-count',String(items.length)));section.append(summary);
+        const summary=el('summary','tm-day-heading');const dateText=el('span','tm-day-label');{const d=dateObject(date),day=d.getUTCDate(),suffix=day%100>=11&&day%100<=13?'th':({1:'st',2:'nd',3:'rd'}[day%10]||'th');dateText.append(el('span','tm-day-name',d.toLocaleDateString('en-US',{month:'short',timeZone:'UTC'})+' '+day+suffix));}summary.append(dateText,el('span','tm-day-count',String(items.length)));section.append(summary);
         section.addEventListener('toggle',()=>{if(!section.isConnected)return;if(section.open)futureOpenDates.add(date);else futureOpenDates.delete(date);});
         if(!items.length)section.append(el('p','text-muted','No tasks scheduled.'));
         groups.forEach(([priority,heading])=>{
@@ -3751,10 +3751,10 @@ main{max-width:100%;margin:0;padding:0}
     window.TaskListBridge.attach({
       root,tasks,pairWith,children,groups,today,addDays,progressKey,occurrenceKey,childKey,showView,isInteracting:()=>taskPointers.size>0,
       subtaskCount,hasSubtasks,checklistEntries,dueToday,overdue,onDate,isDone,isRecurring,renderToday,renderFuture,
-      getState:()=>({version:2026103022,completed:{...saved},inProgress,progressStateInitialized,movedTo:{...movedTo},rolloverCompletedOn:{...rolloverCompletedOn},completedOn:{...completedOn},completedAt:{...completedAt},updatedAt:new Date().toISOString()}),
+      getState:()=>({version:2026103022,completed:{...saved},inProgress,inProgressTasks,progressStateInitialized,movedTo:{...movedTo},rolloverCompletedOn:{...rolloverCompletedOn},completedOn:{...completedOn},completedAt:{...completedAt},updatedAt:new Date().toISOString()}),
       setState:state=>{
         saved={...(state.completed||{})};draft={...saved};
-        inProgress=typeof state.inProgress==='string'?state.inProgress:null;
+        const legacy=typeof state.inProgress==='string'?state.inProgress:null,list=Array.isArray(state.inProgressTasks)?state.inProgressTasks.filter(key=>typeof key==='string'):[];setActiveKeys(legacy?(list.includes(legacy)?list:[legacy]):[]);
         progressStateInitialized=state.progressStateInitialized===true;
         movedTo={...(state.movedTo||{})};rolloverCompletedOn={...(state.rolloverCompletedOn||{})};completedOn={...(state.completedOn||{})};completedAt={...(state.completedAt||{})};
       },
@@ -4095,4 +4095,8 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 
 <style>
 #today-task-list-20261023 .tm-pair-note{display:block;font-size:12px;line-height:1.45;margin:3px 0;color:var(--tl-muted);overflow-wrap:anywhere}
+</style>
+
+<style>
+#today-task-list-20261023 .tm-meta,#today-task-list-20261023 .tm-pair-note{font-size:var(--tl-task-meta-size,12px)}
 </style>
