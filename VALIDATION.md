@@ -1,21 +1,19 @@
-# Tasks 0.35.0 verification
+# Tasks 0.36.0 verification
 
-[Successful CI checks](https://github.com/swettgm/task-list-android/actions/runs/41570381754), source commit `03f3d604c6c124bc3d7be9d4987b9f25a43d8005`.
+Source commit: `8ca5b7cbb936de65f3fec6a099b002cb94194d03`. [Successful build and checks](https://github.com/swettgm/task-list-android/actions/runs/41574960805): 111 Android unit tests, 499 browser checks, 26 calendar checks, and zero lint errors.
 
-108 Android tests, 489 browser checks and 26 calendar recurrence checks passed; lint reported zero errors.
+The app exposes a small native actionHaptic bridge using CLOCK_TICK on the UI thread. Plus buttons, successful task creation and valid date/time change events request a light tick. Date shortcuts and Clear time actions also provide feedback. Projects plus/create/Make task actions use the same bridge. Existing priority long-press feedback stays separate.
 
-A touch contact can generate pointer-leave after pointer-up and before its compatibility click. The old handler marked that release as cancelled, discarding ordinary taps. Priority buttons now track whether a contact is still pressed; pointer-leave cancels only an ongoing press. Real cancellation and moving away still cancel pending holds. Taps retain one-level changes, holds jump to endpoints with haptics, release clicks do not double-apply changes, and a fresh tap after holding remains usable.
+Widget quick add gives one tick when a widget-add launch gains window focus, including reuse through a new intent. Ordinary focus returns do not repeat the entrance tick. Successful saves and keyboard Done use the same feedback path. Confirming native date/time pickers and changing Today/Tomorrow/Weekend gives feedback; cancellation and form resets do not. No vibration permission or ignore-setting flags are introduced.
 
-Upcoming’s Do today factory now uses the same recurrence guard already used by Today’s Do tomorrow factory. Daily, weekday and general repeat definitions have no day-move controls. Existing saved task definitions, occurrences, completion history and earlier explicit moves are preserved. One-time task movement remains available.
+Native checks verify light feedback without changing saved tasks, widget entrance and picker callbacks. Browser checks count plus feedback, successful creation, date/time confirmation and absence of saved-task feedback on an invalid add. The full task, touch priority, recurrence, widget, reminder and history suites remain enabled.
 
-Browser regressions use touchscreen taps and CDP touch start/end holds, in addition to mouse input. They verify tap up/down, hold up/down, tap immediately after hold, endpoint limits, recurrence controls on both tabs, and one-time movement. The full native, calendar and browser suites remain enabled.
+Tab gestures now listen across the document instead of only the task root. This includes blank viewport space below short lists. Dialogs still block tab swiping, and vertical gestures remain scrolling. Real touch checks start outside the task-root bounds and navigate both directions without switching on a vertical gesture.
 
-[Download Tasks-v0.35.0.apk](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.35.0.apk).
+The empty-widget message is a wrap-content overlay centered against the full widget bounds. Equal side margins, centered text alignment and disabled extra font padding avoid header and side-padding offsets. A fresh layout refreshes existing hosts. Native geometry checks cover three widget widths and three heights.
 
-Package `com.personal.tasklist.preview`, version 0.35.0, code 35; minimum API 26, target 35; size 216,110 bytes.
-
-SHA-256: `5035df2dfe53f44d7a7bc3d0f2a8358f788384a8b24e80d821358dc9ab5c6de3`.
+Signed APK: `Tasks-v0.36.0.apk`, version 0.36.0 / code 36, 216,198 bytes. SHA-256: `704b9015639a7ebc85dd30448985f786aabf3267f3b2328d997aa06ff7114bf9`.
 
 Artifact hashes, ZIP CRCs and CI checksum passed. Packaged UI assets match source. The signed APK retains the prior certificate and passed signature, ZIP alignment and package/version checks. Every non-signature entry matches the tested CI APK. Install over the existing app to retain tasks and settings.
 
-No physical phone or Android launcher was used. Browser touch checks run in Chromium; native controls and widget behavior use Robolectric and view inflation. Windows work remains deferred.
+No physical phone or vibrator was used. Browser checks run in Chromium; native controls use Robolectric. Physical feedback depends on device support and Android’s touch-feedback settings. Windows work remains deferred.

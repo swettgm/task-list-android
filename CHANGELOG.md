@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.36.0 — 2026-11-02
+
+- Added light haptic ticks for task-add plus buttons and successful task creation, including widget quick add and keyboard submission.
+- Added feedback when confirming dates/times and choosing Today, Tomorrow or Weekend in the widget popup.
+- Uses Android’s haptic settings; failed saves and automatic field resets do not emit success feedback.
+- Swiping between Today and Upcoming now works in the blank lower part of a short list.
+- Centered the empty-widget flower message against the entire widget, with equal side margins.
+
 ## 0.35.0 — 2026-11-02
 
 - Fixed touch priority taps being cancelled by a pointer-leave event after release. Taps move one level; holds jump to High or Low.
