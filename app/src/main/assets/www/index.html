@@ -2403,7 +2403,7 @@ main{max-width:100%;margin:0;padding:0}
   }
   let progressLayoutFrame=0;
   const progressRows=new Set(),progressWidths=new WeakMap();
-  const progressResize=global.ResizeObserver?new ResizeObserver(entries=>{let changed=false;for(const entry of entries){const width=entry.contentRect.width;if(progressWidths.get(entry.target)!==width){progressWidths.set(entry.target,width);changed=true;}}if(changed)queueProgressLayout();}):null;
+  const progressResize=global.ResizeObserver?new ResizeObserver(entries=>{let changed=false;for(const entry of entries){const size=entry.contentRect.width+':'+entry.contentRect.height;if(progressWidths.get(entry.target)!==size){progressWidths.set(entry.target,size);changed=true;}}if(changed)queueProgressLayout();}):null;
   function queueProgressLayout(){if(progressLayoutFrame)return;progressLayoutFrame=requestAnimationFrame(()=>{progressLayoutFrame=0;
     for(const form of progressRows)if(!form.isConnected){progressResize?.unobserve(form);progressRows.delete(form);}
     document.querySelectorAll('.tm-task-item').forEach(row=>{
@@ -2415,6 +2415,7 @@ main{max-width:100%;margin:0;padding:0}
       for(const badge of badges){const width=badge.getBoundingClientRect().width;if(lines.length===1&&used+width+4<=available){used+=width+4;form.classList.add('tm-inline-progress');form.append(badge);}}
     });
   });}
+  document.addEventListener('toggle',queueProgressLayout,true);
   global.addEventListener('resize',queueProgressLayout);if(document.fonts){document.fonts.ready.then(queueProgressLayout);document.fonts.addEventListener?.('loadingdone',queueProgressLayout);}
   function decorateRow(wrapper, task, item, completed) {
     wrapper.dataset.taskId = task.id; wrapper.dataset.stateDate = item.stateDate; wrapper.dataset.displayDate = item.date;
