@@ -41,6 +41,7 @@
       body>main{position:relative;z-index:1}
       html.tasks-app-gradient main,html.tasks-app-gradient #today-task-list-20261023,html.tasks-app-gradient #pt-today,html.tasks-app-gradient #pt-upcoming,html.tasks-app-gradient #pt-future-list{background:transparent!important}
       html.tasks-app-gradient .tl-dialog{background:var(--tl-app-gradient)!important;background-attachment:local!important;background-size:100% 100%!important}
+      html.tasks-app-gradient .tl-dialog.tl-settings-dialog{background-attachment:fixed!important;background-size:100vw 100dvh!important;background-position:center top!important}
       html.tasks-app-gradient .tl-dialog .tl-task-form .tl-dialog-actions{background:transparent!important}
       .tasks-theme-settings{min-width:0;margin:0 0 14px;border:1px solid var(--tl-border);border-radius:8px;padding:8px}
       .tasks-theme-settings>summary{font-size:14px;font-weight:650;cursor:pointer;min-height:30px;color:var(--tl-text)}

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.48.0 — 2026-11-03
+
+- Removed the literal Checklist size slider. Notes and Checklist now expand directly from a small corner drag handle, with touch, mouse and keyboard support.
+- Settings uses a viewport-sized gradient that stays fixed while its contents scroll, matching the main screens instead of stretching over the full Settings page.
+
 ## 0.47.0 — 2026-11-03
 
 - Removed outer group frames from Priority, Repeat, Contexts and Linked tasks in editors.
