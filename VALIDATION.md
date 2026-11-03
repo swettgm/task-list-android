@@ -1,6 +1,6 @@
-# Tasks 0.39.0 verification — signing pending
+# Tasks 0.39.0 verification
 
-Source: `bc235b8cfc16708b1939bcff184a66ed6afac598`. [Successful complete build and checks](https://github.com/swettgm/task-list-android/actions/runs/41628791968): Android unit tests and lint passed, 561 browser checks including 79 layout, 20 Friday-weekend, 16 widget-editor and 17 deletion checks, plus 27 calendar checks.
+Source: `bc235b8cfc16708b1939bcff184a66ed6afac598`. [Successful complete build and checks](https://github.com/swettgm/task-list-android/actions/runs/41628791968): 116 Android unit tests and lint passed, 561 browser checks including 79 layout, 20 Friday-weekend, 16 widget-editor and 17 deletion checks, plus 27 calendar checks.
 
 Changes verified:
 - Urgent shares In progress's pill shape, padding, typography and height, retaining its red color.
@@ -12,15 +12,10 @@ Changes verified:
 - The summary shows the completion fraction, combined hours/minutes and untimed tasks, without a pending count.
 - Existing task editors offer an outline trash icon with gray first-tap confirmation and red second-press deletion. Input changes reset confirmation. Deletion removes current and future occurrences, links and matching active state while retaining saved completion history. Tests cover failed writes, built-in legacy carryovers, recurring tasks, other active tasks and immediate widget refresh.
 
-## Pending distribution
+## Published APK
 
-The signing workspace is unavailable to this session's execution tools. No signed 0.39.0 update has been published; download links still point to 0.38.0. The CI artifact uses a temporary signing key and requires the retained preview key for an in-place update.
+Version 0.39.0 / code 39, 220,294 bytes. SHA-256: `015fa5c9952ba49b911096d701cf7786d5415c5137e193e83cb4e5e5d0708b41`.
 
-Reported CI artifacts:
-- Task-List-Personalization-Tools — artifact 13227601077; sha256:c5de9da73531cb08fd3adc079083be2e9ba1e006d3c045cab9e294331c3f7d24
-- Android-test-and-lint-reports — artifact 13226874159; sha256:aab0be0e108fb6f2a27c925dd788a343509bde60f5238f6aa3e72182f4651cd0
-- Task-List-Android-Debug-APK — artifact 13226559628; sha256:88f57793e60e29fec3345ebe4f71b1d03797d41167e13e2dde7fd0fb3b90e8f9
-
-Before publication: synchronize all tested source files and the private signing HTML from the verified commit, verify artifact digests, ZIP integrity, package/version and exact packaged assets; sign with the retained preview key; compare all non-signature entries with the tested CI APK; publish both versioned and legacy download paths with checksums. Keep the original seed state and signing key.
+Artifact digests, ZIP CRCs, CI checksum and exact packaged assets passed verification. The retained signing certificate matches the prior update, and real APK signature, alignment, package and version checks passed. Every non-signature APK entry matches the tested CI artifact exactly. The original seed state is unchanged. Both versioned and legacy download paths contain the same signed APK.
 
 No physical phone was used. Chromium and Robolectric checks do not replace device testing. Windows work remains deferred.

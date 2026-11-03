@@ -1,6 +1,6 @@
 # Tasks — Android
 
-Source version 0.39.0 passed its build and regression checks. Publishing its installable update is pending access to the retained signing key; the current download remains 0.38.0.
+Download [Tasks 0.39.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.39.0.apk). Install over the existing app to retain your tasks and settings.
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
