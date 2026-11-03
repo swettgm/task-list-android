@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.38.0 — 2026-11-03
+
+- Urgent now sits directly beside the task title when there is room, matching In progress spacing and vertical alignment. Badges wrap below only when needed, including when both are present.
+
 ## 0.37.0 — 2026-11-03
 
 - Tap a widget task title to edit it in the same rounded popup used in the app, over the home screen.
