@@ -101,7 +101,7 @@ try{
  }
  check(await page.locator('#pt-list .form-check .tm-meta').count()===0,'Checkbox label contains the title rather than the metadata block');
  // Upcoming has its own complete controls and visible grouping.
- await page.getByRole('tab',{name:'Upcoming',exact:true}).click();
+ await page.getByRole('tab',{name:'Upcoming',exact:true}).click();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);
  check(await futureRows(ids.dailyA).count()===14&&await futureRows(ids.dailyB).count()===14,'Daily tasks pending on Today also show each of the next fourteen occurrences in Upcoming');
  check(await futureRows(durationTask.id).count()===0,'Nonrecurring tasks pending on Today stay excluded from Upcoming');
  const dailyDates=await futureRows(ids.dailyB).evaluateAll(nodes=>nodes.map(n=>n.dataset.stateDate));check(dailyDates[0]===dates.tomorrow&&!dailyDates.includes(dates.today)&&new Set(dailyDates).size===14,'Upcoming daily tasks start tomorrow with unique dates');
@@ -111,7 +111,7 @@ try{
  const repeatDates=await futureRows(ids.futureRepeat).evaluateAll(nodes=>nodes.map(n=>n.dataset.stateDate));
  check(repeatDates.length>1&&new Set(repeatDates).size===repeatDates.length,'Distinct future repeat occurrences remain available without duplicate dates');
  const tomorrowDetails=page.locator('#pt-future-list details.tm-day').filter({has:page.locator('[data-task-id="'+ids.future+'"]')}).first();
- check(await tomorrowDetails.evaluate(d=>d.open),'Tomorrow date group is expanded');
+ check(await tomorrowDetails.evaluate(d=>d.open),'Tomorrow date group can be expanded');
  const later=await page.locator('#pt-future-list details.tm-day').evaluateAll(groups=>groups.slice(1).every(d=>!d.open));
  check(await page.locator('#pt-future-list details.tm-day').evaluateAll(nodes=>nodes.every(n=>getComputedStyle(n).borderTopWidth==='0px'&&getComputedStyle(n).borderRadius==='0px')),'Upcoming dates have no enclosing frames');
  check(later,'Later Upcoming dates start in separate collapsed dropdowns');
@@ -123,7 +123,7 @@ try{
  check(await futureRows(ids.future).first().evaluate(r=>r.classList.contains('tm-in-progress-item')&&r.textContent.includes('IN PROGRESS')),'Upcoming Do now visibly marks the task in progress');
  await page.evaluate(()=>TaskListApp.showToday());
  check(await page.locator('#pt-today').isVisible()&&await page.locator('#pt-current').textContent().then(t=>t.includes('Tomorrow once task')),'An upcoming active task remains visible in the Today progress banner');
- await page.getByRole('tab',{name:'Upcoming',exact:true}).click();
+ await page.getByRole('tab',{name:'Upcoming',exact:true}).click();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);
  await futureRows(ids.future).first().locator(':scope > .form-check > input[type=checkbox]').click();
  state=await page.evaluate(()=>__v7.getState());
  check(state.completed[ids.future+':'+dates.tomorrow]===true&&state.completedOn[ids.future+':'+dates.tomorrow]===dates.today,'Upcoming completion saves immediately with today as actual completion date');
@@ -138,7 +138,7 @@ try{
  check(await futureRows(ids.second).count()===0&&await todayRow(ids.second).getAttribute('data-state-date')===dates.second&&await todayRow(ids.second).getAttribute('data-display-date')===dates.today,'Moved task appears on Today with its original identity and leaves Upcoming');
  await page.waitForFunction(({id,date})=>__v7.snapshot.some(t=>t.id==='html:'+id+':'+date&&t.onToday),{id:ids.second,date:dates.second});check(true,'The home widget receives the moved Today occurrence');
  // Repeating schedules cannot be manually advanced or postponed through task-row controls.
- const dailyPage=await newPage(state);await dailyPage.evaluate(({date})=>{const s=__v7.getState();for(const unit of ['week','month','year'])s.customTasks.push({id:'fixed-'+unit,title:'Fixed '+unit,priority:'HIGH',_contexts:['V7 QA'],repeat:{amount:1,unit,start:date}});__v7.setState(s);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('V7 QA');},{date:dates.tomorrow});await dailyPage.getByRole('tab',{name:'Upcoming',exact:true}).click();
+ const dailyPage=await newPage(state);await dailyPage.evaluate(({date})=>{const s=__v7.getState();for(const unit of ['week','month','year'])s.customTasks.push({id:'fixed-'+unit,title:'Fixed '+unit,priority:'HIGH',_contexts:['V7 QA'],repeat:{amount:1,unit,start:date}});__v7.setState(s);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('V7 QA');},{date:dates.tomorrow});await dailyPage.getByRole('tab',{name:'Upcoming',exact:true}).click();await dailyPage.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);
  for(const id of [ids.dailyA,ids.futureRepeat,'fixed-week','fixed-month','fixed-year']){
   const task=dailyPage.locator('#pt-future-list [data-task-id="'+id+'"]').first();check(await task.count()===1&&await task.locator(':scope>.tm-item-actions>button[aria-label^="Move "]').count()===0,'Repeating '+id+' has no Do today or Do tomorrow control in Upcoming');
  }
@@ -147,7 +147,7 @@ try{
  check(await page.locator('#pt-today').isVisible()&&!await page.locator('#pt-upcoming').isVisible(),'Reopening Tasks always selects Today');
  check(await todayRow(ids.second).isVisible()&&await todayRow(ids.second).getAttribute('data-state-date')===dates.second,'Do today persists after a full reload');
  await page.screenshot({path:path.join(output,'tasks-today-v7.png'),fullPage:false});
- await page.getByRole('tab',{name:'Upcoming',exact:true}).click();
+ await page.getByRole('tab',{name:'Upcoming',exact:true}).click();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);
  await page.screenshot({path:path.join(output,'tasks-upcoming-v7.png'),fullPage:false});
  // A companion/widget can change native state while this document still has an older cache.
  await page.evaluate(()=>TaskListApp.showToday());
@@ -201,7 +201,7 @@ try{
  await tapRow().locator('.tl-meta-time').click();await tapDialog().getByRole('button',{name:'Clear',exact:true}).click();check(await tapDialog().getByRole('checkbox',{name:'Notify at scheduled time'}).isDisabled(),'Clearing the time disables scheduled notification');await tapDialog().getByRole('button',{name:'Save',exact:true}).click();tapTask=(await tapPage.evaluate(()=>__v7.getState())).customTasks.find(t=>t.id==='tap-edit');check(!tapTask.time&&!tapTask.notify&&await tapRow().locator('.tl-meta-time').textContent()==='Any time','Clearing time removes only time and its scheduled notification');
  await tapPage.reload();await tapPage.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);check(await tapRow().locator('.tl-meta-duration').textContent()==='⏰ 1 hr 5 min'&&await tapRow().locator('.tl-meta-frequency').textContent().then(t=>t.includes('2 days')),'Component edits persist after reopening');
  await tapRow().locator(':scope > .form-check > input').click();check((await tapPage.evaluate(()=>__v7.getState())).completed['tap-edit:'+dates.today+':step:1']===true,'Clicking the checkbox still completes the task and checklist');await tapRow().locator(':scope > .form-check > input').click();
- await tapPage.getByRole('tab',{name:'Upcoming',exact:true}).click();await tapPage.locator('#pt-future-list [data-task-id="tap-future"] .tl-meta-time').click();await tapDialog().locator('input[type=time]').fill('16:45');await tapDialog().getByRole('button',{name:'Save',exact:true}).click();tapTask=(await tapPage.evaluate(()=>__v7.getState())).customTasks.find(t=>t.id==='tap-future');check(tapTask.time==='4:45 PM'&&tapTask.due===dates.tomorrow,'Upcoming metadata supports direct editing without moving or completing the task');await tapPage.close();
+ await tapPage.getByRole('tab',{name:'Upcoming',exact:true}).click();await tapPage.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);await tapPage.locator('#pt-future-list [data-task-id="tap-future"] .tl-meta-time').click();await tapDialog().locator('input[type=time]').fill('16:45');await tapDialog().getByRole('button',{name:'Save',exact:true}).click();tapTask=(await tapPage.evaluate(()=>__v7.getState())).customTasks.find(t=>t.id==='tap-future');check(tapTask.time==='4:45 PM'&&tapTask.due===dates.tomorrow,'Upcoming metadata supports direct editing without moving or completing the task');await tapPage.close();
  await page.evaluate(({id,date})=>{const remote=__v7.getState();remote.inProgress=id+':'+date;remote.progressStateInitialized=true;__v7.setState(remote);TaskListApp.reloadFromNative();TaskListApp.showToday();},{id:durationTask.id,date:dates.today});
  check(await page.locator('#pt-current').textContent().then(text=>text.includes('Duration conversion QA'))&&await todayRow(durationTask.id).getAttribute('class').then(value=>value.includes('tm-in-progress-item')),'The app reloads widget-written in-progress state and displays its active task');
  await page.evaluate(()=>{const remote=__v7.getState();remote.inProgress=null;__v7.setState(remote);TaskListApp.reloadFromNative();});check(await page.locator('#pt-current').isHidden(),'Stopping from the widget clears the app progress banner');
@@ -209,7 +209,7 @@ try{
  for(const id of ['multi-a','multi-b'])await todayRow(id).locator(':scope>.tm-item-actions>.tm-progress-control').click();
  check(await page.locator('#pt-current').textContent().then(t=>t.includes('First active QA, Second active QA')),'Multiple active tasks appear together separated by commas');check((await page.evaluate(()=>__v7.getState())).inProgressTasks.length===2,'Progress stores independent active occurrence identities');
  await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);check(await todayRow('multi-a').getAttribute('class').then(t=>t.includes('tm-in-progress-item'))&&await todayRow('multi-b').getAttribute('class').then(t=>t.includes('tm-in-progress-item')),'Both active tasks retain their state after reload');await todayRow('multi-a').locator(':scope>.form-check>input').scrollIntoViewIfNeeded();const beforeBox=await todayRow('multi-a').locator(':scope>.form-check>input').boundingBox();await todayRow('multi-a').locator(':scope>.form-check>input').check();const afterBox=await todayRow('multi-a').locator(':scope>.form-check>input').boundingBox();check(Math.abs(beforeBox.y-afterBox.y)<1,'Completing one of several active tasks retains its undo checkbox position '+JSON.stringify({beforeBox,afterBox}));await todayRow('multi-a').locator(':scope>.form-check>input').click();check(await page.evaluate(()=>__v7.getState().inProgressTasks.length===1),'Undoing completion preserves the other active task');check(await page.locator('#pt-current').textContent().then(t=>!t.includes('First active QA')&&t.includes('Second active QA')),'Stopping one active task leaves the other active');
- await page.getByRole('tab',{name:'Upcoming',exact:true}).click();check(await page.locator('.tm-day-name').allTextContents().then(names=>names.length>0&&names.every(name=>/^(Tomorrow|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday), [A-Z][a-z]{2} \d+(st|nd|rd|th)$/.test(name))),'Upcoming headings show Tomorrow or a full weekday followed by month and ordinal date');
+ await page.getByRole('tab',{name:'Upcoming',exact:true}).click();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);check(await page.locator('.tm-day-name').allTextContents().then(names=>names.length>0&&names.every(name=>/^(Tomorrow|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday), [A-Z][a-z]{2} \d+(st|nd|rd|th)$/.test(name))),'Upcoming headings show Tomorrow or a full weekday followed by month and ordinal date');
  check(await page.locator('#pt-future-list details.tm-day').evaluateAll((nodes,tomorrow)=>nodes.every(section=>{const label=section.querySelector('.tm-day-name').textContent,expected=section.dataset.date===tomorrow?'Tomorrow':new Date(section.dataset.date+'T12:00:00Z').toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'});return label.startsWith(expected+', ');}),dates.tomorrow),'Tomorrow and later weekday labels match each section’s actual date');
  check(errors.length===0,'No page errors in Tasks v7 behavior checks');
  console.log(JSON.stringify({passed:checks.length,checks},null,2));

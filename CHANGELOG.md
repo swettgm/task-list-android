@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.41.0 — 2026-11-03
+
+- Added a separate Show trash / Hide trash area beside Show completed, with Restore and confirmed Delete forever controls.
+- Permanent deletion stays deleted across reloads; removing completed recurring entries preserves future dates.
+- Upcoming date groups now start collapsed. Saved task notes display inline and obsolete fixed instructions were removed.
+- Editors lock background scrolling, keep a stable thin border and reduce excess widget-editor top spacing. Widget quick-add fields have more room for vertically centered text.
+- Task details show duration then time, recurrence, labels and low/med/high priority, with consistent dot separators.
+- Settings offers emoji icons, simple clock/repeat symbols or no duration/recurrence icons; emojis remain the default.
+- The top summary includes the number of pending tasks with no priority and uses a dot before untimed tasks.
+- Priority changes and task deletion fade briefly before rows move or disappear.
+
 ## 0.40.0 — 2026-11-03
 
 - Added light haptic feedback to widget task actions and opening the app from the widget.

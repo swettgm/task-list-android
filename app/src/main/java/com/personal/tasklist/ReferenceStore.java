@@ -104,7 +104,8 @@ public final class ReferenceStore {
                 custom.put(definition);
                 current.put("customTasks", custom).put("updatedAt", Instant.now().toString());
                 appendMissingCustomMirrors(records, current);
-                applyPersistedCompletions(records, current);
+                for(int i=records.length()-1;i>=0;i--){JSONObject record=records.optJSONObject(i);if(record==null)continue;String key=record.optString("progressKey");int split=key.lastIndexOf(':');if(split>0&&ReminderPlanner.removed(key.substring(0,split),key.substring(split+1),current))records.remove(i);}
+            applyPersistedCompletions(records, current);
             applyPersistedProgress(records,current);
                 String stateJson = current.toString(), snapshotJson = records.toString();
                 checkSize(stateJson); snapshot(snapshotJson);

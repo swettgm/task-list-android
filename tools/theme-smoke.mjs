@@ -74,7 +74,7 @@ try {
   check(await page.evaluate(()=>__themeNative.background)==='#1e2935','Android receives the base background hex for its system bars');
   await page.getByRole('button',{name:'Close',exact:true}).click();
   await page.screenshot({path:path.join(output,'gradient-tasks.png'),fullPage:false});
-  await page.getByRole('tab',{name:'Upcoming',exact:true}).click();
+  await page.getByRole('tab',{name:'Upcoming',exact:true}).click();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);
   check(await page.locator('#pt-upcoming').isVisible()&&await page.evaluate(()=>getComputedStyle(document.body).backgroundImage.includes('135deg')&&['main','#today-task-list-20261023','#pt-upcoming','#pt-future-list'].every(selector=>getComputedStyle(document.querySelector(selector)).backgroundColor==='rgba(0, 0, 0, 0)')),'Upcoming shows the same page-wide gradient through every list surface');
   await page.screenshot({path:path.join(output,'gradient-upcoming.png'),fullPage:false});
   await page.evaluate(()=>{document.querySelector('main').style.minHeight='2500px';window.scrollTo(0,document.documentElement.scrollHeight);});
