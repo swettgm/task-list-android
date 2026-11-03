@@ -19,7 +19,7 @@ try{
   __layout.set(state);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('Layout check');
  });
  const metric=async selector=>page.locator(selector).first().evaluate(async row=>{
-  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  for(let frame=0;frame<4;frame++)await new Promise(resolve=>requestAnimationFrame(resolve));
   const box=row.querySelector(':scope>.form-check>input').getBoundingClientRect(),title=row.querySelector('.tm-title').getBoundingClientRect();
   const css=n=>{const s=getComputedStyle(n);return[s.fontSize,s.lineHeight,s.paddingLeft,s.paddingRight];};
   return {offset:box.y+box.height/2-title.y-title.height/2,width:row.getBoundingClientRect().width,title:css(row.querySelector('.tm-title')),meta:css(row.querySelector('.tm-meta')),actions:css(row.querySelector('.tm-item-actions')),checkbox:[box.width,box.height],height:row.getBoundingClientRect().height};
