@@ -1,15 +1,13 @@
-# Tasks 0.44.0 verification
+# Tasks 0.45.0 verification
 
-Source: da10663bb5d7fdbf831e39c68d36b38be9447055. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41689274061): 127 Android tests, 669 browser checks, 27 calendar checks and zero lint errors.
+Source: a0aa3304eced3493932334eb997131c0d68061e8. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41692516534): 127 Android tests, 670 browser checks, 27 calendar checks and zero lint errors.
 
-Simple clock, repeat-arrow and chain-link symbols now use a 1.6 em container with a full-size SVG and slightly stronger white strokes. The old white disk and dark strokes are removed; backgrounds are transparent. This increases the drawn glyph size while retaining the existing task text size, label emoji sizes and Emoji / Simple symbols / Off choices. Browser checks verify the rendered size, white stroke color, transparent background and existing icon selection behavior, alongside header and wrapping geometry.
+The simple clock has equal 3.5-unit hands within an 8-unit circular rim, leaving clear space around the ends. Repeat uses two rotationally balanced circular arcs and solid arrowheads with rounded corners. Chain links now use two rounded interlocking loops like the emoji. Outdoors uses a rounded canopy and softened trunk, replacing the pointed tree.
 
-The five original label defaults (Home, Road, Phone, Computer and Outdoors) use solid white pictograms with transparent cutouts. The app and native label pickers honor saved emoji overrides, and the Guild crest is unchanged. Label identities, filters and task assignments are retained. Native checks cover each default and custom overrides; browser checks cover all five symbols and changing an original label to an emoji.
+The complete white icon set was reviewed and refined with rounded roof, body, screen, wheel, trunk and button details. House, car, phone, computer and tree shapes share a common 24-unit view box and comparable visible bounds. All web symbols use 24 px containers; native label symbols use 24 dp bounds. The chain's visible size is balanced against the clock and labels. Existing custom emoji sizes and the Guild crest are unchanged. Browser checks compare actual rendered icon dimensions across duration, repeat, links and label symbols. A dedicated rendered preview includes the entire set at readable size for visual inspection.
 
-Settings → Notifications has separate Daily reminder title and Daily reminder message fields. The existing daily enable switch and reminder time remain available. Saving restores the custom wording on reopening Settings and preserves the independent timed-task title/message templates. Native delivery uses the saved daily text, retaining the original title and message when unset and honoring the existing opt-out. Tests inspect actual notification extras, literal punctuation and braces, defaults, scheduling, opt-in and timed-task independence.
+`Tasks-v0.45.0.apk`: version 0.45.0 / code 45; 253,508 bytes. SHA-256: `ff71100af23fc01413b1e38d533fd270488192a27fde2fb0ca6e43d3078d35dd`.
 
-`Tasks-v0.44.0.apk`: version 0.44.0 / code 44; 249,412 bytes. SHA-256: `fbcf156f363e175dc002fbc503e6ed03634d2f06b0fc85b1a5a26c281b4bf774`.
-
-Artifact hashes, ZIP CRCs, CI checksum, package/version, exact packaged UI assets including changelog data, all non-signature APK entries, alignment and the retained preview signer passed verification. The signer matches Tasks 0.43.0, and the original seed state is unchanged. Both download paths contain the same signed APK. Settings Changelog contains 42 published releases including this update.
+Artifact hashes, ZIP CRCs, CI checksum, package/version, exact packaged UI assets including changelog data, all non-signature APK entries, alignment and the retained preview signer passed verification. The signer matches Tasks 0.44.0, and the original seed state is unchanged. Both download paths contain the same signed APK. Settings Changelog contains 43 published releases including this update. The complete task workflow, daily notification customization, emoji overrides and Guild image selection remain covered.
 
 No physical phone or launcher was used. Android checks use Robolectric; browser checks use Chromium. Windows work remains deferred.
