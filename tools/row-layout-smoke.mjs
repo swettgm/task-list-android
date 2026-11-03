@@ -28,7 +28,7 @@ try{
   for(const size of [15,20,25]){
    await page.evaluate(size=>{let s=document.getElementById('layout-test-font');if(!s){s=document.createElement('style');s.id='layout-test-font';document.head.append(s);}s.textContent='#today-task-list-20261023 .form-check-label{font-size:'+size+'px!important}';},size);
    await page.locator('#pt-today-tab').click();const today=await metric('#pt-list [data-task-id="layout-today"]');
-   await page.locator('#pt-upcoming-tab').click();const upcoming=await metric('#pt-future-list [data-task-id="layout-future"]');
+   await page.locator('#pt-upcoming-tab').click();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);const upcoming=await metric('#pt-future-list [data-task-id="layout-future"]');
    check(Math.abs(today.offset)<.5&&Math.abs(upcoming.offset)<.5,'Checkbox center matches the vertical center of its title at '+width+'px / '+size+'px text '+JSON.stringify({today,upcoming}));
    check(JSON.stringify(today.title)===JSON.stringify(upcoming.title)&&JSON.stringify(today.meta)===JSON.stringify(upcoming.meta)&&JSON.stringify(today.actions)===JSON.stringify(upcoming.actions)&&Math.abs(today.width-upcoming.width)<1&&Math.abs(today.height-upcoming.height)<1,'Today and Upcoming row sizing matches at '+width+'px / '+size+'px text');
   }
