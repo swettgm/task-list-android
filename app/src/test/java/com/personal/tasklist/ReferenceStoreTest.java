@@ -493,6 +493,7 @@ public class ReferenceStoreTest {
     @Test public void permanentlyRemovedRowsCannotReturnInStaleWidgetSnapshots() throws Exception {
         String day=today();JSONObject state=new JSONObject().put("taskPurged",new JSONObject().put("gone","now")).put("completionPurged",new JSONObject().put("finished:"+day,"now")).put("completed",new JSONObject()).put("customTasks",new JSONArray());reference.writeState(state.toString());
         reference.updateSnapshot(new JSONArray().put(snapshot("gone:"+day,day,true,"gone:"+day)).put(snapshot("finished:"+day,day,true,"finished:"+day)).put(snapshot("keep:"+day,day,true,"keep:"+day)).toString());assertEquals(1,tasks.all().size());assertEquals("html:keep:"+day,tasks.all().get(0).id);
+        preferences().edit().putString("snapshot",new JSONArray().put(snapshot("gone:"+day,day,true,"gone:"+day)).toString()).commit();assertFalse(reference.completeTask("html:gone:"+day));assertFalse(reference.setTaskInProgress("html:gone:"+day,true));assertEquals(0,new JSONObject(reference.readState()).getJSONObject("completed").length());
         JSONObject task=new JSONObject().put("id","finished");assertTrue(ReminderPlanner.done(task,day,state));assertFalse(ReminderPlanner.done(task,LocalDate.parse(day).plusDays(1).toString(),state));assertEquals(0,ReminderPlanner.effective(new JSONArray().put(new JSONObject().put("id","gone")),state).length());
     }
     private static JSONObject snapshot(String progress, String stateDate, boolean onToday, String... completionKeys) throws Exception {

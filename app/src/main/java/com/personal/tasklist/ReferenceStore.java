@@ -104,7 +104,7 @@ public final class ReferenceStore {
                 custom.put(definition);
                 current.put("customTasks", custom).put("updatedAt", Instant.now().toString());
                 appendMissingCustomMirrors(records, current);
-                for(int i=records.length()-1;i>=0;i--){JSONObject record=records.optJSONObject(i);if(record==null)continue;String key=record.optString("progressKey");int split=key.lastIndexOf(':');if(split>0&&ReminderPlanner.removed(key.substring(0,split),key.substring(split+1),current))records.remove(i);}
+                removePurgedRecords(records,current);
             applyPersistedCompletions(records, current);
             applyPersistedProgress(records,current);
                 String stateJson = current.toString(), snapshotJson = records.toString();
@@ -128,6 +128,7 @@ public final class ReferenceStore {
             // Persisted completion always wins over an older open-row snapshot.
             JSONObject current = state();
             appendMissingCustomMirrors(records, current);
+            removePurgedRecords(records,current);
             applyPersistedCompletions(records, current);
             applyPersistedProgress(records,current);
             String normalized = records.toString();
@@ -138,6 +139,9 @@ public final class ReferenceStore {
         }
         replaceLatestMirror();
     }
+
+    private static boolean purgedRecord(JSONObject record,JSONObject state){String key=record.optString("progressKey");int split=key.lastIndexOf(':');return split>0&&ReminderPlanner.removed(key.substring(0,split),key.substring(split+1),state);}
+    private static void removePurgedRecords(JSONArray records,JSONObject state){for(int i=records.length()-1;i>=0;i--){JSONObject record=records.optJSONObject(i);if(record!=null&&purgedRecord(record,state))records.remove(i);}}
 
     /** Complete a reference row using its engine keys, including nested child/step keys. */
     public boolean completeTask(String taskId) {
@@ -151,7 +155,7 @@ public final class ReferenceStore {
                     if (taskId.equals(record.getString("id"))) { target = record; break; }
                 }
                 if (target == null) return false;
-                JSONObject current = state();
+                JSONObject current = state();if(purgedRecord(target,current))return false;
                 JSONObject completed = current.has("completed") ? objectField(current, "completed") : new JSONObject();
                 JSONObject completedOn = current.has("completedOn") ? objectField(current, "completedOn") : new JSONObject();
                 JSONObject completedAt = current.has("completedAt") ? objectField(current, "completedAt") : new JSONObject();
@@ -223,7 +227,7 @@ public final class ReferenceStore {
         synchronized(LOCK){JSONArray records=storedSnapshot();String beforeSnapshot=records.toString();JSONObject target=null;
             try{
                 for(int i=0;i<records.length();i++)if(taskId.equals(records.getJSONObject(i).getString("id"))){target=records.getJSONObject(i);break;}
-                if(target==null)return false;JSONObject current=state();applyPersistedCompletions(records,current);java.util.List<String> active=activeKeys(current),next=new java.util.ArrayList<>(active);String progress=target.getString("progressKey");boolean done=target.optBoolean("done")||TaskStore.DONE.equals(target.optString("status"));
+                if(target==null)return false;JSONObject current=state();if(purgedRecord(target,current))return false;applyPersistedCompletions(records,current);java.util.List<String> active=activeKeys(current),next=new java.util.ArrayList<>(active);String progress=target.getString("progressKey");boolean done=target.optBoolean("done")||TaskStore.DONE.equals(target.optString("status"));
                 if(!done&&start){if(!next.contains(progress))next.add(progress);}else next.removeIf(value->matches(value,progress));
                 boolean changed=!active.equals(next)||(!done&&!current.optBoolean("progressStateInitialized"));if(changed){writeActiveKeys(current,next);current.put("progressStateInitialized",true).put("updatedAt",Instant.now().toString());}
                 applyPersistedProgress(records,current);String serialized=current.toString(),snapshotJson=records.toString();checkSize(serialized);checkSize(snapshotJson);TaskStore.validateReferenceTasks(snapshotJson);
