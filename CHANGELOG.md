@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.39.0 — 2026-11-03
+
+- Urgent now shares In progress’s rounded pill shape, padding, typography and height, while retaining its red color and title-spacing behavior.
+
 ## 0.38.0 — 2026-11-03
 
 - Urgent now sits directly beside the task title when there is room, matching In progress spacing and vertical alignment. Badges wrap below only when needed, including when both are present.
