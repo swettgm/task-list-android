@@ -1,9 +1,10 @@
 # Tasks — Android
 
-Download [Tasks 0.46.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.46.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.47.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.47.0.apk). Install over the existing app to retain your tasks and settings.
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
+- Editor groups such as Repeat, Contexts, Linked tasks and Priority use no outer box and align with the left edge of the other fields. Individual input and choice-button outlines remain visible.
 - Icons align vertically with their captions and label spacing uses consistent 6 px gaps. Native label-picker images center with text, and Guild uses a compact fixed 20 dp crest. The widget editor dims the status-bar gap while retaining safe top clearance. The detailed Checklist field has a size slider; [Raid] and [Discord] lines create dividers, while [] returns to ungrouped items. Section edits preserve item completion identities and future recurrences.
 - Refined white icons share one 24 px canvas and rounded corners/tips. The clock has equal-length hands clear of the rim, repeat arrows have distinct rounded heads, the chain uses rounded interlocking links, and Outdoors uses a rounded tree canopy. Custom emoji sizing is preserved.
 - Simple clock, recurrence and chain-link symbols are larger and use white strokes on a transparent background. The original Home, Road, Phone, Computer and Outdoors labels also use solid white pictograms, with custom emoji overrides and the Guild crest preserved. Settings → Notifications offers separate title and message fields for the daily reminder, alongside its existing time and enable switch; timed task templates stay independent.
