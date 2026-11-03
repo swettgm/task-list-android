@@ -398,7 +398,7 @@
       }
       try{saveDefinition(next,isNew,readLinks());close();}catch(e){error.textContent=e.message||"Couldn’t save. Please try again.";}
     }, 'btn btn-primary'));
-    form.append(buttons); if(isNew)title.focus();else dialog.focus({preventScroll:true});
+    form.append(buttons); dialog.focus({preventScroll:true});try{if(native&&native.hideKeyboard)native.hideKeyboard();}catch(_){}
   }
   function updateContextOptions() {
     const select = document.getElementById('tl-context-filter'); if (!select) return;

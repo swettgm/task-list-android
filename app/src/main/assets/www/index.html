@@ -2311,7 +2311,7 @@ main{max-width:100%;margin:0;padding:0}
       }
       try{saveDefinition(next,isNew,readLinks());close();}catch(e){error.textContent=e.message||"Couldn’t save. Please try again.";}
     }, 'btn btn-primary'));
-    form.append(buttons); if(isNew)title.focus();else dialog.focus({preventScroll:true});
+    form.append(buttons); dialog.focus({preventScroll:true});try{if(native&&native.hideKeyboard)native.hideKeyboard();}catch(_){}
   }
   function updateContextOptions() {
     const select = document.getElementById('tl-context-filter'); if (!select) return;
@@ -3858,7 +3858,7 @@ html>body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
 .tl-notes-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
 .tl-task-form .tl-form-error:empty{display:none}
 .tl-task-form .tl-form-error{font-size:12px;margin:0}
-.tl-task-form .tl-dialog-actions{position:sticky;bottom:-14px;margin:0 -2px -2px;padding:8px 2px 2px;background:#172131;gap:8px;z-index:2}
+.tl-task-form .tl-dialog-actions{position:static;flex:0 0 auto;flex-wrap:wrap;bottom:auto;margin:0;padding:8px 0 0;background:transparent;gap:8px}
 .tl-dialog .tl-dialog-actions .btn{height:42px;min-height:42px;padding:6px 14px}
 @media(max-width:350px){#today-task-list-20261023 .nav-link{padding:0 8px;font-size:12px}.tl-dialog{padding:12px}.tl-choice{padding:4px 5px}}
 

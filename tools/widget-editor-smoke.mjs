@@ -24,6 +24,8 @@ try{
  check(await page.locator('dialog input[type=text]').first().inputValue()==='Widget editing test','Correct task prefilled');
  check(await page.evaluate(()=>document.activeElement===document.querySelector('dialog')),'Editing does not focus the keyboard');
  check(await page.locator('dialog textarea').count()===2,'Editor includes notes and checklist');
+ await page.locator('dialog').evaluate(dialog=>{dialog.scrollTop=dialog.scrollHeight;});
+ check(await page.locator('dialog').evaluate(dialog=>{const row=dialog.querySelector('.tl-dialog-actions').getBoundingClientRect(),fields=dialog.querySelector('.tl-extra-fields').getBoundingClientRect();return getComputedStyle(dialog.querySelector('.tl-dialog-actions')).position==='static'&&row.top-fields.bottom>=8&&row.bottom<=dialog.getBoundingClientRect().bottom;}),'Widget editor buttons occupy their own row below the fields');
  await page.locator('dialog input[type=text]').first().fill('Updated widget title');await page.locator('dialog textarea').first().fill('Updated notes');
  await page.getByRole('button',{name:'Save task',exact:true}).click();
  check(await page.evaluate(()=>__qa.closed===1&&!document.querySelector('dialog')),'Save closes the home screen overlay');

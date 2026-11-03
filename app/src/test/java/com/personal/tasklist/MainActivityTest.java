@@ -47,6 +47,13 @@ public class MainActivityTest {
         ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity activity=controller.get();String before=activity.taskBridgeForTests().readState();assertFalse(activity.webForTests().isVerticalScrollBarEnabled());assertFalse(activity.webForTests().isHorizontalScrollBarEnabled());
         activity.taskBridgeForTests().priorityHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();assertEquals(android.view.HapticFeedbackConstants.LONG_PRESS,Shadows.shadowOf(activity.webForTests()).lastHapticFeedbackPerformed());assertEquals(before,activity.taskBridgeForTests().readState());controller.pause().stop().destroy();activity.taskBridgeForTests().priorityHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
     }
+    @Test public void detailedEditorCanDismissTheQuickAddKeyboard() {
+        ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity activity=controller.get();
+        android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+        keyboard.showSoftInput(activity.webForTests(),android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);assertTrue(Shadows.shadowOf(keyboard).isSoftInputVisible());
+        activity.taskBridgeForTests().hideKeyboard();Shadows.shadowOf(Looper.getMainLooper()).idle();assertFalse(Shadows.shadowOf(keyboard).isSoftInputVisible());
+        controller.pause().stop().destroy();activity.taskBridgeForTests().hideKeyboard();Shadows.shadowOf(Looper.getMainLooper()).idle();
+    }
     @Test public void actionFeedbackUsesALightTickWithoutChangingSavedTasks(){
         ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity activity=controller.get();String before=activity.taskBridgeForTests().readState();activity.taskBridgeForTests().actionHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();assertEquals(android.view.HapticFeedbackConstants.CLOCK_TICK,Shadows.shadowOf(activity.webForTests()).lastHapticFeedbackPerformed());assertEquals(before,activity.taskBridgeForTests().readState());controller.pause().stop().destroy();activity.taskBridgeForTests().actionHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
     }

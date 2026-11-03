@@ -22,6 +22,7 @@ await page.addInitScript(initial => {
     setState(value) { canonical = JSON.parse(JSON.stringify(value)); },
     getState() { return JSON.parse(JSON.stringify(canonical)); } };
   window.TaskListNative = {
+    hideKeyboard() { __nativeQA.keyboardDismissals=(__nativeQA.keyboardDismissals||0)+1; },
     actionHaptic() { __nativeQA.haptics++; },
     readState() { return JSON.stringify(canonical); },
     writeState(text) { if (__nativeQA.failWrites) throw Error('Simulated storage failure'); canonical = JSON.parse(text); },
@@ -116,7 +117,7 @@ const result = await page.evaluate(async () => {
   check(rows().some(row=>row.dataset.taskId==='custom-native-qa'),'Native popup task is retained and loaded');
   // Create with a manual link; the picker offers every existing task.
   TaskListApp.addTask({labels:['On the computer']});
-  let dialog=document.querySelector('dialog');check(dialog.open,'Creation editor opens');check(document.activeElement===dialog.querySelector('input[type=text]'),'Adding a task focuses its title for keyboard entry');
+  let dialog=document.querySelector('dialog');check(dialog.open,'Creation editor opens');check(document.activeElement===dialog&&__nativeQA.keyboardDismissals>0,'Detailed task creation keeps the keyboard collapsed until a field is selected');
   check(!dialog.textContent.includes('Useful help note'),'AI recommendation field is removed');
   check(JSON.stringify([...dialog.querySelectorAll('[data-field=priority] input[type=radio]')].map(n=>n.value))==='["HIGH","MEDIUM","LOW","UNSET"]'&&dialog.querySelector('[data-field=priority] input:checked').value==='UNSET'&&dialog.querySelectorAll('[data-field=repeat] input[type=radio]').length===5,'Priority and repeat use compact single-choice rows');
   check(![...dialog.querySelectorAll('legend,label>span')].some(label=>/[()]/.test(label.textContent)),'Editor labels contain no parenthetical instructions');
@@ -197,6 +198,7 @@ const result = await page.evaluate(async () => {
   document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');dialog.querySelector('input').value='Keep this title';
   clickText(dialog,'Details');dialog=document.querySelector('dialog');
   check(dialog.querySelector('input[type=text]').value==='Keep this title','Quick add can open full details without losing the title');
+  check(document.activeElement===dialog,'Switching from Quick add to Details removes text focus and collapses the keyboard');
   const dateHaptics=__nativeQA.haptics;const pickerDate=dialog.querySelector('input[type=date]');pickerDate.dispatchEvent(new Event('change'));check(__nativeQA.haptics===dateHaptics+1,'Confirming a date selection emits one light haptic');
   const countBeforeBack=TaskListApp.debugSummary().definitions;
   check(TaskListApp.handleBack()&&!document.querySelector('dialog')&&TaskListApp.debugSummary().definitions===countBeforeBack,'Android Back closes the full editor without saving a draft');
@@ -257,6 +259,9 @@ for(const width of [320,360,390,412,600,844]){
   await page.evaluate(()=>TaskListApp.addTask());
   const metrics=await page.evaluate(()=>{const d=document.querySelector('dialog'),r=d.getBoundingClientRect();return{left:r.left,right:r.right,viewport:innerWidth,scroll:d.scrollWidth,client:d.clientWidth};});
   if(metrics.left<0||metrics.right>width+1||metrics.scroll>metrics.client+1)throw Error('Editor overflow '+width+': '+JSON.stringify(metrics));
+  await page.locator('dialog').evaluate(dialog=>{dialog.scrollTop=dialog.scrollHeight;});
+  const actions=await page.locator('dialog').evaluate(dialog=>{const row=dialog.querySelector('.tl-dialog-actions'),last=dialog.querySelector('.tl-extra-fields'),a=row.getBoundingClientRect(),b=last.getBoundingClientRect();return {position:getComputedStyle(row).position,gap:a.top-b.bottom,height:a.height,inside:a.bottom<=dialog.getBoundingClientRect().bottom};});
+  if(actions.position!=='static'||actions.gap<8||!actions.inside)throw Error('Editor action row overlaps fields at '+width+': '+JSON.stringify(actions));
   await page.getByRole('button',{name:'Cancel',exact:true}).click();
 }
 if(failures.length)throw Error('Page errors: '+failures.join('; '));

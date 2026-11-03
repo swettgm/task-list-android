@@ -207,6 +207,7 @@ public class MainActivity extends Activity {
 
     /** Only the packaged offline document receives this narrow native interface. */
     public final class TaskBridge {
+        @JavascriptInterface public void hideKeyboard() { runOnUiThread(()->{if(destroyed||web==null)return;android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);if(keyboard!=null)keyboard.hideSoftInputFromWindow(web.getWindowToken(),0);}); }
         @JavascriptInterface public void finishTaskEditor() { if(isWidgetEditor())runOnUiThread(()->{if(!destroyed)finish();}); }
         @JavascriptInterface public void actionHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);}); }
         @JavascriptInterface public void priorityHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);}); }
