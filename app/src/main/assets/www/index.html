@@ -2356,11 +2356,12 @@ main{max-width:100%;margin:0;padding:0}
   function queueProgressLayout(){if(progressLayoutFrame)return;progressLayoutFrame=requestAnimationFrame(()=>{progressLayoutFrame=0;
     for(const form of progressRows)if(!form.isConnected){progressResize?.unobserve(form);progressRows.delete(form);}
     document.querySelectorAll('.tm-task-item').forEach(row=>{
-      const form=row.querySelector(':scope>.form-check'),home=row.querySelector(':scope>.tm-task-details>.tm-task-badges'),badge=form?.querySelector(':scope>.tm-in-progress-badge')||home?.querySelector(':scope>.tm-in-progress-badge');if(!badge||!form||!home)return;
-      if(!progressRows.has(form)){progressRows.add(form);progressResize?.observe(form);}if(badge.parentElement!==home)home.prepend(badge);form.classList.remove('tm-inline-progress');
+      const form=row.querySelector(':scope>.form-check'),home=row.querySelector(':scope>.tm-task-details>.tm-task-badges');if(!form||!home)return;
+      const badges=['tm-urgent-badge','tm-in-progress-badge'].map(name=>form.querySelector(':scope>.'+name)||home.querySelector(':scope>.'+name)).filter(Boolean);if(!badges.length)return;
+      if(!progressRows.has(form)){progressRows.add(form);progressResize?.observe(form);}home.prepend(...badges);form.classList.remove('tm-inline-progress');
       const label=form.querySelector(':scope>.form-check-label'),title=label?.querySelector('.tm-title');if(!title||!form.clientWidth)return;
-      const range=document.createRange();range.selectNodeContents(title);const lines=Array.from(range.getClientRects());const box=range.getBoundingClientRect(),badgeWidth=badge.getBoundingClientRect().width;
-      if(lines.length===1&&box.width+badgeWidth+4<=label.getBoundingClientRect().width){form.classList.add('tm-inline-progress');form.append(badge);}
+      const range=document.createRange();range.selectNodeContents(title);const lines=Array.from(range.getClientRects());let used=range.getBoundingClientRect().width;const available=label.getBoundingClientRect().width;
+      for(const badge of badges){const width=badge.getBoundingClientRect().width;if(lines.length===1&&used+width+4<=available){used+=width+4;form.classList.add('tm-inline-progress');form.append(badge);}}
     });
   });}
   global.addEventListener('resize',queueProgressLayout);if(document.fonts){document.fonts.ready.then(queueProgressLayout);document.fonts.addEventListener?.('loadingdone',queueProgressLayout);}
@@ -4094,13 +4095,13 @@ html,body{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!importan
 </style>
 
 <style>
-#today-task-list-20261023 .tm-task-item>.form-check>.tm-in-progress-badge{align-self:center;flex:0 0 auto;margin:0;white-space:nowrap}
+#today-task-list-20261023 .tm-task-item>.form-check>:is(.tm-urgent-badge,.tm-in-progress-badge){align-self:center;flex:0 0 auto;margin:0;white-space:nowrap}
 #today-task-list-20261023 .tm-task-badges:empty{display:none}
 </style>
 
 <style>
 #today-task-list-20261023 .tm-task-item>.form-check.tm-inline-progress>.form-check-label{flex:0 1 auto!important}
-#today-task-list-20261023 .tm-task-item>.form-check.tm-inline-progress>.tm-in-progress-badge{margin-left:-4px}
+#today-task-list-20261023 .tm-task-item>.form-check.tm-inline-progress>:is(.tm-urgent-badge,.tm-in-progress-badge){margin-left:-4px}
 #today-task-list-20261023 .tm-children{border-left:0!important;margin-left:32px;padding-left:0}
 #today-task-list-20261023 .tm-children>summary{display:flex;align-items:center;gap:6px;list-style:none}
 #today-task-list-20261023 .tm-children>summary::-webkit-details-marker{display:none}

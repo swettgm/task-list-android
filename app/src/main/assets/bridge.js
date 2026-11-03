@@ -443,11 +443,12 @@
   function queueProgressLayout(){if(progressLayoutFrame)return;progressLayoutFrame=requestAnimationFrame(()=>{progressLayoutFrame=0;
     for(const form of progressRows)if(!form.isConnected){progressResize?.unobserve(form);progressRows.delete(form);}
     document.querySelectorAll('.tm-task-item').forEach(row=>{
-      const form=row.querySelector(':scope>.form-check'),home=row.querySelector(':scope>.tm-task-details>.tm-task-badges'),badge=form?.querySelector(':scope>.tm-in-progress-badge')||home?.querySelector(':scope>.tm-in-progress-badge');if(!badge||!form||!home)return;
-      if(!progressRows.has(form)){progressRows.add(form);progressResize?.observe(form);}if(badge.parentElement!==home)home.prepend(badge);form.classList.remove('tm-inline-progress');
+      const form=row.querySelector(':scope>.form-check'),home=row.querySelector(':scope>.tm-task-details>.tm-task-badges');if(!form||!home)return;
+      const badges=['tm-urgent-badge','tm-in-progress-badge'].map(name=>form.querySelector(':scope>.'+name)||home.querySelector(':scope>.'+name)).filter(Boolean);if(!badges.length)return;
+      if(!progressRows.has(form)){progressRows.add(form);progressResize?.observe(form);}home.prepend(...badges);form.classList.remove('tm-inline-progress');
       const label=form.querySelector(':scope>.form-check-label'),title=label?.querySelector('.tm-title');if(!title||!form.clientWidth)return;
-      const range=document.createRange();range.selectNodeContents(title);const lines=Array.from(range.getClientRects());const box=range.getBoundingClientRect(),badgeWidth=badge.getBoundingClientRect().width;
-      if(lines.length===1&&box.width+badgeWidth+4<=label.getBoundingClientRect().width){form.classList.add('tm-inline-progress');form.append(badge);}
+      const range=document.createRange();range.selectNodeContents(title);const lines=Array.from(range.getClientRects());let used=range.getBoundingClientRect().width;const available=label.getBoundingClientRect().width;
+      for(const badge of badges){const width=badge.getBoundingClientRect().width;if(lines.length===1&&used+width+4<=available){used+=width+4;form.classList.add('tm-inline-progress');form.append(badge);}}
     });
   });}
   global.addEventListener('resize',queueProgressLayout);if(document.fonts){document.fonts.ready.then(queueProgressLayout);document.fonts.addEventListener?.('loadingdone',queueProgressLayout);}
