@@ -3722,13 +3722,13 @@ main{max-width:100%;margin:0;padding:0}
     find('pt-upcoming-tab').addEventListener('click',()=>showView('upcoming'));
     let swipeStart=null,suppressClickUntil=0;
     const cancelSwipe=(animate=true)=>{swipeStart=null;if(viewDrag){const {from,ratio}=viewDrag;showView(from,animate,1-ratio);}};
-    root.addEventListener('touchstart',event=>{
+    document.addEventListener('touchstart',event=>{
       cancelSwipe(false);if(viewTransition)viewTransition.finish();
       if(event.touches.length!==1||document.querySelector('dialog[open]'))return;
       const control=event.target.closest('input,button,select,textarea,a,summary');if(control&&(!event.target.closest('#pt-today,#pt-upcoming')||control.matches('select,textarea,input:not([type=checkbox])')))return;
       const t=event.touches[0];swipeStart={x:t.clientX,y:t.clientY,horizontal:false,from:find('pt-today-tab').getAttribute('aria-selected')==='true'?'today':'upcoming'};
     },{passive:true});
-    root.addEventListener('touchmove',event=>{
+    document.addEventListener('touchmove',event=>{
       if(!swipeStart)return;if(event.touches.length!==1){cancelSwipe();return;}
       const t=event.touches[0],dx=t.clientX-swipeStart.x,dy=t.clientY-swipeStart.y;
       if(!swipeStart.horizontal&&Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx)){cancelSwipe();return;}
@@ -3742,14 +3742,14 @@ main{max-width:100%;margin:0;padding:0}
       }
       if(viewDrag){const drag=viewDrag;drag.ratio=Math.max(0,Math.min(1,-drag.direction*dx/drag.width));drag.incoming.style.transform='translateX('+(drag.direction*(1-drag.ratio)*100)+'%)';drag.outgoing.style.transform='translateX('+(-drag.direction*drag.ratio*100)+'%)';}
     },{passive:false});
-    root.addEventListener('touchend',event=>{
+    document.addEventListener('touchend',event=>{
       const start=swipeStart;swipeStart=null;if(!start)return;
       if(start.horizontal)suppressClickUntil=Date.now()+400;
       if(viewDrag){const drag=viewDrag,commit=drag.ratio*drag.width>=Math.min(56,Math.max(32,drag.width*.16));showView(commit?drag.target:drag.from,true,commit?drag.ratio:1-drag.ratio);}
     },{passive:true});
-    root.addEventListener('touchcancel',()=>cancelSwipe(),{passive:true});
+    document.addEventListener('touchcancel',()=>cancelSwipe(),{passive:true});
     window.addEventListener('blur',()=>{cancelSwipe(false);if(viewTransition)viewTransition.finish();});
-    root.addEventListener('click',event=>{if(Date.now()<suppressClickUntil){event.preventDefault();event.stopImmediatePropagation();}},true);
+    document.addEventListener('click',event=>{if(Date.now()<suppressClickUntil){event.preventDefault();event.stopImmediatePropagation();}},true);
 
     window.TaskListBridge.attach({
       root,tasks,pairWith,children,groups,today,addDays,progressKey,occurrenceKey,childKey,showView,isInteracting:()=>taskPointers.size>0,

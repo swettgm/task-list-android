@@ -318,6 +318,11 @@ public class TaskWidgetTest {
     @Test public void emptyWidgetMatchesTheCenteredAppRestMessage(){
         AppWidgetManager manager=AppWidgetManager.getInstance(context);int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,widget);android.widget.TextView message=Shadows.shadowOf(manager).getViewFor(widget).findViewById(R.id.widget_empty);assertEquals("You’re all done! Get some rest 🪻",message.getText().toString());assertEquals(android.view.Gravity.CENTER,message.getGravity());
     }
+    @Test public void emptyMessageCentersOnTheWholeWidgetAtSeveralSizes(){
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,widget);android.view.ViewGroup root=(android.view.ViewGroup)Shadows.shadowOf(manager).getViewFor(widget);android.widget.TextView message=root.findViewById(R.id.widget_empty);message.setVisibility(android.view.View.VISIBLE);float density=context.getResources().getDisplayMetrics().density;
+        for(int width:new int[]{140,250,360})for(int height:new int[]{196,300,500}){int w=Math.round(width*density),h=Math.round(height*density);root.measure(android.view.View.MeasureSpec.makeMeasureSpec(w,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(h,android.view.View.MeasureSpec.EXACTLY));root.layout(0,0,w,h);android.graphics.Rect box=new android.graphics.Rect();message.getDrawingRect(box);root.offsetDescendantRectToMyCoords(message,box);assertEquals(w/2f,box.exactCenterX(),.5f);assertEquals(h/2f,box.exactCenterY(),.5f);assertFalse(message.getIncludeFontPadding());assertEquals(android.view.View.TEXT_ALIGNMENT_CENTER,message.getTextAlignment());assertTrue(message.getLayout().getLineCount()<=3);}
+    }
+
     @Test public void widgetHeaderPlusAddsAndHeaderTitleOpensTheApp() {
         AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,id);
         android.view.View view=Shadows.shadowOf(manager).getViewFor(id);
