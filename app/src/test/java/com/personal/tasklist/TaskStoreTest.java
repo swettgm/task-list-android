@@ -140,7 +140,7 @@ public class TaskStoreTest {
     }
 
     @Test public void quickActionsScheduleWorkWithoutMovingItsDeadlineOrLosingMetadata() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("America/New_York"));
         store.add("An open task", "Work", today.minusDays(1).toString(), Collections.singletonList("On the computer"),
             TaskStore.NEXT, "", "MEDIUM", 15);
         TaskStore.Task original = store.all().get(0);
@@ -163,8 +163,8 @@ public class TaskStoreTest {
         assertTrue(TaskStore.isForToday(scheduled, today.plusDays(1)));
     }
 
-    @Test public void startingAnotherTaskDemotesOnlyThePreviousActiveTask() {
-        LocalDate today = LocalDate.now();
+    @Test public void startingAnotherTaskKeepsOtherTasksActive() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("America/New_York"));
         store.add("First task", "Work", today.plusDays(5).toString(), Collections.singletonList("At home"), TaskStore.NEXT, "", "LOW", 10);
         String first = store.all().get(0).id;
         store.doNow(first);
@@ -172,17 +172,17 @@ public class TaskStoreTest {
         String second = store.all().stream().filter(t -> t.title.equals("Second task")).findFirst().get().id;
         store.setStatus(second, TaskStore.IN_PROGRESS);
         TaskStore.Task previous = find(first);
-        assertEquals(TaskStore.NEXT, previous.status);
+        assertEquals(TaskStore.IN_PROGRESS, previous.status);
         assertEquals(today.toString(), previous.plannedDate);
         assertEquals(today.plusDays(5).toString(), previous.dueDate);
         assertEquals(Collections.singletonList("At home"), previous.labels);
         assertEquals("LOW", previous.priority);
         assertEquals(10, previous.minutes);
         assertEquals(TaskStore.IN_PROGRESS, find(second).status);
-        assertEquals(1, store.all().stream().filter(t -> TaskStore.IN_PROGRESS.equals(t.status)).count());
+        assertEquals(2, store.all().stream().filter(t -> TaskStore.IN_PROGRESS.equals(t.status)).count());
         store.add("Third task", "Work", "", Collections.emptyList(), TaskStore.IN_PROGRESS, "", "HIGH", 0);
-        assertEquals(TaskStore.NEXT, find(second).status);
-        assertEquals(1, store.all().stream().filter(t -> TaskStore.IN_PROGRESS.equals(t.status)).count());
+        assertEquals(TaskStore.IN_PROGRESS, find(second).status);
+        assertEquals(3, store.all().stream().filter(t -> TaskStore.IN_PROGRESS.equals(t.status)).count());
     }
 
     @Test public void statusesAndCompletionRemainConsistentAndKeepTaskDetails() {
@@ -217,7 +217,7 @@ public class TaskStoreTest {
         store.add("Second", "Personal", "");
         TaskStore.Task second = store.all().stream().filter(t -> t.title.equals("Second")).findFirst().get();
         store.update(second.id, "Updated", "Work", "2026-12-31", Collections.singletonList("On the computer"),
-            TaskStore.IN_PROGRESS, LocalDate.now().toString(), "HIGH", 40);
+            TaskStore.IN_PROGRESS, LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(), "HIGH", 40);
         TaskStore.Task edited = find(second.id);
         assertEquals(second.createdAt, edited.createdAt);
         assertEquals(TaskStore.NEXT, find(first).status);
@@ -270,7 +270,7 @@ public class TaskStoreTest {
     }
 
     @Test public void savedCompletionBatchIsAtomicAndPreservesWorkflowMetadata() {
-        store.add("First", "Personal", "", Collections.singletonList("At home"), TaskStore.IN_PROGRESS, LocalDate.now().toString(), "HIGH", 20);
+        store.add("First", "Personal", "", Collections.singletonList("At home"), TaskStore.IN_PROGRESS, LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(), "HIGH", 20);
         String first = store.all().get(0).id;
         store.add("Second", "Work", "");
         String second = store.all().stream().filter(t -> t.title.equals("Second")).findFirst().get().id;

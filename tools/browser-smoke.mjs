@@ -65,6 +65,7 @@ const result = await page.evaluate(async () => {
   TaskListApp.setContextFilter('At home'); await tick();
   check(rows().every(row => [...row.querySelectorAll('.tl-context-icon')].some(badge => badge.getAttribute('aria-label') === 'At home')), 'Context filter works');
   TaskListApp.setContextFilter(''); await tick();
+  {const isolated=__nativeQA.getState();isolated.inProgress=null;isolated.inProgressTasks=[];__nativeQA.setState(isolated);TaskListApp.reloadFromNative();await tick();}
   const first = rows().find(row => !row.querySelector('.tm-progress-control').disabled);
   const firstId=first.dataset.taskId,firstDate=first.dataset.stateDate;
   first.querySelector('.tm-progress-control').click(); await tick();

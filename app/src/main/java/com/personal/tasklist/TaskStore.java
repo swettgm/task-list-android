@@ -101,7 +101,6 @@ public final class TaskStore {
             List<Task> tasks = read();
             Task task = new Task(UUID.randomUUID().toString(), title.trim(), listName(list), due,
                 System.currentTimeMillis(), normalized, status, plannedDate, priority, minutes, "{}");
-            if (IN_PROGRESS.equals(status)) demoteOtherActiveTasks(tasks, task.id);
             tasks.add(task); write(tasks);
         }
         refreshWidgets();
@@ -131,7 +130,6 @@ public final class TaskStore {
             for (int i = 0; i < tasks.size(); i++) {
                 Task old = tasks.get(i);
                 if (old.id.equals(id)) {
-                    if (IN_PROGRESS.equals(status)) demoteOtherActiveTasks(tasks, id);
                     tasks.set(i, new Task(old.id, title.trim(), listName(list), due, old.createdAt,
                         normalized, status, plannedDate, priority, minutes, old.sourceJson));
                     write(tasks); break;
@@ -142,7 +140,7 @@ public final class TaskStore {
     }
 
     public void doNow(String id) { changeStatus(id, IN_PROGRESS, LocalDate.now(java.time.ZoneId.of("America/New_York")).toString()); }
-    public void doTomorrow(String id) { changeStatus(id, NEXT, LocalDate.now().plusDays(1).toString()); }
+    public void doTomorrow(String id) { changeStatus(id, NEXT, LocalDate.now(java.time.ZoneId.of("America/New_York")).plusDays(1).toString()); }
     public void setStatus(String id, String status) {
         requireStatus(status);
         if (IN_PROGRESS.equals(status)) { doNow(id); return; }
@@ -155,7 +153,6 @@ public final class TaskStore {
             for (int i = 0; i < tasks.size(); i++) {
                 Task old = tasks.get(i);
                 if (old.id.equals(id)) {
-                    if (IN_PROGRESS.equals(status)) demoteOtherActiveTasks(tasks, id);
                     tasks.set(i, old.withStatus(status, plannedDate)); write(tasks); break;
                 }
             }
@@ -248,13 +245,6 @@ public final class TaskStore {
         String date = task.plannedDate.isEmpty() ? task.dueDate : task.plannedDate;
         return !date.isEmpty() && !LocalDate.parse(date).isAfter(today);
     }
-    private static void demoteOtherActiveTasks(List<Task> tasks, String activeId) {
-        for (int i = 0; i < tasks.size(); i++) {
-            Task task = tasks.get(i);
-            if (!task.id.equals(activeId) && IN_PROGRESS.equals(task.status)) tasks.set(i, task.withStatus(NEXT, task.plannedDate));
-        }
-    }
-
     private List<Task> read() {
         try {
             return parseTasks(prefs.getString("items", "[]"));
@@ -314,18 +304,14 @@ public final class TaskStore {
         catch (RuntimeException launcherUnavailable) { /* The widget's periodic refresh retries. */ }
     }
     private static void validateTasks(List<Task> tasks) {
-        Set<String> ids = new HashSet<>(); int nativeActive = 0, referenceActive = 0;
+        Set<String> ids = new HashSet<>();
         for (Task task : tasks) {
             validateInput(task.title, task.dueDate, task.status, task.plannedDate, task.priority, task.minutes);
             if (task.id == null || task.id.trim().isEmpty() || !ids.add(task.id) || task.createdAt < 0)
                 throw new IllegalArgumentException("Every task needs a unique valid identity.");
             normalizeLabels(task.labels);
             if (task.done != DONE.equals(task.status)) throw new IllegalArgumentException("Task status is inconsistent.");
-            if (IN_PROGRESS.equals(task.status)) {
-                if (task.id.startsWith("html:")) referenceActive++; else nativeActive++;
-                if (nativeActive > 1 || referenceActive > 1)
-                    throw new IllegalArgumentException("Only one task per source can be in progress.");
-            }
+
         }
     }
     private static void validateInput(String title, String due, String status, String planned, String priority, int minutes) {
