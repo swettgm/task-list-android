@@ -3630,7 +3630,8 @@ main{max-width:100%;margin:0;padding:0}
       groups.forEach(([priority])=>activeItems.filter(i=>i.task.priority===priority).forEach(i=>activeNumbers.set(progressKey(i.task,i.stateDate),activeNumbers.size+1)));
       savedDone.forEach((i,index)=>completedNumbers.set(progressKey(i.task,i.stateDate),index+1));
       const minutes=pending.reduce((n,i)=>n+(i.task.minutes||0),0),untimed=pending.filter(i=>i.task.minutes===undefined).length;
-      find('pt-progress').textContent=done.length+' / '+items.length+' completed · '+pending.length+' pending · '+minutes+'m remaining'+(untimed?' + '+untimed+' untimed':'');
+      const remainingDuration=minutes>=60?Math.floor(minutes/60)+'h'+(minutes%60?' '+minutes%60+'m':''):minutes+'m';
+      find('pt-progress').textContent=done.length+'/'+items.length+' done · '+remainingDuration+' remaining'+(untimed?' + '+untimed+' untimed':'');
       const pendingActive=Array.from(completing.values()).find(entry=>entry.active);
       const displayActives=inProgressTasks.length?inProgressTasks:pendingActive?[pendingActive.active]:[],displayActive=displayActives[0];
       const current=find('pt-current'),currentTitle=displayActives.map(progressTitle).filter(Boolean).join(', ');
@@ -3692,7 +3693,7 @@ main{max-width:100%;margin:0;padding:0}
         const items=candidates.filter(item=>{const key=progressKey(item.task,item.stateDate);if(seen.has(key))return false;seen.add(key);return true;});
         if(!items.length&&offset!==1)continue;
         const section=el('details','tm-day');section.dataset.date=date;section.open=futureOpenDates.has(date);
-        const summary=el('summary','tm-day-heading');const dateText=el('span','tm-day-label');{const d=dateObject(date),day=d.getUTCDate(),suffix=day%100>=11&&day%100<=13?'th':({1:'st',2:'nd',3:'rd'}[day%10]||'th');dateText.append(el('span','tm-day-name',d.toLocaleDateString('en-US',{month:'short',timeZone:'UTC'})+' '+day+suffix));}summary.append(dateText,el('span','tm-day-count',String(items.length)));section.append(summary);
+        const summary=el('summary','tm-day-heading');const dateText=el('span','tm-day-label');{const d=dateObject(date),day=d.getUTCDate(),suffix=day%100>=11&&day%100<=13?'th':({1:'st',2:'nd',3:'rd'}[day%10]||'th');dateText.append(el('span','tm-day-name',(offset===1?'Tomorrow':d.toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'}))+', '+d.toLocaleDateString('en-US',{month:'short',timeZone:'UTC'})+' '+day+suffix));}summary.append(dateText,el('span','tm-day-count',String(items.length)));section.append(summary);
         section.addEventListener('toggle',()=>{if(!section.isConnected)return;if(section.open)futureOpenDates.add(date);else futureOpenDates.delete(date);});
         if(!items.length)section.append(el('p','text-muted','No tasks scheduled.'));
         groups.forEach(([priority,heading])=>{

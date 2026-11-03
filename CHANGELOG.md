@@ -2,6 +2,9 @@
 
 ## 0.39.0 — 2026-11-03
 
+- Upcoming headings show Tomorrow plus its date, followed by full weekday names and dates for later groups.
+- The top summary keeps the completion fraction, omits the pending count and formats combined duration in hours and minutes.
+
 - New tasks default to Priority not set with no selected priority. Detailed editors offer only High, Medium and Low; widget quick add uses a disabled Priority placeholder until a level is selected.
 
 - Detailed task editors open with the keyboard collapsed, including the transition from Quick add; Quick add retains initial keyboard focus.

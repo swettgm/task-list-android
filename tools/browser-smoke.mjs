@@ -129,7 +129,7 @@ const result = await page.evaluate(async () => {
   const notesBox=dialog.querySelector('textarea[placeholder="Add notes"]').getBoundingClientRect(),stepsBox=dialog.querySelector('textarea[placeholder="One step per line"]').getBoundingClientRect();
   check(stepsBox.top>=notesBox.bottom,'Notes and checklist occupy separate full-width rows');
   clickText(dialog,'Tomorrow');check(dialog.querySelector('input[type=date]').value===new Date(Date.parse(original.today+'T12:00:00Z')+86400000).toISOString().slice(0,10),'Tomorrow shortcut chooses the next date');
-  clickText(dialog,'Weekend');check(new Date(dialog.querySelector('input[type=date]').value+'T12:00:00Z').getUTCDay()===6,'Weekend shortcut chooses Saturday');
+  clickText(dialog,'Weekend');check(new Date(dialog.querySelector('input[type=date]').value+'T12:00:00Z').getUTCDay()===5,'Weekend shortcut chooses Friday');
   dialog.querySelector('input[type=date]').value=original.today;
   dialog.querySelector('input[type=text]').value='Browser-created task';
   dialog.querySelector('[data-field=priority] input[value=HIGH]').click();
@@ -243,6 +243,10 @@ const result = await page.evaluate(async () => {
   byTitle('Delay checklist QA').querySelectorAll('.tm-child-item input')[1].click();await tick();
   check(byTitle('Delay checklist QA')?.classList.contains('tm-completing'),'Finishing the last checklist step also delays parent disappearance');
   await new Promise(resolve=>setTimeout(resolve,2200));check(!byTitle('Delay checklist QA'),'Finished checklist disappears after the confirmation delay');
+  {const state=__nativeQA.getState();state.customTasks.push({id:'summary-duration-a',title:'Summary duration A',due:original.today,priority:'UNSET',minutes:90,_contexts:['Summary duration QA']},{id:'summary-duration-b',title:'Summary duration B',due:original.today,priority:'UNSET',minutes:45,_contexts:['Summary duration QA']});__nativeQA.setState(state);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('Summary duration QA');
+   for(const [a,b,expected] of [[90,45,'2h 15m'],[15,0,'15m'],[60,0,'1h'],[135,0,'2h 15m'],[0,0,'0m']]){const state=__nativeQA.getState();state.customTasks.find(t=>t.id==='summary-duration-a').minutes=a;state.customTasks.find(t=>t.id==='summary-duration-b').minutes=b;__nativeQA.setState(state);TaskListApp.reloadFromNative();await tick();check(document.getElementById('pt-progress').textContent==='0/2 done · '+expected+' remaining','Summary retains the completion fraction and formats '+a+' + '+b+' minutes without a pending count');}
+   const state=__nativeQA.getState();state.customTasks.push({id:'summary-untimed',title:'Summary untimed',due:original.today,priority:'UNSET',_contexts:['Summary duration QA']});__nativeQA.setState(state);TaskListApp.reloadFromNative();await tick();check(document.getElementById('pt-progress').textContent==='0/3 done · 0m remaining + 1 untimed','Untimed tasks remain visible in the compact summary');TaskListApp.setContextFilter('');
+  }
   return {checks};
 });
 // Check real geometry, including expanded content and long task text, without masking overflow.
