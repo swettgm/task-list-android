@@ -137,15 +137,12 @@ try{
  check(state.movedTo[ids.second+':'+dates.second]===dates.today&&state.customTasks.find(t=>t.id===ids.second).due===dates.second,'Do today saves an occurrence move without replacing the original task date');
  check(await futureRows(ids.second).count()===0&&await todayRow(ids.second).getAttribute('data-state-date')===dates.second&&await todayRow(ids.second).getAttribute('data-display-date')===dates.today,'Moved task appears on Today with its original identity and leaves Upcoming');
  await page.waitForFunction(({id,date})=>__v7.snapshot.some(t=>t.id==='html:'+id+':'+date&&t.onToday),{id:ids.second,date:dates.second});check(true,'The home widget receives the moved Today occurrence');
- // Test both legacy daily schedules and Every 1 day without altering the main fixture.
- const dailyPage=await newPage(state);await dailyPage.evaluate(()=>TaskListApp.setContextFilter('V7 QA'));await dailyPage.getByRole('tab',{name:'Upcoming',exact:true}).click();
- for(const id of [ids.dailyA,ids.futureRepeat]){
-  const before=await dailyPage.evaluate(id=>__v7.getState().customTasks.find(t=>t.id===id),id);
-  await dailyPage.locator('#pt-future-list [data-task-id="'+id+'"][data-state-date="'+dates.tomorrow+'"]').locator('.tl-do-today').click();
-  const saved=await dailyPage.evaluate(()=>__v7.getState());check(saved.movedTo[id+':'+dates.tomorrow]===dates.today&&JSON.stringify(saved.customTasks.find(t=>t.id===id))===JSON.stringify(before),'Do today moves one '+id+' occurrence and preserves its full repeating definition');
-  check(await dailyPage.locator('#pt-list [data-task-id="'+id+'"][data-state-date="'+dates.tomorrow+'"]').count()===1&&await dailyPage.locator('#pt-future-list [data-task-id="'+id+'"][data-state-date="'+dates.tomorrow+'"]').count()===0&&await dailyPage.locator('#pt-future-list [data-task-id="'+id+'"]').count()===13,'A moved daily occurrence leaves Upcoming while later daily dates remain');
+ // Repeating schedules cannot be manually advanced or postponed through task-row controls.
+ const dailyPage=await newPage(state);await dailyPage.evaluate(({date})=>{const s=__v7.getState();for(const unit of ['week','month','year'])s.customTasks.push({id:'fixed-'+unit,title:'Fixed '+unit,priority:'HIGH',_contexts:['V7 QA'],repeat:{amount:1,unit,start:date}});__v7.setState(s);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('V7 QA');},{date:dates.tomorrow});await dailyPage.getByRole('tab',{name:'Upcoming',exact:true}).click();
+ for(const id of [ids.dailyA,ids.futureRepeat,'fixed-week','fixed-month','fixed-year']){
+  const task=dailyPage.locator('#pt-future-list [data-task-id="'+id+'"]').first();check(await task.count()===1&&await task.locator(':scope>.tm-item-actions>button[aria-label^="Move "]').count()===0,'Repeating '+id+' has no Do today or Do tomorrow control in Upcoming');
  }
- await dailyPage.getByRole('tab',{name:'Today',exact:true}).click();await dailyPage.locator('#pt-list [data-task-id="'+ids.dailyA+'"][data-state-date="'+dates.tomorrow+'"] > .form-check > input').click();const dailySaved=await dailyPage.evaluate(()=>__v7.getState());check(dailySaved.completed[ids.dailyA+':'+dates.tomorrow]===true&&!dailySaved.completed[ids.dailyA+':'+dates.today],'Completing an advanced daily occurrence keeps the original Today occurrence independent');await dailyPage.close();
+ await dailyPage.getByRole('tab',{name:'Today',exact:true}).click();check(await dailyPage.locator('#pt-list [data-task-id="'+ids.dailyA+'"] :scope>.tm-item-actions>button[aria-label^="Move "]').count()===0,'Daily tasks also have no day-move button on Today');await dailyPage.close();
  await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
  check(await page.locator('#pt-today').isVisible()&&!await page.locator('#pt-upcoming').isVisible(),'Reopening Tasks always selects Today');
  check(await todayRow(ids.second).isVisible()&&await todayRow(ids.second).getAttribute('data-state-date')===dates.second,'Do today persists after a full reload');

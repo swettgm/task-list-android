@@ -420,19 +420,19 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden)releasePriorityHold();});
   document.addEventListener('click',event=>{if(event.target.closest?.('.tl-priority-button')&&(priorityHoldActive||performance.now()<priorityHoldUntil)){event.preventDefault();event.stopImmediatePropagation();}},true);
   function priorityButton(task,direction,offset,label,rank,levels){
-    let timer=null,start=null,held=false,cancelled=false;
+    let timer=null,start=null,held=false,cancelled=false,pressed=false;
     const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}if(priorityHoldCancel===clear)priorityHoldCancel=null;};
     const button=action('',event=>{if(held||cancelled||priorityHoldActive||performance.now()<priorityHoldUntil){event.preventDefault();return;}clear();changePriority(task,offset);},'tm-move-control tl-priority-button tl-priority-'+direction);
     const arrow=node('span','tl-priority-arrow','➜');arrow.setAttribute('aria-hidden','true');button.append(arrow);button.setAttribute('aria-label',label+' priority for '+task.title);button.title=label+' priority · Hold for '+(offset<0?'High':'Low');button.disabled=direction==='up'?rank===0:rank>=levels.indexOf('LOW');
     button.addEventListener('pointerdown',event=>{
       if(button.disabled||event.button!==0||event.isPrimary===false)return;priorityHoldUntil=0;priorityHoldActive=false;
-      if(priorityHoldCancel)priorityHoldCancel();held=false;cancelled=false;start={x:event.clientX,y:event.clientY};priorityHoldCancel=clear;
+      if(priorityHoldCancel)priorityHoldCancel();held=false;cancelled=false;pressed=true;start={x:event.clientX,y:event.clientY};priorityHoldCancel=clear;
       timer=setTimeout(()=>{timer=null;if(!button.isConnected||button.disabled)return;held=true;priorityHoldActive=true;priorityHoldUntil=performance.now()+450;
         if(changePriority(task,(offset<0?0:levels.indexOf('LOW'))-rank)){try{if(native&&native.priorityHaptic)native.priorityHaptic();}catch(_){}}
       },450);
     },{passive:true});
     button.addEventListener('pointermove',event=>{if(start&&Math.hypot(event.clientX-start.x,event.clientY-start.y)>10){cancelled=true;clear();}},{passive:true});
-    button.addEventListener('pointerleave',()=>{cancelled=true;clear();});button.addEventListener('pointercancel',()=>{cancelled=true;clear();});button.addEventListener('pointerup',clear);
+    button.addEventListener('pointerleave',()=>{if(pressed){cancelled=true;clear();}});button.addEventListener('pointercancel',()=>{pressed=false;cancelled=true;clear();});button.addEventListener('pointerup',()=>{pressed=false;clear();});
     button.addEventListener('contextmenu',event=>event.preventDefault());return button;
   }
   let progressLayoutFrame=0;
