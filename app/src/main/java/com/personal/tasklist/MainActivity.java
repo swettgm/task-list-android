@@ -42,6 +42,9 @@ public class MainActivity extends Activity {
     private boolean pageReady, destroyed, addRequested;
     private String contextFilter;
     private String editRequested;
+    private boolean modalOpen;
+    private long pageGeneration;
+    private int themeColor=Color.rgb(16,21,31);
     protected boolean isWidgetEditor() { return false; }
     private volatile long loadedRevision;
     private String loadedDay = "";
@@ -51,7 +54,7 @@ public class MainActivity extends Activity {
         reference = new ReferenceStore(this);
         root = new FrameLayout(this);
         root.setBackgroundColor(isWidgetEditor() ? Color.TRANSPARENT : Color.rgb(16, 21, 31));
-        if(isWidgetEditor()){root.setForeground(new StatusBarScrim(root));getWindow().setStatusBarColor(StatusBarScrim.COLOR);}
+        if(isWidgetEditor())updateModalBackdrop();
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
                     insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
@@ -80,11 +83,11 @@ public class MainActivity extends Activity {
                 return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
             }
             @Override public void onPageFinished(WebView view, String url) {
-                if (destroyed) return;
+                if (destroyed || pageReady) return;
                 pageReady = true;
                 loadedRevision = reference.revision();
                 applyIntent();
-                if (!isWidgetEditor()) requestReminderPermission(false);
+                if (!isWidgetEditor()){revealReadyPage();requestReminderPermission(false);}
             }
         });
         readIntent(getIntent());
@@ -138,7 +141,7 @@ public class MainActivity extends Activity {
             String taskId = editRequested; editRequested = null;
             if (taskId == null) { finish(); return; }
             web.evaluateJavascript("Boolean(window.TaskListApp&&window.TaskListApp.editWidgetTask(" + JSONObject.quote(taskId) + "))",
-                    result -> { if(destroyed)return; if ("true".equals(result))web.setVisibility(android.view.View.VISIBLE); else { message("This task is no longer available."); finish(); } });
+                    result -> { if(destroyed)return; if ("true".equals(result))revealReadyPage(); else { message("This task is no longer available."); finish(); } });
             return;
         }
         web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()", null);
@@ -175,16 +178,17 @@ public class MainActivity extends Activity {
 
     private void loadTaskList() {
         try {
-            pageReady = false;
+            pageReady = false;pageGeneration++;
+            web.setAlpha(0f);
             if (reference.readState().equals("{}")) {
                 String seed = asset("www/initial-state.json").trim();
                 if (!seed.isEmpty() && !seed.equals("{}")) reference.writeState(seed);
             }
             String html = asset("www/index.html");
-            String script = "<script>" + asset("bridge.js") + "</script>";
+
             if (isWidgetEditor()) html = html.replaceFirst("(?i)<head>", "<head><script>window.TaskListWidgetEditor=true;</script><style>body>main,#tasks-app-backdrop{display:none!important}html,body{min-height:100%!important}</style>");
             int head = html.toLowerCase(java.util.Locale.ROOT).indexOf("</head>");
-            if (!html.contains("global.TaskListStorage")) html = head >= 0 ? html.substring(0, head) + script + html.substring(head) : script + html;
+            if (!html.contains("global.TaskListStorage")){String script="<script>"+asset("bridge.js")+"</script>";html=head>=0?html.substring(0,head)+script+html.substring(head):script+html;}
             loadedDay = LocalDate.now(ZoneId.of("America/New_York")).toString();
             loadedRevision = reference.revision();
             web.loadDataWithBaseURL("https://tasklist.local/", html, "text/html", "UTF-8", null);
@@ -207,8 +211,25 @@ public class MainActivity extends Activity {
         requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},302);
     }
 
+    private void revealReadyPage(){
+        web.setVisibility(android.view.View.VISIBLE);
+        web.postVisualStateCallback(pageGeneration,new WebView.VisualStateCallback(){@Override public void onComplete(long requestId){if(!destroyed&&pageReady&&requestId==pageGeneration)web.setAlpha(1f);}});
+    }
+    private void updateModalBackdrop(){
+        boolean dim=isWidgetEditor()||modalOpen;
+        root.setForeground(dim?new StatusBarScrim(root):null);
+        int color=isWidgetEditor()?StatusBarScrim.COLOR:dim?Color.rgb(Math.round(Color.red(themeColor)*71f/255),Math.round(Color.green(themeColor)*71f/255),Math.round(Color.blue(themeColor)*71f/255)):themeColor;
+        getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);
+        int light=android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        int flags=getWindow().getDecorView().getSystemUiVisibility()&~light;
+        if(!dim&&Color.luminance(color)>.5)flags|=light;
+        getWindow().getDecorView().setSystemUiVisibility(flags);
+    }
     /** Only the packaged offline document receives this narrow native interface. */
     public final class TaskBridge {
+        @JavascriptInterface public void appReady(){if(!isWidgetEditor())runOnUiThread(()->{if(destroyed||pageReady)return;pageReady=true;loadedRevision=reference.revision();applyIntent();revealReadyPage();requestReminderPermission(false);});}
+        @JavascriptInterface public void editorReady(){if(isWidgetEditor())runOnUiThread(()->{if(destroyed||pageReady)return;pageReady=true;loadedRevision=reference.revision();applyIntent();});}
+        @JavascriptInterface public void setModalOpen(boolean open){runOnUiThread(()->{if(destroyed)return;modalOpen=open;updateModalBackdrop();});}
         @JavascriptInterface public void hideKeyboard() { runOnUiThread(()->{if(destroyed||web==null)return;android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);if(keyboard!=null)keyboard.hideSoftInputFromWindow(web.getWindowToken(),0);}); }
         @JavascriptInterface public void finishTaskEditor() { if(isWidgetEditor())runOnUiThread(()->{if(!destroyed)finish();}); }
         @JavascriptInterface public void actionHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);}); }
@@ -232,12 +253,7 @@ public class MainActivity extends Activity {
                 if (destroyed) return;
                 if(isWidgetEditor())return;
                 root.setBackgroundColor(color); web.setBackgroundColor(color);
-                getWindow().setStatusBarColor(color); getWindow().setNavigationBarColor(color);
-                int light = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                        | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-                int flags = getWindow().getDecorView().getSystemUiVisibility() & ~light;
-                if (Color.luminance(color) > .5) flags |= light;
-                getWindow().getDecorView().setSystemUiVisibility(flags);
+                themeColor=color;updateModalBackdrop();
                 TaskWidgetProvider.refreshAll(MainActivity.this);
             });
         }

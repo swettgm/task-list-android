@@ -3,6 +3,11 @@
 ## 0.49.0 — 2026-11-03
 
 - Tasks with a scheduled notification show a rounded white bell immediately before their time. Tasks without notifications have no bell.
+- Widget task editors start as soon as the task interface is ready, without waiting for the full page load or rendering hidden task lists.
+- Editor background dimming now covers the Android status bar, navigation bar and side insets consistently in both the app and widget editor.
+- Removed Back to tasks from Projects and moved Show/Hide completed to the bottom. Android Back and outside-tap dismissal remain available.
+
+- App startup shows the first completed layout without flashing intermediate adjustments. Hidden Upcoming rows are built after Today is ready, and the native shell avoids rereading an already-embedded bridge.
 
 ## 0.48.0 — 2026-11-03
 
