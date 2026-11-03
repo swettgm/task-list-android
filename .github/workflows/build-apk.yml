@@ -82,6 +82,7 @@ jobs:
           node tools/guild-icon-smoke.mjs
           node tools/priority-controls-smoke.mjs
           node tools/projects-smoke.mjs
+          node tools/widget-editor-smoke.mjs
 
       - name: Verify APK signature and record checksum
         shell: bash

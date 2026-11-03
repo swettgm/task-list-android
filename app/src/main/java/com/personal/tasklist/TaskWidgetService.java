@@ -42,6 +42,7 @@ public final class TaskWidgetService extends RemoteViewsService {
             }
             TaskStore.Task task=entry.task;RemoteViews row=new RemoteViews(context.getPackageName(),R.layout.widget_task_row_centered);
             row.setTextViewText(R.id.widget_task_title,task.title);
+            row.setOnClickFillInIntent(R.id.widget_task_title,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,"edit"));
             row.setTextViewTextSize(R.id.widget_task_title,android.util.TypedValue.COMPLEX_UNIT_SP,13.5f);
             row.setTextColor(R.id.widget_task_title,Color.parseColor(dark?"#F3F7FC":"#1F2B40"));
             row.setTextColor(R.id.widget_check,Color.parseColor(dark?"#8FC6E7":"#195B7E"));
@@ -50,7 +51,7 @@ public final class TaskWidgetService extends RemoteViewsService {
             row.setTextViewText(R.id.widget_due,active?"🟢 IN PROGRESS":"Today");
             row.setTextColor(R.id.widget_due,active?Color.WHITE:Color.parseColor(dark?"#BAC9D9":"#56677F"));
             row.setInt(R.id.widget_due,"setBackgroundResource",active?R.drawable.widget_progress_badge:0);
-            row.setContentDescription(R.id.widget_task_title,task.title+", "+(active?"🟢 IN PROGRESS":"Today"));row.setContentDescription(R.id.widget_check,"Complete "+task.title);
+            row.setContentDescription(R.id.widget_task_title,"Edit "+task.title+", "+(active?"🟢 IN PROGRESS":"Today"));row.setContentDescription(R.id.widget_check,"Complete "+task.title);
             row.setContentDescription(R.id.widget_status_toggle,(active?"Stop Do now for ":"Do now: ")+task.title);row.setOnClickFillInIntent(R.id.widget_status_toggle,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,active?"stop":"start"));
             String pending=WidgetCompletions.token(context,task.id);boolean staged=!pending.isEmpty();
             row.setTextViewText(R.id.widget_check,staged?"✓":"○");row.setContentDescription(R.id.widget_check,(staged?"Undo completion of ":"Complete ")+task.title);

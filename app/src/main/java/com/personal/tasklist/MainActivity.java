@@ -32,7 +32,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 
 /** Offline shell for the original task system, with native persistence and widgets. */
-public final class MainActivity extends Activity {
+public class MainActivity extends Activity {
     private static final int EXPORT_BACKUP = 201;
     private ReferenceStore reference;
     private WebView web;
@@ -41,6 +41,8 @@ public final class MainActivity extends Activity {
     private final TaskBridge bridge = new TaskBridge();
     private boolean pageReady, destroyed, addRequested;
     private String contextFilter;
+    private String editRequested;
+    protected boolean isWidgetEditor() { return false; }
     private volatile long loadedRevision;
     private String loadedDay = "";
 
@@ -48,14 +50,15 @@ public final class MainActivity extends Activity {
         super.onCreate(state);
         reference = new ReferenceStore(this);
         root = new FrameLayout(this);
-        root.setBackgroundColor(Color.rgb(16, 21, 31));
+        root.setBackgroundColor(isWidgetEditor() ? Color.TRANSPARENT : Color.rgb(16, 21, 31));
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
                     insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             return insets;
         });
         web = new WebView(this);web.setVerticalScrollBarEnabled(false);web.setHorizontalScrollBarEnabled(false);
-        web.setBackgroundColor(Color.rgb(16, 21, 31));
+        web.setBackgroundColor(isWidgetEditor() ? Color.TRANSPARENT : Color.rgb(16, 21, 31));
+        if(isWidgetEditor())web.setVisibility(android.view.View.INVISIBLE);
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
         root.requestApplyInsets();
@@ -80,7 +83,7 @@ public final class MainActivity extends Activity {
                 pageReady = true;
                 loadedRevision = reference.revision();
                 applyIntent();
-                requestReminderPermission(false);
+                if (!isWidgetEditor()) requestReminderPermission(false);
             }
         });
         readIntent(getIntent());
@@ -124,10 +127,18 @@ public final class MainActivity extends Activity {
         String label = intent.getStringExtra("widget_label");
         contextFilter = intent.hasExtra("widget_label") ? (label == null ? "" : label) : null;
         addRequested = intent.getBooleanExtra("add_task", false);
+        editRequested = isWidgetEditor() ? intent.getStringExtra(TaskWidgetProvider.EXTRA_TASK_ID) : null;
     }
 
     private void applyIntent() {
         if (!pageReady || web == null) return;
+        if (isWidgetEditor()) {
+            String taskId = editRequested; editRequested = null;
+            if (taskId == null) { finish(); return; }
+            web.evaluateJavascript("Boolean(window.TaskListApp&&window.TaskListApp.editWidgetTask(" + JSONObject.quote(taskId) + "))",
+                    result -> { if(destroyed)return; if ("true".equals(result))web.setVisibility(android.view.View.VISIBLE); else { message("This task is no longer available."); finish(); } });
+            return;
+        }
         web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()", null);
         if (contextFilter != null) web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.setContextFilter(" + JSONObject.quote(contextFilter) + ")", null);
         if (addRequested) {
@@ -147,7 +158,7 @@ public final class MainActivity extends Activity {
         if (web != null) {
             web.onResume();
             if (pageReady && (reference.revision() != loadedRevision || !loadedDay.equals(LocalDate.now(ZoneId.of("America/New_York")).toString()))) loadTaskList();
-            else if(pageReady)web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()",null);
+            else if(pageReady&&!isWidgetEditor())web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()",null);
         }
     }
     @Override protected void onPause() { if (web != null) web.onPause(); super.onPause(); }
@@ -169,6 +180,7 @@ public final class MainActivity extends Activity {
             }
             String html = asset("www/index.html");
             String script = "<script>" + asset("bridge.js") + "</script>";
+            if (isWidgetEditor()) html = html.replaceFirst("(?i)<head>", "<head><script>window.TaskListWidgetEditor=true;</script><style>body>main,#tasks-app-backdrop{display:none!important}html,body{min-height:100%!important}</style>");
             int head = html.toLowerCase(java.util.Locale.ROOT).indexOf("</head>");
             if (!html.contains("global.TaskListStorage")) html = head >= 0 ? html.substring(0, head) + script + html.substring(head) : script + html;
             loadedDay = LocalDate.now(ZoneId.of("America/New_York")).toString();
@@ -195,6 +207,7 @@ public final class MainActivity extends Activity {
 
     /** Only the packaged offline document receives this narrow native interface. */
     public final class TaskBridge {
+        @JavascriptInterface public void finishTaskEditor() { if(isWidgetEditor())runOnUiThread(()->{if(!destroyed)finish();}); }
         @JavascriptInterface public void actionHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);}); }
         @JavascriptInterface public void priorityHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);}); }
         @JavascriptInterface public String readState() { return reference.readState(); }
@@ -214,6 +227,7 @@ public final class MainActivity extends Activity {
             final int color = Color.parseColor(background);
             runOnUiThread(() -> {
                 if (destroyed) return;
+                if(isWidgetEditor())return;
                 root.setBackgroundColor(color); web.setBackgroundColor(color);
                 getWindow().setStatusBarColor(color); getWindow().setNavigationBarColor(color);
                 int light = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR

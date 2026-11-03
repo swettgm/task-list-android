@@ -57,9 +57,15 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
                 SharedPreferences widget=preferences(context,id);context.startActivity(new Intent(context,MainActivity.class).putExtra("widget_label",widget.getString("label","")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));return;
             }
             String itemAction=intent.getStringExtra(ITEM_ACTION);
-            if(ACTION_ITEM.equals(intent.getAction())&&!"complete".equals(itemAction)&&!"undo".equals(itemAction)&&!"start".equals(itemAction)&&!"stop".equals(itemAction))return;
+            if(ACTION_ITEM.equals(intent.getAction())&&!"complete".equals(itemAction)&&!"undo".equals(itemAction)&&!"start".equals(itemAction)&&!"stop".equals(itemAction)&&!"edit".equals(itemAction))return;
             String taskId = intent.getStringExtra(EXTRA_TASK_ID);
             if(registered&&ACTION_ITEM.equals(intent.getAction())){try{SharedPreferences widget=preferences(context,id);boolean visible=false;for(TaskStore.Task row:todayTasks(context,widget.getString("list",""),widget.getString("label","")))if(row.id.equals(taskId)){visible=true;break;}if(!visible){refreshAll(context);return;}}catch(RuntimeException unavailable){refreshAll(context);return;}}
+            if (registered && taskId != null && "edit".equals(itemAction)) {
+                context.startActivity(new Intent(context,TaskEditorActivity.class)
+                        .putExtra(EXTRA_TASK_ID,taskId)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                return;
+            }
             if (registered && taskId != null) {
                 TaskStore store = new TaskStore(context);
                 // The store atomically completes it; stale taps must never reopen a task.

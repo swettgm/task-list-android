@@ -26,6 +26,23 @@ public class MainActivityTest {
         context.getSharedPreferences("tasks", Context.MODE_PRIVATE).edit().clear().commit();
         context.getSharedPreferences("reference_state", Context.MODE_PRIVATE).edit().clear().commit();
     }
+    @Test public void widgetEditorOpensExactTaskWithoutChangingStateAndClosesSeparately() {
+        Intent intent=new Intent(context,TaskEditorActivity.class).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:serum:2026-11-03");
+        ActivityController<TaskEditorActivity> controller=Robolectric.buildActivity(TaskEditorActivity.class,intent).setup();
+        TaskEditorActivity activity=controller.get();String before=activity.taskBridgeForTests().readState();
+        android.webkit.WebView web=activity.webForTests();web.getWebViewClient().onPageFinished(web,"https://tasklist.local/");
+        assertTrue(Shadows.shadowOf(web).getLastEvaluatedJavascript().contains("editWidgetTask(\"html:serum:2026-11-03\")"));
+        activity.taskBridgeForTests().setThemeColors("#ffffff");Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(android.graphics.Color.TRANSPARENT,((android.graphics.drawable.ColorDrawable)web.getBackground()).getColor());
+        assertEquals(before,activity.taskBridgeForTests().readState());
+        activity.taskBridgeForTests().finishTaskEditor();Shadows.shadowOf(Looper.getMainLooper()).idle();assertTrue(activity.isFinishing());
+        controller.pause().stop().destroy();
+    }
+    @Test public void editorCloseBridgeDoesNotCloseTheNormalApp() {
+        ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();
+        controller.get().taskBridgeForTests().finishTaskEditor();Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertFalse(controller.get().isFinishing());controller.pause().stop().destroy();
+    }
     @Test public void priorityHoldUsesNativeLongPressHapticsWithoutChangingTaskState() {
         ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity activity=controller.get();String before=activity.taskBridgeForTests().readState();assertFalse(activity.webForTests().isVerticalScrollBarEnabled());assertFalse(activity.webForTests().isHorizontalScrollBarEnabled());
         activity.taskBridgeForTests().priorityHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();assertEquals(android.view.HapticFeedbackConstants.LONG_PRESS,Shadows.shadowOf(activity.webForTests()).lastHapticFeedbackPerformed());assertEquals(before,activity.taskBridgeForTests().readState());controller.pause().stop().destroy();activity.taskBridgeForTests().priorityHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();

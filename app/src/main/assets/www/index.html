@@ -2122,7 +2122,7 @@ main{max-width:100%;margin:0;padding:0}
     const heading = node('h2', '', title); dialog.append(heading);
     const form = node('form'); form.method = 'dialog'; dialog.append(form);
     document.body.append(dialog);
-    const close = () => { for(const animation of dialog.getAnimations?.()||[])animation.cancel();if (dialog.open && dialog.close) dialog.close(); dialog.remove(); };
+    const close = () => { for(const animation of dialog.getAnimations?.()||[])animation.cancel();if (dialog.open && dialog.close) dialog.close(); dialog.remove();if(global.TaskListWidgetEditor&&native&&native.finishTaskEditor){publishSnapshot();native.finishTaskEditor();} };
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
     const outside=event=>{const box=dialog.getBoundingClientRect();return event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom;};
     let backdropPressed=false;
@@ -2564,8 +2564,21 @@ main{max-width:100%;margin:0;padding:0}
       if(readCanonical().guildIconVersion!==1){const current=readCanonical(),guild=(current.taskOverrides||{}).guild||scope.tasks.find(task=>task.id==='guild'),overrides={...(current.taskOverrides||{})};if(guild)overrides.guild={...guild,_contexts:[...new Set([...derivedContexts(guild),'Guild'])]};persist({...scope.getState(),guildIconVersion:1,taskOverrides:overrides,contextIcons:{...(current.contextIcons||{}),Guild:GUILD_ICON_TOKEN}});}
       const state = readCanonical(); selectedContext = typeof state.uiContext === 'string' ? state.uiContext : '';
       applyDefinitions(state); applyTheme(); addToolbar();
+      if(global.TaskListWidgetEditor){
+        document.documentElement.style.setProperty('background','transparent','important');
+        document.body.style.setProperty('background','transparent','important');
+      }
       global.TaskListApp = {
         quickAddTask, handleBack,showProjects,
+        editWidgetTask(rowId) {
+          if(typeof rowId!=='string'||!rowId.startsWith('html:'))return false;
+          const key=rowId.slice(5),match=key.match(/^(.*):(\d{4}-\d{2}-\d{2})$/);
+          if(!match)return false;
+          const task=scope.tasks.find(value=>value.id===match[1]);if(!task)return false;
+          const item=[...scope.dueToday(),...scope.overdue(),...scope.onDate(match[2])].find(value=>scope.progressKey(value.task,value.stateDate)===key);
+          if(!item||scope.isDone(task,item.stateDate))return false;
+          editTask(task,item);return true;
+        },
         showToday(){scope.showView('today');},
         isInteracting(){return scope.isInteracting()||!!document.querySelector('dialog[open]');},
         addTask(prefill) { try { if (typeof prefill === 'string') prefill = JSON.parse(prefill || '{}'); } catch (_) { prefill = {}; } editTask(null, null, prefill || {}); },

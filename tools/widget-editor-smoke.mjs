@@ -1,0 +1,39 @@
+import {chromium} from 'playwright';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+const source=path.resolve('app/src/main/assets/www/index.html'),dir=path.resolve('build/widget-editor-fixture');await mkdir(dir,{recursive:true});
+const html=await readFile(source,'utf8');
+await writeFile(path.join(dir,'index.html'),html.replace(/<head>/i,'<head><script>window.TaskListWidgetEditor=true;</script><style>body>main,#tasks-app-backdrop{display:none!important}html,body{min-height:100%!important}</style>'));
+const fixture={url:pathToFileURL(path.join(dir,'index.html')).href,close:async()=>{}};
+const browser=await chromium.launch({executablePath:process.env.CHROME_BIN||'/usr/bin/chromium',args:['--no-sandbox','--disable-dev-shm-usage']});
+const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',error=>errors.push(error.message));
+await page.addInitScript(()=>{
+ let state={customTasks:[{id:'widget-edit-qa',title:'Widget editing test',repeat:{amount:1,unit:'day',start:'2020-01-01'},recurrence:'Daily',priority:'LOW',minutes:5,notes:'Existing notes',_contexts:['At home'],steps:['First step']}]};
+ window.__qa={closed:0,snapshot:[],fail:false,state:()=>structuredClone(state)};
+ window.TaskListNative={readState:()=>JSON.stringify(state),writeState:value=>{if(__qa.fail)throw Error('Save failed');state=JSON.parse(value);},updateSnapshot:value=>__qa.snapshot=JSON.parse(value),setThemeColors:()=>{},finishTaskEditor:()=>__qa.closed++};
+});
+let passed=0;const check=(condition,message)=>{if(!condition)throw Error(message);passed++;};
+try{
+ await page.goto(fixture.url);await page.waitForFunction(()=>window.TaskListApp&&__qa.snapshot.some(row=>row.title==='Widget editing test'&&row.onToday));
+ const key=await page.evaluate(()=>__qa.snapshot.find(row=>row.title==='Widget editing test'&&row.onToday).id);
+ check(await page.evaluate(()=>getComputedStyle(document.querySelector('main')).display==='none'&&getComputedStyle(document.body).backgroundColor==='rgba(0, 0, 0, 0)'&&getComputedStyle(document.documentElement).backgroundColor==='rgba(0, 0, 0, 0)'),'Overlay leaves the home screen visible');
+ check(await page.evaluate(key=>TaskListApp.editWidgetTask(key),key),'Widget identity opens its occurrence');
+ check(await page.locator('dialog h2').textContent()==='Edit task','Same app edit task popup');
+ check(await page.locator('dialog input[type=text]').first().inputValue()==='Widget editing test','Correct task prefilled');
+ check(await page.evaluate(()=>document.activeElement===document.querySelector('dialog')),'Editing does not focus the keyboard');
+ check(await page.locator('dialog textarea').count()===2,'Editor includes notes and checklist');
+ await page.locator('dialog input[type=text]').first().fill('Updated widget title');await page.locator('dialog textarea').first().fill('Updated notes');
+ await page.getByRole('button',{name:'Save task',exact:true}).click();
+ check(await page.evaluate(()=>__qa.closed===1&&!document.querySelector('dialog')),'Save closes the home screen overlay');
+ check(await page.evaluate(()=>{const task=__qa.state().customTasks.find(t=>t.id==='widget-edit-qa');return task.title==='Updated widget title'&&task.notes==='Updated notes'&&task.repeat.unit==='day'&&task._contexts.includes('At home');}),'Edits preserve repeat and labels');
+ check(await page.evaluate(()=>__qa.snapshot.filter(row=>row.id.startsWith('html:widget-edit-qa:')).every(row=>row.title==='Updated widget title')),'Widget updates all occurrences');
+ await page.evaluate(key=>TaskListApp.editWidgetTask(key),key);await page.locator('dialog input[type=text]').first().fill('Unsaved change');await page.getByRole('button',{name:'Cancel',exact:true}).click();
+ check(await page.evaluate(()=>__qa.closed===2&&__qa.state().customTasks.find(t=>t.id==='widget-edit-qa').title==='Updated widget title'),'Cancel does not save');
+ await page.evaluate(key=>TaskListApp.editWidgetTask(key),key);await page.evaluate(()=>__qa.fail=true);await page.getByRole('button',{name:'Save task',exact:true}).click();
+ check(await page.evaluate(()=>!!document.querySelector('dialog[open]')&&__qa.closed===2&&document.querySelector('.tl-form-error').textContent.length>0),'Failed save keeps editor open');
+ await page.evaluate(()=>{__qa.fail=false;TaskListApp.handleBack();});check(await page.evaluate(()=>__qa.closed===3&&!document.querySelector('dialog')),'Back closes popup');
+ check(await page.evaluate(()=>!TaskListApp.editWidgetTask('html:missing:2026-11-03')&&!TaskListApp.editWidgetTask('bad')),'Stale identities do not create tasks');
+ await page.evaluate(key=>TaskListApp.editWidgetTask(key),key);await page.mouse.click(2,2);check(await page.evaluate(()=>__qa.closed===4&&!document.querySelector('dialog')),'Outside tap closes popup');
+ check(errors.length===0,'No browser errors');console.log(JSON.stringify({passed,suite:'widget task editor overlay'}));
+}finally{await browser.close();await fixture.close();}

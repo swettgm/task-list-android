@@ -282,6 +282,21 @@ public class TaskWidgetTest {
             android.graphics.drawable.ColorDrawable divider=(android.graphics.drawable.ColorDrawable)header.findViewById(R.id.widget_priority_divider).getBackground();assertTrue(android.graphics.Color.alpha(divider.getColor())<=24);
         }
     }
+    @Test public void widgetEditOpensHomeScreenEditorOnlyForVisibleRegisteredTasks() throws Exception {
+        ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
+        String id=reference.addCustomTask("Edit from widget",java.util.Collections.emptyList(),"LOW",false),rowId="html:"+id+":"+day;
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,rowId).putExtra(TaskWidgetProvider.ITEM_ACTION,"edit");
+        String before=reference.readState();new TaskWidgetProvider().onReceive(context,tap);
+        Intent editor=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();
+        assertNotNull(editor);assertEquals(TaskEditorActivity.class.getName(),editor.getComponent().getClassName());assertEquals(rowId,editor.getStringExtra(TaskWidgetProvider.EXTRA_TASK_ID));
+        assertEquals(before,reference.readState());assertTrue(WidgetCompletions.token(context,rowId).isEmpty());
+        new TaskWidgetProvider().onReceive(context,new Intent(tap).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:missing:"+day));
+        assertNull(Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity());
+        new TaskWidgetProvider().onReceive(context,new Intent(tap).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,-1));
+        assertNull(Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity());
+    }
     @Test public void widgetDoNowUpdatesAppStateAndStopDoesNotReopenCompletedTasks() throws Exception {
         ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(),id=reference.addCustomTask("Widget progress task",java.util.Collections.emptyList(),"UNSET",false),key=id+":"+day;
         int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:"+key).putExtra(TaskWidgetProvider.ITEM_ACTION,"start");new TaskWidgetProvider().onReceive(context,tap);new TaskWidgetProvider().onReceive(context,tap);assertEquals(key,new org.json.JSONObject(reference.readState()).getString("inProgress"));assertNull(Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity());
