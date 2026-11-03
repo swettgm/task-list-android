@@ -38,6 +38,12 @@ public class QuickAddActivityTest {
         reference = new ReferenceStore(context);
     }
 
+    @Test public void popupButtonsAndDropdownTextAreStartAligned() {
+        ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();View root=controller.get().getWindow().getDecorView();EditText title=findDescription(root,"Task title",EditText.class);assertEquals(android.view.Gravity.START|android.view.Gravity.CENTER_VERTICAL,title.getGravity());assertEquals(View.TEXT_ALIGNMENT_VIEW_START,title.getTextAlignment());
+        for(String text:new String[]{"Labels","Any time","Date","Cancel","Add task"}){Button button=findButton(root,text);assertNotNull(button);assertEquals(android.view.Gravity.START|android.view.Gravity.CENTER_VERTICAL,button.getGravity());assertEquals(View.TEXT_ALIGNMENT_VIEW_START,button.getTextAlignment());}
+        for(String description:new String[]{"Priority","When to do it"}){Spinner spinner=findDescription(root,description,Spinner.class);android.widget.TextView selected=(android.widget.TextView)spinner.getAdapter().getView(spinner.getSelectedItemPosition(),null,spinner);android.widget.TextView option=(android.widget.TextView)spinner.getAdapter().getDropDownView(0,null,spinner);assertEquals(android.view.Gravity.START|android.view.Gravity.CENTER_VERTICAL,selected.getGravity());assertEquals(android.view.Gravity.START|android.view.Gravity.CENTER_VERTICAL,option.getGravity());}
+        controller.pause().stop().destroy();
+    }
     @Test public void saveFromWidgetKeepsContextAndSchedulesTomorrowWithoutOpeningMain() throws Exception {
         reference.writeState(new JSONObject().put("customTasks", new JSONArray())
                 .put("completed", new JSONObject().put("earlier:2026-11-01", true))

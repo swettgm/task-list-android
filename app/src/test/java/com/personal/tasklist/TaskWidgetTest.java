@@ -282,6 +282,15 @@ public class TaskWidgetTest {
             android.graphics.drawable.ColorDrawable divider=(android.graphics.drawable.ColorDrawable)header.findViewById(R.id.widget_priority_divider).getBackground();assertTrue(android.graphics.Color.alpha(divider.getColor())<=24);
         }
     }
+    @Test public void widgetActionFeedbackRespectsVisibilityAndPhoneSettings() {
+        String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();store.add("Widget feedback task","Feedback",day);String id=store.all().get(0).id;
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        android.os.Vibrator vibrator=(android.os.Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);Shadows.shadowOf(vibrator).setHasVibrator(true);android.provider.Settings.System.putInt(context.getContentResolver(),android.provider.Settings.System.HAPTIC_FEEDBACK_ENABLED,1);vibrator.cancel();
+        Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,id).putExtra(TaskWidgetProvider.ITEM_ACTION,"start");
+        new TaskWidgetProvider().onReceive(context,tap);assertTrue(Shadows.shadowOf(vibrator).isVibrating());assertEquals(TaskStore.IN_PROGRESS,store.all().get(0).status);
+        vibrator.cancel();new TaskWidgetProvider().onReceive(context,new Intent(tap).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"missing"));assertFalse(Shadows.shadowOf(vibrator).isVibrating());
+        android.provider.Settings.System.putInt(context.getContentResolver(),android.provider.Settings.System.HAPTIC_FEEDBACK_ENABLED,0);new TaskWidgetProvider().onReceive(context,new Intent(tap).putExtra(TaskWidgetProvider.ITEM_ACTION,"stop"));assertFalse(Shadows.shadowOf(vibrator).isVibrating());assertEquals(TaskStore.NEXT,store.all().get(0).status);
+    }
     @Test public void widgetEditOpensHomeScreenEditorOnlyForVisibleRegisteredTasks() throws Exception {
         ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
         String id=reference.addCustomTask("Edit from widget",java.util.Collections.emptyList(),"LOW",false),rowId="html:"+id+":"+day;
@@ -347,7 +356,7 @@ public class TaskWidgetTest {
         float density=context.getResources().getDisplayMetrics().density;int width=Math.round(360*density);view.measure(android.view.View.MeasureSpec.makeMeasureSpec(width,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(Math.round(300*density),android.view.View.MeasureSpec.EXACTLY));view.layout(0,0,width,Math.round(300*density));android.graphics.Rect plusBounds=new android.graphics.Rect();plus.getDrawingRect(plusBounds);((android.view.ViewGroup)view).offsetDescendantRectToMyCoords(plus,plusBounds);assertEquals(width,plusBounds.right);assertEquals(Math.round(48*density),plus.getWidth());
         assertEquals(0,context.getResources().getIdentifier("widget_settings","id",context.getPackageName()));
         assertEquals(0,context.getResources().getIdentifier("widget_open","id",context.getPackageName()));
-        view.findViewById(R.id.widget_title).performClick();Intent opened=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();assertEquals(MainActivity.class.getName(),opened.getComponent().getClassName());
+        view.findViewById(R.id.widget_title).performClick();Intent opened=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();assertEquals(MainActivity.class.getName(),opened.getComponent().getClassName());assertTrue(opened.getBooleanExtra("widget_haptic",false));
         view.findViewById(R.id.widget_add).performClick();Intent added=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();assertEquals(QuickAddActivity.class.getName(),added.getComponent().getClassName());
     }
 }

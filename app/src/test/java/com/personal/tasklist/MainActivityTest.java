@@ -47,6 +47,10 @@ public class MainActivityTest {
         ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity activity=controller.get();String before=activity.taskBridgeForTests().readState();assertFalse(activity.webForTests().isVerticalScrollBarEnabled());assertFalse(activity.webForTests().isHorizontalScrollBarEnabled());
         activity.taskBridgeForTests().priorityHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();assertEquals(android.view.HapticFeedbackConstants.LONG_PRESS,Shadows.shadowOf(activity.webForTests()).lastHapticFeedbackPerformed());assertEquals(before,activity.taskBridgeForTests().readState());controller.pause().stop().destroy();activity.taskBridgeForTests().priorityHaptic();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
     }
+    @Test public void widgetHeaderFeedbackIsConsumedOnceWithoutChangingLaunchBehavior() {
+        android.os.Vibrator vibrator=(android.os.Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);Shadows.shadowOf(vibrator).setHasVibrator(true);android.provider.Settings.System.putInt(context.getContentResolver(),android.provider.Settings.System.HAPTIC_FEEDBACK_ENABLED,1);vibrator.cancel();
+        Intent intent=new Intent(context,MainActivity.class).putExtra("widget_haptic",true);ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class,intent).setup();assertTrue(Shadows.shadowOf(vibrator).isVibrating());assertFalse(controller.get().getIntent().hasExtra("widget_haptic"));vibrator.cancel();controller.newIntent(new Intent(context,MainActivity.class));assertFalse(Shadows.shadowOf(vibrator).isVibrating());assertFalse(controller.get().isFinishing());controller.pause().stop().destroy();
+    }
     @Test public void detailedEditorCanDismissTheQuickAddKeyboard() {
         ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity activity=controller.get();
         android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE);

@@ -54,12 +54,13 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
                 if (actual == id) { registered = true; break; }
             }
             if(registered&&ACTION_ITEM.equals(intent.getAction())&&"open".equals(intent.getStringExtra(ITEM_ACTION))){
-                SharedPreferences widget=preferences(context,id);context.startActivity(new Intent(context,MainActivity.class).putExtra("widget_label",widget.getString("label","")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));return;
+                WidgetFeedback.tick(context);SharedPreferences widget=preferences(context,id);context.startActivity(new Intent(context,MainActivity.class).putExtra("widget_label",widget.getString("label","")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));return;
             }
             String itemAction=intent.getStringExtra(ITEM_ACTION);
             if(ACTION_ITEM.equals(intent.getAction())&&!"complete".equals(itemAction)&&!"undo".equals(itemAction)&&!"start".equals(itemAction)&&!"stop".equals(itemAction)&&!"edit".equals(itemAction))return;
             String taskId = intent.getStringExtra(EXTRA_TASK_ID);
             if(registered&&ACTION_ITEM.equals(intent.getAction())){try{SharedPreferences widget=preferences(context,id);boolean visible=false;for(TaskStore.Task row:todayTasks(context,widget.getString("list",""),widget.getString("label","")))if(row.id.equals(taskId)){visible=true;break;}if(!visible){refreshAll(context);return;}}catch(RuntimeException unavailable){refreshAll(context);return;}}
+            if(registered&&taskId!=null)WidgetFeedback.tick(context);
             if (registered && taskId != null && "edit".equals(itemAction)) {
                 context.startActivity(new Intent(context,TaskEditorActivity.class)
                         .putExtra(EXTRA_TASK_ID,taskId)
@@ -180,7 +181,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     private static PendingIntent openApp(Context context, int widgetId, String listName, String label, boolean add) {
         Intent intent = new Intent(context, add ? QuickAddActivity.class : MainActivity.class)
                 .setData(Uri.parse("tasklist-widget://" + (add ? "add/" : "open/") + widgetId))
-                .putExtra("widget_list", listName).putExtra("widget_label", label).putExtra("add_task", add)
+                .putExtra("widget_list", listName).putExtra("widget_label", label).putExtra("add_task", add).putExtra("widget_haptic",!add)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         return PendingIntent.getActivity(context, widgetId, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);

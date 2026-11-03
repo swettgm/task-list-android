@@ -76,7 +76,7 @@ public final class WidgetConfigActivity extends Activity {
         TextView title = text("Customize widget", 24, FOREGROUND);
         title.setTypeface(null, Typeface.BOLD);
         heading.addView(title, new LinearLayout.LayoutParams(0, dp(52), 1));
-        Button cancel = new Button(this);cancel.setBackgroundTintList(null);cancel.setBackground(new PopupAppearance(null).control(this,false)); cancel.setText("Cancel"); cancel.setTextColor(ACCENT); cancel.setOnClickListener(v -> finish());
+        Button cancel = new Button(this);ControlAlignment.text(cancel);cancel.setBackgroundTintList(null);cancel.setBackground(new PopupAppearance(null).control(this,false)); cancel.setText("Cancel"); cancel.setTextColor(ACCENT); cancel.setOnClickListener(v -> finish());
         heading.addView(cancel);
         root.addView(heading);
 
@@ -131,7 +131,7 @@ public final class WidgetConfigActivity extends Activity {
         TextView transparencyNote = text("Text stays readable while the background becomes more transparent.", 12, MUTED);
         transparencyNote.setPadding(0,0,0,dp(20)); content.addView(transparencyNote);
 
-        Button save = new Button(this);save.setBackground(new PopupAppearance(null).control(this,true)); save.setText("Save widget"); save.setTextColor(BACKGROUND); save.setBackgroundTintList(android.content.res.ColorStateList.valueOf(ACCENT));
+        Button save = new Button(this);ControlAlignment.text(save);save.setBackground(new PopupAppearance(null).control(this,true)); save.setText("Save widget"); save.setTextColor(BACKGROUND); save.setBackgroundTintList(android.content.res.ColorStateList.valueOf(ACCENT));
         root.addView(save, new LinearLayout.LayoutParams(-1, dp(54)));
         save.setOnClickListener(v -> save());
         AdapterView.OnItemSelectedListener changed = new AdapterView.OnItemSelectedListener() {
@@ -209,13 +209,13 @@ public final class WidgetConfigActivity extends Activity {
         ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item, new ArrayList<CharSequence>(values)) {
             @Override public View getView(int position, View convertView, ViewGroup parent) {
                 View view = super.getView(position, convertView, parent);
-                if (view instanceof TextView) ((TextView) view).setTextColor(FOREGROUND);
+                if (view instanceof TextView) {((TextView) view).setTextColor(FOREGROUND);ControlAlignment.text((TextView)view);}
                 return view;
             }
             @Override public View getDropDownView(int position, View convertView, ViewGroup parent) {
                 View view = super.getDropDownView(position, convertView, parent);
                 view.setBackgroundColor(Color.TRANSPARENT);
-                if (view instanceof TextView) ((TextView) view).setTextColor(FOREGROUND);
+                if (view instanceof TextView) {((TextView) view).setTextColor(FOREGROUND);ControlAlignment.text((TextView)view);}
                 view.setMinimumHeight(dp(48));
                 return view;
             }

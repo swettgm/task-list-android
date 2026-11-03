@@ -84,6 +84,7 @@ jobs:
           node tools/projects-smoke.mjs
           node tools/widget-editor-smoke.mjs
           node tools/task-delete-smoke.mjs
+          node tools/history-alignment-smoke.mjs
 
       - name: Verify APK signature and record checksum
         shell: bash

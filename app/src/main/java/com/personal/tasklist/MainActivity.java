@@ -124,6 +124,7 @@ public class MainActivity extends Activity {
     }
 
     private void readIntent(Intent intent) {
+        if(intent.getBooleanExtra("widget_haptic",false)){intent.removeExtra("widget_haptic");WidgetFeedback.tick(this);}
         String label = intent.getStringExtra("widget_label");
         contextFilter = intent.hasExtra("widget_label") ? (label == null ? "" : label) : null;
         addRequested = intent.getBooleanExtra("add_task", false);
@@ -187,8 +188,8 @@ public class MainActivity extends Activity {
             loadedRevision = reference.revision();
             web.loadDataWithBaseURL("https://tasklist.local/", html, "text/html", "UTF-8", null);
         } catch (Exception error) {
-            new AlertDialog.Builder(this).setTitle("Couldn’t open your task list")
-                    .setMessage("Close the app and try opening it again.").setPositiveButton("OK", null).show();
+            ControlAlignment.dialog(new AlertDialog.Builder(this).setTitle("Couldn’t open your task list")
+                    .setMessage("Close the app and try opening it again.").setPositiveButton("OK", null).show());
         }
     }
 
@@ -296,7 +297,7 @@ public class MainActivity extends Activity {
             try { manager.requestPinAppWidget(new ComponentName(this, TaskWidgetProvider.class), null, null); }
             catch (RuntimeException error) { message("Add the widget from your home screen’s Widgets menu."); }
         });
-        dialog.show();
+        ControlAlignment.dialog(dialog.show());
     }
 
     @Override protected void onDestroy() {
