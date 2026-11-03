@@ -3471,7 +3471,7 @@ main{max-width:100%;margin:0;padding:0}
         find('pt-status').textContent='';
         if(completing.has(key)){clearTimeout(completing.get(key).timer);completing.delete(key);}
         if(!wasDone&&isDone(task,date,saved)){
-          const entry={...presentation,active:previousActive!==inProgress?previousActive:null,
+          const entry={...presentation,active:previousActives.find(value=>!inProgressTasks.includes(value)&&(value===key||value.startsWith(key+':')))||null,
             bannerHeight:find('pt-current').getBoundingClientRect().height,timer:null};
           entry.timer=setTimeout(()=>expireCompletion(key,entry),2000);
           completing.set(key,entry);
@@ -3618,7 +3618,7 @@ main{max-width:100%;margin:0;padding:0}
       const pendingActive=Array.from(completing.values()).find(entry=>entry.active);
       const displayActives=inProgressTasks.length?inProgressTasks:pendingActive?[pendingActive.active]:[],displayActive=displayActives[0];
       const current=find('pt-current'),currentTitle=displayActives.map(progressTitle).filter(Boolean).join(', ');
-      current.style.minHeight=!inProgress&&pendingActive?pendingActive.bannerHeight+'px':'';
+      current.style.minHeight=pendingActive?pendingActive.bannerHeight+'px':'';
       current.hidden=!currentTitle;
       current.replaceChildren();
       if(currentTitle){

@@ -37,9 +37,9 @@ try{
  for(const width of [320,390]){
   await page.setViewportSize({width,height:844});
   for(const [tab,panel,id]of [['Today','#pt-list','layout-today'],['Upcoming','#pt-future-list','layout-future']]){
-   await page.getByRole('tab',{name:tab,exact:true}).click();const task=page.locator(panel+' [data-task-id="'+id+'"]');await task.locator('.tm-children summary').click();await task.locator('.tm-child-item .tm-progress-control').first().click();
+   await page.evaluate(()=>{const s=__layout.get();s.inProgress=null;s.inProgressTasks=[];__layout.set(s);TaskListApp.reloadFromNative();});await page.getByRole('tab',{name:tab,exact:true}).click();const task=page.locator(panel+' [data-task-id="'+id+'"]');await task.locator('.tm-children').evaluate(d=>d.open=true);await task.locator('.tm-child-item .tm-progress-control').first().click();
    const centered=await task.locator('.form-check').evaluateAll(labels=>labels.every(label=>{const box=label.querySelector('input').getBoundingClientRect(),title=label.querySelector('.tm-title').getBoundingClientRect();return Math.abs(box.y+box.height/2-title.y-title.height/2)<.5;}));check(await task.locator('.tm-child-item .tm-task-details').first().evaluate(n=>parseFloat(getComputedStyle(n).paddingTop)>=6),'Active checklist badge has space below its title in '+tab+' at '+width+'px');check(centered,'Wrapped parent and checklist titles keep centered checkboxes, including an active child, in '+tab+' at '+width+'px');
-   await task.locator('.tm-children summary').click();
+   await task.locator('.tm-children').evaluate(d=>d.open=false);
   }
  }
  check(await page.locator('#pt-future-list .tm-day-heading').evaluateAll(nodes=>nodes.every(n=>getComputedStyle(n).borderBottomWidth==='0px')),'No dividers between Upcoming dropdowns');
