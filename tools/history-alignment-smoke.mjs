@@ -20,7 +20,8 @@ try{
  check(await aligned(page.locator('dialog input:not([type=radio]):not([type=checkbox]),dialog textarea')),'Detailed editor fields and placeholders are left aligned');
  check(await page.locator('dialog .tl-dialog-actions button').evaluateAll(nodes=>nodes.every(node=>getComputedStyle(node).alignItems==='center')),'Action button contents remain vertically centered');
  check(await aligned(page.locator('dialog select')),'Editor dropdown text is left aligned');await page.getByRole('button',{name:'Cancel',exact:true}).click();
- check(await page.locator('.tl-priority-button').first().evaluate(button=>{const glyph=button.querySelector('.tl-priority-arrow').getBoundingClientRect(),box=button.getBoundingClientRect();return Math.abs(glyph.x+glyph.width/2-box.x-box.width/2)<1&&Math.abs(glyph.y+glyph.height/2-box.y-box.height/2)<1;}),'Icon-only priority arrows remain perfectly centered');
+ await page.locator('#pt-list .tl-priority-button').first().scrollIntoViewIfNeeded();
+ const arrowLayout=await page.locator('#pt-list .tl-priority-button').first().evaluate(button=>{const glyph=button.querySelector('.tl-priority-arrow').getBoundingClientRect(),box=button.getBoundingClientRect();return {width:box.width,height:box.height,dx:Math.abs(glyph.x+glyph.width/2-box.x-box.width/2),dy:Math.abs(glyph.y+glyph.height/2-box.y-box.height/2)};});check(arrowLayout.width===32&&arrowLayout.height===32&&arrowLayout.dx<1&&arrowLayout.dy<1,'Icon-only priority arrows remain perfectly centered '+JSON.stringify(arrowLayout));
  await page.locator('.tl-settings').click();
  check(await aligned(page.locator('dialog button').filter({hasText:/^(Save reminders|Add context|Changelog|Close)$/})),'Settings text buttons remain left aligned');
  const settings=page.locator('dialog').last();await settings.getByRole('button',{name:'Changelog',exact:true}).click();
