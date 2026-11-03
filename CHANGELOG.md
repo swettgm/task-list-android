@@ -10,7 +10,6 @@
 - Settings offers emoji icons, simple clock/repeat symbols or no duration/recurrence icons; emojis remain the default.
 - The top summary includes the number of pending tasks with no priority and uses a dot before untimed tasks.
 - Priority changes and task deletion fade briefly before rows move or disappear.
-
 - Added global task notification text templates and matching linked-task symbols.
 
 ## 0.40.0 — 2026-11-03
