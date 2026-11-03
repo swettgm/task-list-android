@@ -357,7 +357,7 @@ public final class TaskStore {
     public static CharSequence contextDisplay(Context context,String label){
         boolean guild=usesGuildImage(context,label);int resource=guild?R.drawable.guild_label:contextSymbolResource(context,label);if(resource==0)return contextEmoji(context,label);
         android.graphics.drawable.Drawable icon=context.getDrawable(resource);int size=Math.round((guild?20:24)*context.getResources().getDisplayMetrics().density);icon.setBounds(0,0,size,size);
-        android.text.SpannableString text=new android.text.SpannableString(label);text.setSpan(new CenteredIconSpan(icon),0,text.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);return text;
+        android.text.SpannableString text=new android.text.SpannableString(label);text.setSpan(new CenteredIconSpan(icon,Math.round(24*context.getResources().getDisplayMetrics().density)),0,text.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);return text;
     }
     public static String contextEmoji(Context context,String label) {
         try{JSONObject icons=new JSONObject(new ReferenceStore(context).readState()).optJSONObject("contextIcons");if(icons!=null&&!icons.optString(label).isEmpty())return "image:guild".equals(icons.getString(label))?label:icons.getString(label);}catch(JSONException|RuntimeException unavailable){/* Keep the saved label identity when an icon cannot be read. */}
