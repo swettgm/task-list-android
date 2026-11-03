@@ -52,7 +52,7 @@ public class MainActivity extends Activity {
         root = new FrameLayout(this);
         root.setBackgroundColor(isWidgetEditor() ? Color.TRANSPARENT : Color.rgb(16, 21, 31));
         root.setOnApplyWindowInsetsListener((view, insets) -> {
-            view.setPadding(insets.getSystemWindowInsetLeft(), isWidgetEditor()?0:insets.getSystemWindowInsetTop(),
+            view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
                     insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             return insets;
         });

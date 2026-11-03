@@ -171,7 +171,7 @@ const result = await page.evaluate(async () => {
   clickText(dialog,'Save task');await tick();
   let repeat=__nativeQA.getState().customTasks.find(task=>task.title==='Repeat choice QA');
   check(JSON.stringify(repeat.days)==='[1,5]','Weekday choices save the chosen repeat days');
-  check(repeat.priority==='UNSET','Saving without a priority choice keeps the task in Priority not set');
+  check(repeat.priority==='LOW','Saving without a priority choice defaults the task to Low');
   TaskListApp.addTask();dialog=document.querySelector('dialog');dialog.querySelector('input[type=text]').value='Interval choice QA';
   dialog.querySelector('[data-field=repeat] input[value=repeat]').click();
   const every=dialog.querySelector('.tl-repeat-amount'),unit=dialog.querySelector('.tl-repeat-unit');unit.value='day';unit.dispatchEvent(new Event('change'));check(every&&!every.closest('[hidden]')&&dialog.querySelector('.tl-weekdays').hidden,'Every amount and unit replace weekday choices');every.value='4';
@@ -244,8 +244,8 @@ const result = await page.evaluate(async () => {
   check(byTitle('Delay checklist QA')?.classList.contains('tm-completing'),'Finishing the last checklist step also delays parent disappearance');
   await new Promise(resolve=>setTimeout(resolve,2200));check(!byTitle('Delay checklist QA'),'Finished checklist disappears after the confirmation delay');
   {const state=__nativeQA.getState();state.customTasks.push({id:'summary-duration-a',title:'Summary duration A',due:original.today,priority:'UNSET',minutes:90,_contexts:['Summary duration QA']},{id:'summary-duration-b',title:'Summary duration B',due:original.today,priority:'UNSET',minutes:45,_contexts:['Summary duration QA']});__nativeQA.setState(state);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('Summary duration QA');
-   for(const [a,b,expected] of [[90,45,'2h 15m'],[15,0,'15m'],[60,0,'1h'],[135,0,'2h 15m'],[0,0,'0m']]){const state=__nativeQA.getState();state.customTasks.find(t=>t.id==='summary-duration-a').minutes=a;state.customTasks.find(t=>t.id==='summary-duration-b').minutes=b;__nativeQA.setState(state);TaskListApp.reloadFromNative();await tick();check(document.getElementById('pt-progress').textContent==='0/2 done · '+expected+' remaining · 2 no priority set','Summary retains the completion fraction and formats '+a+' + '+b+' minutes without a pending count');}
-   const untimedState=__nativeQA.getState();untimedState.customTasks.push({id:'summary-untimed',title:'Summary untimed',due:original.today,priority:'UNSET',_contexts:['Summary duration QA']});__nativeQA.setState(untimedState);TaskListApp.reloadFromNative();await tick();check(document.getElementById('pt-progress').textContent==='0/3 done · 0m remaining · 1 untimed · 3 no priority set','Untimed tasks remain visible in the compact summary');TaskListApp.setContextFilter('');
+   for(const [a,b,expected] of [[90,45,'2h 15m'],[15,0,'15m'],[60,0,'1h'],[135,0,'2h 15m'],[0,0,'0m']]){const state=__nativeQA.getState();state.customTasks.find(t=>t.id==='summary-duration-a').minutes=a;state.customTasks.find(t=>t.id==='summary-duration-b').minutes=b;__nativeQA.setState(state);TaskListApp.reloadFromNative();await tick();check(document.getElementById('pt-progress').textContent==='0/2 done · '+expected+' remaining','Summary retains the completion fraction and formats '+a+' + '+b+' minutes without a pending count');}
+   const untimedState=__nativeQA.getState();untimedState.customTasks.push({id:'summary-untimed',title:'Summary untimed',due:original.today,priority:'UNSET',_contexts:['Summary duration QA']});__nativeQA.setState(untimedState);TaskListApp.reloadFromNative();await tick();check(document.getElementById('pt-progress').textContent==='0/3 done · 0m remaining · 1 untimed','Untimed tasks remain visible in the compact summary');TaskListApp.setContextFilter('');
   }
   return {checks};
 });

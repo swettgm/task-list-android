@@ -32,6 +32,7 @@ public class MainActivityTest {
         TaskEditorActivity activity=controller.get();String before=activity.taskBridgeForTests().readState();
         android.webkit.WebView web=activity.webForTests();web.getWebViewClient().onPageFinished(web,"https://tasklist.local/");
         assertTrue(Shadows.shadowOf(web).getLastEvaluatedJavascript().contains("editWidgetTask(\"html:serum:2026-11-03\")"));
+        android.view.View editorRoot=(android.view.View)web.getParent();editorRoot.dispatchApplyWindowInsets(new android.view.WindowInsets(new android.graphics.Rect(0,24,0,16)));assertEquals(24,editorRoot.getPaddingTop());assertEquals(16,editorRoot.getPaddingBottom());
         activity.taskBridgeForTests().setThemeColors("#ffffff");Shadows.shadowOf(Looper.getMainLooper()).idle();
         assertEquals(android.graphics.Color.TRANSPARENT,((android.graphics.drawable.ColorDrawable)((android.view.View)web.getParent()).getBackground()).getColor());
         assertEquals(before,activity.taskBridgeForTests().readState());

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.42.0 — 2026-11-03
+
+- Low is now the default for all new tasks, including widget quick-add and projects converted to tasks.
+- Existing tasks without a priority move into Low while keeping their details, completion history and future recurrences.
+- Removed the Priority not set section, header count and widget heading. Editors offer only High, Medium and Low.
+- Widget task editors respect the Android notification-bar inset so the window stays below it.
+
 ## 0.41.0 — 2026-11-03
 
 - Added a separate Show trash / Hide trash area beside Show completed, with Restore and confirmed Delete forever controls.
