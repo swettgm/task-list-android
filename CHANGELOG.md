@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.52.0 — 2026-11-03
+
+- Corrected Today/Upcoming alignment using the actual text tops instead of row-box centers. The Upcoming offset adapts to font changes, wrapping and screen width while leaving Today and all text sizes unchanged.
+
 ## 0.51.0 — 2026-11-03
 
 - Raised the Upcoming list slightly so Tomorrow is vertically aligned with the Today summary during swipes. The Today summary, text sizes and spacing between Upcoming dates are preserved.
