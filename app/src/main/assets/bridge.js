@@ -317,6 +317,15 @@
     const save=()=>{try{const next=clone(original);readChange(next);saveDefinition(next,false);close();}catch(e){error.textContent=e.message||'Couldn’t save. Please try again.';}};
     buttons.append(action('Cancel',close),action('Save',save,'btn btn-primary'));form.append(buttons);form.addEventListener('submit',e=>{e.preventDefault();save();});dialog.focus({preventScroll:true});
   }
+  function deleteTaskDefinition(task) {
+    const state=clone(readCanonical()),retired={...clone(task),retired:true};
+    if((state.customTasks||[]).some(value=>value.id===task.id))state.customTasks=state.customTasks.map(value=>value.id===task.id?retired:value);
+    else state.taskOverrides={...(state.taskOverrides||{}),[task.id]:retired};
+    const current=scope.getState(),active=(current.inProgressTasks||[current.inProgress].filter(Boolean)).filter(key=>!key.startsWith(task.id+':'));
+    state.manualLinks=manualLinksFor(state,task.id,[]);
+    persist({...current,...state,inProgressTasks:active,inProgress:active.at(-1)||null});
+    rebuild();
+  }
   function editTask(task, item, prefill) {
     if (!scope) return;
     const isNew = !task; const original = task ? clone(task) : {};
@@ -354,6 +363,13 @@
 
     const error = node('p', 'tl-form-error'); error.setAttribute('role', 'alert'); form.append(error);
     const buttons = node('div', 'tl-dialog-actions');
+    if(!isNew){
+      let armed=false;
+      const trash=action('',()=>{if(!armed){armed=true;trash.append(node('span','','Are you sure?'));trash.classList.add('tl-project-delete-armed');trash.setAttribute('aria-label','Confirm delete task');return;}try{deleteTaskDefinition(task);close();}catch(e){error.textContent=e.message||'Couldn’t delete this task. Please try again.';}},'btn tl-project-delete tl-task-delete');
+      trash.append(projectTrashIcon());trash.setAttribute('aria-label','Delete task');
+      form.addEventListener('input',()=>{armed=false;trash.replaceChildren(projectTrashIcon());trash.classList.remove('tl-project-delete-armed');trash.setAttribute('aria-label','Delete task');});
+      buttons.append(trash);
+    }
     buttons.append(action('Cancel', close), action('Save task', () => {
       if (!title.value.trim()) { error.textContent = 'Enter a task title.'; title.focus(); return; }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date.value)) { error.textContent = 'Choose a valid date.'; return; }

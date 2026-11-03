@@ -2,6 +2,8 @@
 
 ## 0.39.0 — 2026-11-03
 
+- Existing task editors include an outline trash icon: first tap asks for confirmation while gray, second press turns red and deletes the task from current and future lists. Editing a field resets confirmation; saved completion history is retained.
+
 - Upcoming headings show Tomorrow plus its date, followed by full weekday names and dates for later groups.
 - The top summary keeps the completion fraction, omits the pending count and formats combined duration in hours and minutes.
 
