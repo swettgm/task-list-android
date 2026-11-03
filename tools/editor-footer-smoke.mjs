@@ -10,6 +10,7 @@ const layout=()=>page.locator('dialog').evaluate(dialog=>{const fields=dialog.qu
 try{
  await page.goto(pathToFileURL(path.resolve('app/src/main/assets/www/index.html')).href);await page.waitForFunction(()=>window.TaskListApp);
  const before=await page.evaluate(()=>JSON.stringify(__footer.get()));await page.evaluate(()=>TaskListApp.addTask({title:'Footer checks'}));
+ const checklist=page.locator('textarea[placeholder="One step per line"]');await checklist.fill('Keep this checklist text');const oldHeight=await checklist.evaluate(node=>node.getBoundingClientRect().height);await page.getByRole('slider',{name:'Checklist size',exact:true}).evaluate(slider=>{slider.value='320';slider.dispatchEvent(new Event('input',{bubbles:true}));});check(await checklist.evaluate(node=>node.getBoundingClientRect().height)>oldHeight+200&&await checklist.inputValue()==='Keep this checklist text'&&(await layout()).valid,'Checklist size slider expands the field without changing text or overlapping the footer');
  for(const [width,height] of [[320,844],[390,844],[600,844],[390,480],[320,320]]){
   await page.setViewportSize({width,height});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   let previous=null;

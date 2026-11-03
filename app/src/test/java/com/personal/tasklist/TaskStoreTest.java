@@ -325,4 +325,10 @@ public class TaskStoreTest {
         for(String label:Arrays.asList("At home","On the road","On the phone","On the computer","Outdoors")){CharSequence icon=TaskStore.contextDisplay(context,label);assertTrue(icon instanceof android.text.Spanned);assertEquals(1,((android.text.Spanned)icon).getSpans(0,icon.length(),android.text.style.ImageSpan.class).length);}
         new ReferenceStore(context).writeState("{\"contextIcons\":{\"At home\":\"🏠\",\"On the phone\":\"☎️\"}}");assertEquals("🏠",TaskStore.contextDisplay(context,"At home").toString());assertEquals("☎️",TaskStore.contextDisplay(context,"On the phone").toString());assertTrue(TaskStore.usesGuildImage(context,"Guild"));assertTrue(TaskStore.contextDisplay(context,"Guild") instanceof android.text.Spanned);
     }
+    @Test public void labelImagesAreCenteredInTheTextLineAndGuildUsesCompactBounds(){
+        for(String label:Arrays.asList("At home","Guild")){CharSequence text=TaskStore.contextDisplay(context,label);android.text.style.ImageSpan span=((android.text.Spanned)text).getSpans(0,text.length(),android.text.style.ImageSpan.class)[0];assertTrue(span instanceof CenteredIconSpan);
+            for(int size:new int[]{12,18,24}){android.graphics.Paint paint=new android.graphics.Paint();paint.setTextSize(size);android.graphics.Paint.FontMetricsInt font=paint.getFontMetricsInt(),line=new android.graphics.Paint.FontMetricsInt();span.getSize(paint,text,0,text.length(),line);assertEquals((font.ascent+font.descent)/2f,(line.ascent+line.descent)/2f,1f);}
+            int expected=Math.round((label.equals("Guild")?20:24)*context.getResources().getDisplayMetrics().density);assertEquals(expected,span.getDrawable().getBounds().width());assertEquals(expected,span.getDrawable().getBounds().height());
+        }
+    }
 }

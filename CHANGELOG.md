@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.46.0 — 2026-11-03
+
+- Vertically centered duration, recurrence, linked-task and label icons with neighboring text, including wrapped captions.
+- Standardized icon-to-text and label gaps at 6 pixels and removed a duplicate label margin that caused uneven spacing.
+- Centered native label-picker images with their text and reduced the Guild crest to a fixed 20 dp size instead of scaling it with the system font.
+- Extended the widget editor backdrop over the top status-bar area while retaining safe clearance below it.
+
+- Added a Checklist size slider for expanding its field on touch screens.
+
+- Bracketed Checklist lines create section dividers while retaining item identities and completion history.
+
 ## 0.45.0 — 2026-11-03
 
 - Redrew the simple clock with equal-length hands and generous clearance from the circular rim.

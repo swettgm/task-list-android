@@ -51,6 +51,7 @@ public class MainActivity extends Activity {
         reference = new ReferenceStore(this);
         root = new FrameLayout(this);
         root.setBackgroundColor(isWidgetEditor() ? Color.TRANSPARENT : Color.rgb(16, 21, 31));
+        if(isWidgetEditor()){root.setForeground(new StatusBarScrim(root));getWindow().setStatusBarColor(StatusBarScrim.COLOR);}
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
                     insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
