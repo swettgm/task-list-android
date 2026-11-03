@@ -4,6 +4,7 @@ import {existsSync} from 'node:fs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 const file=path.resolve('app/src/main/assets/www/index.html'),seed=JSON.parse(await readFile(path.join(path.dirname(file),'initial-state.json'),'utf8')),history=JSON.parse(await readFile('app/src/main/assets/changelog.json','utf8'));
+const appVersion=(await readFile('app/build.gradle','utf8')).match(/versionName ['"]([^'"]+)['"]/)[1];
 const browser=await chromium.launch({executablePath:process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium'].find(existsSync),args:['--no-sandbox','--disable-dev-shm-usage']});
 const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',error=>errors.push(error.message));
 await page.addInitScript(initial=>{let state=initial;window.__history={get:()=>structuredClone(state)};window.TaskListNative={readState:()=>JSON.stringify(state),writeState:value=>state=JSON.parse(value),updateSnapshot(){},setThemeColors(){},showWidgetSettings(){}};},seed);
@@ -24,7 +25,7 @@ try{
  check(await aligned(page.locator('dialog button').filter({hasText:/^(Save reminders|Add context|Changelog|Close)$/})),'Settings text buttons remain left aligned');
  const settings=page.locator('dialog').last();await settings.getByRole('button',{name:'Changelog',exact:true}).click();
  const dialog=page.locator('dialog').last();check(await dialog.locator('h2').textContent()==='Changelog','Changelog opens directly from Settings');
- check(history[0].version==='0.40.0'&&history.at(-1).version==='0.2.0'&&history.length===38,'History covers current release through the original published app');
+ check(history[0].version===appVersion&&history.at(-1).version==='0.2.0'&&history.length>=38&&new Set(history.map(entry=>entry.version)).size===history.length,'History covers current release through the original published app');
  check(JSON.stringify(await dialog.locator('.tl-release-note').evaluateAll(nodes=>nodes.map(node=>({version:node.dataset.version,changes:[...node.querySelectorAll('li')].map(li=>li.textContent)}))))===JSON.stringify(history.map(({version,changes})=>({version,changes}))),'Every saved release and change appears in the app');
  check(await dialog.locator('.tl-release-note').first().evaluate(node=>node.open)&&await dialog.locator('.tl-release-note').last().evaluate(node=>!node.open),'Latest release is expanded and older versions are available separately');
  const oldest=dialog.locator('[data-version="0.2.0"]');await oldest.locator('summary').click();check(await oldest.locator('ul').isVisible(),'Earlier release notes can be expanded');
