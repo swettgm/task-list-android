@@ -5,7 +5,7 @@
 - Simple clock, repeat and chain-link symbols are larger, with white strokes on a transparent background instead of a white surrounding disk.
 - Settings → Notifications now lets you customize the daily reminder title and message separately from timed task notifications. Existing daily reminder wording remains the default.
 
-- Original label defaults use white symbols, with custom emoji overrides and the Guild crest preserved.
+- Original label defaults use solid white pictograms, with custom emoji overrides and the Guild crest preserved.
 
 ## 0.43.0 — 2026-11-03
 
