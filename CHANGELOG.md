@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.47.0 — 2026-11-03
+
+- Removed outer group frames from Priority, Repeat, Contexts and Linked tasks in editors.
+- Group labels and contents align with the left edge of the other fields, while individual input and choice-button outlines remain visible.
+
 ## 0.46.0 — 2026-11-03
 
 - Vertically centered duration, recurrence, linked-task and label icons with neighboring text, including wrapped captions.
