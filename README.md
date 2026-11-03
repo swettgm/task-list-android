@@ -1,9 +1,10 @@
 # Tasks — Android
 
-Download [Tasks 0.43.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.43.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.44.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.44.0.apk). Install over the existing app to retain your tasks and settings.
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
+- Simple clock, recurrence and chain-link symbols are larger and use white strokes on a transparent background. The original Home, Road, Phone, Computer and Outdoors labels also use solid white pictograms, with custom emoji overrides and the Guild crest preserved. Settings → Notifications offers separate title and message fields for the daily reminder, alongside its existing time and enable switch; timed task templates stay independent.
 - The full date stays on one line beside Today and Upcoming. Tabs use a compact 44 px height, slightly less horizontal padding and a small amount of extra header width. Header text retains its original size when space allows and fits proportionally only when needed. Task details keep their font size and wrap by component, with separator dots clipped at line boundaries. Priority text reads Low, Med and High.
 - New tasks default to Low in the app and widget. Existing unset tasks appear in Low with their details and history intact. Only High, Medium and Low sections remain; the removed priority count no longer appears in the header. Widget editors reserve space below the Android notification bar.
 - Task history now has separate Show completed and Show trash controls. Deleted tasks can be restored with notes and history intact. Each completed or trashed entry has a two-tap Delete forever icon with a three-second confirmation timeout; deleting a completed recurring entry leaves future recurrences intact. Permanent-removal records prevent stale widget snapshots from restoring deleted entries.
