@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.45.0 — 2026-11-03
+
+- Redrew the simple clock with equal-length hands and generous clearance from the circular rim.
+- Redrew the repeat symbol with two balanced circular arcs and large solid arrowheads so the direction is clear.
+
+- Redrew the chain as rounded interlocking links and the tree as a rounded canopy. Refined the phone cutout after reviewing the remaining icons.
+
 ## 0.44.0 — 2026-11-03
 
 - Simple clock, repeat and chain-link symbols are larger, with white strokes on a transparent background instead of a white surrounding disk.
