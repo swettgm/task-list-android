@@ -3661,7 +3661,8 @@ main{max-width:100%;margin:0;padding:0}
       }
 
     };
-    const weekendTimer=setInterval(()=>{if(!document.hidden&&!document.querySelector('dialog[open]')){renderToday();renderFuture();window.TaskListBridge.queueSnapshot();}},60000);window.addEventListener('pagehide',()=>clearInterval(weekendTimer),{once:true});
+    const weekendPhase=()=>{const clock=new Intl.DateTimeFormat('en-GB',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());return window.TaskListBridge.weekendStartTime()+':'+(clock>=window.TaskListBridge.weekendStartTime());};let lastWeekendPhase=weekendPhase();
+    const weekendTimer=setInterval(()=>{const phase=weekendPhase();if(phase!==lastWeekendPhase&&!document.hidden&&!taskPointers.size&&!viewDrag&&!document.querySelector('dialog[open]')){lastWeekendPhase=phase;renderToday();renderFuture();window.TaskListBridge.queueSnapshot();}},15000);window.addEventListener('pagehide',()=>clearInterval(weekendTimer),{once:true});
     const futureOpenDates=new Set([addDays(today,1)]);
     const renderFuture=()=>{
       const container=find('pt-future-list');
