@@ -18,7 +18,8 @@ try{
   state.customTasks=[...(state.customTasks||[]),task('layout-today',date),task('layout-future',d.toISOString().slice(0,10))];state.inProgress=null;
   __layout.set(state);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('Layout check');
  });
- const metric=async selector=>page.locator(selector).first().evaluate(row=>{
+ const metric=async selector=>page.locator(selector).first().evaluate(async row=>{
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   const box=row.querySelector(':scope>.form-check>input').getBoundingClientRect(),title=row.querySelector('.tm-title').getBoundingClientRect();
   const css=n=>{const s=getComputedStyle(n);return[s.fontSize,s.lineHeight,s.paddingLeft,s.paddingRight];};
   return {offset:box.y+box.height/2-title.y-title.height/2,width:row.getBoundingClientRect().width,title:css(row.querySelector('.tm-title')),meta:css(row.querySelector('.tm-meta')),actions:css(row.querySelector('.tm-item-actions')),checkbox:[box.width,box.height],height:row.getBoundingClientRect().height};
@@ -30,7 +31,7 @@ try{
    await page.locator('#pt-today-tab').click();const today=await metric('#pt-list [data-task-id="layout-today"]');
    await page.locator('#pt-upcoming-tab').click();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);const upcoming=await metric('#pt-future-list [data-task-id="layout-future"]');
    check(Math.abs(today.offset)<.5&&Math.abs(upcoming.offset)<.5,'Checkbox center matches the vertical center of its title at '+width+'px / '+size+'px text '+JSON.stringify({today,upcoming}));
-   check(JSON.stringify(today.title)===JSON.stringify(upcoming.title)&&JSON.stringify(today.meta)===JSON.stringify(upcoming.meta)&&JSON.stringify(today.actions)===JSON.stringify(upcoming.actions)&&Math.abs(today.width-upcoming.width)<1&&Math.abs(today.height-upcoming.height)<1,'Today and Upcoming row sizing matches at '+width+'px / '+size+'px text');
+   check(JSON.stringify(today.title)===JSON.stringify(upcoming.title)&&JSON.stringify(today.meta)===JSON.stringify(upcoming.meta)&&JSON.stringify(today.actions)===JSON.stringify(upcoming.actions)&&Math.abs(today.width-upcoming.width)<1&&Math.abs(today.height-upcoming.height)<1,'Today and Upcoming row sizing matches at '+width+'px / '+size+'px text '+JSON.stringify({today,upcoming}));
   }
  }
  await page.evaluate(()=>{const state=__layout.get();state.customTasks.filter(t=>t.id.startsWith('layout-')).forEach(t=>{t.title='A deliberately long task title that wraps over multiple lines on narrow screens';t.steps=['A checklist step with a long title that also wraps across multiple lines','Second step'];});__layout.set(state);TaskListApp.reloadFromNative();});
