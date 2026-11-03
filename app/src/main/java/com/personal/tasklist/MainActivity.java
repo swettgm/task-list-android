@@ -195,6 +195,7 @@ public final class MainActivity extends Activity {
 
     /** Only the packaged offline document receives this narrow native interface. */
     public final class TaskBridge {
+        @JavascriptInterface public void actionHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);}); }
         @JavascriptInterface public void priorityHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);}); }
         @JavascriptInterface public String readState() { return reference.readState(); }
         @JavascriptInterface public void writeState(String json) {

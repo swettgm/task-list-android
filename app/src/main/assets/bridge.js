@@ -75,6 +75,7 @@
     },
     removeItem(key) { try { if (fallback) fallback.removeItem(key); } catch (_) {} }
   };
+  function actionHaptic(){try{if(native&&native.actionHaptic)native.actionHaptic();}catch(_){}}
   function node(tag, className, text) {
     const result = document.createElement(tag);
     if (className) result.className = className;
@@ -133,7 +134,7 @@
     }
     if(Array.isArray(peers))state.manualLinks=manualLinksFor(state,task.id,peers);
     persist(Object.assign({}, scope.getState(), state));
-    rebuild();
+    rebuild();if(isNew)actionHaptic();
   }
   function applyDefinitions(state) {
     if (!scope) return;
@@ -223,6 +224,7 @@
     if (type !== 'textarea') field.type = type;
     field.value = value === undefined || value === null ? '' : String(value);
     if (type === 'textarea') field.rows = 2;
+    if(type==='date'||type==='time')field.addEventListener('change',()=>{if(field.validity.valid)actionHaptic();});
     wrap.append(field); form.append(wrap); return field;
   }
   function choiceField(form, label, choices, selected) {
@@ -288,7 +290,7 @@
       const time=inputField(form,'Time','time',value);time.setAttribute('aria-label','Time');
       const notifyLabel=node('label','tl-context-choice'),notify=node('input');notify.type='checkbox';notify.checked=!!original.notify;notify.setAttribute('aria-label','Notify at scheduled time');notifyLabel.append(notify,node('span','','Notify'));form.append(notifyLabel);
       const sync=()=>{notify.disabled=!time.value;if(!time.value)notify.checked=false;};time.addEventListener('input',sync);time.addEventListener('change',sync);sync();
-      form.append(action('Clear',()=>{time.value='';sync();},'btn tl-clear-time'));
+      form.append(action('Clear',()=>{time.value='';sync();actionHaptic();},'btn tl-clear-time'));
       readChange=next=>{if(time.value){const [h,m]=time.value.split(':').map(Number);next.time=(h%12||12)+':'+String(m).padStart(2,'0')+(h>=12?' PM':' AM');}else delete next.time;if(time.value&&notify.checked)next.notify=true;else delete next.notify;};
     }else if(component==='duration'){
       const row=node('div','tl-duration-row');form.append(row);const hours=inputField(row,'Hours','number',original.minutes===undefined?'':Math.floor(original.minutes/60)),minutes=inputField(row,'Minutes','number',original.minutes===undefined?'':original.minutes%60);hours.min=minutes.min='0';hours.step=minutes.step='1';minutes.max='59';hours.setAttribute('aria-label','Hours');minutes.setAttribute('aria-label','Minutes');
@@ -326,10 +328,10 @@
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
     const shortcuts=node('div','tl-date-shortcuts');date.parentElement.append(shortcuts);
-    shortcuts.append(action('Tomorrow',()=>{date.value=scope.addDays(scope.today,1);}),action('Weekend',()=>{date.value=global.TasksSchedule.nextWeekend(scope.today);date.dataset.weekend='true';}));
+    shortcuts.append(action('Tomorrow',()=>{date.value=scope.addDays(scope.today,1);actionHaptic();}),action('Weekend',()=>{date.value=global.TasksSchedule.nextWeekend(scope.today);date.dataset.weekend='true';actionHaptic();}));
     const toPicker=value=>{const match=String(value||'').match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);if(!match)return '';let h=Number(match[1]);if(match[3])h=h%12+(/pm/i.test(match[3])?12:0);return h<24?String(h).padStart(2,'0')+':'+match[2]:'';};
     const time = inputField(schedule, 'Time', 'time', toPicker(original.time)); time.placeholder = 'Any time';time.setAttribute('aria-label','Time');
-    time.parentElement.append(action('Clear',()=>{time.value='';time.dispatchEvent(new Event('input'));},'btn tl-clear-time'));
+    time.parentElement.append(action('Clear',()=>{time.value='';time.dispatchEvent(new Event('input'));actionHaptic();},'btn tl-clear-time'));
     const durationGroup=node('div','tl-duration-group');durationGroup.append(node('span','tl-duration-caption','Duration'));
     const durationRow=node('div','tl-duration-row');durationGroup.append(durationRow);schedule.append(durationGroup);
     const hours=inputField(durationRow,'Hours','number',original.minutes===undefined?'':Math.floor(original.minutes/60));hours.placeholder='Hours';hours.min='0';hours.step='1';hours.setAttribute('aria-label','Hours');
@@ -569,7 +571,7 @@
   }
   function projectDuration(value){const hours=Math.floor(value/60),minutes=value%60;return[hours?hours+' hr':'',minutes?minutes+' min':''].filter(Boolean).join(' ');}
   function plusButton(fn,label,className='btn'){
-    const button=action('',fn,className),glyph=node('span','tl-plus-glyph');glyph.setAttribute('aria-hidden','true');button.append(glyph);button.setAttribute('aria-label',label);button.title=label;return button;
+    const button=action('',event=>{actionHaptic();fn(event);},className),glyph=node('span','tl-plus-glyph');glyph.setAttribute('aria-hidden','true');button.append(glyph);button.setAttribute('aria-label',label);button.title=label;return button;
   }
   function saveProjectRecord(record,isNew,mode){
     const latest=freshProjectState(),fresh=projectMap(latest),removed=projectDeletions(latest);
@@ -590,7 +592,7 @@
         persist({projects,customTasks:[...(readCanonical().customTasks||[]),task]});
       }else{projects[record.id]=record;persist({projects});}
     }
-    rebuild();
+    rebuild();if(isNew||mode==='task')actionHaptic();
   }
   function projectTrashIcon(){
     const ns='http://www.w3.org/2000/svg',icon=document.createElementNS(ns,'svg'),path=document.createElementNS(ns,'path');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('width','18');icon.setAttribute('height','18');icon.setAttribute('fill','none');icon.setAttribute('stroke','currentColor');icon.setAttribute('stroke-width','1.8');icon.setAttribute('stroke-linecap','round');icon.setAttribute('stroke-linejoin','round');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');path.setAttribute('d','M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6');icon.append(path);return icon;

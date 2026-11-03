@@ -18,10 +18,11 @@ await page.addInitScript(initial => {
   let canonical = JSON.parse(JSON.stringify(initial));
   // Simulate an upgrade with old suggested pairs still in saved data.
   canonical.pairOverrides = { credit:['fix-credit'] };
-  window.__nativeQA = { snapshot: [], failWrites:false, widgetOpened:false,
+  window.__nativeQA = { snapshot: [], failWrites:false, widgetOpened:false, haptics:0,
     setState(value) { canonical = JSON.parse(JSON.stringify(value)); },
     getState() { return JSON.parse(JSON.stringify(canonical)); } };
   window.TaskListNative = {
+    actionHaptic() { __nativeQA.haptics++; },
     readState() { return JSON.stringify(canonical); },
     writeState(text) { if (__nativeQA.failWrites) throw Error('Simulated storage failure'); canonical = JSON.parse(text); },
     updateSnapshot(text) { window.__nativeQA.snapshot = JSON.parse(text); },
@@ -181,10 +182,12 @@ const result = await page.evaluate(async () => {
   check(repeat.repeat?.amount===2&&repeat.repeat?.unit==='week'&&JSON.stringify(repeat.repeat.weekdays?.slice().sort())==='[0,6]'&&repeat.urgent&&repeat.priority==='HIGH','Every two weeks on selected weekend days and urgent options remain available');
   // Quick entry saves with the current context; Back dismisses without saving.
   TaskListApp.setContextFilter('On the phone');await tick();
-  document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');
+  const quickHaptics=__nativeQA.haptics;document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');check(__nativeQA.haptics===quickHaptics+1,'Add-task plus emits one light haptic');
+  clickText(dialog,'Add');check(__nativeQA.haptics===quickHaptics+1,'An empty invalid add does not emit a saved-task haptic');
   check(dialog.querySelector('h2').textContent==='Quick add'&&dialog.querySelectorAll('input').length===1,'Corner plus opens the one-field quick-add form');
   dialog.querySelector('input').value='Quick entry QA';
   dialog.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await tick();
+  check(__nativeQA.haptics===quickHaptics+2,'Successful quick add emits exactly one additional light haptic');
   let quick=__nativeQA.getState().customTasks.find(task=>task.title==='Quick entry QA');
   check(quick&&quick.due===original.today&&quick._contexts.includes('On the phone')&&dialog.open&&dialog.querySelector('input').value===''&&document.activeElement===dialog.querySelector('input'),'Quick add saves and clears its title while keeping the popup and keyboard focus');
   const firstQuickBox=dialog.getBoundingClientRect();check(dialog.getAnimations().length>0,'Successful quick add flashes the popup border');
@@ -194,6 +197,7 @@ const result = await page.evaluate(async () => {
   document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');dialog.querySelector('input').value='Keep this title';
   clickText(dialog,'Details');dialog=document.querySelector('dialog');
   check(dialog.querySelector('input[type=text]').value==='Keep this title','Quick add can open full details without losing the title');
+  const dateHaptics=__nativeQA.haptics;const pickerDate=dialog.querySelector('input[type=date]');pickerDate.dispatchEvent(new Event('change'));check(__nativeQA.haptics===dateHaptics+1,'Confirming a date selection emits one light haptic');
   const countBeforeBack=TaskListApp.debugSummary().definitions;
   check(TaskListApp.handleBack()&&!document.querySelector('dialog')&&TaskListApp.debugSummary().definitions===countBeforeBack,'Android Back closes the full editor without saving a draft');
   document.querySelector('.tl-add-task').click();check(TaskListApp.handleBack()&&!document.querySelector('dialog'),'Android Back closes quick add');
@@ -206,6 +210,7 @@ const result = await page.evaluate(async () => {
   check(__nativeQA.getState().uiTheme.accent==='#ff9933'&&__nativeQA.background==='#18232f','Hex settings save the accent and native app background');
   check(getComputedStyle(document.querySelector('.tl-add-task')).backgroundColor==='rgb(255, 153, 51)','Chosen accent colors the app buttons');
   check(getComputedStyle(document.body).backgroundColor==='rgb(24, 35, 47)','Chosen background colors the task screen');
+  const selectionHaptics=__nativeQA.haptics;const pickerTime=dialog.querySelector('input[type=time]');pickerTime.value='10:15';pickerTime.dispatchEvent(new Event('change'));check(__nativeQA.haptics===selectionHaptics+1,'Confirming a time selection emits one light haptic');
   check(TaskListApp.handleBack(),'Android Back closes Settings');TaskListApp.reloadFromNative();await tick();
   check(document.documentElement.style.getPropertyValue('--tl-accent')==='#ff9933','Hex theme survives reload');
   document.querySelector('.tl-settings').click();dialog=document.querySelector('dialog');accent=dialog.querySelector('input[placeholder="#68B7FF"]');background=dialog.querySelector('input[placeholder="#10151F"]');
