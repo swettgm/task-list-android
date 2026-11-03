@@ -321,4 +321,8 @@ public class TaskStoreTest {
         assertTrue(TaskStore.contextDisplay(context,"Raid") instanceof android.text.Spanned);
         assertEquals("Raid",TaskStore.contextEmoji(context,"Raid"));
     }
+    @Test public void originalContextSymbolsAllowCustomEmojiOverrides() throws Exception {
+        for(String label:Arrays.asList("At home","On the road","On the phone","On the computer","Outdoors")){CharSequence icon=TaskStore.contextDisplay(context,label);assertTrue(icon instanceof android.text.Spanned);assertEquals(1,((android.text.Spanned)icon).getSpans(0,icon.length(),android.text.style.ImageSpan.class).length);}
+        new ReferenceStore(context).writeState("{\"contextIcons\":{\"At home\":\"🏠\",\"On the phone\":\"☎️\"}}");assertEquals("🏠",TaskStore.contextDisplay(context,"At home").toString());assertEquals("☎️",TaskStore.contextDisplay(context,"On the phone").toString());assertTrue(TaskStore.usesGuildImage(context,"Guild"));assertTrue(TaskStore.contextDisplay(context,"Guild") instanceof android.text.Spanned);
+    }
 }

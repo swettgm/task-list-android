@@ -350,9 +350,13 @@ public final class TaskStore {
         try{JSONObject icons=new JSONObject(new ReferenceStore(context).readState()).optJSONObject("contextIcons");if(icons!=null&&icons.has(label))return "image:guild".equals(icons.optString(label));}catch(JSONException|RuntimeException unavailable){}
         return "Guild".equals(label);
     }
+    private static int contextSymbolResource(Context context,String label){
+        try{JSONObject icons=new JSONObject(new ReferenceStore(context).readState()).optJSONObject("contextIcons");if(icons!=null&&!icons.optString(label).isEmpty())return 0;}catch(JSONException|RuntimeException unavailable){}
+        switch(label){case "At home":return R.drawable.context_home;case "On the road":return R.drawable.context_car;case "On the phone":return R.drawable.context_phone;case "On the computer":return R.drawable.context_computer;case "Outdoors":return R.drawable.context_tree;default:return 0;}
+    }
     public static CharSequence contextDisplay(Context context,String label){
-        if(!usesGuildImage(context,label))return contextEmoji(context,label);
-        android.graphics.drawable.Drawable icon=context.getDrawable(R.drawable.guild_label);int size=Math.round(22*context.getResources().getDisplayMetrics().scaledDensity);icon.setBounds(0,0,size,size);
+        boolean guild=usesGuildImage(context,label);int resource=guild?R.drawable.guild_label:contextSymbolResource(context,label);if(resource==0)return contextEmoji(context,label);
+        android.graphics.drawable.Drawable icon=context.getDrawable(resource);int size=Math.round((guild?22:20)*context.getResources().getDisplayMetrics().scaledDensity);icon.setBounds(0,0,size,size);
         android.text.SpannableString text=new android.text.SpannableString(label);text.setSpan(new android.text.style.ImageSpan(icon,android.text.style.ImageSpan.ALIGN_BOTTOM),0,text.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);return text;
     }
     public static String contextEmoji(Context context,String label) {

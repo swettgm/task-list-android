@@ -11,7 +11,7 @@ await page.addInitScript(initial=>{let state=JSON.parse(sessionStorage.getItem('
 const dialog=page.locator('dialog'),settings=()=>page.getByRole('button',{name:'Settings',exact:true}).click(),label=()=>dialog.locator('[aria-label="New context"]'),emoji=()=>dialog.locator('[aria-label="Label emoji"]'),add=()=>dialog.getByRole('button',{name:'Add context',exact:true}).click();
 try{
  await page.goto(pathToFileURL(file).href);await page.waitForFunction(()=>window.TaskListApp&&__emoji.snapshot.length);
- await settings();check(await dialog.locator('.tl-emoji-choice').count()>=20,'New-label settings offer common emoji choices');
+ await settings();check(await dialog.locator('.tl-emoji-choice').count()>=20,'New-label settings offer common emoji choices');check(await dialog.locator('.tl-context-settings .tl-context-symbol').evaluateAll(nodes=>nodes.length===5&&nodes.every(node=>getComputedStyle(node).color==='rgb(255, 255, 255)'&&!!node.querySelector('svg'))),'Original label defaults use five simple white symbols');
  await label().fill('Raid');await dialog.getByRole('button',{name:'Choose emoji 👑',exact:true}).click();check(await emoji().inputValue()==='👑','Picking an emoji fills the label emoji field');await add();
  check(await page.evaluate(()=>__emoji.get().contextIcons.Raid==='👑'&&__emoji.get().contextOptions.includes('Raid')),'Label name and selected emoji persist together');
  await dialog.getByRole('button',{name:'Close',exact:true}).click();
@@ -39,6 +39,7 @@ try{
  check(await page.evaluate(()=>__emoji.get().contextOptions.filter(x=>x==='Raid').length===1&&__emoji.get().contextIcons.Raid==='⚔️'),'Existing labels can change emoji without duplicate labels');
  check(await row().locator('.tl-context-icon[aria-label=Raid]').textContent()==='⚔️','Changing a label emoji updates existing tasks immediately');
  await label().fill('Computer work');await emoji().fill('👩🏽‍💻');await add();check(await page.evaluate(()=>__emoji.get().contextIcons['Computer work']==='👩🏽‍💻'),'A keyboard emoji with skin tone and joined characters is accepted');
+ await label().fill('At home');await emoji().fill('🏡');await add();check(await page.evaluate(()=>__emoji.get().contextIcons['At home']==='🏡')&&await dialog.locator('.tl-context-settings .tl-context-symbol[data-label="At home"]').count()===0,'An original white symbol can be replaced with a chosen emoji');
  for(const invalid of ['abc','👑⚔️']){await label().fill('Invalid emoji');await emoji().fill(invalid);await add();check(await page.evaluate(()=>!__emoji.get().contextOptions.includes('Invalid emoji'))&&!!await dialog.locator('.tl-context-error').textContent(),'Reject invalid or multiple emoji: '+invalid);}
  await page.setViewportSize({width:320,height:844});await emoji().scrollIntoViewIfNeeded();check(await dialog.evaluate(n=>n.scrollWidth<=n.clientWidth+1),'Emoji picker fits a narrow phone without horizontal scrolling');
  await mkdir('build/browser-qa',{recursive:true});await page.screenshot({path:'build/browser-qa/label-emoji-picker.png'});check(!errors.length,'Emoji settings and label changes have no browser errors');console.log(JSON.stringify({passed:checks.length,checks},null,2));
