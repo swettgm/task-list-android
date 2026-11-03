@@ -11,6 +11,8 @@
 - The top summary includes the number of pending tasks with no priority and uses a dot before untimed tasks.
 - Priority changes and task deletion fade briefly before rows move or disappear.
 
+- Added global task notification text templates and matching linked-task symbols.
+
 ## 0.40.0 — 2026-11-03
 
 - Added light haptic feedback to widget task actions and opening the app from the widget.
