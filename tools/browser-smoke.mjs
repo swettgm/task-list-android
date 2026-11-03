@@ -119,7 +119,7 @@ const result = await page.evaluate(async () => {
   TaskListApp.addTask({labels:['On the computer']});
   let dialog=document.querySelector('dialog');check(dialog.open,'Creation editor opens');check(document.activeElement===dialog&&__nativeQA.keyboardDismissals>0,'Detailed task creation keeps the keyboard collapsed until a field is selected');
   check(!dialog.textContent.includes('Useful help note'),'AI recommendation field is removed');
-  check(JSON.stringify([...dialog.querySelectorAll('[data-field=priority] input[type=radio]')].map(n=>n.value))==='["HIGH","MEDIUM","LOW","UNSET"]'&&dialog.querySelector('[data-field=priority] input:checked').value==='UNSET'&&dialog.querySelectorAll('[data-field=repeat] input[type=radio]').length===5,'Priority and repeat use compact single-choice rows');
+  check(JSON.stringify([...dialog.querySelectorAll('[data-field=priority] input[type=radio]')].map(n=>n.value))==='["HIGH","MEDIUM","LOW"]'&&!dialog.querySelector('[data-field=priority] input:checked')&&dialog.querySelectorAll('[data-field=repeat] input[type=radio]').length===5,'Priority offers only High, Medium and Low with no default selection; repeat remains compact');
   check(![...dialog.querySelectorAll('legend,label>span')].some(label=>/[()]/.test(label.textContent)),'Editor labels contain no parenthetical instructions');
   check(dialog.querySelector('input[placeholder="Any time"]')&&dialog.querySelector('input[aria-label=Hours]')&&dialog.querySelector('input[aria-label=Minutes]'),'Time and split duration use short placeholders');
   check(dialog.querySelector('input[type=time]')&&dialog.querySelector('input[type=date]'),'Native time and date pickers are available');
@@ -171,6 +171,7 @@ const result = await page.evaluate(async () => {
   clickText(dialog,'Save task');await tick();
   let repeat=__nativeQA.getState().customTasks.find(task=>task.title==='Repeat choice QA');
   check(JSON.stringify(repeat.days)==='[1,5]','Weekday choices save the chosen repeat days');
+  check(repeat.priority==='UNSET','Saving without a priority choice keeps the task in Priority not set');
   TaskListApp.addTask();dialog=document.querySelector('dialog');dialog.querySelector('input[type=text]').value='Interval choice QA';
   dialog.querySelector('[data-field=repeat] input[value=repeat]').click();
   const every=dialog.querySelector('.tl-repeat-amount'),unit=dialog.querySelector('.tl-repeat-unit');unit.value='day';unit.dispatchEvent(new Event('change'));check(every&&!every.closest('[hidden]')&&dialog.querySelector('.tl-weekdays').hidden,'Every amount and unit replace weekday choices');every.value='4';

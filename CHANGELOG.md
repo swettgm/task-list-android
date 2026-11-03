@@ -2,6 +2,8 @@
 
 ## 0.39.0 — 2026-11-03
 
+- New tasks default to Priority not set with no selected priority. Detailed editors offer only High, Medium and Low; widget quick add uses a disabled Priority placeholder until a level is selected.
+
 - Detailed task editors open with the keyboard collapsed, including the transition from Quick add; Quick add retains initial keyboard focus.
 - Editor action buttons occupy their own row below the fields instead of a sticky overlay.
 

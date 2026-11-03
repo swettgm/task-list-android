@@ -2236,7 +2236,7 @@ main{max-width:100%;margin:0;padding:0}
     const { dialog, form, close } = modal(isNew ? 'Add task' : 'Edit task');
     form.classList.add('tl-task-form');
     const title = inputField(form, 'Task', 'text', original.title || (prefill && prefill.title) || ''); title.required = true; title.placeholder = 'What needs doing?';
-    const priority = choiceField(form, 'Priority', scope.groups.map(([key, label]) => [key, key==='UNSET'?'Not set':label.replace(' priority', '')]), original.priority || 'UNSET');
+    const priority = choiceField(form, 'Priority', scope.groups.filter(([key])=>key!=='UNSET').map(([key,label])=>[key,label.replace(' priority','')]), original.priority || 'UNSET');
     const schedule = node('div', 'tl-schedule-grid'); form.append(schedule);
     const initialDate = item ? item.date : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
@@ -2273,7 +2273,7 @@ main{max-width:100%;margin:0;padding:0}
       if((hours.value&&!/^\d+$/.test(hours.value))||(minutes.value&&!/^\d+$/.test(minutes.value))||Number(minutes.value)>59||((hours.value||minutes.value)&&Number(hours.value)*60+Number(minutes.value)<1)){error.textContent='Enter hours and 0–59 minutes.';return;}
       if (recurrence.value === 'weekdays' && !weekChecks.some(check => check.checked)) { error.textContent = 'Select at least one weekday.'; return; }
       if(recurrence.value==='repeat'&&(!/^\d+$/.test(amount.value)||Number(amount.value)<1)){error.textContent='Repeat amount must be at least 1.';return;}
-      const next = Object.assign({}, original, { id: original.id || 'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9), title: title.value.trim(), priority: urgent.checked ? 'HIGH' : priority.value, _contexts: readContexts() });
+      const next = Object.assign({}, original, { id: original.id || 'app-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9), title: title.value.trim(), priority: urgent.checked ? 'HIGH' : (priority.value || 'UNSET'), _contexts: readContexts() });
       if(hours.value||minutes.value)next.minutes=Number(hours.value)*60+Number(minutes.value);else delete next.minutes;
       if(time.value){const [h,m]=time.value.split(':').map(Number);next.time=(h%12||12)+':'+String(m).padStart(2,'0')+(h>=12?' PM':' AM');}else delete next.time;
       if(date.dataset.weekend==='true')next.weekend=true;else if(next.due&&date.value!==original.due)delete next.weekend;

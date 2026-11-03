@@ -40,7 +40,7 @@ public final class QuickAddActivity extends Activity {
         labelsButton=controlButton("Labels",()->showLabels());labelsButton.setContentDescription("Context labels");updateLabelText();form.addView(labelsButton,fieldParams());
         selectedDate=java.time.LocalDate.now(java.time.ZoneId.of("America/New_York"));
         LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
-        priority=spinner("Priority",Arrays.asList("High","Medium","Low","Not set"));priority.setSelection(3);
+        priority=spinner("Priority",Arrays.asList("High","Medium","Low","Priority"));priority.setSelection(3);
         when=spinner("When to do it",Arrays.asList("Today","Tomorrow","Weekend","Choose date…"));
         LinearLayout.LayoutParams priorityParams=new LinearLayout.LayoutParams(0,dp(40),1);priorityParams.setMarginEnd(dp(8));
         options.addView(priority,priorityParams);options.addView(when,new LinearLayout.LayoutParams(0,dp(40),1));form.addView(options,fieldParams());
@@ -59,6 +59,8 @@ public final class QuickAddActivity extends Activity {
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);if(intent.getBooleanExtra("add_task",false)){openingFeedbackPending=true;if(hasWindowFocus()){openingFeedbackPending=false;actionFeedback();}}}
     @Override protected void onStart(){super.onStart();getWindow().setLayout((int)(getResources().getDisplayMetrics().widthPixels*.92),WindowManager.LayoutParams.WRAP_CONTENT);}
     private Spinner spinner(String description,List<? extends CharSequence> items){Spinner s=new Spinner(this);s.setContentDescription(description);ArrayAdapter<CharSequence>a=new ArrayAdapter<CharSequence>(this,android.R.layout.simple_spinner_dropdown_item,new ArrayList<CharSequence>(items)){
+        @Override public boolean areAllItemsEnabled(){return !"Priority".equals(description);}
+        @Override public boolean isEnabled(int position){return !"Priority".equals(description)||position<3;}
         @Override public android.view.View getView(int position,android.view.View reused,android.view.ViewGroup parent){android.view.View view=super.getView(position,reused,parent);if(view instanceof TextView){((TextView)view).setTextColor(appearance.foreground);((TextView)view).setTextSize(16);view.setPadding(0,0,0,0);}return view;}
         @Override public android.view.View getDropDownView(int position,android.view.View reused,android.view.ViewGroup parent){android.view.View view=super.getDropDownView(position,reused,parent);view.setBackgroundColor(Color.TRANSPARENT);view.setMinimumHeight(dp(48));if(view instanceof TextView)((TextView)view).setTextColor(appearance.foreground);return view;}
     };android.graphics.drawable.GradientDrawable popup=appearance.control(this,false);popup.setColor(appearance.surface);s.setPopupBackgroundDrawable(popup);s.setBackgroundTintList(null);s.setBackground(appearance.dropdown(this));s.setPadding(dp(12),0,dp(36),0);s.setAdapter(a);s.setLayoutParams(new LinearLayout.LayoutParams(-1,dp(48)));return s;}
