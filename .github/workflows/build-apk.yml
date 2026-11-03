@@ -73,6 +73,7 @@ jobs:
           TASK_BROWSER_STATUS=0
           for TASK_BROWSER_SCRIPT in \
             tools/schedule-unit.cjs \
+            tools/header-detail-smoke.mjs \
             tools/trash-polish-smoke.mjs \
             tools/history-alignment-smoke.mjs \
             tools/editor-footer-smoke.mjs \

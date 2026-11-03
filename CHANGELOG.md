@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.43.0 — 2026-11-03
+
+- The full date and Today / Upcoming tabs stay together on one line. Slightly smaller tabs and tighter spacing preserve the text size, with proportional fitting only when the header needs more room.
+- Task priority labels after the separator now read Low, Med and High.
+
+- Task details wrap at their existing size, with separator dots hidden at line boundaries.
+
 ## 0.42.0 — 2026-11-03
 
 - Low is now the default for all new tasks, including widget quick-add and projects converted to tasks.
