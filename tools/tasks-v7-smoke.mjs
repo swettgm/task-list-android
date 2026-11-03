@@ -142,7 +142,7 @@ try{
  for(const id of [ids.dailyA,ids.futureRepeat,'fixed-week','fixed-month','fixed-year']){
   const task=dailyPage.locator('#pt-future-list [data-task-id="'+id+'"]').first();check(await task.count()===1&&await task.locator(':scope>.tm-item-actions>button[aria-label^="Move "]').count()===0,'Repeating '+id+' has no Do today or Do tomorrow control in Upcoming');
  }
- await dailyPage.getByRole('tab',{name:'Today',exact:true}).click();check(await dailyPage.locator('#pt-list [data-task-id="'+ids.dailyA+'"] :scope>.tm-item-actions>button[aria-label^="Move "]').count()===0,'Daily tasks also have no day-move button on Today');await dailyPage.close();
+ await dailyPage.getByRole('tab',{name:'Today',exact:true}).click();check(await dailyPage.locator('#pt-list [data-task-id="'+ids.dailyA+'"]').locator(':scope>.tm-item-actions>button[aria-label^="Move "]').count()===0,'Daily tasks also have no day-move button on Today');await dailyPage.close();
  await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
  check(await page.locator('#pt-today').isVisible()&&!await page.locator('#pt-upcoming').isVisible(),'Reopening Tasks always selects Today');
  check(await todayRow(ids.second).isVisible()&&await todayRow(ids.second).getAttribute('data-state-date')===dates.second,'Do today persists after a full reload');
