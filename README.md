@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.50.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.50.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.51.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.51.0.apk). Install over the existing app to retain your tasks and settings.
 
-This update makes the notification bell solid white and slightly smaller, preserving its centered alignment and spacing before the task time.
+This update raises Upcoming slightly to align its first heading with the Today summary during swipes. It includes the solid white, slightly smaller notification bell from 0.50.0.
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
