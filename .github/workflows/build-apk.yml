@@ -70,23 +70,29 @@ jobs:
       - name: Check the complete task workflow in Chromium
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
-          node tools/schedule-unit.cjs
-          node tools/trash-polish-smoke.mjs
-          node tools/history-alignment-smoke.mjs
-          node tools/editor-footer-smoke.mjs
-          node tools/browser-smoke.mjs
-          node tools/completion-undo-smoke.mjs
-          node tools/tasks-v7-smoke.mjs
-          node tools/weekend-smoke.mjs
-          node tools/theme-smoke.mjs
-          node tools/row-layout-smoke.mjs
-          node tools/checklist-edit-smoke.mjs
-          node tools/label-emoji-smoke.mjs
-          node tools/guild-icon-smoke.mjs
-          node tools/priority-controls-smoke.mjs
-          node tools/projects-smoke.mjs
-          node tools/widget-editor-smoke.mjs
-          node tools/task-delete-smoke.mjs
+          TASK_BROWSER_STATUS=0
+          for TASK_BROWSER_SCRIPT in \
+            tools/schedule-unit.cjs \
+            tools/trash-polish-smoke.mjs \
+            tools/history-alignment-smoke.mjs \
+            tools/editor-footer-smoke.mjs \
+            tools/browser-smoke.mjs \
+            tools/completion-undo-smoke.mjs \
+            tools/tasks-v7-smoke.mjs \
+            tools/weekend-smoke.mjs \
+            tools/theme-smoke.mjs \
+            tools/row-layout-smoke.mjs \
+            tools/checklist-edit-smoke.mjs \
+            tools/label-emoji-smoke.mjs \
+            tools/guild-icon-smoke.mjs \
+            tools/priority-controls-smoke.mjs \
+            tools/projects-smoke.mjs \
+            tools/widget-editor-smoke.mjs \
+            tools/task-delete-smoke.mjs
+          do
+            if ! node "$TASK_BROWSER_SCRIPT"; then TASK_BROWSER_STATUS=1; fi
+          done
+          exit "$TASK_BROWSER_STATUS"
 
       - name: Verify APK signature and record checksum
         shell: bash
