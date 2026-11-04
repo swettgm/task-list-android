@@ -38,6 +38,7 @@ await page.getByRole('button',{name:'Add task',exact:true}).click();
 await page.getByRole('button',{name:'Details',exact:true}).click();
 await page.screenshot({path:path.join(output,'compact-editor.png'),fullPage:false});
 await page.getByRole('button',{name:'Cancel',exact:true}).click();
+for(const width of [320,390,600]){await page.setViewportSize({width,height:844});await page.getByRole('button',{name:'Add task',exact:true}).click();const dialog=page.locator('dialog');{const fits=await dialog.evaluate(dialog=>{const h=dialog.querySelector('h2').getBoundingClientRect(),u=dialog.querySelector('.tl-quick-urgent').getBoundingClientRect(),d=dialog.getBoundingClientRect();return Math.abs(h.top+h.height/2-u.top-u.height/2)<.5&&u.left>=h.right+8&&u.right<d.right-10&&dialog.scrollWidth<=dialog.clientWidth;});if(!fits)throw Error('Quick add Urgent fits the top right at '+width+'px');}if(width===390){await mkdir('build/browser-qa',{recursive:true});await page.screenshot({path:'build/browser-qa/quick-add-urgent-squircles.png'});}await dialog.getByRole('button',{name:'Cancel',exact:true}).click();}await page.setViewportSize({width:390,height:844});
 const result = await page.evaluate(async () => {
   const checks = [];
   function check(condition, label) { if (!condition) throw new Error(label); checks.push(label); }
@@ -186,20 +187,25 @@ const result = await page.evaluate(async () => {
   TaskListApp.setContextFilter('On the phone');await tick();
   const quickHaptics=__nativeQA.haptics;document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');check(__nativeQA.haptics===quickHaptics+1,'Add-task plus emits one light haptic');
   clickText(dialog,'Add');check(__nativeQA.haptics===quickHaptics+1,'An empty invalid add does not emit a saved-task haptic');
-  check(dialog.querySelector('h2').textContent==='Quick add'&&dialog.querySelectorAll('input').length===1,'Corner plus opens the one-field quick-add form');
-  dialog.querySelector('input').value='Quick entry QA';
+  check(dialog.querySelector('h2').textContent==='Quick add'&&dialog.querySelectorAll('input[type=text]').length===1&&dialog.querySelectorAll('input[type=checkbox]').length===1,'Corner plus opens Quick add with a title and Urgent checkbox');
+  const urgentQuick=dialog.querySelector('input[aria-label=Urgent]');check(!urgentQuick.checked,'Quick add starts with Urgent off');urgentQuick.click();check(getComputedStyle(urgentQuick).borderRadius==='25%'&&getComputedStyle(urgentQuick,'::before').maskImage!=='none','Urgent checkbox has rounded square corners and a visible checked glyph');
+  dialog.querySelector('input[type=text]').value='Quick entry QA';
   dialog.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await tick();
   check(__nativeQA.haptics===quickHaptics+2,'Successful quick add emits exactly one additional light haptic');
   let quick=__nativeQA.getState().customTasks.find(task=>task.title==='Quick entry QA');
-  check(quick&&quick.due===original.today&&quick._contexts.includes('On the phone')&&dialog.open&&dialog.querySelector('input').value===''&&document.activeElement===dialog.querySelector('input'),'Quick add saves and clears its title while keeping the popup and keyboard focus');
+  check(quick&&quick.due===original.today&&quick._contexts.includes('On the phone')&&dialog.open&&dialog.querySelector('input[type=text]').value===''&&document.activeElement===dialog.querySelector('input[type=text]'),'Quick add saves and clears its title while keeping the popup and keyboard focus');
+  check(quick.urgent===true&&quick.priority==='HIGH'&&!urgentQuick.checked,'Quick add saves Urgent at High priority and resets the next entry');
   const firstQuickBox=dialog.getBoundingClientRect();check(dialog.getAnimations().length>0,'Successful quick add flashes the popup border');
-  dialog.querySelector('input').value='Second quick entry QA';clickText(dialog,'Add');await tick();check(__nativeQA.getState().customTasks.filter(task=>['Quick entry QA','Second quick entry QA'].includes(task.title)).length===2&&dialog.open&&dialog.querySelector('input').value==='','The same quick-add popup can save another distinct task');
+  dialog.querySelector('input[type=text]').value='Second quick entry QA';clickText(dialog,'Add');await tick();check(__nativeQA.getState().customTasks.filter(task=>['Quick entry QA','Second quick entry QA'].includes(task.title)).length===2&&dialog.open&&dialog.querySelector('input[type=text]').value==='','The same quick-add popup can save another distinct task');
   check(__nativeQA.getState().customTasks.find(task=>task.title==='Second quick entry QA')._contexts.length===0,'Batch quick add clears inherited labels after a successful save');
+  check(!__nativeQA.getState().customTasks.find(task=>task.title==='Second quick entry QA').urgent&&__nativeQA.getState().customTasks.find(task=>task.title==='Second quick entry QA').priority==='LOW','The next quick entry does not inherit Urgent');
   const nextQuickBox=dialog.getBoundingClientRect();check(Math.abs(firstQuickBox.width-nextQuickBox.width)<1&&Math.abs(firstQuickBox.height-nextQuickBox.height)<1,'Border pulses do not resize the quick-add popup');clickText(dialog,'Cancel');
-  document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');dialog.querySelector('input').value='Keep this title';
+  document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');dialog.querySelector('input[type=text]').value='Keep this title';dialog.querySelector('input[aria-label=Urgent]').click();
   clickText(dialog,'Details');dialog=document.querySelector('dialog');
   check(dialog.querySelector('input[type=text]').value==='Keep this title','Quick add can open full details without losing the title');
   check(document.activeElement===dialog,'Switching from Quick add to Details removes text focus and collapses the keyboard');
+  check(dialog.querySelector('.tl-urgent input').checked,'Quick add carries Urgent into Details');
+  check([...document.querySelectorAll('#today-task-list-20261023 input[type=checkbox],.tl-dialog input[type=checkbox]')].every(input=>getComputedStyle(input).borderRadius==='25%'),'Task, checklist and editor checkboxes all use squircle corners in the app');
   const dateHaptics=__nativeQA.haptics;const pickerDate=dialog.querySelector('input[type=date]');pickerDate.dispatchEvent(new Event('change'));check(__nativeQA.haptics===dateHaptics+1,'Confirming a date selection emits one light haptic');
   const countBeforeBack=TaskListApp.debugSummary().definitions;
   check(TaskListApp.handleBack()&&!document.querySelector('dialog')&&TaskListApp.debugSummary().definitions===countBeforeBack,'Android Back closes the full editor without saving a draft');
@@ -225,7 +231,7 @@ const result = await page.evaluate(async () => {
   clickText(dialog,'Close');
   // Rapid completions and undo have independent presentation timers, while saving immediately.
   for(const title of ['Delay task A','Delay task B']){
-    TaskListApp.quickAddTask();const quickDialog=document.querySelector('dialog');quickDialog.querySelector('input').value=title;clickText(quickDialog,'Add');await tick();clickText(quickDialog,'Cancel');
+    TaskListApp.quickAddTask();const quickDialog=document.querySelector('dialog');quickDialog.querySelector('input[type=text]').value=title;clickText(quickDialog,'Add');await tick();clickText(quickDialog,'Cancel');
   }
   const byTitle=title=>rows().find(row=>row.querySelector('.tm-title').textContent===title);
   byTitle('Delay task A').querySelector(':scope > .form-check > input').click();await tick();
@@ -245,7 +251,7 @@ const result = await page.evaluate(async () => {
   await new Promise(resolve=>setTimeout(resolve,2200));check(!byTitle('Delay checklist QA'),'Finished checklist disappears after the confirmation delay');
   {const state=__nativeQA.getState();state.customTasks.push({id:'summary-duration-a',title:'Summary duration A',due:original.today,priority:'UNSET',minutes:90,_contexts:['Summary duration QA']},{id:'summary-duration-b',title:'Summary duration B',due:original.today,priority:'UNSET',minutes:45,_contexts:['Summary duration QA']});__nativeQA.setState(state);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('Summary duration QA');
    for(const [a,b,expected] of [[90,45,'2h 15m'],[15,0,'15m'],[60,0,'1h'],[135,0,'2h 15m'],[0,0,'0m']]){const state=__nativeQA.getState();state.customTasks.find(t=>t.id==='summary-duration-a').minutes=a;state.customTasks.find(t=>t.id==='summary-duration-b').minutes=b;__nativeQA.setState(state);TaskListApp.reloadFromNative();await tick();check(document.getElementById('pt-progress').textContent==='0/2 done · '+expected+' remaining','Summary retains the completion fraction and formats '+a+' + '+b+' minutes without a pending count');}
-   const untimedState=__nativeQA.getState();untimedState.customTasks.push({id:'summary-untimed',title:'Summary untimed',due:original.today,priority:'UNSET',_contexts:['Summary duration QA']});__nativeQA.setState(untimedState);TaskListApp.reloadFromNative();await tick();check(document.getElementById('pt-progress').textContent==='0/3 done · 0m remaining · 1 untimed','Untimed tasks remain visible in the compact summary');TaskListApp.setContextFilter('');
+   const untimedState=__nativeQA.getState();untimedState.customTasks.push({id:'summary-untimed',title:'Summary untimed',due:original.today,priority:'UNSET',_contexts:['Summary duration QA']});__nativeQA.setState(untimedState);TaskListApp.reloadFromNative();await tick();check(document.getElementById('pt-progress').textContent==='0/3 done · 0m remaining · 1 untimed','Untimed tasks remain visible in the compact summary');check([...document.querySelectorAll('#pt-progress .tl-summary-text')].map(node=>node.textContent).join('|')==='0/3 done|0m remaining|1 untimed','Completion, remaining duration and untimed count each wrap as one unit');const compactSummary=document.getElementById('pt-progress');compactSummary.style.width='220px';compactSummary.style.fontSize='20px';const summaryGroups=[...compactSummary.querySelectorAll('.tl-summary-group')],summaryBounds=compactSummary.getBoundingClientRect();check(new Set(summaryGroups.map(group=>group.getBoundingClientRect().top)).size>1&&summaryGroups.every(group=>{const range=document.createRange();range.selectNodeContents(group.querySelector('.tl-summary-text'));const dot=group.querySelector('.tl-summary-separator');return range.getClientRects().length===1&&(!dot||group.getBoundingClientRect().left>summaryBounds.left+1||dot.getBoundingClientRect().right<=summaryBounds.left+.5);})&&compactSummary.scrollWidth<=compactSummary.clientWidth+1,'Narrow large-text summary wraps whole sections and clips line-leading dots');compactSummary.style.width='';compactSummary.style.fontSize='';TaskListApp.setContextFilter('');
   }
   return {checks};
 });

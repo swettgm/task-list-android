@@ -24,6 +24,7 @@ try{
  check(await page.locator('dialog input[type=text]').first().inputValue()==='Widget editing test','Correct task prefilled');
  check(await page.evaluate(()=>document.activeElement===document.querySelector('dialog')),'Editing does not focus the keyboard');
  check(await page.locator('dialog textarea').count()===2,'Editor includes notes and checklist');
+ check(await page.locator('dialog .tl-urgent input').evaluate(input=>getComputedStyle(input).borderRadius==='4px'&&getComputedStyle(input).appearance==='auto'),'Widget editor retains its original checkbox appearance and corners');
  await page.locator('dialog .tl-task-editor-fields').evaluate(fields=>{fields.scrollTop=fields.scrollHeight;});
  check(await page.locator('dialog').evaluate(dialog=>{const row=dialog.querySelector('.tl-dialog-actions').getBoundingClientRect(),fields=dialog.querySelector('.tl-task-editor-fields').getBoundingClientRect(),button=dialog.querySelector('.tl-dialog-actions button').getBoundingClientRect();return getComputedStyle(dialog.querySelector('.tl-dialog-actions')).position==='static'&&fields.bottom<=row.top+1&&button.top-fields.bottom>=8&&row.bottom<=dialog.getBoundingClientRect().bottom;}),'Widget editor buttons occupy their own row below the fields');
  await page.locator('dialog input[type=text]').first().fill('Updated widget title');await page.locator('dialog textarea').first().fill('Updated notes');

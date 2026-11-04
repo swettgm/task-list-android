@@ -47,11 +47,12 @@ public final class TaskWidgetService extends RemoteViewsService {
             row.setTextColor(R.id.widget_task_title,Color.parseColor(dark?"#F3F7FC":"#1F2B40"));
             row.setTextColor(R.id.widget_check,Color.parseColor(dark?"#8FC6E7":"#195B7E"));
             row.setTextColor(R.id.widget_due,Color.parseColor(dark?"#BAC9D9":"#56677F"));
-            boolean active=TaskStore.IN_PROGRESS.equals(task.status);
-            row.setTextViewText(R.id.widget_due,active?"🟢 IN PROGRESS":"Today");
-            row.setTextColor(R.id.widget_due,active?Color.WHITE:Color.parseColor(dark?"#BAC9D9":"#56677F"));
-            row.setInt(R.id.widget_due,"setBackgroundResource",active?R.drawable.widget_progress_badge:0);
-            row.setContentDescription(R.id.widget_task_title,"Edit "+task.title+", "+(active?"🟢 IN PROGRESS":"Today"));row.setContentDescription(R.id.widget_check,"Complete "+task.title);
+            boolean active=TaskStore.IN_PROGRESS.equals(task.status),urgent=task.sourceRecord().optBoolean("urgent");
+            String status=active?"🟢 IN PROGRESS":urgent?"🔴 URGENT":"Today";
+            row.setTextViewText(R.id.widget_due,status);
+            row.setTextColor(R.id.widget_due,active||urgent?Color.WHITE:Color.parseColor(dark?"#BAC9D9":"#56677F"));
+            row.setInt(R.id.widget_due,"setBackgroundResource",active?R.drawable.widget_progress_badge:urgent?R.drawable.widget_urgent_badge:0);
+            row.setContentDescription(R.id.widget_task_title,"Edit "+task.title+", "+status);row.setContentDescription(R.id.widget_check,"Complete "+task.title);
             row.setContentDescription(R.id.widget_status_toggle,(active?"Stop Do now for ":"Do now: ")+task.title);row.setOnClickFillInIntent(R.id.widget_status_toggle,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,active?"stop":"start"));
             String pending=WidgetCompletions.token(context,task.id);boolean staged=!pending.isEmpty();
             row.setTextViewText(R.id.widget_check,staged?"✓":"○");row.setContentDescription(R.id.widget_check,(staged?"Undo completion of ":"Complete ")+task.title);

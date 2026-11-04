@@ -59,7 +59,7 @@ try{
   if(holdMs===111)await page.screenshot({path:'build/browser-qa/aligned-text-top-swipe.png'});if(holdMs)await page.waitForTimeout(holdMs);
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   const motion=await page.evaluate(()=>[...document.querySelectorAll('.tm-view-stack>[role=tabpanel]')].flatMap(n=>n.getAnimations().map(a=>({id:n.id,frames:a.effect.getKeyframes().map(k=>k.transform)}))));
-  const during=await panelOffsets();const headerCenters=await page.evaluate(()=>Object.fromEntries([...document.querySelectorAll('.tm-view-stack>[role=tabpanel]:not([hidden])')].map(panel=>{const range=document.createRange();range.selectNodeContents(panel.querySelector('.tm-summary,.tm-day-name'));return [panel.id,range.getClientRects()[0].top];})));await page.waitForTimeout(30);const middle=await panelOffsets();
+  const during=await panelOffsets();const headerCenters=await page.evaluate(()=>Object.fromEntries([...document.querySelectorAll('.tm-view-stack>[role=tabpanel]:not([hidden])')].map(panel=>{const range=document.createRange();range.selectNodeContents(panel.querySelector('.tl-summary-text,.tm-summary:not(.tl-summary-flow),.tm-day-name'));return [panel.id,range.getClientRects()[0].top];})));await page.waitForTimeout(30);const middle=await panelOffsets();
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
   await page.waitForTimeout(450);const after=await panelOffsets();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);return{motion,overflow,before,during,middle,after,held,headerCenters};
  }

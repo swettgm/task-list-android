@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.54.0 — 2026-11-04
+
+- Added an Urgent checkbox at the top right of in-app Quick add. It saves an urgent High-priority task, carries into Details and resets after a successful add.
+- App checkboxes use squircle corners, with rounded-square fallback on older WebViews. Widget checkboxes, native label pickers and the widget editor retain their existing appearance.
+
+- The Today summary wraps completion, remaining duration and untimed counts as whole sections. Separator dots disappear at line boundaries, matching task metadata wrapping.
+
+- Urgent widget tasks show the red Urgent bubble in place of Today. The existing status tap changes it to In progress and back to Urgent, preserving the task’s urgent flag.
+
 ## 0.53.0 — 2026-11-04
 
 - Swapped task notification action positions: Snooze on the left and Complete on the right.
