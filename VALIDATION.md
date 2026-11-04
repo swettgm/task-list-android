@@ -1,13 +1,17 @@
-# Tasks 0.53.0 verification
+# Tasks 0.54.0 verification
 
-Source: 97162a9a743a7d600c575416d25f7814b12bbf40. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41820574136): 138 Android tests, 719 browser checks, 27 calendar checks and zero lint errors.
+Source: 6b044e0464b08a26f25ed5e8dac60cbbcd14a229. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41871503095): 139 Android tests, 731 browser checks, 27 calendar checks and zero lint errors.
 
-Task notification action order is Snooze first (left) and Complete second (right). Updated existing notification checks verify both positions and exercise completion, snoozing, redelivery and stale-action handling through their new positions. Action sizes and behavior are unchanged. Daily reminders still have neither action.
+In-app Quick add places Urgent beside the title at the top right. It creates an urgent High-priority task, resets after a successful add and carries into Details. Keyboard focus, batch entry and border feedback remain intact. Layout checks cover 320, 390 and 600px widths.
 
-The Today/Upcoming control retains its 46px outer height. Two pixels of inner padding plus the one-pixel border give the 40px active button an even three-pixel inset; its five-pixel corner radius matches the eight-pixel outer radius. Existing large-type and narrow-width header checks remain in place, and both selected tabs are checked for inset bounds and corner radii.
+App checkboxes use squircle corner shaping with a 50% radius where supported, producing a superellipse instead of a circle. Older WebViews use a 25% rounded-square fallback. Generic editor/settings checkboxes retain clear checked, disabled and keyboard-focus states. CSS excludes the widget-editor document. Its original checkbox appearance is explicitly checked; native widget quick-add and label controls are untouched.
 
-Signed APK: 265,968 bytes. SHA-256: `1283b3394b6d45feb474d1afff7af386aa033e841108f5103bc9b06f8dbfd90d`.
+The Today summary uses indivisible completion, remaining-duration and untimed sections with the same separator treatment as task metadata. Dots are clipped at new-line starts and never hang at previous-line ends. Checks cover large text on a narrow summary and first-line alignment with Upcoming after grouping.
 
-Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.52.0. Both public download paths contain the same signed APK. Settings Changelog includes the new action order.
+Urgent widget rows show the red Urgent pill in place of Today. Existing start/stop actions change it to green In progress and back to Urgent, without changing the urgent flag. Tests cover the red background, rounded pill, canonical in-progress state and restoration. Other widget controls retain their existing appearance.
+
+Signed APK: 270,146 bytes. SHA-256: `d65c56ea94c1fbe626f59eb56399fa98eebab1902da15f5661248bfd9ed4249a`.
+
+Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.53.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
 
 No physical phone was used. Android checks use Robolectric; browser checks use Chromium. Windows work remains deferred.

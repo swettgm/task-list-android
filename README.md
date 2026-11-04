@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.53.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.53.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.54.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.54.0.apk). Install over the existing app to retain your tasks and settings.
 
-This update places Snooze on the left and Complete on the right in task notifications, and fits the highlighted Today/Upcoming tab evenly inside its rounded outer border.
+This update adds Urgent at the top right of in-app Quick add and rounds app checkboxes into squircles. The Today summary wraps whole sections with clean separator placement. Urgent widget tasks display an Urgent bubble using the existing tap-to-toggle progress action; other widget controls and its editor are unchanged.
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
