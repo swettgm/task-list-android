@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.52.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.52.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.53.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.53.0.apk). Install over the existing app to retain your tasks and settings.
 
-This update aligns the actual text tops of the Today summary and Tomorrow heading, adapting to fonts and screen width instead of using a fixed margin. The solid white, slightly smaller notification bell is retained. Recurring date edits no longer revive old overdue occurrences. Timed task notifications have Complete and Snooze actions, with a global snooze duration in Settings; daily reminders remain separate.
+This update places Snooze on the left and Complete on the right in task notifications, and fits the highlighted Today/Upcoming tab evenly inside its rounded outer border.
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
