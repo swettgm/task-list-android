@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.53.0 — 2026-11-04
+
+- Swapped task notification action positions: Snooze on the left and Complete on the right.
+
+- Inset the highlighted Today/Upcoming tab evenly inside its outer border, with matching inner corner rounding and unchanged outer control height.
+
 ## 0.52.0 — 2026-11-04
 
 - Corrected Today/Upcoming alignment using the actual text tops instead of row-box centers. The Upcoming offset adapts to font changes, wrapping and screen width while leaving Today and all text sizes unchanged.

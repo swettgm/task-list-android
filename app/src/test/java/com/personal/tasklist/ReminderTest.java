@@ -60,38 +60,38 @@ public class ReminderTest {
         Notification n=actionable(task(),new JSONObject());
         assertNotNull(n);
         assertEquals(2,n.actions.length);
-        assertEquals("Complete",n.actions[0].title.toString());
-        assertEquals("Snooze",n.actions[1].title.toString());TaskReminders.receive(context,TaskReminders.DAILY);Notification daily=Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification("daily",0);
+        assertEquals("Complete",n.actions[1].title.toString());
+        assertEquals("Snooze",n.actions[0].title.toString());TaskReminders.receive(context,TaskReminders.DAILY);Notification daily=Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification("daily",0);
         assertTrue(daily.actions==null||daily.actions.length==0);
     }
     @Test public void notificationCompleteUsesStableChecklistKeysWithoutSnapshotAndKeepsNextRepeat()throws Exception{
-        String date=LocalDate.now(ReminderPlanner.ZONE).toString();JSONObject t=task().put("repeat",new JSONObject().put("start",date).put("unit","day").put("amount",1)).put("checklistRevisions",new JSONArray().put(new JSONObject().put("from",date).put("items",new JSONArray().put(new JSONObject().put("title","One").put("key",":step:a")).put(new JSONObject().put("title","Two").put("key",":step:b")))));Notification n=actionable(t,new JSONObject());n.actions[0].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();JSONObject state=new JSONObject(new ReferenceStore(context).readState());
+        String date=LocalDate.now(ReminderPlanner.ZONE).toString();JSONObject t=task().put("repeat",new JSONObject().put("start",date).put("unit","day").put("amount",1)).put("checklistRevisions",new JSONArray().put(new JSONObject().put("from",date).put("items",new JSONArray().put(new JSONObject().put("title","One").put("key",":step:a")).put(new JSONObject().put("title","Two").put("key",":step:b")))));Notification n=actionable(t,new JSONObject());n.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();JSONObject state=new JSONObject(new ReferenceStore(context).readState());
         assertTrue(ReminderPlanner.done(t,date,state));
         assertTrue(state.getJSONObject("completed").getBoolean("test:"+date+":step:a"));
         assertFalse(ReminderPlanner.done(t,LocalDate.parse(date).plusDays(1).toString(),state));
-        assertNull(Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification("test:"+date,0));String saved=new ReferenceStore(context).readState();n.actions[0].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+        assertNull(Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification("test:"+date,0));String saved=new ReferenceStore(context).readState();n.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
         assertEquals(saved,new ReferenceStore(context).readState());
     }
     @Test public void snoozeUsesSettingSurvivesRescheduleAndRepostsWithFreshActions()throws Exception{
-        Notification n=actionable(task(),new JSONObject().put("snoozeMinutes",23));String before=new ReferenceStore(context).readState();long sent=System.currentTimeMillis();n.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();JSONArray saved=new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]"));
+        Notification n=actionable(task(),new JSONObject().put("snoozeMinutes",23));String before=new ReferenceStore(context).readState();long sent=System.currentTimeMillis();n.actions[0].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();JSONArray saved=new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]"));
         assertEquals(1,saved.length());long at=saved.getJSONObject(0).getLong("at");
         assertTrue(at>=sent+23*60000L&&at<=System.currentTimeMillis()+23*60000L);
         assertEquals(before,new ReferenceStore(context).readState());
         assertNull(Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification(saved.getJSONObject(0).getString("key"),0));TaskReminders.reschedule(context);
-        assertEquals(at,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).getJSONObject(0).getLong("at"));n.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+        assertEquals(at,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).getJSONObject(0).getLong("at"));n.actions[0].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
         assertEquals(1,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).length());JSONArray expired=new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]"));expired.getJSONObject(0).put("at",System.currentTimeMillis()-1);TaskReminders.prefs(context).edit().putString("snoozes",expired.toString()).commit();TaskReminders.receiveSnoozed(context);Notification again=Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification(saved.getJSONObject(0).getString("key"),0);
         assertNotNull(again);
         assertEquals(2,again.actions.length);
-        assertEquals(0,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).length());again.actions[0].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+        assertEquals(0,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).length());again.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
         assertTrue(new JSONObject(new ReferenceStore(context).readState()).getJSONObject("completed").getBoolean(saved.getJSONObject(0).getString("key")));
     }
     @Test public void completingOrDisablingReminderCancelsPendingSnooze()throws Exception{
-        Notification n=actionable(task(),new JSONObject());n.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();JSONObject state=new JSONObject(new ReferenceStore(context).readState());state.getJSONArray("customTasks").getJSONObject(0).put("notify",false);new ReferenceStore(context).writeState(state.toString());
+        Notification n=actionable(task(),new JSONObject());n.actions[0].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();JSONObject state=new JSONObject(new ReferenceStore(context).readState());state.getJSONArray("customTasks").getJSONObject(0).put("notify",false);new ReferenceStore(context).writeState(state.toString());
         assertEquals(0,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).length());org.robolectric.shadows.ShadowSystemClock.advanceBy(Duration.ofMinutes(11));TaskReminders.receiveSnoozed(context);
         assertEquals(0,Shadows.shadowOf(context.getSystemService(NotificationManager.class)).size());
     }
     @Test public void staleNotificationActionCannotCompleteEditedSchedule()throws Exception{
-        Notification n=actionable(task(),new JSONObject());JSONObject state=new JSONObject(new ReferenceStore(context).readState());state.getJSONArray("customTasks").getJSONObject(0).put("time","11:00 AM");new ReferenceStore(context).writeState(state.toString());n.actions[0].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+        Notification n=actionable(task(),new JSONObject());JSONObject state=new JSONObject(new ReferenceStore(context).readState());state.getJSONArray("customTasks").getJSONObject(0).put("time","11:00 AM");new ReferenceStore(context).writeState(state.toString());n.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
         assertFalse(ReminderPlanner.done(state.getJSONArray("customTasks").getJSONObject(0),LocalDate.now(ReminderPlanner.ZONE).toString(),new JSONObject(new ReferenceStore(context).readState())));
     }
     @Test public void recurringDateResetIgnoresOldMovedOccurrencesAndPreservesHistory()throws Exception{
