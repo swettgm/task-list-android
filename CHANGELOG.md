@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.55.0 — 2026-11-04
+
+- Notes has one large corner drag handle; the duplicate browser grip is hidden. Checklist and Project resizing controls remain unchanged.
+- Task titles expand and shrink automatically as text wraps in the editor and in-app Quick add, without a resize handle. Quick add keeps Enter-to-add and the editor keeps its visible Save/Cancel footer.
+- Notifications use a rounded checkbox icon. The launcher icon is a checkmark with rounded ends and joins, retaining the existing white background and gradient colors.
+
+- Removed the visible Task label from in-app Quick add so the popup fits its contents more compactly; the title keeps its placeholder and accessible label.
+
+- Settings opens as a full app screen with a Back button and Android Back support, preserving task-list scroll position. It uses the app’s fixed background without a dimmed task list or popup frame.
+
 ## 0.54.0 — 2026-11-04
 
 - Added an Urgent checkbox at the top right of in-app Quick add. It saves an urgent High-priority task, carries into Details and resets after a successful add.

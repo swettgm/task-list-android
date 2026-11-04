@@ -11,7 +11,7 @@ await page.addInitScript(initial=>{let state=JSON.parse(sessionStorage.getItem('
 try{
  await page.goto(pathToFileURL(file).href);await page.waitForFunction(()=>window.TaskListApp&&__guild.snapshot.length);
  const state=await page.evaluate(()=>__guild.get());check(state.guildIconVersion===1&&state.contextIcons.Guild==='image:guild','Guild label adopts the supplied image once on upgrade');check(state.contextIcons.Raid==='⚔️','Existing icons for other labels are preserved');check(state.taskOverrides.guild.notes==='Keep this note'&&JSON.stringify(state.taskOverrides.guild._contexts)==='["At home","Guild"]','Existing Guild task keeps its edits and contexts while gaining the Guild label');
- await page.evaluate(()=>TaskListApp.addTask({title:'Guild image QA',labels:['Guild','At home']}));const editor=page.locator('dialog');
+ await page.evaluate(()=>TaskListApp.addTask({title:'Guild image QA',labels:['Guild','At home']}));const editor=page.locator('dialog[open],.tl-settings-screen:not(:has(~dialog[open]))');
  const imageChoice=editor.locator('label[aria-label=Guild] img');check(await imageChoice.count()===1,'Task editor offers Guild with the actual image');check(await imageChoice.evaluate(n=>n.complete&&n.naturalWidth===64&&n.naturalHeight===64),'Guild image is a loaded static 64px PNG');
  const expected=(await readFile('app/src/main/res/drawable-nodpi/guild_label.png')).toString('base64');check((await imageChoice.getAttribute('src'))==='data:image/png;base64,'+expected,'Web and native Guild icons use exactly the same PNG asset');
  await editor.getByRole('button',{name:'Save task',exact:true}).click();await page.waitForFunction(()=>__guild.snapshot.some(t=>t.title==='Guild image QA'));
@@ -27,6 +27,6 @@ try{
  await page.getByRole('button',{name:'Settings',exact:true}).click();await editor.locator('[aria-label="New context"]').fill('Guild projects');await editor.getByRole('button',{name:'Choose Guild image',exact:true}).click();
  check(await editor.locator('[aria-label="Label emoji"]').inputValue()==='','Choosing a label image does not expose an internal token');await editor.getByRole('button',{name:'Add context',exact:true}).click();check(await page.evaluate(()=>__guild.get().contextIcons['Guild projects']==='image:guild'),'The same image can be chosen for a new label');
  await page.setViewportSize({width:320,height:844});await editor.getByRole('button',{name:'Choose Guild image',exact:true}).scrollIntoViewIfNeeded();check(await editor.evaluate(n=>n.scrollWidth<=n.clientWidth+1),'Guild image picker fits a narrow phone');await mkdir('build/browser-qa',{recursive:true});await page.screenshot({path:'build/browser-qa/guild-label-picker.png'});
- await editor.getByRole('button',{name:'Close',exact:true}).click();await page.setViewportSize({width:390,height:844});await page.screenshot({path:'build/browser-qa/guild-task-label.png'});
+ await editor.getByRole('button',{name:'Back to tasks',exact:true}).click();await page.setViewportSize({width:390,height:844});await page.screenshot({path:'build/browser-qa/guild-task-label.png'});
  check(!errors.length,'Guild image labels have no browser errors');console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();}

@@ -72,7 +72,7 @@ try {
   check(await page.evaluate(()=>document.body.style.backgroundAttachment==='scroll'),'Body uses a fallback beneath the independent gradient layer');
   check(await page.evaluate(()=>getComputedStyle(document.getElementById('today-task-list-20261023')).backgroundColor==='rgba(0, 0, 0, 0)'),'The task-list surface does not cover or repeat the page gradient');
   check(await page.evaluate(()=>__themeNative.background)==='#1e2935','Android receives the base background hex for its system bars');
-  await page.getByRole('button',{name:'Close',exact:true}).click();
+  await page.getByRole('button',{name:'Back to tasks',exact:true}).click();
   await page.screenshot({path:path.join(output,'gradient-tasks.png'),fullPage:false});
   await page.getByRole('tab',{name:'Upcoming',exact:true}).click();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);
   check(await page.locator('#pt-upcoming').isVisible()&&await page.evaluate(()=>getComputedStyle(document.body).backgroundImage.includes('135deg')&&['main','#today-task-list-20261023','#pt-upcoming','#pt-future-list'].every(selector=>getComputedStyle(document.querySelector(selector)).backgroundColor==='rgba(0, 0, 0, 0)')),'Upcoming shows the same page-wide gradient through every list surface');
@@ -83,10 +83,10 @@ try {
   await page.evaluate(()=>{document.querySelector('main').style.minHeight='';window.scrollTo(0,0);});
 
   await page.evaluate(()=>TaskListApp.addTask());
-  check(await page.locator('dialog').evaluate(d=>getComputedStyle(d).backgroundImage.includes('135deg')),'Task editor uses the app gradient');
+  check(await page.locator('dialog[open],.tl-settings-screen:not(:has(~dialog[open]))').evaluate(d=>getComputedStyle(d).backgroundImage.includes('135deg')),'Task editor uses the app gradient');
   await page.getByRole('button',{name:'Cancel',exact:true}).click();
-  await settings();check(await page.locator('dialog').evaluate(d=>getComputedStyle(d).backgroundImage.includes('135deg')),'Settings uses the app gradient');const gradientBefore=await page.locator('dialog').evaluate(dialog=>{const style=getComputedStyle(dialog);return{size:style.backgroundSize,position:style.backgroundPosition,attachment:style.backgroundAttachment,scroll:dialog.scrollHeight,visible:dialog.clientHeight,width:innerWidth,height:innerHeight};});check(gradientBefore.attachment==='fixed'&&gradientBefore.size.split(' ').every((value,index)=>Math.abs(parseFloat(value)-(index?gradientBefore.height:gradientBefore.width))<1),'Settings gradient is sized to the visible viewport rather than its full scroll height');await page.locator('dialog').evaluate(dialog=>dialog.scrollTop=dialog.scrollHeight);check(await page.locator('dialog').evaluate((dialog,before)=>{const style=getComputedStyle(dialog);return dialog.scrollTop>0&&style.backgroundAttachment===before.attachment&&style.backgroundSize===before.size&&style.backgroundPosition===before.position;},gradientBefore),'Scrolling long Settings leaves the viewport gradient fixed');await page.screenshot({path:path.join(output,'settings-gradient-scroll-bottom.png')});
-  await page.getByRole('button',{name:'Close',exact:true}).click();
+  await settings();check(await page.locator('.tl-settings-screen').isVisible()&&await page.locator('dialog').count()===0&&await page.evaluate(()=>document.querySelector('body>main').hidden&&document.body.style.position!=='fixed'),'Settings is a separate full screen without a modal or dimmed task-list overlay');const gradientBefore=await page.evaluate(()=>{const layer=document.getElementById('tasks-app-backdrop'),style=getComputedStyle(layer),box=layer.getBoundingClientRect();return{image:style.backgroundImage,position:style.position,top:box.top,width:box.width,height:box.height,viewportWidth:innerWidth,viewportHeight:innerHeight};});check(gradientBefore.image.includes('135deg')&&gradientBefore.position==='fixed'&&Math.abs(gradientBefore.width-gradientBefore.viewportWidth)<1&&Math.abs(gradientBefore.height-gradientBefore.viewportHeight)<1,'Settings uses the same viewport-sized gradient as the main pages');await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));check(await page.evaluate(before=>{const layer=document.getElementById('tasks-app-backdrop'),style=getComputedStyle(layer),box=layer.getBoundingClientRect();return scrollY>0&&style.position===before.position&&Math.abs(box.top-before.top)<1&&Math.abs(box.width-before.width)<1&&Math.abs(box.height-before.height)<1;},gradientBefore),'Scrolling the Settings screen leaves the app background fixed');await page.screenshot({path:path.join(output,'settings-gradient-scroll-bottom.png')});
+  await page.getByRole('button',{name:'Back to tasks',exact:true}).click();
 
   check(await page.evaluate(()=>JSON.parse(sessionStorage.getItem('tasks-theme-smoke-native')).uiTheme.gradient===true),'The native-state test fixture retains saved settings before reload');
   await page.reload();await waitReady();
@@ -106,7 +106,7 @@ try {
   await page.setViewportSize({width:320,height:844});
   await page.getByRole('checkbox',{name:'Gradient background',exact:true}).check();
   for(const name of ['Pick accent color','Pick background color','Pick gradient end color'])await page.getByRole('button',{name,exact:true}).click();
-  const metrics=await page.locator('dialog').evaluate(dialog=>({scroll:dialog.scrollWidth,client:dialog.clientWidth,left:dialog.getBoundingClientRect().left,right:dialog.getBoundingClientRect().right,viewport:innerWidth}));
+  const metrics=await page.locator('dialog[open],.tl-settings-screen:not(:has(~dialog[open]))').evaluate(dialog=>({scroll:dialog.scrollWidth,client:dialog.clientWidth,left:dialog.getBoundingClientRect().left,right:dialog.getBoundingClientRect().right,viewport:innerWidth}));
   check(metrics.scroll<=metrics.client+1&&metrics.left>=0&&metrics.right<=metrics.viewport+1,'Expanded appearance pickers fit a 320px screen without horizontal scrolling');
   await page.screenshot({path:path.join(output,'appearance-picker.png'),fullPage:false});
   check(errors.length===0,'No browser errors occurred during picker or gradient changes');

@@ -70,7 +70,7 @@ try{
  await tomorrowPage.close();
  // Split duration remains one total in saved task data and uses no numbering or "total" label.
  await page.evaluate(()=>TaskListApp.addTask({labels:['V7 QA']}));
- await editor.locator('input[type=text]').first().fill('Duration conversion QA');
+ await editor.locator('.tl-task-title').first().fill('Duration conversion QA');
  await editor.locator('input[aria-label=Hours]').fill('1');await editor.locator('input[aria-label=Minutes]').fill('15');
  await editor.getByRole('button',{name:'Save task',exact:true}).click();
  state=await page.evaluate(()=>__v7.getState());const durationTask=state.customTasks.find(t=>t.title==='Duration conversion QA');
@@ -88,7 +88,7 @@ try{
  // General Every X Y recurrence preserves the amount, unit, and start date.
  for(const [unit,amount]of [['week',2],['month',3],['year',1]]){
   await page.evaluate(()=>TaskListApp.addTask({labels:['V7 QA']}));
-  await editor.locator('input[type=text]').first().fill('General repeat '+unit);
+  await editor.locator('.tl-task-title').first().fill('General repeat '+unit);
   await editor.locator('[data-field=repeat] input[value=repeat]').check();
   await editor.locator('.tl-repeat-amount').fill(String(amount));await editor.locator('.tl-repeat-unit').selectOption(unit);
   if(unit==='week'){
@@ -172,7 +172,7 @@ try{
  check(await todayRow(remoteId).isVisible()&&!await todayRow(ids.dailyA).isVisible()&&!await todayRow(ids.dailyB).isVisible(),'Reload displays the companion task and keeps both completed tasks hidden');
  for(const mode of ['daily','weekends']){
   await page.evaluate(()=>TaskListApp.addTask());
-  await editor.locator('input[type=text]').first().fill('Shortcut repeat '+mode);
+  await editor.locator('.tl-task-title').first().fill('Shortcut repeat '+mode);
   await editor.locator('[data-field=repeat] input[value='+mode+']').check();
   await editor.getByRole('button',{name:'Save task',exact:true}).click();
   const task=await page.evaluate(mode=>__v7.getState().customTasks.find(t=>t.title==='Shortcut repeat '+mode),mode);

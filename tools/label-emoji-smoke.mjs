@@ -8,13 +8,13 @@ const browser=await chromium.launch({headless:true,executablePath:['/usr/bin/goo
 const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),checks=[],errors=[];
 const check=(v,s)=>{if(!v)throw Error(s);checks.push(s);};page.on('pageerror',e=>errors.push(e.message));
 await page.addInitScript(initial=>{let state=JSON.parse(sessionStorage.getItem('emoji-qa')||JSON.stringify(initial));window.__emoji={get:()=>JSON.parse(JSON.stringify(state)),snapshot:[]};window.TaskListNative={readState:()=>JSON.stringify(state),writeState:s=>{state=JSON.parse(s);sessionStorage.setItem('emoji-qa',s);},updateSnapshot:s=>__emoji.snapshot=JSON.parse(s),setThemeColors(){},showWidgetSettings(){}};},seed);
-const dialog=page.locator('dialog'),settings=()=>page.getByRole('button',{name:'Settings',exact:true}).click(),label=()=>dialog.locator('[aria-label="New context"]'),emoji=()=>dialog.locator('[aria-label="Label emoji"]'),add=()=>dialog.getByRole('button',{name:'Add context',exact:true}).click();
+const dialog=page.locator('dialog[open],.tl-settings-screen:not(:has(~dialog[open]))'),settings=()=>page.getByRole('button',{name:'Settings',exact:true}).click(),label=()=>dialog.locator('[aria-label="New context"]'),emoji=()=>dialog.locator('[aria-label="Label emoji"]'),add=()=>dialog.getByRole('button',{name:'Add context',exact:true}).click();
 try{
  await page.goto(pathToFileURL(file).href);await page.waitForFunction(()=>window.TaskListApp&&__emoji.snapshot.length);
  await settings();check(await dialog.locator('.tl-emoji-choice').count()>=20,'New-label settings offer common emoji choices');check(await dialog.locator('.tl-context-settings .tl-context-symbol').evaluateAll(nodes=>nodes.length===5&&nodes.every(node=>getComputedStyle(node).color==='rgb(255, 255, 255)'&&node.querySelector('svg')?.getAttribute('fill')==='currentColor'&&node.querySelector('svg')?.getAttribute('stroke')==='none')),'Original label defaults use five simple white symbols');
  await label().fill('Raid');await dialog.getByRole('button',{name:'Choose emoji 👑',exact:true}).click();check(await emoji().inputValue()==='👑','Picking an emoji fills the label emoji field');await add();
  check(await page.evaluate(()=>__emoji.get().contextIcons.Raid==='👑'&&__emoji.get().contextOptions.includes('Raid')),'Label name and selected emoji persist together');
- await dialog.getByRole('button',{name:'Close',exact:true}).click();
+ await dialog.getByRole('button',{name:'Back to tasks',exact:true}).click();
  await page.evaluate(()=>TaskListApp.addTask({title:'Raid emoji QA',labels:['Raid','At home']}));
  check(await dialog.locator('label[aria-label=Raid]').textContent().then(t=>t.includes('👑')),'Task editor displays the chosen emoji for the label');
  await dialog.getByRole('button',{name:'Save task',exact:true}).click();

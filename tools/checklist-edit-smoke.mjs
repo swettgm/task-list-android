@@ -27,7 +27,7 @@ try{
   __checklist.set(s);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('Checklist QA');
  },dates);
  const row=id=>page.locator('#pt-list .tm-task-item[data-task-id="'+id+'"]');
- const editor=page.locator('dialog'),field=()=>editor.locator('textarea[placeholder="One step per line"]');
+ const editor=page.locator('dialog[open],.tl-settings-screen:not(:has(~dialog[open]))'),field=()=>editor.locator('textarea[placeholder="One step per line"]');
  const edit=async id=>{await row(id).locator('.tl-edit-button').click();await field().waitFor({state:'visible'});};
  const save=()=>editor.getByRole('button',{name:'Save task',exact:true}).click();
  const state=()=>page.evaluate(()=>__checklist.get());
@@ -51,7 +51,7 @@ try{
  await timed.uncheck();await editor.getByRole('button',{name:'Save reminders',exact:true}).click();check((await state()).reminders.daily&&!(await state()).reminders.scheduled,'Daily reminder remains enabled when timed reminders are off');
  check((await state()).reminders.snoozeMinutes===23,'Global task snooze duration saves independently of daily reminders');
  await timed.check();await daily.uncheck();await editor.getByRole('button',{name:'Save reminders',exact:true}).click();check(!(await state()).reminders.daily&&(await state()).reminders.scheduled,'Timed reminders remain enabled when the daily reminder is off');
- await daily.check();await editor.getByRole('button',{name:'Save reminders',exact:true}).click();await editor.getByRole('button',{name:'Close',exact:true}).click();
+ await daily.check();await editor.getByRole('button',{name:'Save reminders',exact:true}).click();await editor.getByRole('button',{name:'Back to tasks',exact:true}).click();
  await edit('edit-plain');check(await field().inputValue()==='','Editing a plain task offers an empty checklist field');
  await field().fill('One\n\nTwo');await save();await openSteps('edit-plain');
  check(await boxes('edit-plain').count()===2,'Subtasks can be added to an existing plain task');
