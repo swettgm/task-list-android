@@ -75,7 +75,7 @@ public class ReminderTest {
     @Test public void snoozeUsesSettingSurvivesRescheduleAndRepostsWithFreshActions()throws Exception{
         Notification n=actionable(task(),new JSONObject().put("snoozeMinutes",23));String before=new ReferenceStore(context).readState();long sent=System.currentTimeMillis();n.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();JSONArray saved=new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]"));
         assertEquals(1,saved.length());long at=saved.getJSONObject(0).getLong("at");
-        assertEquals(sent+23*60000L,at);
+        assertTrue(at>=sent+23*60000L&&at<=System.currentTimeMillis()+23*60000L);
         assertEquals(before,new ReferenceStore(context).readState());
         assertNull(Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification(saved.getJSONObject(0).getString("key"),0));TaskReminders.reschedule(context);
         assertEquals(at,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).getJSONObject(0).getLong("at"));n.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
