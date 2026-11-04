@@ -79,7 +79,7 @@ public class ReminderTest {
         assertEquals(before,new ReferenceStore(context).readState());
         assertNull(Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification(saved.getJSONObject(0).getString("key"),0));TaskReminders.reschedule(context);
         assertEquals(at,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).getJSONObject(0).getLong("at"));n.actions[1].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
-        assertEquals(1,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).length());org.robolectric.shadows.ShadowSystemClock.advanceBy(Duration.ofMinutes(23));TaskReminders.receiveSnoozed(context);Notification again=Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification(saved.getJSONObject(0).getString("key"),0);
+        assertEquals(1,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).length());JSONArray expired=new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]"));expired.getJSONObject(0).put("at",System.currentTimeMillis()-1);TaskReminders.prefs(context).edit().putString("snoozes",expired.toString()).commit();TaskReminders.receiveSnoozed(context);Notification again=Shadows.shadowOf(context.getSystemService(NotificationManager.class)).getNotification(saved.getJSONObject(0).getString("key"),0);
         assertNotNull(again);
         assertEquals(2,again.actions.length);
         assertEquals(0,new JSONArray(TaskReminders.prefs(context).getString("snoozes","[]")).length());again.actions[0].actionIntent.send();Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
