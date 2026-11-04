@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.55.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.55.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.56.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.56.0.apk). Install over the existing app to retain your tasks and settings.
 
-This update gives Notes one large drag handle, grows task-title fields automatically, uses a rounded checkbox for notifications and replaces the launcher artwork with a rounded checkmark in the same colors. Quick add drops its redundant Task caption, and Settings is a full screen with Back navigation.
+This update moves Urgent directly under Priority in the detailed task editor, keeping Notify by Duration.
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
