@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.56.0 — 2026-11-04
+
+- Moved Urgent directly beneath Priority in the detailed task editor. Notify remains beside the duration controls; Quick add and widget controls are unchanged.
+
 ## 0.55.0 — 2026-11-04
 
 - Notes has one large corner drag handle; the duplicate browser grip is hidden. Checklist and Project resizing controls remain unchanged.
