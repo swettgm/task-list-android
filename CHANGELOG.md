@@ -1,8 +1,11 @@
 # Changelog
 
-## 0.52.0 — 2026-11-03
+## 0.52.0 — 2026-11-04
 
 - Corrected Today/Upcoming alignment using the actual text tops instead of row-box centers. The Upcoming offset adapts to font changes, wrapping and screen width while leaving Today and all text sizes unchanged.
+- Recurring task editors keep the selected occurrence date instead of substituting the historical repeat anchor. Date changes reanchor future repeats, preserve completed history and suppress old moved or retroactively generated overdue occurrences.
+- Timed task notifications have Complete and Snooze actions. Complete handles the notified occurrence and its checklist, preserving future repeats. Snooze delays only that reminder and survives app restarts and alarm rescheduling.
+- Settings → Notifications has a global Task snooze (minutes) duration, defaulting to 10 minutes. Daily reminders have no Complete or Snooze actions. Stale notification actions are ignored after completion, disabling notifications or changing the schedule.
 
 ## 0.51.0 — 2026-11-03
 

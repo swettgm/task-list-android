@@ -144,7 +144,12 @@ public final class ReferenceStore {
     private static void removePurgedRecords(JSONArray records,JSONObject state){for(int i=records.length()-1;i>=0;i--){JSONObject record=records.optJSONObject(i);if(record!=null&&purgedRecord(record,state))records.remove(i);}}
 
     /** Complete a reference row using its engine keys, including nested child/step keys. */
-    public boolean completeTask(String taskId) {
+    public boolean completeTask(String taskId) { return completeTask(taskId,null); }
+    /** Notification actions can complete an occurrence before a widget snapshot exists. */
+    boolean completeReminder(JSONObject task,String date){
+        try{String key=task.getString("id")+":"+date;JSONObject record=new JSONObject().put("id","html:"+key).put("title",task.getString("title")).put("listName",TaskStore.DEFAULT_LIST).put("dueDate",date).put("plannedDate",LocalDate.now(REFERENCE_ZONE).toString()).put("done",false).put("status",TaskStore.NEXT).put("labels",task.optJSONArray("_contexts")!=null?task.optJSONArray("_contexts"):task.optJSONArray("labels")!=null?task.optJSONArray("labels"):new JSONArray()).put("priority",TaskStore.normalizePriority(task.optString("priority"))).put("minutes",task.optInt("minutes")).put("createdAt",System.currentTimeMillis()).put("completionKeys",ReminderPlanner.completionKeys(task,date)).put("progressKey",key).put("stateDate",date).put("onToday",true).put("source","html").put("snapshotDate",LocalDate.now(REFERENCE_ZONE).toString());return completeTask("html:"+key,record);}catch(JSONException invalid){throw new IllegalStateException("The reminder task could not be read.",invalid);}
+    }
+    private boolean completeTask(String taskId,JSONObject reminderRecord) {
         if (taskId == null || !taskId.startsWith("html:") || taskId.length() == 5) return false;
         synchronized (LOCK) {
             JSONArray records = storedSnapshot();
@@ -154,6 +159,7 @@ public final class ReferenceStore {
                     JSONObject record = records.getJSONObject(i);
                     if (taskId.equals(record.getString("id"))) { target = record; break; }
                 }
+                if(reminderRecord!=null){if(target==null){target=reminderRecord;records.put(target);}else{for(java.util.Iterator<String> it=reminderRecord.keys();it.hasNext();){String name=it.next();target.put(name,reminderRecord.get(name));}}}
                 if (target == null) return false;
                 JSONObject current = state();if(purgedRecord(target,current))return false;
                 JSONObject completed = current.has("completed") ? objectField(current, "completed") : new JSONObject();
