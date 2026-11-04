@@ -47,7 +47,7 @@ try{
  const todayRow=id=>page.locator(`#pt-list .tm-task-item[data-task-id="${id}"]`).first();
  const futureRows=id=>page.locator(`#pt-future-list .tm-task-item[data-task-id="${id}"]`);
  await todayRow(ids.dailyA).locator('.tl-edit-button').click();
- const editor=page.locator('dialog');
+ const editor=page.locator('dialog[open],.tl-settings-screen:not(:has(~dialog[open]))');
  const optionData=await editor.locator('[aria-label="Choose a task to link"] option').evaluateAll(options=>options.map(o=>({value:o.value,title:o.textContent})));
  check(!optionData.some(o=>o.value===ids.closed),'Completed tasks are excluded from the linked-task picker');
  check(optionData.some(o=>o.value===ids.dailyB&&o.title==='Daily link B'),'Linked-task options show titles without dates');
@@ -180,7 +180,7 @@ try{
  }
  await page.getByRole('button',{name:'Settings',exact:true}).click();
  await editor.locator('[aria-label="New context"]').fill('Workshop');await editor.getByRole('button',{name:'Add context',exact:true}).click();
- await editor.getByRole('button',{name:'Close',exact:true}).click();
+ await editor.getByRole('button',{name:'Back to tasks',exact:true}).click();
  await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
  await page.evaluate(()=>TaskListApp.addTask());
  check(await editor.locator('label[aria-label="Workshop"]').count()===1,'Custom contexts added in Settings survive reload and can be assigned');
@@ -188,7 +188,7 @@ try{
  for(const full of [false,true]){
   if(full)await page.evaluate(()=>TaskListApp.addTask());else await page.getByRole('button',{name:'Add task',exact:true}).click();
   const box=await editor.boundingBox();await page.mouse.click(2,Math.max(2,box.y-3));
-  check(await page.locator('dialog').count()===0,(full?'Full editor':'Quick add')+' closes when tapping the backdrop');
+  check(await page.locator('dialog[open],.tl-settings-screen:not(:has(~dialog[open]))').count()===0,(full?'Full editor':'Quick add')+' closes when tapping the backdrop');
  }
  const tapState=await page.evaluate(()=>__v7.getState());tapState.customTasks.push({id:'tap-edit',title:'Component edits',priority:'HIGH',repeat:{amount:1,unit:'day',start:dates.today},time:'2:00 PM',minutes:15,notify:true,notes:'Preserve notes',steps:['Finished step','Open step'],labels:['Tap QA']},{id:'tap-future',title:'Future component edits',priority:'HIGH',due:dates.tomorrow,time:'3:00 PM',labels:['Tap QA']});tapState.completed['tap-edit:'+dates.today+':step:0']=true;tapState.completedOn['tap-edit:'+dates.today+':step:0']=dates.today;tapState.manualLinks={...tapState.manualLinks,'tap-edit':[ids.dailyB]};
  const tapPage=await newPage(tapState);await tapPage.evaluate(()=>TaskListApp.setContextFilter('Tap QA'));const tapRow=()=>tapPage.locator('#pt-list [data-task-id="tap-edit"]'),tapDialog=()=>tapPage.locator('dialog[open]');
