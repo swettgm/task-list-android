@@ -3521,7 +3521,7 @@ html.tl-widget-editor .tl-task-editor{margin-top:8px;margin-bottom:8px;max-heigh
     const overdue = () => {
       const result=[];
       const supplements=tasks.find(t=>t.id==='supplements');
-      if(supplements&&!supplements.retired&&!isDone(supplements,'2026-10-19'))result.push(instance(supplements,'2026-10-19'));
+      if(supplements&&!supplements.retired&&(!supplements.recurrenceResetOn||'2026-10-19'>=supplements.recurrenceResetOn)&&!isDone(supplements,'2026-10-19'))result.push(instance(supplements,'2026-10-19'));
       for(let date=baseline;date<today;date=addDays(date,1)){
         scheduledOn(date).filter(i=>isDaily(i.task) && !isDone(i.task,i.stateDate)).forEach(i=>result.push(i));
       }

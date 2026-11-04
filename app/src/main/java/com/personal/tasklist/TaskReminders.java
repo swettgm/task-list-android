@@ -10,7 +10,7 @@ import android.util.Log;
 import org.json.*;
 import java.time.*;
 
-/** Two one-shot alarms: next timed task and a daily reminder/maintenance wake-up. */
+/** One-shot alarms for timed tasks, snoozes, the daily reminder and weekend opening. */
 final class TaskReminders {
     static final String TASK="com.personal.tasklist.REMIND_TASK",DAILY="com.personal.tasklist.REMIND_DAILY";
     static final String WEEKEND="com.personal.tasklist.REMIND_WEEKEND";
@@ -36,6 +36,7 @@ final class TaskReminders {
             if(!prefs(c).edit().putString("next",next.toString()).putLong("plannedRevision",new ReferenceStore(c).revision()).commit())throw new IllegalStateException("Reminder schedule could not be saved");
             NotificationManager notifications=c.getSystemService(NotificationManager.class);
             for(android.service.notification.StatusBarNotification shown:notifications.getActiveNotifications()){String tag=shown.getTag();if(tag==null)continue;if(tag.equals("daily")){if(!daily)notifications.cancel(tag,0);continue;}for(int i=0;i<tasks.length();i++){JSONObject task=tasks.getJSONObject(i);String prefix=task.optString("id")+":";if(tag.startsWith(prefix)&&(!timed||!task.optBoolean("notify")||ReminderPlanner.done(task,tag.substring(prefix.length()),state)))notifications.cancel(tag,0);}}
+            JSONObject shown=new JSONObject(prefs(c).getString("shown","{}"));java.util.List<String> stale=new java.util.ArrayList<>();for(java.util.Iterator<String> it=shown.keys();it.hasNext();){String key=it.next();JSONObject record=shown.optJSONObject(key),task=record==null?null:taskFor(tasks,record.optString("id"));if(!timed||record==null||!valid(task,record.optString("date"),state)||!sameSchedule(record,task,state))stale.add(key);}for(String key:stale){shown.remove(key);notifications.cancel(key,0);}if(!prefs(c).edit().putString("shown",shown.toString()).commit())throw new IllegalStateException("Could not update reminder actions");
             rescheduleSnoozes(c,alarms,state,tasks,timed,nowMillis);
             if(next.length()>0)schedule(c,alarms,Math.max(nowMillis+1000,next.getJSONObject(0).getLong("at")),alarm(c,TASK));
             schedule(c,alarms,WeekendSchedule.nextOpening(ZonedDateTime.now(ReminderPlanner.ZONE),WeekendSchedule.cutoff(state)).toInstant().toEpochMilli(),alarm(c,WEEKEND));
