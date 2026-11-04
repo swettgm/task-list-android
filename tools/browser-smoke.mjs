@@ -188,7 +188,7 @@ const result = await page.evaluate(async () => {
   const quickHaptics=__nativeQA.haptics;document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog');check(__nativeQA.haptics===quickHaptics+1,'Add-task plus emits one light haptic');
   clickText(dialog,'Add');check(__nativeQA.haptics===quickHaptics+1,'An empty invalid add does not emit a saved-task haptic');
   check(dialog.querySelector('h2').textContent==='Quick add'&&dialog.querySelectorAll('input[type=text]').length===1&&dialog.querySelectorAll('input[type=checkbox]').length===1,'Corner plus opens Quick add with a title and Urgent checkbox');
-  const urgentQuick=dialog.querySelector('input[aria-label=Urgent]');check(!urgentQuick.checked,'Quick add starts with Urgent off');urgentQuick.click();check(getComputedStyle(urgentQuick).borderRadius==='25%'&&getComputedStyle(urgentQuick,'::before').maskImage!=='none','Urgent checkbox has rounded square corners and a visible checked glyph');
+  const urgentQuick=dialog.querySelector('input[aria-label=Urgent]');check(!urgentQuick.checked,'Quick add starts with Urgent off');urgentQuick.click();check(getComputedStyle(urgentQuick).borderRadius===(CSS.supports('corner-shape','squircle')?'50%':'25%')&&getComputedStyle(urgentQuick,'::before').maskImage!=='none','Urgent checkbox has rounded square corners and a visible checked glyph');
   dialog.querySelector('input[type=text]').value='Quick entry QA';
   dialog.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await tick();
   check(__nativeQA.haptics===quickHaptics+2,'Successful quick add emits exactly one additional light haptic');
@@ -205,7 +205,7 @@ const result = await page.evaluate(async () => {
   check(dialog.querySelector('input[type=text]').value==='Keep this title','Quick add can open full details without losing the title');
   check(document.activeElement===dialog,'Switching from Quick add to Details removes text focus and collapses the keyboard');
   check(dialog.querySelector('.tl-urgent input').checked,'Quick add carries Urgent into Details');
-  check([...document.querySelectorAll('#today-task-list-20261023 input[type=checkbox],.tl-dialog input[type=checkbox]')].every(input=>getComputedStyle(input).borderRadius==='25%'),'Task, checklist and editor checkboxes all use squircle corners in the app');
+  check([...document.querySelectorAll('#today-task-list-20261023 input[type=checkbox],.tl-dialog input[type=checkbox]')].every(input=>getComputedStyle(input).borderRadius===(CSS.supports('corner-shape','squircle')?'50%':'25%')),'Task, checklist and editor checkboxes all use squircle corners in the app');
   const dateHaptics=__nativeQA.haptics;const pickerDate=dialog.querySelector('input[type=date]');pickerDate.dispatchEvent(new Event('change'));check(__nativeQA.haptics===dateHaptics+1,'Confirming a date selection emits one light haptic');
   const countBeforeBack=TaskListApp.debugSummary().definitions;
   check(TaskListApp.handleBack()&&!document.querySelector('dialog')&&TaskListApp.debugSummary().definitions===countBeforeBack,'Android Back closes the full editor without saving a draft');

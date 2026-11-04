@@ -4354,6 +4354,7 @@ html:not(.tl-widget-editor) .tl-dialog input[type=checkbox]:not(.form-check-inpu
 html:not(.tl-widget-editor) .tl-dialog input[type=checkbox]:not(.form-check-input):checked::before{content:'';position:absolute;inset:0;display:block;background:var(--tl-ink);mask:var(--checkmark-image) center/75% 75% no-repeat;-webkit-mask:var(--checkmark-image) center/75% 75% no-repeat}
 html:not(.tl-widget-editor) .tl-dialog input[type=checkbox]:not(.form-check-input):disabled{opacity:.5}
 html:not(.tl-widget-editor) .tl-dialog input[type=checkbox]:not(.form-check-input):focus-visible{outline:2px solid var(--tl-accent);outline-offset:2px}
+@supports(corner-shape:squircle){html:not(.tl-widget-editor) #today-task-list-20261023 input[type=checkbox],html:not(.tl-widget-editor) .tl-dialog input[type=checkbox]{border-radius:50%!important}}
 </style>
 
 <style id="tl-app-summary-wrapping">
