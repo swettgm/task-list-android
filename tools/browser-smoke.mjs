@@ -47,7 +47,7 @@ const result = await page.evaluate(async () => {
   const clickText = (root, text) => { const button=[...root.querySelectorAll('button')].find(b=>b.textContent===text);check(!!button,'Control exists: '+text);button.click(); };
   const original = TaskListApp.debugSummary();
   const topControls=[document.querySelector('#tl-context-filter'),document.querySelector('.tl-settings'),...document.querySelectorAll('.nav-link')];
-  check(topControls.every(control=>Math.abs(control.getBoundingClientRect().height-(control.classList.contains('nav-link')?44:48))<1),'Compact tabs use 44px heights while context and Settings retain 48px heights');
+  check(topControls.every(control=>Math.abs(control.getBoundingClientRect().height-(control.classList.contains('nav-link')?40:48))<1),'Inset tab buttons use 40px heights while context and Settings retain 48px heights');
   check(document.querySelector('#tl-tools').children.length===2&&!document.querySelector('.tl-widget'),'Top bar contains only the larger context dropdown and Settings');
   const add=document.querySelector('.tl-add-task');
   check(!!add.querySelector('.tl-plus-glyph')&&getComputedStyle(add).position==='fixed'&&add.getBoundingClientRect().height===56,'Add task is a large corner plus button');
