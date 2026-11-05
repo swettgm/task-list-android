@@ -7,7 +7,8 @@ Install the accompanying Tasks Android update first. On Windows choose Link phon
 scan the QR code with your phone camera, choose Open Tasks, then confirm Link PC.
 You can also paste the pairing link under Android Settings > Windows companion.
 
-The Windows list waits for your phone on first use. It does not import an old
+Your phone theme, colors, gradient and icon choices transfer during pairing and
+keep updating through sync. The Windows list waits for your phone on first use. It does not import an old
 bundled task list. Use Today or Upcoming, tick a checkbox to complete a task, and
 use Do now to toggle in progress. Linked tasks start and stop together. There are
 no task editors, adding, priority controls or Settings on the Windows screen.
