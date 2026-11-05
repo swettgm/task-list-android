@@ -43,7 +43,7 @@ def main():
     parser.add_argument('--setup',required=True,type=Path)
     args=parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='tasks-setup-qa-') as folder:
-        root=Path(folder);install=root/'Tasks App';data=root/'data';env=dict(os.environ,TASKS_DATA_DIR=str(data));group='Tasks QA '+root.name
+        root=Path(folder);install=root/'Tasks App';data=root/'data';env=dict(os.environ,TASKS_DATA_DIR=str(data));group='Tasks'
         desktop_buffer=ctypes.create_unicode_buffer(260)
         assert ctypes.windll.shell32.SHGetFolderPathW(None,16|0x8000,None,0,desktop_buffer)==0
         desktop=Path(desktop_buffer.value)/'Tasks.lnk'
