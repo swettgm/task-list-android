@@ -496,6 +496,13 @@ public class ReferenceStoreTest {
         preferences().edit().putString("snapshot",new JSONArray().put(snapshot("gone:"+day,day,true,"gone:"+day)).toString()).commit();assertFalse(reference.completeTask("html:gone:"+day));assertFalse(reference.setTaskInProgress("html:gone:"+day,true));assertEquals(0,new JSONObject(reference.readState()).getJSONObject("completed").length());
         JSONObject task=new JSONObject().put("id","finished");assertTrue(ReminderPlanner.done(task,day,state));assertFalse(ReminderPlanner.done(task,LocalDate.parse(day).plusDays(1).toString(),state));assertEquals(0,ReminderPlanner.effective(new JSONArray().put(new JSONObject().put("id","gone")),state).length());
     }
+    @Test public void widgetStartsLinkedTasksAcrossCyclesButStopsIndependently()throws Exception{
+        String date=today();JSONArray definitions=new JSONArray();for(String id:new String[]{"a","b","c","done","retired"})definitions.put(new JSONObject().put("id",id).put("title",id).put("due",date).put("retired",id.equals("retired")));
+        JSONObject links=new JSONObject().put("a",new JSONArray().put("b").put("done").put("retired")).put("b",new JSONArray().put("c")).put("c",new JSONArray().put("a"));
+        reference.writeState(new JSONObject().put("customTasks",definitions).put("manualLinks",links).put("completed",new JSONObject().put("done:"+date,true)).toString());reference.updateSnapshot(new JSONArray().put(snapshot("a:"+date,date,true,"a:"+date)).put(snapshot("b:"+date,date,true,"b:"+date)).put(snapshot("c:"+date,date,true,"c:"+date)).toString());
+        assertTrue(reference.setTaskInProgress("html:a:"+date,true));JSONArray active=new JSONObject(reference.readState()).getJSONArray("inProgressTasks");assertEquals(3,active.length());for(String id:new String[]{"a","b","c"})assertTrue(active.toString().contains(id+":"+date));assertEquals(TaskStore.IN_PROGRESS,find("html:b:"+date).status);
+        reference.setTaskInProgress("html:a:"+date,true);assertEquals(3,new JSONObject(reference.readState()).getJSONArray("inProgressTasks").length());reference.setTaskInProgress("html:a:"+date,false);active=new JSONObject(reference.readState()).getJSONArray("inProgressTasks");assertEquals(2,active.length());assertFalse(active.toString().contains("a:"+date));
+    }
     private static JSONObject snapshot(String progress, String stateDate, boolean onToday, String... completionKeys) throws Exception {
         return new JSONObject().put("id", "html:" + progress).put("title", "Generic task").put("listName", "Personal")
             .put("dueDate", "").put("done", false).put("createdAt", 42)

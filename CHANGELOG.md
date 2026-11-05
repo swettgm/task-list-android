@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.57.0 — 2026-11-04
+
+- Aligned the Settings Back button with the Today/Upcoming control.
+- Added Urgent to widget Quick add; urgent tasks save at High priority and the checkbox resets after each add.
+- Kept one large resize handle on Notes and Checklist, with editor scrolling that follows the drag.
+- Added a persistent in-progress notification that updates for multiple active tasks, with customizable title and message in Settings.
+- Starting a task also starts its linked tasks, without duplicating active tasks or following link cycles indefinitely.
+- Kept the header date position and text size steady when switching between Today and Upcoming.
+
 ## 0.56.0 — 2026-11-04
 
 - Moved Urgent directly beneath Priority in the detailed task editor. Notify remains beside the duration controls; Quick add and widget controls are unchanged.

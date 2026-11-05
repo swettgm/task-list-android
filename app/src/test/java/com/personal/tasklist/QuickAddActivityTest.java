@@ -38,6 +38,14 @@ public class QuickAddActivityTest {
         reference = new ReferenceStore(context);
     }
 
+    @Test public void urgentQuickAddSavesHighAndClearsBeforeNextTask() throws Exception {
+        reference.writeState(new JSONObject().put("customTasks",new JSONArray()).toString());
+        ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();View root=controller.get().getWindow().getDecorView();
+        EditText title=findDescription(root,"Task title",EditText.class);android.widget.CheckBox urgent=findDescription(root,"Urgent",android.widget.CheckBox.class);assertNotNull(urgent);assertFalse(urgent.isChecked());urgent.performClick();title.setText("Urgent task");findButton(root,"Add task").performClick();idleMainLooper();
+        JSONObject first=new JSONObject(reference.readState()).getJSONArray("customTasks").getJSONObject(0);assertTrue(first.getBoolean("urgent"));assertEquals("HIGH",first.getString("priority"));assertFalse(urgent.isChecked());
+        String snapshot=context.getSharedPreferences("reference_state",0).getString("snapshot","[]");assertTrue(new JSONArray(snapshot).getJSONObject(0).getBoolean("urgent"));
+        title.setText("Ordinary task");findButton(root,"Add task").performClick();idleMainLooper();JSONObject second=new JSONObject(reference.readState()).getJSONArray("customTasks").getJSONObject(1);assertFalse(second.optBoolean("urgent"));assertEquals("LOW",second.getString("priority"));controller.pause().stop().destroy();
+    }
     @Test public void popupButtonsAndDropdownTextAreStartAligned() {
         ActivityController<QuickAddActivity> controller=Robolectric.buildActivity(QuickAddActivity.class).setup();View root=controller.get().getWindow().getDecorView();EditText title=findDescription(root,"Task title",EditText.class);assertEquals(android.view.Gravity.START|android.view.Gravity.CENTER_VERTICAL,title.getGravity());assertEquals(View.TEXT_ALIGNMENT_VIEW_START,title.getTextAlignment());
         for(Button button:new Button[]{findDescription(root,"Context labels",Button.class),findDescription(root,"Task time",Button.class),findDescription(root,"Task date",Button.class),findButton(root,"Cancel"),findButton(root,"Add task")}){assertNotNull(button);assertEquals(android.view.Gravity.START|android.view.Gravity.CENTER_VERTICAL,button.getGravity());assertEquals(View.TEXT_ALIGNMENT_VIEW_START,button.getTextAlignment());}
