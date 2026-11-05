@@ -29,7 +29,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='tasks-setup-qa-') as folder:
         root=Path(folder);install=root/'Tasks App';data=root/'data';env=dict(os.environ,TASKS_DATA_DIR=str(data));group='Tasks QA '+root.name
         desktop_buffer=ctypes.create_unicode_buffer(260)
-        assert ctypes.windll.shell32.SHGetFolderPathW(None,16,None,0,desktop_buffer)==0
+        assert ctypes.windll.shell32.SHGetFolderPathW(None,16|0x8000,None,0,desktop_buffer)==0
         desktop=Path(desktop_buffer.value)/'Tasks.lnk'
         shortcut=Path(os.environ['APPDATA'])/'Microsoft/Windows/Start Menu/Programs'/group/'Tasks.lnk'
         setup=[str(args.setup.resolve()),'/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-',f'/DIR={install}',f'/GROUP={group}','/TASKS=desktopicon']

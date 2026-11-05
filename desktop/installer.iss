@@ -16,6 +16,7 @@ MinVersion=10.0
 OutputDir=..\dist
 OutputBaseFilename=Tasks-Setup-v{#AppVersion}
 SetupIconFile=tasks.ico
+UninstallDisplayName=Tasks
 UninstallDisplayIcon={app}\Tasks-PC.exe
 Compression=lzma2
 SolidCompression=yes
