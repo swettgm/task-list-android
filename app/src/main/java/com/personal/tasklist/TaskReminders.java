@@ -13,6 +13,7 @@ import java.time.*;
 /** One-shot alarms for timed tasks, snoozes, the daily reminder and weekend opening. */
 final class TaskReminders {
     static final String TASK="com.personal.tasklist.REMIND_TASK",DAILY="com.personal.tasklist.REMIND_DAILY";
+    static final String PROGRESS_DISMISSED="com.personal.tasklist.PROGRESS_DISMISSED";
     static final String WEEKEND="com.personal.tasklist.REMIND_WEEKEND";
     static final String COMPLETE="com.personal.tasklist.COMPLETE_REMINDER",SNOOZE="com.personal.tasklist.SNOOZE_REMINDER",SNOOZED="com.personal.tasklist.SNOOZED_REMINDER";
     static final String CHANNEL="task-times",DAILY_CHANNEL="task-daily",PROGRESS_CHANNEL="task-progress";
@@ -63,8 +64,11 @@ final class TaskReminders {
         titles.remove("");if(titles.isEmpty()||!allowed(c)){manager.cancel("in-progress",0);return;}
         String names=String.join(", ",titles),title=progressText(settings,"progressTitle","In progress",names,titles.size()),body=progressText(settings,"progressBody","{tasks}",names,titles.size());
         Intent intent=new Intent(c,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);PendingIntent open=PendingIntent.getActivity(c,0,intent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        Notification notification=new Notification.Builder(c,PROGRESS_CHANNEL).setSmallIcon(R.drawable.ic_notification).setContentTitle(title).setContentText(body).setStyle(new Notification.BigTextStyle().bigText(body)).setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true).setCategory(Notification.CATEGORY_STATUS).build();manager.notify("in-progress",0,notification);
+        PendingIntent dismissed=PendingIntent.getBroadcast(c,0,new Intent(c,ReminderReceiver.class).setAction(PROGRESS_DISMISSED).setData(Uri.parse("tasks-progress:dismissed")),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        Notification notification=new Notification.Builder(c,PROGRESS_CHANNEL).setSmallIcon(R.drawable.ic_notification).setContentTitle(title).setContentText(body).setStyle(new Notification.BigTextStyle().bigText(body)).setContentIntent(open).setDeleteIntent(dismissed).setOngoing(true).setOnlyAlertOnce(true).setCategory(Notification.CATEGORY_STATUS).build();notification.flags|=Notification.FLAG_NO_CLEAR;manager.notify("in-progress",0,notification);
     }
+    /** Android 14+ permits dismissing ongoing notifications; restore only while tasks remain active. */
+    static void restoreProgress(Context c){synchronized(LOCK){try{channels(c);JSONObject state=new JSONObject(new ReferenceStore(c).readState());JSONArray tasks=ReminderPlanner.effective(new JSONArray(prefs(c).getString("definitions","[]")),state);progressNotification(c,state,tasks,state.optJSONObject("reminders"));}catch(JSONException|RuntimeException error){Log.e("Tasks","Could not restore active-task notification",error);}}}
     static String progressText(JSONObject settings,String key,String fallback,String names,int count){String template=settingText(settings,key,fallback);java.util.regex.Matcher tokens=java.util.regex.Pattern.compile("\\{(tasks|count)\\}").matcher(template);StringBuffer result=new StringBuffer();while(tokens.find())tokens.appendReplacement(result,java.util.regex.Matcher.quoteReplacement(tokens.group(1).equals("tasks")?names:Integer.toString(count)));tokens.appendTail(result);return result.toString();}
     static int snoozeMinutes(JSONObject settings){int minutes=settings==null?10:settings.optInt("snoozeMinutes",10);return minutes>=1&&minutes<=10080?minutes:10;}
     private static JSONObject taskFor(JSONArray tasks,String id){for(int i=0;i<tasks.length();i++){JSONObject task=tasks.optJSONObject(i);if(task!=null&&id.equals(task.optString("id")))return task;}return null;}

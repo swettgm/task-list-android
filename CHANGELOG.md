@@ -5,6 +5,8 @@
 - Moving a task to another day clears its in-progress mark, including active checklist steps.
 - Rescheduling through Do today, Do tomorrow, or the detailed editor updates the active-task banner, widget and persistent notification while preserving other active tasks.
 
+- The in-progress notification stays ongoing and restores itself if Android allows it to be dismissed while tasks are still active.
+
 ## 0.57.0 — 2026-11-04
 
 - Aligned the Settings Back button with the Today/Upcoming control.
