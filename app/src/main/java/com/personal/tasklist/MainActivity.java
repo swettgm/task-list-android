@@ -35,6 +35,11 @@ import java.time.ZoneId;
 public class MainActivity extends Activity {
     private static final int EXPORT_BACKUP = 201;
     private ReferenceStore reference;
+    private SyncEngine desktopSync;
+    private String pendingPairUrl,pendingPairToken;
+    private volatile String bridgeBase;
+    private final android.os.Handler syncUi=new android.os.Handler(android.os.Looper.getMainLooper());
+    private boolean syncReloadPending;
     private WebView web;
     private FrameLayout root;
     private Object backCallback;
@@ -52,6 +57,7 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         reference = new ReferenceStore(this);
+        if(!isWidgetEditor())desktopSync=new SyncEngine(this,this::queueSyncedReload);
         root = new FrameLayout(this);
         root.setBackgroundColor(isWidgetEditor() ? Color.TRANSPARENT : Color.rgb(16, 21, 31));
         if(isWidgetEditor())updateModalBackdrop();
@@ -128,6 +134,12 @@ public class MainActivity extends Activity {
     }
 
     private void readIntent(Intent intent) {
+        android.net.Uri uri=intent.getData();
+        if(!isWidgetEditor()&&uri!=null&&"tasks".equals(uri.getScheme())&&"pair".equals(uri.getHost())){
+            intent.setData(null);
+            try{pendingPairUrl=SyncEngine.validateEndpoint(uri.getQueryParameter("url"));pendingPairToken=SyncEngine.validateToken(uri.getQueryParameter("token"));}
+            catch(IllegalArgumentException invalid){message("This PC pairing link is invalid.");}
+        }
         if(intent.getBooleanExtra("widget_haptic",false)){intent.removeExtra("widget_haptic");WidgetFeedback.tick(this);}
         String label = intent.getStringExtra("widget_label");
         contextFilter = intent.hasExtra("widget_label") ? (label == null ? "" : label) : null;
@@ -144,6 +156,7 @@ public class MainActivity extends Activity {
                     result -> { if(destroyed)return; if ("true".equals(result))revealReadyPage(); else { message("This task is no longer available."); finish(); } });
             return;
         }
+        if(pendingPairUrl!=null){String url=pendingPairUrl,token=pendingPairToken;pendingPairUrl=null;pendingPairToken=null;confirmPC(url,token);}
         web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()", null);
         if (contextFilter != null) web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.setContextFilter(" + JSONObject.quote(contextFilter) + ")", null);
         if (addRequested) {
@@ -159,14 +172,42 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onResume() {
-        super.onResume();WidgetCompletions.settleExpired(this);TaskReminders.reschedule(this);
+        super.onResume();if(desktopSync!=null)desktopSync.start();WidgetCompletions.settleExpired(this);TaskReminders.reschedule(this);
         if (web != null) {
             web.onResume();
             if (pageReady && (reference.revision() != loadedRevision || !loadedDay.equals(LocalDate.now(ZoneId.of("America/New_York")).toString()))) loadTaskList();
             else if(pageReady&&!isWidgetEditor())web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()",null);
         }
     }
-    @Override protected void onPause() { if (web != null) web.onPause(); super.onPause(); }
+    @Override protected void onPause() { if(desktopSync!=null)desktopSync.stop(); if (web != null) web.onPause(); super.onPause(); }
+
+    private void queueSyncedReload(){
+        if(destroyed||syncReloadPending)return;syncReloadPending=true;syncUi.post(this::applySyncedReload);
+    }
+    private void applySyncedReload(){
+        if(destroyed){syncReloadPending=false;return;}
+        if(web==null||!pageReady||modalOpen){syncUi.postDelayed(this::applySyncedReload,250);return;}
+        web.evaluateJavascript("Boolean(document.querySelector('dialog[open],.tm-completing')||document.querySelector('.tl-settings-screen')||document.querySelector('.tm-view-animating'))",blocked->{
+            if(destroyed)return;if("true".equals(blocked)){syncUi.postDelayed(this::applySyncedReload,250);return;}
+            syncReloadPending=false;web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.reloadFromNative()",null);loadedRevision=reference.revision();
+        });
+    }
+    private void confirmPC(String url,String token){
+        if(destroyed||desktopSync==null)return;
+        ControlAlignment.dialog(new AlertDialog.Builder(this).setTitle("Link this PC?")
+            .setMessage("Connect Tasks to "+url+" on your Wi-Fi. Your task completions and in-progress marks will sync while Tasks is open on both devices.")
+            .setNegativeButton("Cancel",null).setPositiveButton("Link PC",(dialog,which)->{desktopSync.pair(url,token);desktopSync.requestSync();message("Connecting to your PC…");}).show());
+    }
+    private void enterPCLink(){
+        android.widget.EditText input=new android.widget.EditText(this);input.setHint("Paste the pairing link from your PC");input.setSingleLine(true);input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        android.widget.FrameLayout panel=new android.widget.FrameLayout(this);int pad=Math.round(20*getResources().getDisplayMetrics().density);panel.setPadding(pad,0,pad,0);panel.addView(input);
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Link PC").setMessage("Open Tasks on Windows, choose Link phone, and paste its pairing link here. You can also scan its QR code with your camera.").setView(panel).setNegativeButton("Cancel",null).setPositiveButton("Continue",null).create();dialog.setOnShowListener(ignored->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view->{try{
+            android.net.Uri uri=android.net.Uri.parse(input.getText().toString().trim());String url,token;
+            if("tasks".equals(uri.getScheme())&&"pair".equals(uri.getHost())){url=uri.getQueryParameter("url");token=uri.getQueryParameter("token");}
+            else {url=new java.net.URI(uri.getScheme(),null,uri.getHost(),uri.getPort(),null,null,null).toString();token=uri.getFragment();if(!"/pair".equals(uri.getPath()))throw new IllegalArgumentException();}
+            url=SyncEngine.validateEndpoint(url);token=SyncEngine.validateToken(token);dialog.dismiss();confirmPC(url,token);
+        }catch(Exception invalid){input.setError("Paste the full pairing link shown on your PC.");}}));dialog.show();ControlAlignment.dialog(dialog);
+    }
 
     private String asset(String name) throws Exception {
         try (InputStream in = getAssets().open(name); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -234,10 +275,17 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void finishTaskEditor() { if(isWidgetEditor())runOnUiThread(()->{if(!destroyed)finish();}); }
         @JavascriptInterface public void actionHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);}); }
         @JavascriptInterface public void priorityHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);}); }
-        @JavascriptInterface public String readState() { return reference.readState(); }
+        @JavascriptInterface public String readState() { String value=reference.readState();bridgeBase=value;return value; }
         @JavascriptInterface public void writeState(String json) {
-            reference.writeState(json); loadedRevision = reference.revision();
+            try{JSONObject desired=new JSONObject(json),base=new JSONObject(bridgeBase==null?reference.readState():bridgeBase);boolean saved=false;
+                for(int retry=0;retry<16;retry++){long revision=reference.revision();JSONObject current=new JSONObject(reference.readState()),merged=StateMerge.merge(base,desired,current);if(reference.compareAndWriteState(revision,merged.toString())){saved=true;break;}}
+                if(!saved)throw new IllegalStateException("Tasks changed while saving. Please try again.");bridgeBase=json;loadedRevision=reference.revision();TaskReminders.reschedule(MainActivity.this);if(desktopSync!=null)desktopSync.requestSync();
+            }catch(JSONException invalid){throw new IllegalArgumentException("The task update could not be read.",invalid);}
         }
+        @JavascriptInterface public void connectPC(){runOnUiThread(()->{if(desktopSync!=null)enterPCLink();});}
+        @JavascriptInterface public String getSyncStatus(){return desktopSync==null?"{}":desktopSync.status();}
+        @JavascriptInterface public void syncNow(){if(desktopSync!=null)desktopSync.requestSync();}
+        @JavascriptInterface public void disconnectPC(){if(desktopSync!=null)desktopSync.unpair();}
         @JavascriptInterface public void updateReminders(String json) { TaskReminders.definitions(MainActivity.this,json); }
         @JavascriptInterface public void requestNotificationPermission() { runOnUiThread(()->requestReminderPermission(true)); }
         @JavascriptInterface public String notificationStatus() { if(!TaskReminders.allowed(MainActivity.this))return "Notifications are blocked in Android settings";android.app.NotificationChannel channel=getSystemService(android.app.NotificationManager.class).getNotificationChannel(TaskReminders.CHANNEL);return channel!=null&&channel.getImportance()==android.app.NotificationManager.IMPORTANCE_NONE?"Scheduled task reminders are blocked in Android settings":"Notifications allowed"; }
@@ -319,6 +367,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         destroyed = true;
+        if(desktopSync!=null)desktopSync.close();syncUi.removeCallbacksAndMessages(null);
         if (android.os.Build.VERSION.SDK_INT >= 33 && backCallback != null)
             BackApi33.unregister(this, backCallback);
         if (web != null) {

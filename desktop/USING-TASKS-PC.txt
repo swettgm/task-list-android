@@ -1,0 +1,28 @@
+Tasks for Windows — simple companion
+
+Run Tasks-PC.exe on Windows 10 or 11 (64-bit). No Python installation or account is
+needed. Tasks opens in its own Edge app window, with your browser as a fallback.
+
+Install the accompanying Tasks Android update first. On Windows choose Link phone,
+scan the QR code with your phone camera, choose Open Tasks, then confirm Link PC.
+You can also paste the pairing link under Android Settings > Windows companion.
+
+The Windows list waits for your phone on first use. It does not import an old
+bundled task list. Use Today or Upcoming, tick a checkbox to complete a task, and
+use Do now to toggle in progress. Linked tasks start and stop together. There are
+no task editors, adding, priority controls or Settings on the Windows screen.
+
+Keep both devices on the same Wi-Fi, with Tasks open on the phone, to synchronize.
+PC changes save locally while the phone is away, then sync when the phone app is
+open again. Windows may ask you to allow Tasks on your private network.
+
+Closing the window keeps local sync running. Reopen Tasks-PC.exe to see your list.
+Link phone > Quit PC companion stops the local server.
+
+Data is saved in %LOCALAPPDATA%\Tasks\tasks-state.json. Keep this folder when
+updating the executable. Tasks needs no cloud account. The first download is not
+code-signed with a Microsoft publisher certificate, so Windows may identify it as
+an unrecognized app.
+
+Optional Python source ZIP: install requirements.txt, then run tasks_pc.py using
+Python 3.10 or later. The executable is the easier option.
