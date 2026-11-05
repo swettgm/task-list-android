@@ -11,6 +11,8 @@
 - Matched linked-task text size and line height to the duration and time details.
 - Turning off in progress for a linked task stops its linked group together in the app and widget, while preserving unrelated active tasks.
 
+- Persistent in-progress notifications show 🟢 before In progress, preserving custom titles, and use a rounded warning-triangle status icon.
+
 ## 0.62.0 — 2026-11-05
 
 - The Hidden footer button now includes the current scheduled-hidden count in parentheses, such as Hidden (3).

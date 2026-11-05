@@ -65,9 +65,10 @@ final class TaskReminders {
         }
         titles.remove("");if(titles.isEmpty()||!allowed(c)){manager.cancel("in-progress",0);return;}
         String names=String.join(", ",titles),title=progressText(settings,"progressTitle","In progress",names,titles.size()),body=progressText(settings,"progressBody","{tasks}",names,titles.size());
+        if(title.equals("In progress"))title="🟢 In progress";
         Intent intent=new Intent(c,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);PendingIntent open=PendingIntent.getActivity(c,0,intent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         PendingIntent dismissed=PendingIntent.getBroadcast(c,0,new Intent(c,ReminderReceiver.class).setAction(PROGRESS_DISMISSED).setData(Uri.parse("tasks-progress:dismissed")),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        Notification notification=new Notification.Builder(c,PROGRESS_CHANNEL).setSmallIcon(R.drawable.ic_notification).setContentTitle(title).setContentText(body).setStyle(new Notification.BigTextStyle().bigText(body)).setContentIntent(open).setDeleteIntent(dismissed).setOngoing(true).setOnlyAlertOnce(true).setCategory(Notification.CATEGORY_STATUS).build();notification.flags|=Notification.FLAG_NO_CLEAR;manager.notify("in-progress",0,notification);
+        Notification notification=new Notification.Builder(c,PROGRESS_CHANNEL).setSmallIcon(R.drawable.ic_notification_progress).setContentTitle(title).setContentText(body).setStyle(new Notification.BigTextStyle().bigText(body)).setContentIntent(open).setDeleteIntent(dismissed).setOngoing(true).setOnlyAlertOnce(true).setCategory(Notification.CATEGORY_STATUS).build();notification.flags|=Notification.FLAG_NO_CLEAR;manager.notify("in-progress",0,notification);
     }
     /** Android 14+ permits dismissing ongoing notifications; restore only while tasks remain active. */
     static void restoreProgress(Context c){synchronized(LOCK){try{channels(c);JSONObject state=new JSONObject(new ReferenceStore(c).readState());JSONArray tasks=ReminderPlanner.effective(new JSONArray(prefs(c).getString("definitions","[]")),state);progressNotification(c,state,tasks,state.optJSONObject("reminders"));}catch(JSONException|RuntimeException error){Log.e("Tasks","Could not restore active-task notification",error);}}}
