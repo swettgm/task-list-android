@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.64.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.64.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.65.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.65.0.apk). Install over the existing app to retain your tasks and settings.
 
-This update puts linked task details after the priority label in the metadata row, with a dot separator and atomic wrapping.
+This update adds the [simple Windows companion](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-PC.exe): view Today/Upcoming, check off tasks and toggle in progress. Install the Android update, open Tasks-PC.exe, choose Link phone, scan the QR code and confirm in Tasks. Pairing links can also be pasted under Android Settings → Windows companion. Keep both devices on the same Wi-Fi with Tasks open to sync; changes save locally while disconnected. QR pairing also brings across your phone’s colors, gradient and icons, and syncs later theme changes. The PC has no Settings or task editors. [Windows ZIP download](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-PC-Windows-v0.65.0.zip) · [Windows instructions](desktop/USING-TASKS-PC.txt).
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 

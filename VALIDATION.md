@@ -1,13 +1,21 @@
-# Tasks 0.64.0 verification
+# Tasks 0.65.0 and Windows companion verification
 
-Source: e89797e917adf514a137632ebd7b8912224aaec3. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/42023527497): 151 Android tests, 811 browser checks, 33 calendar/timing checks and zero lint errors.
+Android source: 4b3c40a2c47ea2a6b630f0352267b2549b5141fe. [Android build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/42085358547): 167 Android tests, 811 browser checks, 33 calendar/timing checks and zero lint errors.
 
-Linked task information follows the priority label inside the existing metadata flow. The same dot separator spacing and line-boundary clipping apply. The chain icon and linked task name remain one unit when wrapping; a name wider than the entire available row is ellipsized rather than split. Linked details retain the duration/time text size, vertical alignment and icon spacing. Standalone active-task banner links retain their layout.
+Windows source: 9256eb8c9d8acbee9f9f188486ba916b4e9a243d. [Windows build and executable checks](https://github.com/swettgm/task-list-android/actions/runs/42085005875): 18 Python persistence/protocol tests, 19 real-browser companion checks, and a smoke test running the actual packaged Windows EXE.
 
-Browser checks verify ordering after priority, the dot separator, atomic wrapping, vertical centering and available-width containment at 360, 390 and 650 pixels. Existing linking, hidden annotations, app/widget progress, task editing, completion and full workflow checks pass. Widget front layouts and main task-list checkbox sizing are unchanged.
+The Windows screen reuses the packaged Android task UI and schedule engine. It shows Today and Upcoming, checkboxes and Do now/in-progress controls, with task editing, add buttons, settings, priority changes, rescheduling and deletion unavailable. Linked groups start and stop together. Main-list checkbox sizing and native widget layouts are unchanged.
 
-APK: `Tasks-v0.64.0.apk`, 290567 bytes. SHA-256: `18fe5f8d9b95561e6536bcce32609675a63ee80757d31e86fede838d5300badd`.
+The first PC launch waits for pairing rather than displaying historical seed data. A QR code or pairing link opens a confirmation in Android. Confirmed local-Wi-Fi sync transfers the current phone state, including colors, gradient, metadata icons, completion history and active tasks. Theme updates apply to an already-open Windows window. The EXE opens a compact, resizable Edge app window, falling back to the system browser.
 
-Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.63.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
+Phone sync runs while the Android task app is open. Changes save locally while disconnected and merge on reconnection. Tests cover simultaneous unrelated changes, custom task merging by stable ID, linked-progress stops preserving unrelated tasks, stale compare-and-write rejection, failed saves retaining data, malformed remote data, authentication, local-only UI credential pages and pairing cancellation. PC and phone context filters stay independent.
 
-No physical phone was used. Android checks use Robolectric; browser checks use Chromium. Windows work remains deferred.
+Desktop completions, reopening and progress refresh the phone's native widget state before a deferred WebView redraw. A native regression check asserts this without running the page callback. Ongoing task notifications update through the existing reminder planner. Android WebView networking remains blocked; the native sync client accepts explicitly validated local network endpoints and uses a pairing token.
+
+Android APK: `Tasks-v0.65.0.apk`, 302855 bytes; SHA-256 `bceb6d0dcf34fce6f5831313abd22fe6bf5cc7e7654efc46e9989e7991d93165`. The actual signature, alignment, retained signer, ZIP CRCs, packaged assets and non-signature contents match the verified CI build. The certificate matches Tasks 0.64.0.
+
+Windows executable: `Tasks-PC.exe`, 9720841 bytes; SHA-256 `49866c17a28241a7c3bca7aff6a5b5f91e33d5c60d1aaeb9c27fe60f0b6caefe`. The artifact digest, ZIP CRCs, executable checksum and AMD64 Windows GUI PE headers were verified. The packaged EXE itself passed startup, authenticated HTTP sync, saved-state, QR generation and clean-shutdown checks on Windows. It has no commercial Authenticode publisher signature.
+
+The public download bytes were compared to the verified local artifacts. Settings Changelog and the desktop instructions include pairing, theme transfer and the foreground/same-Wi-Fi sync limitation.
+
+No physical phone or personal Windows PC was used. Android checks use Robolectric; Windows checks run on GitHub's Windows runner with a real browser and the packaged executable.
