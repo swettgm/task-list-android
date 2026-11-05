@@ -5,6 +5,8 @@
 - The Hidden footer button now includes the current scheduled-hidden count in parentheses, such as Hidden (3).
 - Today and Upcoming show counts for their own lists, respecting the selected context and updating as tasks reveal.
 
+- Linked task names now include (hidden) while their scheduled visibility is hiding them, and clear that note at reveal time.
+
 ## 0.61.0 — 2026-11-05
 
 - Shortened task-list footer buttons to Completed, Trash and Hidden, with smaller text-only buttons on one row.
