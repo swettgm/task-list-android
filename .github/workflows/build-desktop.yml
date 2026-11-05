@@ -38,7 +38,7 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.56.1
           node desktop/tests/browser-sync.mjs
 
-      - name: Generate white checklist icon
+      - name: Generate rounded checkmark icon
         run: python desktop/make_icon.py --output desktop/tasks.ico
 
       - name: Build portable Tasks executable
@@ -55,10 +55,27 @@ jobs:
       - name: Check the actual Windows executable
         run: python desktop/smoke_executable.py --exe dist/Tasks-PC.exe
 
+      - name: Build the Windows installer
+        shell: pwsh
+        run: |
+          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $compiler)) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "Could not install Inno Setup" }
+          }
+          & $compiler desktop/installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Installer compilation failed" }
+
+      - name: Verify installation, live upgrade and uninstall
+        run: python desktop/smoke_installer.py --setup dist/Tasks-Setup-v0.65.1.exe
+
       - name: Prepare desktop downloads
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force desktop-download | Out-Null
+          Copy-Item dist/Tasks-Setup-v0.65.1.exe desktop-download/Tasks-Setup-v0.65.1.exe
+          $setupHash = (Get-FileHash desktop-download/Tasks-Setup-v0.65.1.exe -Algorithm SHA256).Hash.ToLower()
+          "$setupHash  Tasks-Setup-v0.65.1.exe" | Out-File desktop-download/Tasks-Setup-v0.65.1.exe.sha256 -Encoding ascii
           Copy-Item dist/Tasks-PC.exe desktop-download/Tasks-PC.exe
           Copy-Item desktop/USING-TASKS-PC.txt desktop-download/START-HERE.txt
           $hash = (Get-FileHash desktop-download/Tasks-PC.exe -Algorithm SHA256).Hash.ToLower()
@@ -70,7 +87,7 @@ jobs:
           Copy-Item app/src/main/assets/*.js portable-source/
           Compress-Archive -Path portable-source/* -DestinationPath desktop-download/Tasks-PC-source.zip
           "### Tasks PC" >> $env:GITHUB_STEP_SUMMARY
-          "Portable Windows executable built and tested. Download Tasks-PC-Windows below, extract it, and run Tasks-PC.exe." >> $env:GITHUB_STEP_SUMMARY
+          "Windows installer built and tested, including upgrading a running copy and preserving personal data during uninstall." >> $env:GITHUB_STEP_SUMMARY
           "SHA-256: $hash" >> $env:GITHUB_STEP_SUMMARY
           Copy-Item build/desktop-qa desktop-download/desktop-qa -Recurse
 

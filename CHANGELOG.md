@@ -1,5 +1,11 @@
 # Changelog
 
+## Windows 0.65.1 — 2026-11-05
+
+- Added a per-user Windows installer with Start menu and optional desktop shortcuts, plus a standard Windows uninstaller.
+- Setup safely stops a running companion before upgrading. Updates and uninstall preserve tasks, theme and phone pairing.
+- Android 0.65.0 remains compatible; the task interface, QR theme transfer and Google sign-in setup status are unchanged.
+
 ## 0.65.0 — 2026-11-05
 
 - QR pairing transfers phone colors, gradient and icon choices, and keeps later theme changes in sync.

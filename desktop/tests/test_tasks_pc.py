@@ -110,6 +110,23 @@ class PersistenceTests(unittest.TestCase):
             self.assertEqual(target.read_text(), "damaged")
 
 
+class ShutdownTests(unittest.TestCase):
+    def test_shutdown_without_an_install_does_not_create_files(self):
+        with tempfile.TemporaryDirectory() as folder:
+            directory=Path(folder)/"not-created"
+            tasks_pc.shutdown_companion(directory)
+            self.assertFalse(directory.exists())
+
+    def test_shutdown_of_a_stopped_companion_preserves_every_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            directory=Path(folder);tasks_pc.load_configuration(directory)
+            tasks_pc.StateStore(directory,{"completed":{"keep":True}})
+            before={p.name:p.read_bytes() for p in directory.iterdir()}
+            with patch.object(tasks_pc,"existing_companion",return_value=False):
+                tasks_pc.shutdown_companion(directory)
+            self.assertEqual(before,{p.name:p.read_bytes() for p in directory.iterdir()})
+
+
 class FakeSocket:
     def __init__(self, request):
         self.reader = io.BytesIO(request)

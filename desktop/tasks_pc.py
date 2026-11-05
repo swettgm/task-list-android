@@ -372,6 +372,27 @@ def existing_companion(port, token):
         return False
 
 
+def shutdown_companion(directory):
+    # Called by Setup and Uninstall; never create or delete a user's state.
+    if not (directory / "companion.json").exists():
+        return
+    config = load_configuration(directory)
+    port, token = int(config.get("port", 8765)), config["token"]
+    if not existing_companion(port, token):
+        return
+    request = urllib.request.Request(f"http://127.0.0.1:{port}/api/quit", data=b"{}",
+                                     headers={"Authorization":"Bearer " + token})
+    with urllib.request.urlopen(request, timeout=8) as response:
+        if response.status != 200:
+            raise OSError("Could not stop the running Tasks companion")
+    for _ in range(100):
+        if not existing_companion(port, token):
+            time.sleep(.5)
+            return
+        time.sleep(.1)
+    raise OSError("Tasks is still closing. Please try again.")
+
+
 def open_window(url, directory):
     if os.name == "nt":
         for root in (os.environ.get("PROGRAMFILES(X86)"), os.environ.get("PROGRAMFILES"), os.environ.get("LOCALAPPDATA")):
@@ -399,12 +420,16 @@ def notify_error(message):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-browser", action="store_true", help="Run the local server without opening a window")
+    parser.add_argument("--shutdown", action="store_true", help="Stop the existing local companion without changing data")
     parser.add_argument("--port", type=int)
     parser.add_argument("--host", default="0.0.0.0")
     args = parser.parse_args()
     try:
-        assets, desktop = resources()
         directory = data_directory()
+        if args.shutdown:
+            shutdown_companion(directory)
+            return 0
+        assets, desktop = resources()
         config = load_configuration(directory)
         port = args.port if args.port is not None else int(config.get("port", 8765))
         if existing_companion(port, config["token"]):
