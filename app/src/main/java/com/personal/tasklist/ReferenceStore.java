@@ -267,6 +267,17 @@ public final class ReferenceStore {
         try{for(int i=0;i<records.length();i++){JSONObject record=records.getJSONObject(i);if(record.optBoolean("done")||TaskStore.DONE.equals(record.optString("status")))continue;String progress=record.getString("progressKey");if(active.stream().anyMatch(value->matches(value,progress)))record.put("status",TaskStore.IN_PROGRESS);else if(TaskStore.IN_PROGRESS.equals(record.optString("status")))record.put("status",TaskStore.NEXT);}}catch(JSONException invalid){throw invalidSnapshot(invalid);}
     }
 
+    /** Apply desktop completion/progress even while an editor defers the WebView refresh. */
+    void refreshSyncedMirror(){
+        synchronized(LOCK){
+            JSONObject current=state(),completed=objectField(current,"completed");JSONArray records=storedSnapshot();removePurgedRecords(records,current);
+            try{for(int i=0;i<records.length();i++){JSONObject row=records.getJSONObject(i);JSONArray keys=row.getJSONArray("completionKeys");boolean done=keys.length()>0;for(int k=0;k<keys.length();k++)if(!Boolean.TRUE.equals(completed.opt(keys.getString(k))))done=false;row.put("done",done).put("status",done?TaskStore.DONE:TaskStore.NEXT);}
+                applyPersistedProgress(records,current);String value=records.toString();checkSize(value);TaskStore.validateReferenceTasks(value);commit(prefs.edit().putString("snapshot",value));
+            }catch(JSONException invalid){throw invalidSnapshot(invalid);}
+        }
+        replaceLatestMirror();
+    }
+
     private void replaceLatestMirror() {
         synchronized (MIRROR_LOCK) {
             String latest;

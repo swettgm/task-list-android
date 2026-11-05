@@ -132,7 +132,7 @@ public final class SyncEngine {
                     throw new IOException("Sync status could not be saved");
                 connected = true; message = "Connected to your PC";
             }
-            if (updated) { TaskReminders.reschedule(appContext); TaskWidgetProvider.refreshAll(appContext); ui.post(changed); }
+            if (updated) { ui.post(changed); reference.refreshSyncedMirror(); TaskReminders.reschedule(appContext); TaskWidgetProvider.refreshAll(appContext); }
         } catch (Exception unavailable) {
             synchronized (lock) {
                 if (closed || attempt != generation) return;

@@ -96,6 +96,13 @@ public class SyncEngineTest {
         assertTrue(new JSONObject(reference.readState()).getJSONObject("completed").getBoolean("a"));
     }
 
+    @Test public void desktopCompletionReopenAndProgressRefreshTheWidgetBeforeThePageReloads() throws Exception {
+        String id=reference.addCustomTask("PC mirror",java.util.Collections.emptyList(),"LOW",false),date=java.time.LocalDate.now(ReminderPlanner.ZONE).toString(),key=id+":"+date;AtomicInteger phase=new AtomicInteger();
+        SyncEngine sync=new SyncEngine(context,()->{},(url,token,path,body)->{JSONObject state=new JSONObject(body.getJSONObject("state").toString());boolean done=phase.getAndIncrement()==0;state.put("completed",new JSONObject().put(key,done)).put("inProgressTasks",done?new org.json.JSONArray():new org.json.JSONArray().put(key)).put("inProgress",done?JSONObject.NULL:key);return new JSONObject().put("revision",phase.get()).put("state",state);});
+        try{sync.pair("http://127.0.0.1:8765",TOKEN);sync.runOneSync();assertTrue(new TaskStore(context).all().get(0).done);sync.runOneSync();TaskStore.Task row=new TaskStore(context).all().get(0);assertFalse(row.done);assertEquals(TaskStore.IN_PROGRESS,row.status);}
+        finally{sync.close();}
+    }
+
     @Test public void malformedRemoteDataCannotReplaceSavedTasks() throws Exception {
         reference.writeState("{\"completed\":{\"keep\":true}}");
         String before = reference.readState();
