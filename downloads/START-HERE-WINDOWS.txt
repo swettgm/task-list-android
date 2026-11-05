@@ -2,7 +2,10 @@ Tasks for Windows — simple companion
 
 Run Tasks-Setup.exe on Windows 10 or 11 (64-bit), then open Tasks from the Start
 menu or desktop shortcut. No administrator rights, Python installation or account is
-needed. Tasks opens in its own Edge app window, with your browser as a fallback.
+needed. Tasks opens its own native Windows window, powered by the WebView2 runtime.
+Setup installs Microsoft WebView2 if it is missing; that first-time step needs
+internet access. The window and shortcuts share one taskbar identity. If you pinned an
+older version, unpin its old icon once, then pin Tasks from the Start menu again.
 
 Install the accompanying Tasks Android update first. On Windows choose Link phone,
 scan the QR code with your phone camera, choose Open Tasks, then confirm Link PC.

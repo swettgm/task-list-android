@@ -1,0 +1,31 @@
+{
+  "version": "0.65.2",
+  "source_sha": "7a864511a648467ab764d99763e64d31ed7e4809",
+  "run_id": 42117912556,
+  "files": {
+    "Tasks-Setup-v0.65.2.exe": {
+      "sha256": "1f724c9eac6d103b33c32ef91d5bd902da4e08c598f1c6650f50711e21654ca9",
+      "bytes": 17282437
+    },
+    "Tasks-Setup.exe": {
+      "sha256": "1f724c9eac6d103b33c32ef91d5bd902da4e08c598f1c6650f50711e21654ca9",
+      "bytes": 17282437
+    },
+    "Tasks-PC-v0.65.2.exe": {
+      "sha256": "a8aa7b478763a3594ded24d9bcc5f33835caed4ff698ee58644094698a41af57",
+      "bytes": 13734907
+    },
+    "Tasks-PC.exe": {
+      "sha256": "a8aa7b478763a3594ded24d9bcc5f33835caed4ff698ee58644094698a41af57",
+      "bytes": 13734907
+    },
+    "Tasks-PC-Windows-v0.65.2.zip": {
+      "sha256": "df2ed80176f88eeb65a510f374dda417c7704e8f06d67b81560f84c5b6f8fb86",
+      "bytes": 16489201
+    },
+    "Tasks-PC-Windows.zip": {
+      "sha256": "df2ed80176f88eeb65a510f374dda417c7704e8f06d67b81560f84c5b6f8fb86",
+      "bytes": 16489201
+    }
+  }
+}
