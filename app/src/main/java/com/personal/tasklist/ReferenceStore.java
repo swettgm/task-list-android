@@ -149,10 +149,14 @@ public final class ReferenceStore {
     /** Complete a reference row using its engine keys, including nested child/step keys. */
     public boolean completeTask(String taskId) { return completeTask(taskId,null); }
     /** Notification actions can complete an occurrence before a widget snapshot exists. */
-    boolean completeReminder(JSONObject task,String date){
-        try{String key=task.getString("id")+":"+date;JSONObject record=new JSONObject().put("id","html:"+key).put("title",task.getString("title")).put("listName",TaskStore.DEFAULT_LIST).put("dueDate",date).put("plannedDate",LocalDate.now(REFERENCE_ZONE).toString()).put("done",false).put("status",TaskStore.NEXT).put("labels",task.optJSONArray("_contexts")!=null?task.optJSONArray("_contexts"):task.optJSONArray("labels")!=null?task.optJSONArray("labels"):new JSONArray()).put("priority",TaskStore.normalizePriority(task.optString("priority"))).put("minutes",task.optInt("minutes")).put("createdAt",System.currentTimeMillis()).put("completionKeys",ReminderPlanner.completionKeys(task,date)).put("progressKey",key).put("stateDate",date).put("onToday",true).put("source","html").put("snapshotDate",LocalDate.now(REFERENCE_ZONE).toString());return completeTask("html:"+key,record);}catch(JSONException invalid){throw new IllegalStateException("The reminder task could not be read.",invalid);}
+    boolean completeReminder(JSONObject task,String date){return completeDefinedTask(task,date,false);}
+    boolean completeProgressReminder(JSONObject task,String date){return completeDefinedTask(task,date,true);}
+    boolean completeProgressTask(String taskId){return completeTask(taskId,null,true);}
+    private boolean completeDefinedTask(JSONObject task,String date,boolean requireActive){
+        try{String key=task.getString("id")+":"+date;JSONObject record=new JSONObject().put("id","html:"+key).put("title",task.getString("title")).put("listName",TaskStore.DEFAULT_LIST).put("dueDate",date).put("plannedDate",LocalDate.now(REFERENCE_ZONE).toString()).put("done",false).put("status",TaskStore.NEXT).put("labels",task.optJSONArray("_contexts")!=null?task.optJSONArray("_contexts"):task.optJSONArray("labels")!=null?task.optJSONArray("labels"):new JSONArray()).put("priority",TaskStore.normalizePriority(task.optString("priority"))).put("minutes",task.optInt("minutes")).put("createdAt",System.currentTimeMillis()).put("completionKeys",ReminderPlanner.completionKeys(task,date)).put("progressKey",key).put("stateDate",date).put("onToday",true).put("source","html").put("snapshotDate",LocalDate.now(REFERENCE_ZONE).toString());return completeTask("html:"+key,record,requireActive);}catch(JSONException invalid){throw new IllegalStateException("The reminder task could not be read.",invalid);}
     }
-    private boolean completeTask(String taskId,JSONObject reminderRecord) {
+    private boolean completeTask(String taskId,JSONObject reminderRecord) {return completeTask(taskId,reminderRecord,false);}
+    private boolean completeTask(String taskId,JSONObject reminderRecord,boolean requireActive) {
         if (taskId == null || !taskId.startsWith("html:") || taskId.length() == 5) return false;
         synchronized (LOCK) {
             JSONArray records = storedSnapshot();
@@ -165,6 +169,7 @@ public final class ReferenceStore {
                 if(reminderRecord!=null){if(target==null){target=reminderRecord;records.put(target);}else{for(java.util.Iterator<String> it=reminderRecord.keys();it.hasNext();){String name=it.next();target.put(name,reminderRecord.get(name));}}}
                 if (target == null) return false;
                 JSONObject current = state();if(purgedRecord(target,current))return false;
+                final String activePrefix=target.getString("progressKey");if(requireActive&&!activeKeys(current).stream().anyMatch(value->matches(value,activePrefix)))return false;
                 JSONObject completed = current.has("completed") ? objectField(current, "completed") : new JSONObject();
                 JSONObject completedOn = current.has("completedOn") ? objectField(current, "completedOn") : new JSONObject();
                 JSONObject completedAt = current.has("completedAt") ? objectField(current, "completedAt") : new JSONObject();

@@ -13,6 +13,7 @@ import java.time.*;
 /** One-shot alarms for timed tasks, snoozes, the daily reminder and weekend opening. */
 final class TaskReminders {
     static final String TASK="com.personal.tasklist.REMIND_TASK",DAILY="com.personal.tasklist.REMIND_DAILY";
+    static final String PROGRESS_COMPLETE="com.personal.tasklist.COMPLETE_PROGRESS";
     static final String PROGRESS_DISMISSED="com.personal.tasklist.PROGRESS_DISMISSED";
     static final String VISIBILITY="com.personal.tasklist.REFRESH_TASK_VISIBILITY";
     static final String WEEKEND="com.personal.tasklist.REMIND_WEEKEND";
@@ -57,18 +58,36 @@ final class TaskReminders {
     }
     @android.annotation.SuppressLint("MissingPermission") // allowed() checks runtime permission and notification settings.
     private static void progressNotification(Context c,JSONObject state,JSONArray tasks,JSONObject settings)throws JSONException{
-        NotificationManager manager=c.getSystemService(NotificationManager.class);java.util.LinkedHashSet<String> keys=new java.util.LinkedHashSet<>(),titles=new java.util.LinkedHashSet<>();JSONArray active=state.optJSONArray("inProgressTasks");if(active!=null)for(int i=0;i<active.length();i++)if(!active.optString(i).isEmpty())keys.add(active.optString(i));String legacy=state.optString("inProgress","");if(!legacy.isEmpty()){if(!keys.contains(legacy)){keys.clear();keys.add(legacy);}}else if(state.has("inProgress"))keys.clear();
-        JSONArray snapshot=new JSONArray(c.getSharedPreferences("reference_state",Context.MODE_PRIVATE).getString("snapshot","[]"));JSONObject completed=state.optJSONObject("completed");
-        for(String key:keys){String[] parts=key.split(":",3);if(parts.length<2||completed!=null&&completed.optBoolean(key))continue;JSONObject task=taskFor(tasks,parts[0]);if(ReminderPlanner.removed(parts[0],parts[1],state))continue;
-            if(task!=null){if(!task.optBoolean("retired")&&!ReminderPlanner.done(task,parts[1],state))titles.add(task.optString("title"));}
-            else for(int i=0;i<snapshot.length();i++){JSONObject row=snapshot.getJSONObject(i);if(key.startsWith(row.optString("progressKey")+":")||key.equals(row.optString("progressKey"))){if(!row.optBoolean("done")&&!TaskStore.DONE.equals(row.optString("status")))titles.add(row.optString("title"));break;}}
-        }
+        NotificationManager manager=c.getSystemService(NotificationManager.class);JSONArray targets=progressTargets(c,state,tasks);java.util.LinkedHashSet<String> titles=new java.util.LinkedHashSet<>();for(int i=0;i<targets.length();i++)titles.add(targets.getJSONObject(i).getString("title"));
         titles.remove("");if(titles.isEmpty()||!allowed(c)){manager.cancel("in-progress",0);return;}
         String names=String.join(", ",titles),title=progressText(settings,"progressTitle","In progress",names,titles.size()),body=progressText(settings,"progressBody","{tasks}",names,titles.size());
         if(title.equals("In progress"))title="🟢 In progress";
         Intent intent=new Intent(c,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);PendingIntent open=PendingIntent.getActivity(c,0,intent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         PendingIntent dismissed=PendingIntent.getBroadcast(c,0,new Intent(c,ReminderReceiver.class).setAction(PROGRESS_DISMISSED).setData(Uri.parse("tasks-progress:dismissed")),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        Notification notification=new Notification.Builder(c,PROGRESS_CHANNEL).setSmallIcon(R.drawable.ic_notification_progress).setContentTitle(title).setContentText(body).setStyle(new Notification.BigTextStyle().bigText(body)).setContentIntent(open).setDeleteIntent(dismissed).setOngoing(true).setOnlyAlertOnce(true).setCategory(Notification.CATEGORY_STATUS).build();notification.flags|=Notification.FLAG_NO_CLEAR;manager.notify("in-progress",0,notification);
+        Notification.Builder builder=new Notification.Builder(c,PROGRESS_CHANNEL).setSmallIcon(R.drawable.ic_notification_progress).setContentTitle(title).setContentText(body).setStyle(new Notification.BigTextStyle().bigText(body)).setContentIntent(open).setDeleteIntent(dismissed).setOngoing(true).setOnlyAlertOnce(true).setCategory(Notification.CATEGORY_STATUS);
+        PendingIntent complete;
+        if(targets.length()==1)complete=action(c,PROGRESS_COMPLETE,targets.getJSONObject(0));
+        else{Intent choose=new Intent(c,MainActivity.class).setData(Uri.parse("tasks-progress:choose")).putExtra("complete_in_progress",true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);complete=PendingIntent.getActivity(c,1,choose,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);}
+        builder.addAction(new Notification.Action.Builder(R.drawable.ic_notification_complete,targets.length()==1?"Complete":"Complete…",complete).build());Notification notification=builder.build();notification.flags|=Notification.FLAG_NO_CLEAR;manager.notify("in-progress",0,notification);
+    }
+    /** Parent occurrences represented by the notification; checklist steps collapse into their parent. */
+    private static JSONArray progressTargets(Context c,JSONObject state,JSONArray tasks)throws JSONException{
+        java.util.LinkedHashSet<String> active=new java.util.LinkedHashSet<>();JSONArray list=state.optJSONArray("inProgressTasks");if(list!=null)for(int i=0;i<list.length();i++)if(!list.optString(i).isEmpty())active.add(list.optString(i));String legacy=state.optString("inProgress","");if(!legacy.isEmpty()){if(!active.contains(legacy)){active.clear();active.add(legacy);}}else if(state.has("inProgress"))active.clear();
+        JSONObject previous=new JSONObject(prefs(c).getString("progressActions","{}")),tokens=new JSONObject(),completed=state.optJSONObject("completed");JSONArray result=new JSONArray(),snapshot=new JSONArray(c.getSharedPreferences("reference_state",Context.MODE_PRIVATE).getString("snapshot","[]"));java.util.Set<String> seen=new java.util.HashSet<>();
+        for(String value:active){String[] parts=value.split(":",3);if(parts.length<2||completed!=null&&completed.optBoolean(value))continue;try{LocalDate.parse(parts[1]);}catch(RuntimeException invalid){continue;}String id=parts[0],date=parts[1],key=id+":"+date;if(seen.contains(key)||ReminderPlanner.removed(id,date,state))continue;JSONObject task=taskFor(tasks,id);String title="";
+            if(task!=null){if(task.optBoolean("retired")||!ReminderPlanner.scheduled(task,LocalDate.parse(date))||ReminderPlanner.done(task,date,state))continue;title=task.optString("title");}
+            else for(int i=0;i<snapshot.length();i++){JSONObject row=snapshot.getJSONObject(i);if(key.equals(row.optString("progressKey"))&&!row.optBoolean("done")&&!TaskStore.DONE.equals(row.optString("status"))){JSONArray keys=row.optJSONArray("completionKeys");boolean done=keys!=null&&keys.length()>0;if(keys!=null)for(int k=0;k<keys.length();k++)if(completed==null||!completed.optBoolean(keys.optString(k)))done=false;if(!done)title=row.optString("title");break;}}
+            if(title.isEmpty())continue;String token=previous.optString(key);if(token.isEmpty())token=java.util.UUID.randomUUID().toString();tokens.put(key,token);seen.add(key);result.put(new JSONObject().put("id",id).put("date",date).put("key",key).put("title",title).put("token",token));
+        }
+        if(!tokens.toString().equals(previous.toString())&&!prefs(c).edit().putString("progressActions",tokens.toString()).commit())throw new IllegalStateException("Could not save progress notification actions");return result;
+    }
+    static JSONArray progressChoices(Context c){synchronized(LOCK){try{JSONObject state=new JSONObject(new ReferenceStore(c).readState());return progressTargets(c,state,ReminderPlanner.effective(new JSONArray(prefs(c).getString("definitions","[]")),state));}catch(JSONException|RuntimeException error){Log.e("Tasks","Could not read active notification tasks",error);return new JSONArray();}}}
+    static boolean completeProgress(Context c,String key,String token){
+        boolean applied=false;
+        synchronized(LOCK){try{if(key==null||token==null)return false;JSONObject state=new JSONObject(new ReferenceStore(c).readState());JSONArray tasks=ReminderPlanner.effective(new JSONArray(prefs(c).getString("definitions","[]")),state),choices=progressTargets(c,state,tasks);JSONObject target=null;for(int i=0;i<choices.length();i++){JSONObject value=choices.getJSONObject(i);if(key.equals(value.optString("key"))&&token.equals(value.optString("token"))){target=value;break;}}if(target==null)return false;
+            JSONObject task=taskFor(tasks,target.getString("id"));ReferenceStore store=new ReferenceStore(c);applied=task!=null?store.completeProgressReminder(task,target.getString("date")):store.completeProgressTask("html:"+key);
+        }catch(JSONException|RuntimeException error){Log.e("Tasks","Could not complete an in-progress task",error);}}
+        if(applied){reschedule(c);TaskWidgetProvider.refreshAll(c);}return applied;
     }
     /** Android 14+ permits dismissing ongoing notifications; restore only while tasks remain active. */
     static void restoreProgress(Context c){synchronized(LOCK){try{channels(c);JSONObject state=new JSONObject(new ReferenceStore(c).readState());JSONArray tasks=ReminderPlanner.effective(new JSONArray(prefs(c).getString("definitions","[]")),state);progressNotification(c,state,tasks,state.optJSONObject("reminders"));}catch(JSONException|RuntimeException error){Log.e("Tasks","Could not restore active-task notification",error);}}}

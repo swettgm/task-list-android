@@ -48,6 +48,7 @@ public class MainActivity extends Activity {
     private String contextFilter;
     private String editRequested;
     private boolean modalOpen;
+    private boolean completeProgressRequested;
     private long pageGeneration;
     private int themeColor=Color.rgb(16,21,31);
     protected boolean isWidgetEditor() { return false; }
@@ -134,6 +135,7 @@ public class MainActivity extends Activity {
     }
 
     private void readIntent(Intent intent) {
+        if(intent.getBooleanExtra("complete_in_progress",false)){completeProgressRequested=true;intent.removeExtra("complete_in_progress");}
         android.net.Uri uri=intent.getData();
         if(!isWidgetEditor()&&uri!=null&&"tasks".equals(uri.getScheme())&&"pair".equals(uri.getHost())){
             intent.setData(null);
@@ -156,6 +158,7 @@ public class MainActivity extends Activity {
                     result -> { if(destroyed)return; if ("true".equals(result))revealReadyPage(); else { message("This task is no longer available."); finish(); } });
             return;
         }
+        if(completeProgressRequested){completeProgressRequested=false;showProgressCompletionChooser();}
         if(pendingPairUrl!=null){String url=pendingPairUrl,token=pendingPairToken;pendingPairUrl=null;pendingPairToken=null;confirmPC(url,token);}
         web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()", null);
         if (contextFilter != null) web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.setContextFilter(" + JSONObject.quote(contextFilter) + ")", null);
@@ -180,6 +183,14 @@ public class MainActivity extends Activity {
         }
     }
     @Override protected void onPause() { if(desktopSync!=null)desktopSync.stop(); if (web != null) web.onPause(); super.onPause(); }
+
+    void showProgressCompletionChooser(){
+        JSONArray choices=TaskReminders.progressChoices(this);if(choices.length()==0){message("No tasks are in progress.");return;}java.util.List<String> names=new java.util.ArrayList<>();java.util.Map<String,Integer> counts=new java.util.HashMap<>();for(int i=0;i<choices.length();i++){String title=choices.optJSONObject(i).optString("title");counts.put(title,counts.getOrDefault(title,0)+1);}for(int i=0;i<choices.length();i++){JSONObject item=choices.optJSONObject(i);String title=item.optString("title");names.add(title+(counts.get(title)>1?" · "+item.optString("date"):""));}
+        PopupAppearance appearance=PopupAppearance.read(this);android.widget.ArrayAdapter<String> adapter=new android.widget.ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,names){@Override public android.view.View getView(int position,android.view.View recycled,android.view.ViewGroup parent){android.widget.TextView text=(android.widget.TextView)super.getView(position,recycled,parent);text.setTextColor(appearance.foreground);text.setSingleLine(false);ControlAlignment.text(text);return text;}};
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Complete task").setAdapter(adapter,(picker,index)->{JSONObject item=choices.optJSONObject(index);if(item==null||!TaskReminders.completeProgress(this,item.optString("key"),item.optString("token")))message("This task is no longer in progress.");else{queueSyncedReload();if(desktopSync!=null)desktopSync.requestSync();}}).setNegativeButton("Cancel",null).show();
+        dialog.getWindow().setBackgroundDrawable(appearance.background(this));int titleId=getResources().getIdentifier("alertTitle","id","android");android.widget.TextView title=dialog.findViewById(titleId);if(title!=null)title.setTextColor(appearance.foreground);dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(appearance.accent);ControlAlignment.dialog(dialog);
+    }
+    @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(hasFocus&&!isWidgetEditor()&&reference!=null&&pageReady&&reference.revision()!=loadedRevision){queueSyncedReload();if(desktopSync!=null)desktopSync.requestSync();}}
 
     private void queueSyncedReload(){
         if(destroyed||syncReloadPending)return;syncReloadPending=true;syncUi.post(this::applySyncedReload);

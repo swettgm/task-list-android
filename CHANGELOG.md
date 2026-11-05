@@ -1,5 +1,11 @@
 # Changelog
 
+## Android 0.66.0 — 2026-11-05
+
+- Added Complete to the persistent in-progress notification. A single active task completes directly; with several active tasks, Complete… opens a task picker so you choose which one to finish.
+- Notification completion uses the same saved completion history and widget state as the app, handles complete checklists and recurring occurrences, and leaves other tasks in progress.
+- Stopped, moved, deleted and already-completed tasks reject outdated actions. The app refreshes when you return from the notification shade or picker.
+
 ## Windows 0.65.2 — 2026-11-05
 
 - Tasks now owns its native Windows window instead of launching an Edge app window. The window and shortcuts share a stable taskbar identity and relaunch command.
