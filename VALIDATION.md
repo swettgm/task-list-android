@@ -1,17 +1,15 @@
-# Tasks 0.57.0 verification
+# Tasks 0.58.0 verification
 
-Source: 5af909186515622581817f309eda9f4deb4b09f5. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41941285087): 142 Android tests, 741 browser checks, 27 calendar checks and zero lint errors.
+Source: 1611fc0e267156b3f6e7b9f5394130c5fb55462a. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41948387591): 144 Android tests, 749 browser checks, 27 calendar checks and zero lint errors.
 
-Notes and Checklist retain one large app resize grip with the browser grip disabled. Continuous resize dragging scrolls only the editor fields, with the footer reserved and task text preserved. Title fields still grow automatically, and Projects retains its existing single native grip.
+Moving a task through Do tomorrow, Do today, or a saved editor date change clears that task's in-progress status. Active checklist steps under the moved occurrence are cleared too. Changing a recurring task's start date clears its active occurrences. Other active tasks, including linked tasks, keep their independent status. Completion history and task links remain intact.
 
-The Settings Back control matches the main tabs' height and top position. Header fitting measures a stable tab font weight, so the date's text size and vertical position remain constant when the active tab changes. Visible active/inactive tab styling is preserved.
+Regression checks cover both move buttons, detailed date edits, recurring start-date changes, checklist completion preservation and reload persistence. Saving without changing the date and cancelling a date change preserve the in-progress mark. Existing native ongoing-notification checks verify that the notification follows canonical active-task changes and disappears when no active tasks remain.
 
-Widget Quick add includes Urgent at the top right, saves High priority and urgent metadata to the app and widget, and clears the checkbox after each successful add. Starting a task in progress also starts linked tasks with cycle/duplicate protection; stopping an individual task remains independent. Completed and retired peers are skipped.
+The active-task notification is ongoing and flagged against Clear all. Where Android permits an individual dismissal, its private delete intent restores it using fresh canonical state. API 28 and 34 tests simulate dismissal and verify a single restored notification, plus a stale-dismissal callback after the last active task stops. Android controls notification dismissal policy; this app restores the notification rather than claiming a platform-level non-dismissible exemption.
 
-A separate low-importance ongoing notification shows active task names, updates as tasks start, stop or complete, and disappears when none remain. It stays separate from daily and timed reminders. Settings supports custom title/message templates with {tasks} and {count}; inserted task names are not recursively interpreted as template tokens.
+APK: `Tasks-v0.58.0.apk`, 278192 bytes. SHA-256: `b89e1570df47f070b1d2b0ec68ffc037f562cb5d5495e4759442291309404226`.
 
-APK: `Tasks-v0.57.0.apk`, 278192 bytes. SHA-256: `367c72b40df07136e3de10f3c8ed6ed662946e0acda1a29168d88925056e66e7`.
-
-Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.56.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
+Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.57.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
 
 No physical phone was used. Android checks use Robolectric; browser checks use Chromium. Windows work remains deferred.
