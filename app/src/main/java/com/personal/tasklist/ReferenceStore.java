@@ -91,6 +91,7 @@ public final class ReferenceStore {
             if (label == null) throw new IllegalArgumentException("A context label must be text.");
             if (!label.trim().isEmpty()) contexts.add(label.trim());
         }
+        String priorityBeforeUrgent=priority;
         if(urgent)priority="HIGH";
         String id = "custom-" + UUID.randomUUID();
         synchronized (LOCK) {
@@ -100,7 +101,7 @@ public final class ReferenceStore {
                 JSONObject definition = new JSONObject().put("id", id).put("title", title.trim())
                     .put("priority", priority).put("labels", new JSONArray(contexts))
                     .put("due", date).put("when", "Not set");
-                if(time!=null&&!time.isEmpty())definition.put("time",time);if(weekend)definition.put("weekend",true);if(urgent)definition.put("urgent",true);
+                if(time!=null&&!time.isEmpty())definition.put("time",time);if(weekend)definition.put("weekend",true);if(urgent)definition.put("urgent",true).put("priorityBeforeUrgent",priorityBeforeUrgent);
                 JSONArray records = storedSnapshot();
                 records.put(customMirror(definition,!LocalDate.parse(date).isAfter(LocalDate.now(REFERENCE_ZONE))));
                 custom.put(definition);

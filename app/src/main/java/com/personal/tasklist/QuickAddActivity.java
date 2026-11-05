@@ -18,6 +18,7 @@ public final class QuickAddActivity extends Activity {
     private boolean openingFeedbackPending;
     private EditText title;
     private CheckBox urgent;
+    private int priorityBeforeUrgent=2;
     private ScrollView panel;
     private android.animation.ValueAnimator savedBorder;
     private Spinner priority, when;
@@ -42,6 +43,8 @@ public final class QuickAddActivity extends Activity {
         selectedDate=java.time.LocalDate.now(java.time.ZoneId.of("America/New_York"));
         LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
         priority=spinner("Priority",Arrays.asList("High","Medium","Low"));priority.setSelection(2);
+        urgent.setOnCheckedChangeListener((button,checked)->{if(checked){priorityBeforeUrgent=priority.getSelectedItemPosition();priority.setSelection(0);}else priority.setSelection(priorityBeforeUrgent);});
+        priority.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){@Override public void onNothingSelected(AdapterView<?> parent){}@Override public void onItemSelected(AdapterView<?> parent,android.view.View view,int position,long id){if(urgent.isChecked()&&position!=0&&priority.getSelectedItemPosition()==position){priorityBeforeUrgent=position;urgent.setChecked(false);}}});
         when=spinner("When to do it",Arrays.asList("Today","Tomorrow","Weekend","Choose date…"));
         LinearLayout.LayoutParams priorityParams=new LinearLayout.LayoutParams(0,controlHeight(),1);priorityParams.setMarginEnd(dp(8));
         options.addView(priority,priorityParams);options.addView(when,new LinearLayout.LayoutParams(0,controlHeight(),1));form.addView(options,fieldParams());
@@ -72,7 +75,7 @@ public final class QuickAddActivity extends Activity {
             if(store.readState().equals("{}"))try(InputStream in=getAssets().open("www/initial-state.json");ByteArrayOutputStream out=new ByteArrayOutputStream()){
                 byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)out.write(b,0,n);String seed=out.toString(StandardCharsets.UTF_8.name()).trim();if(!seed.isEmpty()&&!seed.equals("{}"))store.writeState(seed);
             }
-            store.addCustomTask(title.getText().toString(),new ArrayList<>(selectedLabels),TaskStore.PRIORITIES.get(priority.getSelectedItemPosition()),selectedDate.toString(),selectedTime==null?null:selectedTime.toString(),weekend,urgent.isChecked());
+            store.addCustomTask(title.getText().toString(),new ArrayList<>(selectedLabels),TaskStore.PRIORITIES.get(urgent.isChecked()?priorityBeforeUrgent:priority.getSelectedItemPosition()),selectedDate.toString(),selectedTime==null?null:selectedTime.toString(),weekend,urgent.isChecked());
             actionFeedback();resetFields();title.requestFocus();flashSavedBorder();android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);if(keyboard!=null)keyboard.showSoftInput(title,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
         }catch(Exception error){title.setError("Couldn’t save. Please try again.");}
     }
@@ -85,7 +88,7 @@ public final class QuickAddActivity extends Activity {
     private void updateDateText(){dateButton.setText(selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d",java.util.Locale.getDefault())));}
     private void showDate(){java.time.LocalDate initial=selectedDate;android.app.DatePickerDialog dialog=new android.app.DatePickerDialog(this,(v,y,m,d)->{selectedDate=java.time.LocalDate.of(y,m+1,d);weekend=false;selectedWhen=3;settingDate=true;when.setSelection(3);settingDate=false;updateDateText();actionFeedback();},initial.getYear(),initial.getMonthValue()-1,initial.getDayOfMonth());dialog.setOnCancelListener(d->{settingDate=true;when.setSelection(selectedWhen);settingDate=false;});dialog.show();ControlAlignment.dialog(dialog);}
     private void showTime(){java.time.LocalTime initial=selectedTime==null?java.time.LocalTime.now():selectedTime;android.app.TimePickerDialog dialog=new android.app.TimePickerDialog(this,(v,h,m)->{selectedTime=java.time.LocalTime.of(h,m);timeButton.setText(selectedTime.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a",java.util.Locale.getDefault())));actionFeedback();},initial.getHour(),initial.getMinute(),android.text.format.DateFormat.is24HourFormat(this));dialog.setButton(android.content.DialogInterface.BUTTON_NEUTRAL,"Any time",(d,which)->{selectedTime=null;timeButton.setText("Any time");actionFeedback();});dialog.show();ControlAlignment.dialog(dialog);}
-    private void resetFields(){title.getText().clear();urgent.setChecked(false);title.setError(null);selectedLabels.clear();updateLabelText();priority.setSelection(2);selectedTime=null;timeButton.setText("Any time");selectedDate=java.time.LocalDate.now(java.time.ZoneId.of("America/New_York"));weekend=false;selectedWhen=0;settingDate=true;when.setSelection(0);settingDate=false;dateButton.setText("Date");}
+    private void resetFields(){title.getText().clear();urgent.setChecked(false);title.setError(null);selectedLabels.clear();updateLabelText();priority.setSelection(2);priorityBeforeUrgent=2;selectedTime=null;timeButton.setText("Any time");selectedDate=java.time.LocalDate.now(java.time.ZoneId.of("America/New_York"));weekend=false;selectedWhen=0;settingDate=true;when.setSelection(0);settingDate=false;dateButton.setText("Date");}
     private void flashSavedBorder(){
         if(savedBorder!=null)savedBorder.cancel();if(!android.animation.ValueAnimator.areAnimatorsEnabled())return;
         android.graphics.drawable.GradientDrawable border=new android.graphics.drawable.GradientDrawable();border.setColor(Color.TRANSPARENT);border.setCornerRadius(dp(24));panel.setForeground(border);

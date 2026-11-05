@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.59.0 — 2026-11-04
+
+- Urgent immediately selects High priority; unticking Urgent restores the priority from before it was enabled, including after saving and reopening the editor.
+- Widget Quick add uses the same temporary High priority and remembers the underlying priority when saving urgent tasks.
+- Choosing Medium or Low directly clears Urgent and retains the chosen priority.
+
 ## 0.58.0 — 2026-11-04
 
 - Moving a task to another day clears its in-progress mark, including active checklist steps.
