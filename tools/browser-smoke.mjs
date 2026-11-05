@@ -59,7 +59,7 @@ const result = await page.evaluate(async () => {
   check(original.definitions === 102 && original.savedKeys >= 304 && original.moves >= 26, 'Original tasks, saved history, and moves retained');
   check(!!document.querySelector('#pt-date').textContent.trim() && !document.querySelector('h1'), 'Date-only heading');
   check(getComputedStyle(document.body).backgroundColor === 'rgb(16, 21, 31)', 'Dark page background');
-  check(document.querySelector('#pt-upcoming').hidden && document.querySelector('#pt-completed').hidden&&document.querySelector('#pt-toggle-hidden').textContent==='Show completed', 'Today opens with a Show completed button without a count');
+  check(document.querySelector('#pt-upcoming').hidden && document.querySelector('#pt-completed').hidden&&document.querySelector('#pt-toggle-hidden').textContent==='Completed', 'Today opens with a Completed button without a count');
   check(!document.querySelector('#pt-save,#pt-copy,#pt-backup,#pt-copy-full,#pt-copy-box,.tl-export'), 'Manual completion, copy, and backup controls removed');
   check(!document.querySelector('.tm-ai-note,.tm-pair-note,.tm-linked-chain'), 'AI tips and original suggested links are absent');
   check([...document.querySelectorAll('.tm-children')].every(item => !item.open), 'Subtask checklists start collapsed');
@@ -96,7 +96,7 @@ const result = await page.evaluate(async () => {
   check(!rowFor(parentId,parentDate),'Completion survives reload');
   document.querySelector('#pt-toggle-hidden').click();await tick();
   const hiddenParent=()=>[...document.querySelectorAll('#pt-completed-list [data-task-id]')].find(row=>row.dataset.taskId===parentId&&row.dataset.stateDate===parentDate);
-  check(!document.querySelector('#pt-completed').hidden&&!!hiddenParent()&&document.querySelector('#pt-toggle-hidden').textContent==='Hide completed','Show completed reveals history and the button has no count');
+  check(!document.querySelector('#pt-completed').hidden&&!!hiddenParent()&&document.querySelector('#pt-toggle-hidden').textContent==='Completed','Show completed reveals history and the button has no count');
   hiddenParent().querySelector(':scope > .form-check > input').click();await tick();
   check(!!rowFor(parentId,parentDate)&&!hiddenParent(),'Unchecking a hidden task saves and restores it');
   TaskListApp.reloadFromNative();await tick();check(!!rowFor(parentId,parentDate),'Reopened task survives reload');

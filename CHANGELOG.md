@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.61.0 — 2026-11-05
+
+- Shortened task-list footer buttons to Completed, Trash and Hidden, with smaller text-only buttons on one row.
+- Open sections use a bold border while button labels remain unchanged.
+- Today’s completed/total count, remaining duration and progress bar include scheduled-hidden tasks; a parenthetical count shows how many remain hidden.
+- Revealing hidden tasks leaves the daily totals and scheduled-hidden count unchanged.
+
+- Moved Contexts directly below Priority in detailed task forms, and Labels below Priority in widget Quick add.
+
 ## 0.60.0 — 2026-11-04
 
 - Added a per-task Hide until before due time checkbox, with hours and minutes, in the detailed task editor.

@@ -39,7 +39,7 @@ public final class QuickAddActivity extends Activity {
         form.addView(title,fieldParams());
         contexts.addAll(new TaskStore(this).labels());
         String selected=getIntent().getStringExtra("widget_label");if(selected!=null&&!selected.isEmpty()){if(!contexts.contains(selected))contexts.add(selected);selectedLabels.add(selected);}
-        labelsButton=controlButton("Labels",()->showLabels());labelsButton.setContentDescription("Context labels");updateLabelText();form.addView(labelsButton,fieldParams());
+        labelsButton=controlButton("Labels",()->showLabels());labelsButton.setContentDescription("Context labels");updateLabelText();
         selectedDate=java.time.LocalDate.now(java.time.ZoneId.of("America/New_York"));
         LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
         priority=spinner("Priority",Arrays.asList("High","Medium","Low"));priority.setSelection(2);
@@ -47,7 +47,7 @@ public final class QuickAddActivity extends Activity {
         priority.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){@Override public void onNothingSelected(AdapterView<?> parent){}@Override public void onItemSelected(AdapterView<?> parent,android.view.View view,int position,long id){if(urgent.isChecked()&&position!=0&&priority.getSelectedItemPosition()==position){priorityBeforeUrgent=position;urgent.setChecked(false);}}});
         when=spinner("When to do it",Arrays.asList("Today","Tomorrow","Weekend","Choose date…"));
         LinearLayout.LayoutParams priorityParams=new LinearLayout.LayoutParams(0,controlHeight(),1);priorityParams.setMarginEnd(dp(8));
-        options.addView(priority,priorityParams);options.addView(when,new LinearLayout.LayoutParams(0,controlHeight(),1));form.addView(options,fieldParams());
+        options.addView(priority,priorityParams);options.addView(when,new LinearLayout.LayoutParams(0,controlHeight(),1));form.addView(options,fieldParams());form.addView(labelsButton,fieldParams());
         LinearLayout timing=new LinearLayout(this);timing.setOrientation(LinearLayout.HORIZONTAL);
         timeButton=controlButton("Any time",()->showTime());timeButton.setContentDescription("Task time");dateButton=controlButton("Date",()->showDate());dateButton.setContentDescription("Task date");
         LinearLayout.LayoutParams timeParams=new LinearLayout.LayoutParams(0,controlHeight(),1);timeParams.setMarginEnd(dp(8));timing.addView(timeButton,timeParams);timing.addView(dateButton,new LinearLayout.LayoutParams(0,controlHeight(),1));form.addView(timing,fieldParams());
