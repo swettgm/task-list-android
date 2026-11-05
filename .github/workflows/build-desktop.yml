@@ -33,11 +33,6 @@ jobs:
       - name: Test local sync and data preservation
         run: python -m unittest discover -s desktop/tests -v
 
-      - name: Exercise the desktop UI and phone sync over HTTP
-        run: |
-          npm install --no-save --package-lock=false playwright@1.56.1
-          node desktop/tests/browser-sync.mjs
-
       - name: Generate rounded checkmark icon
         run: python desktop/make_icon.py --output desktop/tasks.ico
 
@@ -68,6 +63,11 @@ jobs:
 
       - name: Verify installation, live upgrade and uninstall
         run: python desktop/smoke_installer.py --setup dist/Tasks-Setup-v0.65.1.exe
+
+      - name: Exercise the desktop UI and phone sync over HTTP
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          node desktop/tests/browser-sync.mjs
 
       - name: Prepare desktop downloads
         shell: pwsh

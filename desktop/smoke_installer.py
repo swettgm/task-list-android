@@ -22,6 +22,22 @@ def registered():
         return False
 
 
+def uninstall_keys():
+    result=[]
+    for flag in [winreg.KEY_WOW64_64KEY,winreg.KEY_WOW64_32KEY]:
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER,r'Software\Microsoft\Windows\CurrentVersion\Uninstall',0,winreg.KEY_READ|flag) as root:
+                for i in range(winreg.QueryInfoKey(root)[0]):
+                    name=winreg.EnumKey(root,i)
+                    with winreg.OpenKey(root,name) as key:
+                        try:
+                            value=winreg.QueryValueEx(key,'DisplayName')[0]
+                            if 'Tasks' in value:result.append({'view':flag,'key':name,'name':value})
+                        except FileNotFoundError:pass
+        except FileNotFoundError:pass
+    return result
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--setup',required=True,type=Path)
@@ -55,7 +71,7 @@ def main():
         try:
             execute(setup+['/LOG='+str(root/'install.log')])
             assert (install/'Tasks-PC.exe').is_file() and (install/'unins000.exe').is_file()
-            assert registered() and shortcut.is_file() and desktop.is_file()
+            assert registered() and shortcut.is_file() and desktop.is_file(), json.dumps({'registered':registered(),'expectedShortcut':str(shortcut),'shortcutExists':shortcut.is_file(),'expectedDesktop':str(desktop),'desktopExists':desktop.is_file(),'actualShortcuts':[str(p) for p in (Path(os.environ['APPDATA'])/'Microsoft/Windows/Start Menu/Programs').rglob('*.lnk') if 'Tasks' in str(p)],'uninstallKeys':uninstall_keys()})
             assert not data.exists(),'Installing must not create placeholder task data'
             process,config=start();token=config['token']
             state={'version':2026103022,'progressStateInitialized':True,'completed':{'setup:2026-11-05':True},'uiTheme':{'accent':'#80ddaa'},'customTasks':[{'id':'setup','title':'Preserve after upgrade'}]}
