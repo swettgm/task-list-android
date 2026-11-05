@@ -3958,7 +3958,7 @@ html.tl-widget-editor .tl-task-editor{margin-top:8px;margin-bottom:8px;max-heigh
     for(const id of ['pt-toggle-all','pt-toggle-all-future'])find(id).addEventListener('click',()=>{
       const button=find(id),top=button.getBoundingClientRect().top;let space=find('pt-hidden-anchor-space');if(!space){space=el('div');space.id='pt-hidden-anchor-space';space.setAttribute('aria-hidden','true');space.style.pointerEvents='none';root.append(space);}space.style.height='0px';
       showAllTasks=!showAllTasks;renderToday();renderFuture();
-      const pin=()=>{const target=Math.max(0,scrollY+button.getBoundingClientRect().top-top);if(showAllTasks)for(let attempt=0;attempt<3;attempt++){const needed=target+innerHeight-document.documentElement.scrollHeight;if(needed<=0)break;space.style.height=((parseFloat(space.style.height)||0)+needed)+'px';}global.scrollTo({left:scrollX,top:target,behavior:'instant'});};pin();requestAnimationFrame(pin);
+      const pin=()=>{const target=Math.max(0,scrollY+button.getBoundingClientRect().top-top);if(showAllTasks){const needed=target+innerHeight-document.documentElement.scrollHeight;if(needed>0){space.style.height=((parseFloat(space.style.height)||0)+needed+innerHeight)+'px';const excess=document.documentElement.scrollHeight-target-innerHeight;if(excess>0)space.style.height=Math.max(0,(parseFloat(space.style.height)||0)-excess)+'px';}}global.scrollTo({left:scrollX,top:target,behavior:'instant'});};pin();requestAnimationFrame(pin);
     });
     find('pt-toggle-trash').addEventListener('click',()=>{find('pt-trash').hidden=!find('pt-trash').hidden;window.TaskListBridge.renderTrash();});
     find('pt-toggle-hidden').addEventListener('click',()=>{
