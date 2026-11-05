@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.60.0 — 2026-11-04
+
+- Added a per-task Hide until before due time checkbox, with hours and minutes, in the detailed task editor.
+- Hidden tasks stay out of Today, Upcoming and the widget until their reveal time; Show all at the bottom of the app temporarily reveals them for editing.
+- Task reveal times follow moved dates and recurring occurrences, refresh automatically, and keep in-progress tasks and completion history visible.
+- When the list is clear but a hidden task will appear later today, the app and widget show the next reveal time in the rest message.
+- Both empty-list messages now end with Get some rest. 🪻
+
 ## 0.59.0 — 2026-11-04
 
 - Urgent immediately selects High priority; unticking Urgent restores the priority from before it was enabled, including after saving and reopening the editor.

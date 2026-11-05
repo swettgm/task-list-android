@@ -340,7 +340,7 @@ public class TaskWidgetTest {
     }
 
     @Test public void emptyWidgetMatchesTheCenteredAppRestMessage(){
-        AppWidgetManager manager=AppWidgetManager.getInstance(context);int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,widget);android.widget.TextView message=Shadows.shadowOf(manager).getViewFor(widget).findViewById(R.id.widget_empty);assertEquals("You’re all done! Get some rest 🪻",message.getText().toString());assertEquals(android.view.Gravity.CENTER,message.getGravity());
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,widget);android.widget.TextView message=Shadows.shadowOf(manager).getViewFor(widget).findViewById(R.id.widget_empty);assertEquals("You’re all done! Get some rest. 🪻",message.getText().toString());assertEquals(android.view.Gravity.CENTER,message.getGravity());
     }
     @Test public void emptyMessageCentersOnTheWholeWidgetAtSeveralSizes(){
         AppWidgetManager manager=AppWidgetManager.getInstance(context);int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,widget);android.view.ViewGroup root=(android.view.ViewGroup)Shadows.shadowOf(manager).getViewFor(widget);android.widget.TextView message=root.findViewById(R.id.widget_empty);message.setVisibility(android.view.View.VISIBLE);float density=context.getResources().getDisplayMetrics().density;

@@ -137,4 +137,22 @@ test('Weekend shortcut targets Friday including the current weekend',()=>{
   for(const day of ['2026-11-02','2026-11-03','2026-11-04','2026-11-05','2026-11-06','2026-11-07','2026-11-08'])assert.equal(S.nextWeekend(day),'2026-11-06');
   assert.equal(S.nextWeekend('2026-11-30'),'2026-12-04');
 });
+test('task visibility subtracts hours and minutes from New York due time',()=>{
+ const task={time:'2:00 PM',showBeforeMinutes:90},at=Date.parse('2026-11-04T17:30:00Z');assert.equal(S.showAt(task,'2026-11-04'),at);assert.equal(S.isVisible(task,'2026-11-04',at-1),false);assert.equal(S.isVisible(task,'2026-11-04',at),true);assert.equal(S.isVisible(task,'2026-11-04',at+86400000),true);
+});
+test('zero visibility lead means exactly when due, including midnight',()=>{
+ assert.equal(S.showAt({time:'00:00',showBeforeMinutes:0},'2026-11-04'),Date.parse('2026-11-04T05:00:00Z'));assert.equal(S.showAt({time:'12:00 PM',showBeforeMinutes:0},'2026-11-04'),Date.parse('2026-11-04T17:00:00Z'));
+});
+test('visibility lead may cross midnight without changing the due date',()=>{
+ assert.equal(S.showAt({time:'1:00 AM',showBeforeMinutes:120},'2026-11-05'),Date.parse('2026-11-05T04:00:00Z'));
+});
+test('invalid or untimed visibility settings keep tasks visible',()=>{
+ for(const task of [{time:'2:00 PM'},{time:'Any time',showBeforeMinutes:30},{time:'24:00',showBeforeMinutes:30},{time:'2:00 PM',showBeforeMinutes:-1},{time:'2:00 PM',showBeforeMinutes:1.5},{time:'2:00 PM',showBeforeMinutes:'30'}]){assert.equal(S.showAt(task,'2026-11-04'),null);assert.equal(S.isVisible(task,'2026-11-04',0),true);}
+});
+test('task visibility uses the earlier repeated daylight-saving hour',()=>{
+ assert.equal(S.showAt({time:'1:30 AM',showBeforeMinutes:0},'2026-11-01'),Date.parse('2026-11-01T05:30:00Z'));
+});
+test('task visibility shifts forward over a missing daylight-saving hour',()=>{
+ assert.equal(S.showAt({time:'2:30 AM',showBeforeMinutes:30},'2026-03-08'),Date.parse('2026-03-08T07:00:00Z'));
+});
 console.log(JSON.stringify({ passed, suite:'calendar recurrence' }));

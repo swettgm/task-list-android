@@ -129,5 +129,15 @@
   function weekendTask(task){if(task.weekend||task.weekendCycleStart)return true;let days=task.days;if(task.repeat){const spec=normalize(task.repeat);if(!spec||spec.unit!=='week')return false;days=spec.weekdays.length?spec.weekdays:[parseDate(spec.start).weekday];}if(days?.length)return days.every(day=>day===0||day===6);const due=parseDate(task.due);return !!due&&(due.weekday===0||due.weekday===6);}
   function weekendOpening(task,day){const date=parseDate(day);if(!date||!weekendTask(task))return '';if(date.weekday===6)return addDay(day,-1);if(date.weekday===0&&!occurs(task,addDay(day,-1)))return addDay(day,-2);return '';}
   function nextWeekend(day){const date=parseDate(day);return addDay(day,date.weekday===0?-2:date.weekday===6?-1:(5-date.weekday+7)%7);}
-  global.TasksSchedule = Object.freeze({ matches, describe, fromTask, normalize, weekdaysLabel,occurs,weekendOpening,nextWeekend });
+  const taskClock=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+  function clockWall(epoch){const parts=Object.fromEntries(taskClock.formatToParts(new Date(epoch)).filter(part=>part.type!=='literal').map(part=>[part.type,Number(part.value)]));const date=new Date(0);date.setUTCFullYear(parts.year,parts.month-1,parts.day);date.setUTCHours(parts.hour,parts.minute,parts.second,0);return date.getTime();}
+  function showAt(task,day){
+    if(!task||!Number.isInteger(task.showBeforeMinutes)||task.showBeforeMinutes<0||task.showBeforeMinutes>2147483647||!parseDate(day))return null;
+    const match=/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i.exec(String(task.time||'').trim());if(!match)return null;let hour=Number(match[1]),minute=Number(match[2]);if(minute>59||hour>23||match[3]&&(hour<1||hour>12))return null;if(match[3])hour=hour%12+(/pm/i.test(match[3])?12:0);
+    const wallDate=new Date(day+'T00:00:00Z');wallDate.setUTCHours(hour,minute,0,0);const wall=wallDate.getTime(),offsets=new Set([wall-86400000,wall+86400000].map(epoch=>clockWall(epoch)-epoch)),candidates=[...offsets].map(offset=>wall-offset),exact=candidates.filter(epoch=>clockWall(epoch)===wall);
+    // Match java.time: earlier offset during a repeated hour; shift forward over a missing hour.
+    const due=exact.length?Math.min(...exact):Math.max(...candidates);return due-task.showBeforeMinutes*60000;
+  }
+  function isVisible(task,day,now=Date.now()){const at=showAt(task,day);return at===null||now>=at;}
+  global.TasksSchedule = Object.freeze({ matches, describe, fromTask, normalize, weekdaysLabel,occurs,weekendOpening,nextWeekend,showAt,isVisible });
 })(typeof window === 'object' ? window : globalThis);

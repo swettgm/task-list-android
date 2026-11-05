@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.RemoteViews;
 
 import java.time.LocalDate;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -137,13 +138,16 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     }
 
     /** Only rows belonging to the app's current Today list; completed history stays in storage. */
-    static List<TaskStore.Task> todayTasks(Context context,String listName,String label){
+    static List<TaskStore.Task> todayTasks(Context context,String listName,String label){return todayTasks(context,listName,label,false);}
+    private static List<TaskStore.Task> todayTasks(Context context,String listName,String label,boolean includeHidden){
         WidgetCompletions.settleExpired(context);LocalDate today=LocalDate.now(java.time.ZoneId.of("America/New_York"));List<TaskStore.Task> result=new ArrayList<>();
         org.json.JSONObject state;try{state=new org.json.JSONObject(new ReferenceStore(context).readState());}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}java.time.LocalTime cutoff=WeekendSchedule.cutoff(state);java.time.ZonedDateTime now=java.time.ZonedDateTime.now(ReminderPlanner.ZONE);org.json.JSONArray definitions;try{definitions=ReminderPlanner.effective(new org.json.JSONArray(TaskReminders.prefs(context).getString("definitions","[]")),state);}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}
         for(TaskStore.Task task:selectedTasks(context,listName,false,label)){
             org.json.JSONObject source=task.sourceRecord();String progress=source.optString("progressKey");int split=progress.lastIndexOf(':');if(split>0&&ReminderPlanner.removed(progress.substring(0,split),progress.substring(split+1),state))continue;String occurrence=source.optString("stateDate",effectiveDate(task)),opening=source.optString("weekendOpening");
             if(opening.isEmpty()&&task.id.startsWith("html:")){String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject definition=definitions.optJSONObject(i);if(definition!=null&&id.equals(definition.optString("id"))){opening=WeekendSchedule.opening(definition,occurrence);break;}}}
-            org.json.JSONObject moves=state.optJSONObject("movedTo");boolean weekend=(moves==null||!moves.has(source.optString("progressKey")))&&WeekendSchedule.visible(opening,occurrence,now,cutoff);if(weekend){result.add(task);continue;}
+            org.json.JSONObject visibilityTask=source;String taskId=progress.contains(":")?progress.substring(0,progress.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&taskId.equals(candidate.optString("id"))){visibilityTask=candidate;break;}}
+            org.json.JSONObject moves=state.optJSONObject("movedTo");String visibilityDate=moves==null?occurrence:moves.optString(progress,occurrence);if(!includeHidden&&!TaskStore.IN_PROGRESS.equals(task.status)&&!TaskVisibility.visible(visibilityTask,visibilityDate,now.toInstant().toEpochMilli()))continue;
+            boolean weekend=(moves==null||!moves.has(source.optString("progressKey")))&&WeekendSchedule.visible(opening,occurrence,now,cutoff);if(weekend){result.add(task);continue;}
             if(!TaskStore.isForToday(task,today))continue;String planned=effectiveDate(task);if(planned.isEmpty()||LocalDate.parse(planned).isAfter(today))continue;
             if(!task.id.startsWith("html:")){if(planned.equals(today.toString()))result.add(task);continue;}
             org.json.JSONObject record=task.sourceRecord();
@@ -160,6 +164,13 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         return result;
     }
 
+    static String emptyMessage(Context context,String listName,String label){
+        long next=0,now=System.currentTimeMillis();LocalDate today=Instant.ofEpochMilli(now).atZone(ReminderPlanner.ZONE).toLocalDate();org.json.JSONObject state;org.json.JSONArray definitions;
+        try{state=new org.json.JSONObject(new ReferenceStore(context).readState());definitions=ReminderPlanner.effective(new org.json.JSONArray(TaskReminders.prefs(context).getString("definitions","[]")),state);}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}
+        for(TaskStore.Task task:todayTasks(context,listName,label,true)){org.json.JSONObject source=task.sourceRecord(),definition=source;String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&id.equals(candidate.optString("id"))){definition=candidate;break;}}org.json.JSONObject moves=state.optJSONObject("movedTo");String date=source.optString("stateDate",effectiveDate(task));if(moves!=null)date=moves.optString(key,date);long at=TaskVisibility.showAt(definition,date);if(at>now&&Instant.ofEpochMilli(at).atZone(ReminderPlanner.ZONE).toLocalDate().equals(today))next=next==0?at:Math.min(next,at);}
+        if(next==0)return context.getString(R.string.widget_empty);String time=Instant.ofEpochMilli(next).atZone(ReminderPlanner.ZONE).format(DateTimeFormatter.ofPattern("h:mm a",java.util.Locale.US));return "You’re done until "+time+"! Get some rest. 🪻";
+    }
+
     static void update(Context context, AppWidgetManager manager, int id) {
         SharedPreferences prefs=preferences(context,id);String list=prefs.getString("list",""),label=prefs.getString("label","");boolean dark=prefs.getBoolean("dark",true);
         int foreground=Color.parseColor(dark?"#F3F7FC":"#1F2B40"),secondary=Color.parseColor(dark?"#BAC9D9":"#56677F"),accent=Color.parseColor(dark?"#8FC6E7":"#195B7E");
@@ -168,7 +179,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         views.setInt(R.id.widget_background,"setImageAlpha",Math.round(255*Math.max(0,Math.min(100,prefs.getInt("opacity",100)))/100f));
         views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setTextColor(R.id.widget_empty,secondary);views.setImageViewBitmap(R.id.widget_add,PlusIcon.render(context));views.setInt(R.id.widget_add,"setBackgroundColor",Color.TRANSPARENT);
         views.setViewVisibility(R.id.widget_context_icon,TaskStore.usesGuildImage(context,label)?View.VISIBLE:View.GONE);views.setContentDescription(R.id.widget_context_icon,label);
-        String empty=context.getString(R.string.widget_empty);try{todayTasks(context,list,label);}catch(RuntimeException unavailable){empty="Open the app to check your saved tasks.";}views.setTextViewText(R.id.widget_empty,empty);
+        String empty=context.getString(R.string.widget_empty);try{if(todayTasks(context,list,label).isEmpty())empty=emptyMessage(context,list,label);}catch(RuntimeException unavailable){empty="Open the app to check your saved tasks.";}views.setTextViewText(R.id.widget_empty,empty);
         Intent service=new Intent(context,TaskWidgetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).setData(Uri.parse("tasklist-widget://rows/"+id));
         views.setRemoteAdapter(R.id.widget_rows,service);views.setEmptyView(R.id.widget_rows,R.id.widget_empty);
         Intent item=new Intent(context,TaskWidgetProvider.class).setAction(ACTION_ITEM).setData(Uri.parse("tasklist-widget://items/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id);

@@ -325,6 +325,7 @@ public final class ReferenceStore {
             .put("urgent",definition.optBoolean("urgent")).put("createdAt", System.currentTimeMillis()).put("completionKeys", new JSONArray().put(key))
             .put("progressKey", key).put("stateDate", due).put("onToday", onToday).put("source", "html").put("snapshotDate",LocalDate.now(REFERENCE_ZONE).toString()).put("time",definition.optString("time"));
         row.put("weekendOpening",WeekendSchedule.opening(definition,due));
+        if(definition.has("showBeforeMinutes"))row.put("showBeforeMinutes",definition.opt("showBeforeMinutes"));
         return row;
     }
 
