@@ -7,6 +7,8 @@
 
 - Linked task names now include (hidden) while their scheduled visibility is hiding them, and clear that note at reveal time.
 
+- Kept Urgent directly beneath Priority, followed by Contexts, and matched task-editor checkbox sizes to Urgent without changing main-list checkboxes or the widget front.
+
 ## 0.61.0 — 2026-11-05
 
 - Shortened task-list footer buttons to Completed, Trash and Hidden, with smaller text-only buttons on one row.
