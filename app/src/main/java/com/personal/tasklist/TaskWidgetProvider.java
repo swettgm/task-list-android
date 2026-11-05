@@ -138,10 +138,11 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     }
 
     /** Only rows belonging to the app's current Today list; completed history stays in storage. */
-    static List<TaskStore.Task> todayTasks(Context context,String listName,String label){return todayTasks(context,listName,label,false);}
-    private static List<TaskStore.Task> todayTasks(Context context,String listName,String label,boolean includeHidden){
-        WidgetCompletions.settleExpired(context);LocalDate today=LocalDate.now(java.time.ZoneId.of("America/New_York"));List<TaskStore.Task> result=new ArrayList<>();
-        org.json.JSONObject state;try{state=new org.json.JSONObject(new ReferenceStore(context).readState());}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}java.time.LocalTime cutoff=WeekendSchedule.cutoff(state);java.time.ZonedDateTime now=java.time.ZonedDateTime.now(ReminderPlanner.ZONE);org.json.JSONArray definitions;try{definitions=ReminderPlanner.effective(new org.json.JSONArray(TaskReminders.prefs(context).getString("definitions","[]")),state);}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}
+    static List<TaskStore.Task> todayTasks(Context context,String listName,String label){return todayTasks(context,listName,label,System.currentTimeMillis());}
+    static List<TaskStore.Task> todayTasks(Context context,String listName,String label,long nowMillis){return todayTasks(context,listName,label,false,nowMillis);}
+    private static List<TaskStore.Task> todayTasks(Context context,String listName,String label,boolean includeHidden,long nowMillis){
+        WidgetCompletions.settleExpired(context);LocalDate today=Instant.ofEpochMilli(nowMillis).atZone(ReminderPlanner.ZONE).toLocalDate();List<TaskStore.Task> result=new ArrayList<>();
+        org.json.JSONObject state;try{state=new org.json.JSONObject(new ReferenceStore(context).readState());}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}java.time.LocalTime cutoff=WeekendSchedule.cutoff(state);java.time.ZonedDateTime now=Instant.ofEpochMilli(nowMillis).atZone(ReminderPlanner.ZONE);org.json.JSONArray definitions;try{definitions=ReminderPlanner.effective(new org.json.JSONArray(TaskReminders.prefs(context).getString("definitions","[]")),state);}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}
         for(TaskStore.Task task:selectedTasks(context,listName,false,label)){
             org.json.JSONObject source=task.sourceRecord();String progress=source.optString("progressKey");int split=progress.lastIndexOf(':');if(split>0&&ReminderPlanner.removed(progress.substring(0,split),progress.substring(split+1),state))continue;String occurrence=source.optString("stateDate",effectiveDate(task)),opening=source.optString("weekendOpening");
             if(opening.isEmpty()&&task.id.startsWith("html:")){String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject definition=definitions.optJSONObject(i);if(definition!=null&&id.equals(definition.optString("id"))){opening=WeekendSchedule.opening(definition,occurrence);break;}}}
@@ -164,10 +165,11 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         return result;
     }
 
-    static String emptyMessage(Context context,String listName,String label){
-        long next=0,now=System.currentTimeMillis();LocalDate today=Instant.ofEpochMilli(now).atZone(ReminderPlanner.ZONE).toLocalDate();org.json.JSONObject state;org.json.JSONArray definitions;
+    static String emptyMessage(Context context,String listName,String label){return emptyMessage(context,listName,label,System.currentTimeMillis());}
+    static String emptyMessage(Context context,String listName,String label,long now){
+        long next=0;LocalDate today=Instant.ofEpochMilli(now).atZone(ReminderPlanner.ZONE).toLocalDate();org.json.JSONObject state;org.json.JSONArray definitions;
         try{state=new org.json.JSONObject(new ReferenceStore(context).readState());definitions=ReminderPlanner.effective(new org.json.JSONArray(TaskReminders.prefs(context).getString("definitions","[]")),state);}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}
-        for(TaskStore.Task task:todayTasks(context,listName,label,true)){org.json.JSONObject source=task.sourceRecord(),definition=source;String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&id.equals(candidate.optString("id"))){definition=candidate;break;}}org.json.JSONObject moves=state.optJSONObject("movedTo");String date=source.optString("stateDate",effectiveDate(task));if(moves!=null)date=moves.optString(key,date);long at=TaskVisibility.showAt(definition,date);if(at>now&&Instant.ofEpochMilli(at).atZone(ReminderPlanner.ZONE).toLocalDate().equals(today))next=next==0?at:Math.min(next,at);}
+        for(TaskStore.Task task:todayTasks(context,listName,label,true,now)){org.json.JSONObject source=task.sourceRecord(),definition=source;String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&id.equals(candidate.optString("id"))){definition=candidate;break;}}org.json.JSONObject moves=state.optJSONObject("movedTo");String date=source.optString("stateDate",effectiveDate(task));if(moves!=null)date=moves.optString(key,date);long at=TaskVisibility.showAt(definition,date);if(at>now&&Instant.ofEpochMilli(at).atZone(ReminderPlanner.ZONE).toLocalDate().equals(today))next=next==0?at:Math.min(next,at);}
         if(next==0)return context.getString(R.string.widget_empty);String time=Instant.ofEpochMilli(next).atZone(ReminderPlanner.ZONE).format(DateTimeFormatter.ofPattern("h:mm a",java.util.Locale.US));return "You’re done until "+time+"! Get some rest. 🪻";
     }
 
