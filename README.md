@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.60.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.60.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.61.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.61.0.apk). Install over the existing app to retain your tasks and settings.
 
-This update adds per-task reveal timing in hours and minutes, a temporary Show all control, and empty-list messages that show when the next hidden task will appear.
+This update compacts the task footer, includes hidden work in daily totals, moves Contexts below Priority, and refines Quick add spacing and text.
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
