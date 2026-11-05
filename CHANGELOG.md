@@ -2,6 +2,8 @@
 
 ## 0.65.0 — 2026-11-05
 
+- QR pairing transfers phone colors, gradient and icon choices, and keeps later theme changes in sync.
+
 - Added a simple Windows companion for Today and Upcoming, completing tasks and toggling in progress, without Settings or task editing.
 - Pair the PC once by QR code or pairing link under Android Settings → Windows companion. Tasks sync locally while both devices are open on the same Wi-Fi; offline changes are retained.
 - The PC starts with your current phone list instead of the bundled historical snapshot. Linked progress starts and stops together, and unrelated simultaneous device changes are merged.

@@ -381,7 +381,7 @@ def open_window(url, directory):
             if edge.is_file():
                 try:
                     return subprocess.Popen([str(edge), "--app=" + url, "--user-data-dir=" + str(directory / "Browser"),
-                                             "--no-first-run", "--no-default-browser-check", "--disable-background-mode"])
+                                             "--no-first-run", "--no-default-browser-check", "--disable-background-mode", "--window-size=560,900"])
                 except OSError:
                     pass
     webbrowser.open(url)
