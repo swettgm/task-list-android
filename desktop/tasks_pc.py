@@ -210,6 +210,8 @@ class TasksServer(ThreadingHTTPServer):
         self.assets, self.desktop = Path(assets), Path(desktop)
         self.lan_host = lan_host or private_addresses()[0]
         self.stop_event = threading.Event()
+        self.window_requests = threading.Event()
+        self.native_window_enabled = False
         super().__init__(address, TasksHandler)
 
     @property
@@ -322,6 +324,12 @@ class TasksHandler(BaseHTTPRequestHandler):
         if not self.authorized():
             self.respond(401, {"error": "Pair Tasks to this PC first"})
             return
+        if path == "/api/open":
+            if not self.loopback():
+                self.respond(403, {"error":"Open Tasks on the PC"});return
+            if not self.server.native_window_enabled:
+                self.respond(409, {"error":"Restart Tasks to open its native window"});return
+            self.server.window_requests.set();self.respond(200,{"opening":True});return
         if path == "/api/quit":
             if not self.loopback():
                 self.respond(403, {"error": "Close the companion on the PC"})
@@ -393,20 +401,34 @@ def shutdown_companion(directory):
     raise OSError("Tasks is still closing. Please try again.")
 
 
-def open_window(url, directory):
-    if os.name == "nt":
-        for root in (os.environ.get("PROGRAMFILES(X86)"), os.environ.get("PROGRAMFILES"), os.environ.get("LOCALAPPDATA")):
-            if not root:
-                continue
-            edge = Path(root) / "Microsoft/Edge/Application/msedge.exe"
-            if edge.is_file():
-                try:
-                    return subprocess.Popen([str(edge), "--app=" + url, "--user-data-dir=" + str(directory / "Browser"),
-                                             "--no-first-run", "--no-default-browser-check", "--disable-background-mode", "--window-size=560,900"])
-                except OSError:
-                    pass
-    webbrowser.open(url)
-    return None
+def reopen_window(port, token):
+    request=urllib.request.Request(f"http://127.0.0.1:{port}/api/open",data=b"{}",headers={"Authorization":"Bearer "+token})
+    try:
+        with urllib.request.urlopen(request,timeout=3) as response:return response.status==200
+    except (OSError,ValueError):return False
+
+
+def open_window(url, directory, server=None):
+    if os.name != "nt":
+        webbrowser.open(url);return
+    from windows_shell import set_process_identity,identify_window
+    set_process_identity()
+    import webview
+    window=webview.create_window('Tasks',url,width=560,height=900,min_size=(360,480))
+    stopping=threading.Event()
+    def closing():
+        if stopping.is_set():return True
+        # Cancel closing first; hide after the GUI callback returns to avoid an Invoke deadlock.
+        threading.Timer(.05,window.hide).start();return False
+    window.events.closing+=closing
+    window.events.before_show+=lambda:identify_window(int(window.native.Handle.ToInt64()))
+    def lifecycle():
+        while not server.stop_event.wait(.1):
+            if server.window_requests.is_set():
+                server.window_requests.clear();window.restore();window.show()
+        stopping.set();window.destroy()
+    webview.start(lifecycle,gui='edgechromium',private_mode=False,storage_path=str(directory/'WebView2'))
+
 
 
 def notify_error(message):
@@ -433,22 +455,23 @@ def main():
         config = load_configuration(directory)
         port = args.port if args.port is not None else int(config.get("port", 8765))
         if existing_companion(port, config["token"]):
-            if not args.no_browser:
-                open_window(f"http://127.0.0.1:{port}/", directory)
-            return 0
+            if args.no_browser or reopen_window(port, config["token"]):return 0
+            # Migrate an old browser host or a headless host without changing its saved data.
+            shutdown_companion(directory)
         seed = {}  # Wait for the phone instead of showing an old bundled task snapshot.
         store = StateStore(directory, seed)
         try:
             server = TasksServer((args.host, port), store, config["token"], assets, desktop)
         except OSError:
             server = TasksServer((args.host, 0), store, config["token"], assets, desktop)
+        server.native_window_enabled = not args.no_browser
         config["port"] = server.server_port
         config["ready"] = True
         atomic_json(directory / "companion.json", config)
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
         if not args.no_browser:
-            open_window(f"http://127.0.0.1:{server.server_port}/", directory)
+            open_window(f"http://127.0.0.1:{server.server_port}/", directory, server)
         # Reopening the executable reuses this server. Quit is available on the pairing screen.
         while not server.stop_event.wait(.5):
             if not worker.is_alive():

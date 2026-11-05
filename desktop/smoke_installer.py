@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.request
@@ -73,6 +74,11 @@ def main():
             assert (install/'Tasks-PC.exe').is_file() and (install/'unins000.exe').is_file()
             assert registered() and shortcut.is_file() and desktop.is_file(), json.dumps({'registered':registered(),'expectedShortcut':str(shortcut),'shortcutExists':shortcut.is_file(),'expectedDesktop':str(desktop),'desktopExists':desktop.is_file(),'actualShortcuts':[str(p) for p in (Path(os.environ['APPDATA'])/'Microsoft/Windows/Start Menu/Programs').rglob('*.lnk') if 'Tasks' in str(p)],'uninstallKeys':uninstall_keys()})
             assert not data.exists(),'Installing must not create placeholder task data'
+            script="$link = (New-Object -ComObject Shell.Application).Namespace((Split-Path $env:TASKS_TEST_SHORTCUT)).ParseName((Split-Path $env:TASKS_TEST_SHORTCUT -Leaf)); $link.ExtendedProperty('System.AppUserModel.ID')"
+            identity=subprocess.check_output(['powershell','-NoProfile','-Command',script],env=dict(env,TASKS_TEST_SHORTCUT=str(shortcut)),text=True).strip()
+            assert identity=='Personal.Tasks.PC',identity
+            subprocess.run([sys.executable,str(Path(__file__).with_name('smoke_native_window.py')),'--exe',str(install/'Tasks-PC.exe')],env=env,check=True,timeout=180)
+
             process,config=start();token=config['token']
             state={'version':2026103022,'progressStateInitialized':True,'completed':{'setup:2026-11-05':True},'uiTheme':{'accent':'#80ddaa'},'customTasks':[{'id':'setup','title':'Preserve after upgrade'}]}
             request(config,'/api/sync',{'base':{},'state':state})

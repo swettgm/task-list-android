@@ -30,6 +30,28 @@ jobs:
       - name: Install build dependencies
         run: python -m pip install --disable-pip-version-check pyinstaller==6.16.0 -r desktop/requirements.txt
 
+      - name: Prepare Microsoft WebView2 runtime
+        shell: pwsh
+        run: |
+          $bootstrap = Join-Path $PWD 'desktop/webview2-bootstrapper.exe'
+          Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $bootstrap
+          $signature = Get-AuthenticodeSignature $bootstrap
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') {
+            throw 'WebView2 bootstrapper did not have a valid Microsoft signature'
+          }
+          $paths = @(
+            'HKCU:\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}',
+            'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          )
+          $installed = $false
+          foreach ($path in $paths) {
+            if (Test-Path $path) { $installed = $true }
+          }
+          if (!$installed) {
+            $process = Start-Process $bootstrap -ArgumentList '/silent','/install' -Wait -PassThru
+            if ($process.ExitCode -ne 0 -and $process.ExitCode -ne 3010) { throw "WebView2 setup failed: $($process.ExitCode)" }
+          }
+
       - name: Test local sync and data preservation
         run: python -m unittest discover -s desktop/tests -v
 
@@ -45,10 +67,16 @@ jobs:
           --add-data "desktop/pair.html;desktop"
           --add-data "desktop/tasks.ico;desktop"
           --hidden-import qrcode.image.svg
+          --collect-all webview --collect-all pythonnet
+          --hidden-import webview.platforms.winforms
+          --hidden-import webview.platforms.edgechromium
           desktop/tasks_pc.py
 
       - name: Check the actual Windows executable
         run: python desktop/smoke_executable.py --exe dist/Tasks-PC.exe
+
+      - name: Verify the actual native window and taskbar identity
+        run: python desktop/smoke_native_window.py --exe dist/Tasks-PC.exe
 
       - name: Build the Windows installer
         shell: pwsh
@@ -62,7 +90,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Installer compilation failed" }
 
       - name: Verify installation, live upgrade and uninstall
-        run: python desktop/smoke_installer.py --setup dist/Tasks-Setup-v0.65.1.exe
+        run: python desktop/smoke_installer.py --setup dist/Tasks-Setup-v0.65.2.exe
 
       - name: Exercise the desktop UI and phone sync over HTTP
         run: |
@@ -73,15 +101,15 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force desktop-download | Out-Null
-          Copy-Item dist/Tasks-Setup-v0.65.1.exe desktop-download/Tasks-Setup-v0.65.1.exe
-          $setupHash = (Get-FileHash desktop-download/Tasks-Setup-v0.65.1.exe -Algorithm SHA256).Hash.ToLower()
-          "$setupHash  Tasks-Setup-v0.65.1.exe" | Out-File desktop-download/Tasks-Setup-v0.65.1.exe.sha256 -Encoding ascii
+          Copy-Item dist/Tasks-Setup-v0.65.2.exe desktop-download/Tasks-Setup-v0.65.2.exe
+          $setupHash = (Get-FileHash desktop-download/Tasks-Setup-v0.65.2.exe -Algorithm SHA256).Hash.ToLower()
+          "$setupHash  Tasks-Setup-v0.65.2.exe" | Out-File desktop-download/Tasks-Setup-v0.65.2.exe.sha256 -Encoding ascii
           Copy-Item dist/Tasks-PC.exe desktop-download/Tasks-PC.exe
           Copy-Item desktop/USING-TASKS-PC.txt desktop-download/START-HERE.txt
           $hash = (Get-FileHash desktop-download/Tasks-PC.exe -Algorithm SHA256).Hash.ToLower()
           "$hash  Tasks-PC.exe" | Out-File desktop-download/Tasks-PC.exe.sha256 -Encoding ascii
           New-Item -ItemType Directory -Force portable-source/assets | Out-Null
-          Copy-Item desktop/tasks_pc.py,desktop/desktop-bridge.js,desktop/pair.html,desktop/requirements.txt,desktop/start-tasks.cmd,desktop/USING-TASKS-PC.txt portable-source/
+          Copy-Item desktop/tasks_pc.py,desktop/windows_shell.py,desktop/desktop-bridge.js,desktop/pair.html,desktop/requirements.txt,desktop/start-tasks.cmd,desktop/USING-TASKS-PC.txt portable-source/
           Copy-Item desktop/tasks.ico portable-source/tasks.ico
           Copy-Item app/src/main/assets/www/* portable-source/assets/ -Recurse
           Copy-Item app/src/main/assets/*.js portable-source/
@@ -96,5 +124,15 @@ jobs:
         with:
           name: Tasks-PC-Windows
           path: desktop-download/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload Tasks installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tasks-Windows-Installer
+          path: |
+            desktop-download/Tasks-Setup-v0.65.2.exe
+            desktop-download/Tasks-Setup-v0.65.2.exe.sha256
           if-no-files-found: error
           retention-days: 90

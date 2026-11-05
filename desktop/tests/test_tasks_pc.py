@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import threading
 import types
 import unittest
 from unittest.mock import patch
@@ -146,7 +147,7 @@ class EndpointTests(unittest.TestCase):
         (assets / "index.html").write_text("<html><head></head><body>Tasks</body></html>")
         self.desktop = Path(__file__).resolve().parents[1]
         self.server = types.SimpleNamespace(store=self.store, token="f" * 64, assets=assets, desktop=self.desktop,
-            pairing_url="http://192.168.1.20:8765/pair#" + "f" * 64, lan_origin="http://192.168.1.20:8765", server_port=8765)
+            native_window_enabled=True, window_requests=threading.Event(), pairing_url="http://192.168.1.20:8765/pair#" + "f" * 64, lan_origin="http://192.168.1.20:8765", server_port=8765)
 
     def tearDown(self):
         self.folder.cleanup()
@@ -196,6 +197,15 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(json.loads(body)["state"]["completed"]["a"])
         self.assertTrue(tasks_pc.StateStore(self.folder.name, {}).snapshot()["state"]["completed"]["a"])
+
+    def test_reopen_is_authenticated_local_only_and_reuses_the_native_host(self):
+        self.assertEqual(self.request('/api/open','POST',auth=False)[0],401)
+        self.assertEqual(self.request('/api/open','POST')[0],403)
+        self.assertFalse(self.server.window_requests.is_set())
+        self.assertEqual(self.request('/api/open','POST',address='127.0.0.1')[0],200)
+        self.assertTrue(self.server.window_requests.is_set())
+        self.server.native_window_enabled=False
+        self.assertEqual(self.request('/api/open','POST',address='127.0.0.1')[0],409)
 
     def test_oversized_or_invalid_request_cannot_replace_data(self):
         before = self.store.snapshot()

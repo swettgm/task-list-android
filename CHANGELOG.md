@@ -1,5 +1,11 @@
 # Changelog
 
+## Windows 0.65.2 — 2026-11-05
+
+- Tasks now owns its native Windows window instead of launching an Edge app window. The window and shortcuts share a stable taskbar identity and relaunch command.
+- Launching Tasks again restores the same window, including when minimized or closed to the background. Setup and uninstall close the native window and sync host together.
+- Tasks, pairing, QR theme transfer and the task interface are retained. Existing taskbar pins from the browser-based version should be unpinned and recreated from Start menu Tasks once.
+
 ## Windows 0.65.1 — 2026-11-05
 
 - Added a per-user Windows installer with Start menu and optional desktop shortcuts, plus a standard Windows uninstaller.
