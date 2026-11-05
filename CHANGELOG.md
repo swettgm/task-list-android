@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.63.0 — 2026-11-05
+
+- The Projects plus now opens a title-only Quick add popup with Cancel, Details and Add.
+- Quick project saves keep the popup open, clear the title, provide save feedback and support Enter/Done for batch adding.
+- Details carries the typed title into the full project form for notes, date and duration without saving a draft. Existing projects still open their full editor directly.
+
+- Revealing hidden tasks expands above the Hidden button and keeps that button in view; Completed and Trash still open below.
+
 ## 0.62.0 — 2026-11-05
 
 - The Hidden footer button now includes the current scheduled-hidden count in parentheses, such as Hidden (3).
