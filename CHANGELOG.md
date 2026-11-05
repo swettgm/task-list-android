@@ -9,6 +9,10 @@
 
 - Moved Contexts directly below Priority in detailed task forms, and Labels below Priority in widget Quick add.
 
+- Added spacing between the Urgent checkbox and its label in widget Quick add.
+
+- Made app Quick add more compact with slightly larger text, matching widget typography while retaining growing task titles.
+
 ## 0.60.0 — 2026-11-04
 
 - Added a per-task Hide until before due time checkbox, with hours and minutes, in the detailed task editor.

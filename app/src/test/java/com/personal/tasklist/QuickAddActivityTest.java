@@ -225,8 +225,8 @@ public class QuickAddActivityTest {
         ViewGroup form=(ViewGroup)title.getParent();float density=activity.getResources().getDisplayMetrics().density;int width=Math.round(320*density),gap=Math.round(8*density);
         form.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));form.layout(0,0,width,form.getMeasuredHeight());
         assertTrue(title.getHeight()>=Math.round(48*density));assertEquals(title.getHeight(),label.getHeight());assertEquals(title.getHeight(),priority.getHeight());assertEquals(title.getHeight(),when.getHeight());
-        assertEquals(gap,label.getTop()-title.getBottom());assertEquals(gap,((View)priority.getParent()).getTop()-label.getBottom());assertEquals(gap,when.getLeft()-priority.getRight());assertEquals(gap,save.getLeft()-cancel.getRight());
-        View timeRow=(View)findDescription(decor,"Task time",Button.class).getParent();assertEquals(gap,timeRow.getTop()-((View)priority.getParent()).getBottom());assertEquals(gap,((View)cancel.getParent()).getTop()-timeRow.getBottom());int compactHeight=form.getMeasuredHeight();
+        assertEquals(gap,((View)priority.getParent()).getTop()-title.getBottom());assertEquals(gap,label.getTop()-((View)priority.getParent()).getBottom());assertEquals(gap,when.getLeft()-priority.getRight());assertEquals(gap,save.getLeft()-cancel.getRight());
+        View timeRow=(View)findDescription(decor,"Task time",Button.class).getParent();assertEquals(gap,timeRow.getTop()-label.getBottom());assertEquals(gap,((View)cancel.getParent()).getTop()-timeRow.getBottom());int compactHeight=form.getMeasuredHeight();
         assertTrue(title.getHeight()>=title.getLineHeight()+title.getPaddingTop()+title.getPaddingBottom());assertFalse(title.getIncludeFontPadding());assertEquals(Math.round(20*density),form.getPaddingLeft());assertEquals(Math.round(20*density),form.getPaddingRight());controller.pause().stop().destroy();
     }
     @Test public void widgetPopupMatchesSolidLightThemeWhenGradientIsOff() throws Exception {

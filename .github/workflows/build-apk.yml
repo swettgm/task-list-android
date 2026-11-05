@@ -35,6 +35,12 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
+      - name: Cache Robolectric Android runtimes
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric/android-all-instrumented
+          key: robolectric-4.14.1-android-runtimes-v1
+
       - name: Install Android SDK packages
         shell: bash
         run: |
