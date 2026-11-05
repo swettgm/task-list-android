@@ -8,6 +8,9 @@
 
 - Revealing hidden tasks expands above the Hidden button and keeps that button in view; Completed and Trash still open below.
 
+- Matched linked-task text size and line height to the duration and time details.
+- Turning off in progress for a linked task stops its linked group together in the app and widget, while preserving unrelated active tasks.
+
 ## 0.62.0 — 2026-11-05
 
 - The Hidden footer button now includes the current scheduled-hidden count in parentheses, such as Hidden (3).

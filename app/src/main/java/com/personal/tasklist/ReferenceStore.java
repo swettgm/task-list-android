@@ -237,12 +237,17 @@ public final class ReferenceStore {
             try{
                 for(int i=0;i<records.length();i++)if(taskId.equals(records.getJSONObject(i).getString("id"))){target=records.getJSONObject(i);break;}
                 if(target==null)return false;JSONObject current=state();if(purgedRecord(target,current))return false;applyPersistedCompletions(records,current);java.util.List<String> active=activeKeys(current),next=new java.util.ArrayList<>(active);String progress=target.getString("progressKey");boolean done=target.optBoolean("done")||TaskStore.DONE.equals(target.optString("status"));
-                if(!done&&start){if(!next.contains(progress))next.add(progress);startLinked(current,records,progress,next);}else next.removeIf(value->matches(value,progress));
+                if(!done&&start){if(!next.contains(progress))next.add(progress);startLinked(current,records,progress,next);}else stopLinked(current,progress,next);
                 boolean changed=!active.equals(next)||(!done&&!current.optBoolean("progressStateInitialized"));if(changed){writeActiveKeys(current,next);current.put("progressStateInitialized",true).put("updatedAt",Instant.now().toString());}
                 applyPersistedProgress(records,current);String serialized=current.toString(),snapshotJson=records.toString();checkSize(serialized);checkSize(snapshotJson);TaskStore.validateReferenceTasks(snapshotJson);
                 if(changed||!beforeSnapshot.equals(snapshotJson)){SharedPreferences.Editor editor=prefs.edit().putString("snapshot",snapshotJson);if(changed)editor.putString("state",serialized).putLong("revision",nextRevision());commit(editor);}
             }catch(JSONException invalid){throw new IllegalStateException("The saved widget task could not be read.",invalid);}
         }replaceLatestMirror();TaskReminders.reschedule(appContext);return true;
+    }
+    private static void stopLinked(JSONObject state,String progress,java.util.List<String> active){
+        String id=progress.split(":",2)[0];JSONObject links=state.optJSONObject("manualLinks");java.util.Set<String> ids=new java.util.HashSet<>();java.util.ArrayDeque<String> queue=new java.util.ArrayDeque<>();queue.add(id);
+        while(!queue.isEmpty()){String next=queue.remove();if(!ids.add(next)||links==null)continue;JSONArray direct=links.optJSONArray(next);if(direct!=null)for(int i=0;i<direct.length();i++){String peer=direct.optString(i);if(!peer.isEmpty()&&!ids.contains(peer))queue.add(peer);}for(java.util.Iterator<String> it=links.keys();it.hasNext();){String peer=it.next();JSONArray reverse=links.optJSONArray(peer);if(reverse!=null)for(int i=0;i<reverse.length();i++)if(next.equals(reverse.optString(i))&&!ids.contains(peer))queue.add(peer);}}
+        if(ids.size()>1)active.removeIf(key->ids.contains(key.split(":",2)[0]));else active.removeIf(key->matches(key,progress));
     }
     private void startLinked(JSONObject state,JSONArray records,String progress,java.util.List<String> active)throws JSONException{
         JSONObject links=state.optJSONObject("manualLinks");if(links==null)return;String[] source=progress.split(":",3);if(source.length<2)return;
