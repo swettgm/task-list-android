@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.64.0",
+    "date": "2026-11-05",
+    "changes": [
+      "Linked task details now follow the priority label in the same metadata row, separated by a dot.",
+      "The chain icon and linked task name move to the next line together using the existing metadata wrapping and separator rules. Very long linked names are ellipsized within the available width."
+    ]
+  },
+  {
     "version": "0.63.0",
     "date": "2026-11-05",
     "changes": [

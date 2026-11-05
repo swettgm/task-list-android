@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.64.0 — 2026-11-05
+
+- Linked task details now follow the priority label in the same metadata row, separated by a dot.
+- The chain icon and linked task name move to the next line together using the existing metadata wrapping and separator rules. Very long linked names are ellipsized within the available width.
+
 ## 0.63.0 — 2026-11-05
 
 - The Projects plus now opens a title-only Quick add popup with Cancel, Details and Add.
