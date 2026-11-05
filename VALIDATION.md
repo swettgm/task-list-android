@@ -1,17 +1,19 @@
-# Tasks 0.59.0 verification
+# Tasks 0.60.0 verification
 
-Source: 488f3e8fdd7c04c135cf58517b2d2428df0dae35. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41950572412): 145 Android tests, 764 browser checks, 27 calendar checks and zero lint errors.
+Source: cf3af57a22a2cd6c5ee23700de58210a8126aeeb. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/42005068471): 151 Android tests, 786 browser checks, 33 calendar/timing checks and zero lint errors.
 
-Urgent selects High immediately and stores the underlying normal priority separately. Unticking it restores that priority in the form, including after saving and reopening. Saving a normal task removes the temporary priority metadata. Choosing Medium or Low explicitly clears Urgent and respects the user's choice; arrow priority changes also remove obsolete urgency metadata.
+The detailed task editor includes Hide until before due time, with separate Hours before and Minutes before fields. A valid task time is required. The total lead interval is stored on the task; zero means reveal at the due time. Clearing time removes the hiding interval to avoid an untimed task remaining hidden.
 
-Widget Quick add follows the same temporary High behavior and persists the selected underlying priority into canonical task definitions. Its next-entry reset still clears Urgent and returns to Low. App Quick add saves Low as the underlying priority for new urgent tasks, and passes it through Details.
+Today, Upcoming and the widget suppress pending tasks until their reveal times. In-progress tasks stay visible, and completion history remains accessible. The app's Show all button sits beside Show completed and Show trash; Upcoming has its own matching Show all control. This temporary display toggle reveals hidden tasks for editing without changing their schedules or the widget's filtering.
 
-Browser regression checks exercise Low, Medium and High round trips, reloads, cancellation, direct priority choices, arrows and Quick add. Native checks cover immediate spinner changes, restored Medium, the saved underlying priority and batch reset. Previously saved urgent tasks without historical priority metadata retain High because their former priority cannot be recovered reliably; selecting a normal priority establishes the next remembered value.
+Reveal times follow the original occurrence date, or the moved date when rescheduled, rather than a carryover display date. JavaScript and native calculations agree on New York time, zero lead, midnight crossings, and daylight-saving gaps/overlaps. The app schedules a boundary refresh and updates the current date at midnight. Hidden records remain in widget storage, with a separate visibility alarm that requires no Notify setting or notification permission. Android exact-alarm capability is respected; the existing inexact fallback can delay a widget refresh when precise reminders are not allowed.
 
-The ongoing notification retains the previous release's ongoing/Clear-all protection and dismissal restoration. Official Android documentation confirms that Android 14 allows users to dismiss ordinary ongoing notifications: https://developer.android.com/about/versions/14/behavior-changes-all#non-dismissable-notifications . No unsupported non-dismissible exemption is claimed.
+When Today is clear but a hidden task will appear later that day, both app and widget show the earliest reveal time: “You’re done until [time]! Get some rest. 🪻”. Otherwise they show “You’re all done! Get some rest. 🪻”. Existing widget centering is preserved.
 
-APK: `Tasks-v0.59.0.apk`, 278192 bytes. SHA-256: `429a7c9ce563224da8fc5557a85444c60919a05309d18acf8670d512ae58b699`.
+Regression coverage includes interval editing, saved values in the widget editor entry point, invalid minutes, both Show all controls, automatic reveal without reopening, moved dates, active-task overrides, completed history, the next reveal message and midnight rollover. Native coverage verifies hidden-row retention, exact reveal boundaries, alarm scheduling independent of task notifications, completion/filter handling, stale snapshots, moved/repeated occurrences and invalid settings.
 
-Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.58.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
+APK: `Tasks-v0.60.0.apk`, 282288 bytes. SHA-256: `e1e8ad213ef7c81f6679b7c158fcbdc0d42368b6e0ea504623a9f8db5973af6f`.
+
+Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.59.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
 
 No physical phone was used. Android checks use Robolectric; browser checks use Chromium. Windows work remains deferred.
