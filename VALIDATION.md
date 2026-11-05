@@ -1,15 +1,17 @@
-# Tasks 0.58.0 verification
+# Tasks 0.59.0 verification
 
-Source: 1611fc0e267156b3f6e7b9f5394130c5fb55462a. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41948387591): 144 Android tests, 749 browser checks, 27 calendar checks and zero lint errors.
+Source: 488f3e8fdd7c04c135cf58517b2d2428df0dae35. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41950572412): 145 Android tests, 764 browser checks, 27 calendar checks and zero lint errors.
 
-Moving a task through Do tomorrow, Do today, or a saved editor date change clears that task's in-progress status. Active checklist steps under the moved occurrence are cleared too. Changing a recurring task's start date clears its active occurrences. Other active tasks, including linked tasks, keep their independent status. Completion history and task links remain intact.
+Urgent selects High immediately and stores the underlying normal priority separately. Unticking it restores that priority in the form, including after saving and reopening. Saving a normal task removes the temporary priority metadata. Choosing Medium or Low explicitly clears Urgent and respects the user's choice; arrow priority changes also remove obsolete urgency metadata.
 
-Regression checks cover both move buttons, detailed date edits, recurring start-date changes, checklist completion preservation and reload persistence. Saving without changing the date and cancelling a date change preserve the in-progress mark. Existing native ongoing-notification checks verify that the notification follows canonical active-task changes and disappears when no active tasks remain.
+Widget Quick add follows the same temporary High behavior and persists the selected underlying priority into canonical task definitions. Its next-entry reset still clears Urgent and returns to Low. App Quick add saves Low as the underlying priority for new urgent tasks, and passes it through Details.
 
-The active-task notification is ongoing and flagged against Clear all. Where Android permits an individual dismissal, its private delete intent restores it using fresh canonical state. API 28 and 34 tests simulate dismissal and verify a single restored notification, plus a stale-dismissal callback after the last active task stops. Android controls notification dismissal policy; this app restores the notification rather than claiming a platform-level non-dismissible exemption.
+Browser regression checks exercise Low, Medium and High round trips, reloads, cancellation, direct priority choices, arrows and Quick add. Native checks cover immediate spinner changes, restored Medium, the saved underlying priority and batch reset. Previously saved urgent tasks without historical priority metadata retain High because their former priority cannot be recovered reliably; selecting a normal priority establishes the next remembered value.
 
-APK: `Tasks-v0.58.0.apk`, 278192 bytes. SHA-256: `b89e1570df47f070b1d2b0ec68ffc037f562cb5d5495e4759442291309404226`.
+The ongoing notification retains the previous release's ongoing/Clear-all protection and dismissal restoration. Official Android documentation confirms that Android 14 allows users to dismiss ordinary ongoing notifications: https://developer.android.com/about/versions/14/behavior-changes-all#non-dismissable-notifications . No unsupported non-dismissible exemption is claimed.
 
-Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.57.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
+APK: `Tasks-v0.59.0.apk`, 278192 bytes. SHA-256: `429a7c9ce563224da8fc5557a85444c60919a05309d18acf8670d512ae58b699`.
+
+Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.58.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
 
 No physical phone was used. Android checks use Robolectric; browser checks use Chromium. Windows work remains deferred.

@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.58.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.58.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.59.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.59.0.apk). Install over the existing app to retain your tasks and settings.
 
-This update clears a task’s in-progress status when it moves to another day, including its active checklist steps, and updates the widget and ongoing notification without stopping other tasks. The ongoing notification also restores itself if Android allows it to be dismissed while tasks remain active.
+This update makes Urgent temporarily select High and restore the previous priority when unticked, including across saved edits and widget Quick add.
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
