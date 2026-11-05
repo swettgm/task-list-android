@@ -1,3 +1,7 @@
+# Windows taskbar fix 0.65.2
+
+The native window and installed shortcuts passed identity and relaunch checks. See [taskbar verification](docs/WINDOWS-TASKBAR-VALIDATION.md).
+
 # Windows installer 0.65.1
 
 The Windows installer passed installation, live upgrade and uninstall checks. See [installer verification](docs/WINDOWS-INSTALLER-VALIDATION.md). The Android and task-sync checks below remain applicable.
