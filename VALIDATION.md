@@ -1,13 +1,17 @@
-# Tasks 0.56.0 verification
+# Tasks 0.57.0 verification
 
-Source: 934e3a178d98c201e9964409ff41f2eadc97ec94. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41906907210): 139 Android tests, 736 browser checks, 27 calendar checks and zero lint errors.
+Source: 5af909186515622581817f309eda9f4deb4b09f5. [Successful build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/41941285087): 142 Android tests, 741 browser checks, 27 calendar checks and zero lint errors.
 
-The detailed task editor places Urgent directly after Priority and before the Date/Time/Duration grid. It shares Priority's left edge and retains its prior checkbox size. Notify stays in the duration area. The existing save and prefill behavior, Quick add header and widget controls are unchanged.
+Notes and Checklist retain one large app resize grip with the browser grip disabled. Continuous resize dragging scrolls only the editor fields, with the footer reserved and task text preserved. Title fields still grow automatically, and Projects retains its existing single native grip.
 
-The layout was reviewed in source and in the editor preview. Existing urgent-save, Quick add carryover and widget badge checks remain in place. Footer visibility, resizing and growing task-title checks continue to pass.
+The Settings Back control matches the main tabs' height and top position. Header fitting measures a stable tab font weight, so the date's text size and vertical position remain constant when the active tab changes. Visible active/inactive tab styling is preserved.
 
-Signed APK: 270,000 bytes. SHA-256: `a0be1015ce21c2656c98aac644d51e774432b0d40729c29ecab51100ac217dc3`.
+Widget Quick add includes Urgent at the top right, saves High priority and urgent metadata to the app and widget, and clears the checkbox after each successful add. Starting a task in progress also starts linked tasks with cycle/duplicate protection; stopping an individual task remains independent. Completed and retired peers are skipped.
 
-Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.55.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
+A separate low-importance ongoing notification shows active task names, updates as tasks start, stop or complete, and disappears when none remain. It stays separate from daily and timed reminders. Settings supports custom title/message templates with {tasks} and {count}; inserted task names are not recursively interpreted as template tokens.
+
+APK: `Tasks-v0.57.0.apk`, 278192 bytes. SHA-256: `367c72b40df07136e3de10f3c8ed6ed662946e0acda1a29168d88925056e66e7`.
+
+Artifact digests, ZIP CRCs, CI checksum, exact packaged assets, non-signature APK contents, alignment and the retained signing certificate were verified. The signer matches Tasks 0.56.0. Both public download paths contain the same signed APK. Settings Changelog includes this update.
 
 No physical phone was used. Android checks use Robolectric; browser checks use Chromium. Windows work remains deferred.
