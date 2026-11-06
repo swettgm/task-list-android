@@ -144,7 +144,8 @@ try{
  }
  await dailyPage.getByRole('tab',{name:'Today',exact:true}).click();check(await dailyPage.locator('#pt-list [data-task-id="'+ids.dailyA+'"]').locator(':scope>.tm-item-actions>button[aria-label^="Move "]').count()===0,'Daily tasks also have no day-move button on Today');await dailyPage.close();
  await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
- check(await page.locator('#pt-today').isVisible()&&!await page.locator('#pt-upcoming').isVisible(),'Reopening Tasks always selects Today');
+ check(await page.locator('#pt-upcoming').isVisible()&&!await page.locator('#pt-today').isVisible(),'Reopening Tasks restores the last selected Upcoming tab');
+ await page.getByRole('tab',{name:'Today',exact:true}).click();
  check(await todayRow(ids.second).isVisible()&&await todayRow(ids.second).getAttribute('data-state-date')===dates.second,'Do today persists after a full reload');
  await page.screenshot({path:path.join(output,'tasks-today-v7.png'),fullPage:false});
  await page.getByRole('tab',{name:'Upcoming',exact:true}).click();await page.locator('#pt-future-list details.tm-day').first().evaluate(section=>section.open=true);
