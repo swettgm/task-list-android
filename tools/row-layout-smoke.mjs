@@ -9,7 +9,7 @@ const executablePath=['/usr/bin/google-chrome','/usr/bin/chromium'].find(existsS
 const browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage']});
 const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const checks=[];const errors=[];
 page.on('pageerror',e=>errors.push(e.message));const check=(v,s)=>{if(!v)throw Error(s);checks.push(s);};
-await page.addInitScript(initial=>{let state=initial;window.__layout={get:()=>state,set:s=>state=s};window.TaskListNative={readState:()=>JSON.stringify(state),writeState:s=>state=JSON.parse(s),updateSnapshot(){},setThemeColors(){},showWidgetSettings(){}};},seed);
+await page.addInitScript(initial=>{const Real=Date,now=Real.parse('2026-11-08T15:00:00Z');window.Date=class extends Real{constructor(...args){super(...(args.length?args:[now]));}static now(){return now;}};let state=initial;window.__layout={get:()=>state,set:s=>state=s};window.TaskListNative={readState:()=>JSON.stringify(state),writeState:s=>state=JSON.parse(s),updateSnapshot(){},setThemeColors(){},showWidgetSettings(){}};},seed);
 try{
  await page.goto(pathToFileURL(file).href);await page.waitForFunction(()=>!!window.TaskListApp);
  await page.evaluate(()=>{

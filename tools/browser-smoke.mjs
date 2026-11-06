@@ -18,6 +18,8 @@ await page.addInitScript(initial => {
   let canonical = JSON.parse(JSON.stringify(initial));
   // Simulate an upgrade with old suggested pairs still in saved data.
   canonical.pairOverrides = { credit:['fix-credit'] };
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  canonical.customTasks=[...(canonical.customTasks||[]),{id:'smoke-once-today',title:'One-time today fixture',due:today,priority:'LOW',_contexts:['At home']},{id:'smoke-checklist-today',title:'Today checklist fixture',due:today,priority:'HIGH',_contexts:['At home'],steps:['First step','Second step']}];
   window.__nativeQA = { snapshot: [], failWrites:false, widgetOpened:false, haptics:0,
     setState(value) { canonical = JSON.parse(JSON.stringify(value)); },
     getState() { return JSON.parse(JSON.stringify(canonical)); } };
@@ -49,14 +51,14 @@ const result = await page.evaluate(async () => {
   const original = TaskListApp.debugSummary();
   const topControls=[document.querySelector('#tl-context-filter'),document.querySelector('.tl-settings'),...document.querySelectorAll('.nav-link')];
   check(topControls.every(control=>Math.abs(control.getBoundingClientRect().height-(control.classList.contains('nav-link')?40:48))<1),'Inset tab buttons use 40px heights while context and Settings retain 48px heights');
-  check(document.querySelector('#tl-tools').children.length===2&&!document.querySelector('.tl-widget'),'Top bar contains only the larger context dropdown and Settings');
+  check(document.querySelector('#tl-tools').children.length===3&&!!document.querySelector('.tl-refresh')&&!document.querySelector('.tl-widget'),'Top bar contains context, Refresh tasks and Settings');
   const add=document.querySelector('.tl-add-task');
   check(!!add.querySelector('.tl-plus-glyph')&&getComputedStyle(add).position==='fixed'&&add.getBoundingClientRect().height===56,'Add task is a large corner plus button');
   document.querySelector('.tl-settings').click();
   check(document.querySelector('dialog[open] h2,.tl-settings-screen h2').textContent==='Settings','Settings opens as its own screen from the gear');
   clickText((document.querySelector('dialog[open]')||document.querySelector('.tl-settings-screen')),'Add home-screen widget');
   check(__nativeQA.widgetOpened&&!(document.querySelector('dialog[open]')||document.querySelector('.tl-settings-screen')),'Widget setup is available inside Settings');
-  check(original.definitions === 102 && original.savedKeys >= 304 && original.moves >= 26, 'Original tasks, saved history, and moves retained');
+  check(original.definitions === 104 && original.savedKeys >= 304 && original.moves >= 26, 'Original tasks plus two Today fixtures, saved history, and moves retained');
   check(!!document.querySelector('#pt-date').textContent.trim() && !document.querySelector('h1'), 'Date-only heading');
   check(getComputedStyle(document.body).backgroundColor === 'rgb(16, 21, 31)', 'Dark page background');
   check(document.querySelector('#pt-upcoming').hidden && document.querySelector('#pt-completed').hidden&&document.querySelector('#pt-toggle-hidden').textContent==='Completed', 'Today opens with a Completed button without a count');
