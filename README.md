@@ -1,8 +1,10 @@
 # Tasks — Android
 
-Download [Tasks 0.68.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.68.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.69.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.69.0.apk). Install over the existing app to retain your tasks and settings.
 
 Task editors show a subtle creation date in the top-right corner. Creation timestamps are saved for new app and widget tasks, preserved through edits and rescheduling, and recovered from older app IDs when possible. Tasks with no creation history say Created date unavailable. Revealed hidden-task borders now clear their checkbox, and Hide until before due time sits below Date and Time, above Duration.
+
+Task dates are strict: Today and the widget show only the scheduled occurrence or an explicit move date. Friday previews and automatic carry-over are removed. Upcoming shows later repeats even if an older occurrence is unfinished. Recurring schedules ignore obsolete day-move entries. A refresh icon beside Settings reloads saved tasks and refreshes native widgets/reminders; the calendar also updates at midnight and on focus.
 
 The persistent in-progress notification now has a Complete action. It completes a single active task directly, or lets you choose a task when several are active. The task list, history and widget share the completion.
 
@@ -45,7 +47,7 @@ A personal Android checklist based on the supplied task list. The app includes t
 - Set a task time and check Notify beside Urgent for a scheduled notification. Settings has a separate daily reminder, initially 9 AM, and independent controls for both reminder types. Android notification permission is required. Alarms resume after restart and app updates; power-saving mode or force-stop can delay/block delivery.
 - Saves check commit results and reject unreadable state rather than resetting it. Local storage cannot guarantee against uninstalling, clearing data or device loss.
 - Upcoming sections use month/day ordinals such as Nov 4th, including tomorrow. All date groups start collapsed.
-- Weekend tasks become available in Today starting Friday at 6 PM, adjustable through Settings → Weekend starts Friday. Saturday/Sunday one-offs and weekends-only repeats keep their original completion identities. Daily tasks keep their normal schedule; Friday visibility does not opt tasks into notifications.
+- Tasks stay on their selected dates. Weekend repeats do not preview on Friday; every-other-week anchors and stable completion identities are preserved. The old Friday-opening setting is removed.
 - Subtask summaries use a centered disclosure arrow, compact counts such as 0/4 steps, and no left border.
 - Completed tasks sort by actual completion time, newest first within the existing completion-day sections. App and widget completions share durable timestamps; undo removes the timestamp and recompleting moves the task to the top. Old records without an exact timestamp fall back to their recorded completion day and saved completion-key order.
 - Within each priority section, Today, Upcoming and the widget sort tasks by scheduled time, then alphabetically for ties and untimed tasks.

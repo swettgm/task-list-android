@@ -1,3 +1,19 @@
+# Android Tasks 0.69.0 verification
+
+Source: `eb14715f29ca3628fba765bf3029cfc5ffb473a7`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42313719512). **189 Android tests, 865 browser checks, 37 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.69.0.apk`, 311229 bytes; SHA-256 `db15b295a8c49b046ef2a0db753668d73503247e539be3fa2fde927564f074a5`. The certificate matches the retained preview signer and all non-signature contents match the tested CI APK.
+
+The app and widget enforce scheduled dates. Friday weekend previews and automatic unfinished-task carry-over are removed. Recurring weekdays override stale one-time due fields and obsolete move entries; one-time tasks retain explicit move dates. Upcoming no longer hides future repeats because an earlier occurrence is pending. Definitions, completion keys, completion history and old unfinished records remain saved.
+
+Native checks cover four weeks of Sunday-only, Sunday–Thursday and alternate-weekend schedules. Widget checks reject old Friday-preview/onToday/plannedDate flags, reject past carried rows, restore Saturday/Sunday occurrences despite legacy Friday moves, and retain explicitly moved one-time tasks. Reminder planning and reveal times use the same chosen-date rule.
+
+Browser checks exercise Friday afternoon and evening, Saturday/Sunday, the skipped alternate weekend, the next active weekend, old unfinished tasks, stale due fields and legacy move records. They recreate Waterproof shoes, edit it with Tomorrow, verify its removal from Today and immediate widget-snapshot update, then check automatic midnight refresh without hidden tasks. The toolbar refresh retains the selected tab and filter, refreshes native widgets and reminder plans, and requests companion sync. UI checks use an advancing Sunday clock for weekday-dependent gesture fixtures.
+
+The obsolete Friday-opening setting is removed and its alarm cancelled. A native midnight refresh is always armed, and the app refreshes on midnight and focus. The Weekend date shortcut remains an explicit Friday date selection.
+
+Release verification compares every non-signature APK entry against the tested CI artifact, validates the retained signer, alignment, package/version, archive integrity and packaged assets. Tests use Robolectric/native graphics and Chromium in GitHub Actions; no physical phone was used.
+
 # Android Tasks 0.68.0 verification
 
 Source: `00287e7fb7559edd0f46d7c64ffeeeac2913d979`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42201054068). **187 Android tests, 855 browser checks, 33 calendar checks and zero lint errors passed.**
