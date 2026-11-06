@@ -176,13 +176,17 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     static void update(Context context, AppWidgetManager manager, int id) {
         SharedPreferences prefs=preferences(context,id);String list=prefs.getString("list",""),label=prefs.getString("label","");boolean dark=prefs.getBoolean("dark",true);
         int foreground=Color.parseColor(dark?"#F3F7FC":"#1F2B40"),secondary=Color.parseColor(dark?"#BAC9D9":"#56677F"),accent=Color.parseColor(dark?"#8FC6E7":"#195B7E");
-        RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_today_centered_empty_v2);
+        RemoteViews views=new RemoteViews(context.getPackageName(),R.layout.widget_today_centered_empty_v3);
         views.setImageViewResource(R.id.widget_background,dark?R.drawable.widget_background_dark:R.drawable.widget_background_light);
         views.setInt(R.id.widget_background,"setImageAlpha",Math.round(255*Math.max(0,Math.min(100,prefs.getInt("opacity",100)))/100f));
         views.setViewPadding(R.id.widget_empty,0,0,0,0);
-        views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setTextColor(R.id.widget_empty,secondary);views.setImageViewBitmap(R.id.widget_add,PlusIcon.render(context));views.setInt(R.id.widget_add,"setBackgroundColor",Color.TRANSPARENT);
+        views.setTextViewText(R.id.widget_title,"Today");views.setTextColor(R.id.widget_title,foreground);views.setImageViewBitmap(R.id.widget_add,PlusIcon.render(context));views.setInt(R.id.widget_add,"setBackgroundColor",Color.TRANSPARENT);
         views.setViewVisibility(R.id.widget_context_icon,TaskStore.usesGuildImage(context,label)?View.VISIBLE:View.GONE);views.setContentDescription(R.id.widget_context_icon,label);
-        String empty=context.getString(R.string.widget_empty);try{if(todayTasks(context,list,label).isEmpty())empty=emptyMessage(context,list,label);}catch(RuntimeException unavailable){empty="Open the app to check your saved tasks.";}views.setTextViewText(R.id.widget_empty,empty);
+        String empty=context.getString(R.string.widget_empty);try{if(todayTasks(context,list,label).isEmpty())empty=emptyMessage(context,list,label);}catch(RuntimeException unavailable){empty="Open the app to check your saved tasks.";}android.os.Bundle bounds=manager.getAppWidgetOptions(id);
+        boolean landscape=context.getResources().getConfiguration().orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+        int width=bounds.getInt(landscape?AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH:AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,250);
+        views.setImageViewBitmap(R.id.widget_empty,WidgetEmptyMessage.render(context,empty,secondary,width));
+        views.setContentDescription(R.id.widget_empty,empty);
         Intent service=new Intent(context,TaskWidgetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).setData(Uri.parse("tasklist-widget://rows/"+id));
         views.setRemoteAdapter(R.id.widget_rows,service);views.setEmptyView(R.id.widget_rows,R.id.widget_empty);
         Intent item=new Intent(context,TaskWidgetProvider.class).setAction(ACTION_ITEM).setData(Uri.parse("tasklist-widget://items/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id);

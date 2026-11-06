@@ -1,5 +1,11 @@
 # Changelog
 
+## Android 0.67.0 — 2026-11-05
+
+- The widget centers the visible text and flower together, including wrapped messages, using its current launcher-provided width. Resizing redraws the message without changing its font size.
+- New widgets use a shorter two-row default and can resize down to 144 dp high; existing widgets keep their launcher placement and can be resized.
+- The app’s empty-list messages are left-aligned. The widget keeps its centered message.
+
 ## Android 0.66.0 — 2026-11-05
 
 - Added Complete to the persistent in-progress notification. A single active task completes directly; with several active tasks, Complete… opens a task picker so you choose which one to finish.

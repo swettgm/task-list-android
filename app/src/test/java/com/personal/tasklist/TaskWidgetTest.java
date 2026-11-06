@@ -339,12 +339,33 @@ public class TaskWidgetTest {
         }
     }
 
-    @Test public void emptyWidgetMatchesTheCenteredAppRestMessage(){
-        AppWidgetManager manager=AppWidgetManager.getInstance(context);int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,widget);android.widget.TextView message=Shadows.shadowOf(manager).getViewFor(widget).findViewById(R.id.widget_empty);assertEquals("You’re all done! Get some rest. 🪻",message.getText().toString());assertEquals(android.view.Gravity.CENTER,message.getGravity());
+    @Test public void emptyWidgetKeepsItsAccessibleRestMessage(){
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);
+        int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        TaskWidgetProvider.update(context,manager,widget);
+        android.widget.ImageView message=Shadows.shadowOf(manager).getViewFor(widget).findViewById(R.id.widget_empty);
+        assertEquals("You’re all done! Get some rest. 🪻",message.getContentDescription().toString());
+        assertNotNull(message.getDrawable());
+        assertEquals(android.widget.ImageView.ScaleType.CENTER_INSIDE,message.getScaleType());
     }
     @Test public void emptyMessageCentersOnTheWholeWidgetAtSeveralSizes(){
-        AppWidgetManager manager=AppWidgetManager.getInstance(context);int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,widget);android.view.ViewGroup root=(android.view.ViewGroup)Shadows.shadowOf(manager).getViewFor(widget);android.widget.TextView message=root.findViewById(R.id.widget_empty);message.setVisibility(android.view.View.VISIBLE);float density=context.getResources().getDisplayMetrics().density;
-        for(int width:new int[]{140,250,360})for(int height:new int[]{196,300,500}){int w=Math.round(width*density),h=Math.round(height*density);root.measure(android.view.View.MeasureSpec.makeMeasureSpec(w,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(h,android.view.View.MeasureSpec.EXACTLY));root.layout(0,0,w,h);android.graphics.Rect box=new android.graphics.Rect();message.getDrawingRect(box);root.offsetDescendantRectToMyCoords(message,box);assertEquals(w/2f,box.exactCenterX(),.5f);assertEquals(h/2f,box.exactCenterY(),.5f);assertFalse(message.getIncludeFontPadding());assertEquals(android.view.View.TEXT_ALIGNMENT_CENTER,message.getTextAlignment());assertTrue(message.getLayout().getLineCount()<=3);for(int line=0;line<message.getLayout().getLineCount();line++){float center=box.left+message.getCompoundPaddingLeft()+(message.getLayout().getLineLeft(line)+message.getLayout().getLineRight(line))/2f;assertEquals("Each line of the rest message is horizontally centered",w/2f,center,1f);}}
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);
+        int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        float density=context.getResources().getDisplayMetrics().density;
+        for(int width:new int[]{140,250,360})for(int height:new int[]{144,300,500}){
+            android.os.Bundle options=new android.os.Bundle();
+            options.putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,width);
+            options.putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,width);
+            manager.updateAppWidgetOptions(widget,options);TaskWidgetProvider.update(context,manager,widget);
+            android.view.ViewGroup root=(android.view.ViewGroup)Shadows.shadowOf(manager).getViewFor(widget);
+            android.widget.ImageView message=root.findViewById(R.id.widget_empty);message.setVisibility(android.view.View.VISIBLE);
+            int w=Math.round(width*density),h=Math.round(height*density);
+            root.measure(android.view.View.MeasureSpec.makeMeasureSpec(w,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(h,android.view.View.MeasureSpec.EXACTLY));root.layout(0,0,w,h);
+            android.graphics.Rect box=new android.graphics.Rect();message.getDrawingRect(box);root.offsetDescendantRectToMyCoords(message,box);
+            assertEquals(w/2f,box.exactCenterX(),.5f);assertEquals(h/2f,box.exactCenterY(),.5f);
+            android.graphics.RectF image=new android.graphics.RectF(message.getDrawable().getBounds());message.getImageMatrix().mapRect(image);
+            assertEquals("Rendered message is centered after resizing",w/2f,box.left+message.getPaddingLeft()+image.centerX(),1f);
+        }
     }
 
     @Test public void widgetHeaderPlusAddsAndHeaderTitleOpensTheApp() {
