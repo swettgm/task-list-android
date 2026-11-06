@@ -4,7 +4,7 @@
     "date": "2026-11-06",
     "changes": [
       "Tasks now appear only on their scheduled date or an explicitly chosen move date. Removed Friday weekend previews and automatic carry-over into later days in both Today and the widget. Past unfinished tasks and completion history remain saved.",
-      "Upcoming shows each scheduled repeat even if an earlier occurrence is unfinished. Chosen weekdays override stale one-time due fields, and every-other-week cycles keep their original anchor.",
+      "Upcoming shows each scheduled repeat even if an earlier occurrence is unfinished. Chosen weekdays override stale one-time due fields, and every-other-week cycles keep their original anchor. Recurring schedules ignore obsolete day-move entries.",
       "Added a refresh button beside Settings. It reloads saved tasks, updates the widget and reminders, and requests companion sync while preserving your tab and context filter. The calendar also refreshes automatically at midnight and when the app regains focus.",
       "Removed the old Friday weekend-opening setting. The Weekend date shortcut still explicitly selects Friday, while Saturday/Sunday recurring choices stay on those selected days."
     ]

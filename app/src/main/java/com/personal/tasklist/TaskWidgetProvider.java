@@ -151,7 +151,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
             for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&taskId.equals(candidate.optString("id"))){definition=candidate;break;}}
             if(definition!=null)try{if(!ReminderPlanner.scheduled(definition,LocalDate.parse(occurrence)))continue;}catch(RuntimeException invalid){continue;}
             if(definition==null&&today.toString().equals(source.optString("snapshotDate"))&&!source.optBoolean("onToday"))continue;
-            org.json.JSONObject moves=state.optJSONObject("movedTo");String chosenDate=moves==null?occurrence:moves.optString(progress,occurrence);
+            String chosenDate=ReminderPlanner.chosenDate(definition==null?source:definition,occurrence,state);
             // Ignore stale onToday/plannedDate/Friday-preview flags from older snapshots.
             if(!today.toString().equals(chosenDate))continue;
             org.json.JSONObject visibilityTask=definition==null?source:definition;
@@ -169,7 +169,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     static String emptyMessage(Context context,String listName,String label,long now){
         long next=0;LocalDate today=Instant.ofEpochMilli(now).atZone(ReminderPlanner.ZONE).toLocalDate();org.json.JSONObject state;org.json.JSONArray definitions;
         try{state=new org.json.JSONObject(new ReferenceStore(context).readState());definitions=ReminderPlanner.effective(new org.json.JSONArray(TaskReminders.prefs(context).getString("definitions","[]")),state);}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}
-        for(TaskStore.Task task:todayTasks(context,listName,label,true,now)){org.json.JSONObject source=task.sourceRecord(),definition=source;String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&id.equals(candidate.optString("id"))){definition=candidate;break;}}org.json.JSONObject moves=state.optJSONObject("movedTo");String date=source.optString("stateDate",effectiveDate(task));if(moves!=null)date=moves.optString(key,date);long at=TaskVisibility.showAt(definition,date);if(at>now&&Instant.ofEpochMilli(at).atZone(ReminderPlanner.ZONE).toLocalDate().equals(today))next=next==0?at:Math.min(next,at);}
+        for(TaskStore.Task task:todayTasks(context,listName,label,true,now)){org.json.JSONObject source=task.sourceRecord(),definition=source;String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&id.equals(candidate.optString("id"))){definition=candidate;break;}}org.json.JSONObject moves=state.optJSONObject("movedTo");String date=source.optString("stateDate",effectiveDate(task));date=ReminderPlanner.chosenDate(definition,date,state);long at=TaskVisibility.showAt(definition,date);if(at>now&&Instant.ofEpochMilli(at).atZone(ReminderPlanner.ZONE).toLocalDate().equals(today))next=next==0?at:Math.min(next,at);}
         if(next==0)return context.getString(R.string.widget_empty);String time=Instant.ofEpochMilli(next).atZone(ReminderPlanner.ZONE).format(DateTimeFormatter.ofPattern("h:mm a",java.util.Locale.US));return "You’re done until "+time+"! Get some rest. 🪻";
     }
 

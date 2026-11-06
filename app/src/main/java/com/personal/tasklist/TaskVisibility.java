@@ -16,7 +16,7 @@ final class TaskVisibility {
     static long next(JSONArray tasks,JSONObject state,long now){
         long earliest=Long.MAX_VALUE;LocalDate today=Instant.ofEpochMilli(now).atZone(ReminderPlanner.ZONE).toLocalDate();JSONObject moves=state.optJSONObject("movedTo");
         for(int i=0;i<tasks.length();i++){JSONObject task=tasks.optJSONObject(i);if(task==null||!task.has("showBeforeMinutes")||task.optBoolean("retired"))continue;String id=task.optString("id");Set<String> dates=new LinkedHashSet<>();for(int day=0;day<=366;day++)dates.add(today.plusDays(day).toString());if(moves!=null)for(Iterator<String> keys=moves.keys();keys.hasNext();){String key=keys.next();if(key.startsWith(id+":"))dates.add(key.substring(id.length()+1));}
-            for(String date:dates)try{if(!ReminderPlanner.scheduled(task,LocalDate.parse(date))||ReminderPlanner.done(task,date,state))continue;long at=showAt(task,moves==null?date:moves.optString(id+":"+date,date));if(at>now)earliest=Math.min(earliest,at);}catch(RuntimeException ignored){}
+            for(String date:dates)try{if(!ReminderPlanner.scheduled(task,LocalDate.parse(date))||ReminderPlanner.done(task,date,state))continue;long at=showAt(task,ReminderPlanner.chosenDate(task,date,state));if(at>now)earliest=Math.min(earliest,at);}catch(RuntimeException ignored){}
         }return earliest==Long.MAX_VALUE?0:earliest;
     }
 }

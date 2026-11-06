@@ -38,6 +38,8 @@ final class ReminderPlanner {
             return task.has("due")&&date.equals(LocalDate.parse(task.getString("due")));
         }catch(JSONException|RuntimeException ignored){}return false;
     }
+    static boolean repeating(JSONObject task){JSONArray days=task.optJSONArray("days");return task.optJSONObject("repeat")!=null||days!=null&&days.length()>0||task.has("intervalDays")||task.has("weekendCycleStart")||task.optBoolean("recurringDaily")||!task.optString("recurrence").isEmpty();}
+    static String chosenDate(JSONObject task,String date,JSONObject state){JSONObject moves=state.optJSONObject("movedTo");return repeating(task)||moves==null?date:moves.optString(task.optString("progressKey",task.optString("id")+":"+date),date);}
     static JSONArray checklist(JSONObject task,String date){JSONArray revisions=task.optJSONArray("checklistRevisions"),chosen=null;String latest="";if(revisions!=null)for(int i=0;i<revisions.length();i++){JSONObject rev=revisions.optJSONObject(i);if(rev!=null&&rev.optString("from").compareTo(date)<=0&&rev.optString("from").compareTo(latest)>=0){latest=rev.optString("from");chosen=rev.optJSONArray("items");}}return chosen;}
     static boolean removed(String id,String date,JSONObject state){JSONObject tasks=state.optJSONObject("taskPurged"),completions=state.optJSONObject("completionPurged");return tasks!=null&&tasks.has(id)||completions!=null&&completions.has(id+":"+date);}
     static JSONArray completionKeys(JSONObject task,String date){
@@ -60,8 +62,8 @@ final class ReminderPlanner {
                 JSONObject task=tasks.getJSONObject(j);if(!task.optString("id").equals(reminder.optString("id"))||task.optBoolean("retired")||!task.optBoolean("notify"))continue;
                 try{
                     String date=reminder.getString("date"),key=task.getString("id")+":"+date;if(!key.equals(reminder.getString("key"))||done(task,date,state)||(task.has("recurrenceResetOn")&&date.compareTo(task.optString("recurrenceResetOn"))<0))continue;
-                    LocalDate original=LocalDate.parse(date);JSONObject moved=state.optJSONObject("movedTo");boolean relocated=moved!=null&&moved.has(key);if(!scheduled(task,original))continue;
-                    LocalDate display=relocated?LocalDate.parse(moved.getString(key)):original;LocalTime time=time(task.optString("time"));if(time==null||display.atTime(time).atZone(ZONE).toInstant().toEpochMilli()!=at)continue;
+                    LocalDate original=LocalDate.parse(date);if(!scheduled(task,original))continue;
+                    LocalDate display=LocalDate.parse(chosenDate(task,date,state));LocalTime time=time(task.optString("time"));if(time==null||display.atTime(time).atZone(ZONE).toInstant().toEpochMilli()!=at)continue;
                     if(at<earliest){result=new JSONArray();earliest=at;}result.put(reminder);break;
                 }catch(java.time.DateTimeException ignored){}
             }
@@ -74,7 +76,7 @@ final class ReminderPlanner {
             JSONObject task=definitions.optJSONObject(i);if(task==null||task.optBoolean("retired")||!task.optBoolean("notify"))continue;LocalTime at=time(task.optString("time"));if(at==null)continue;String id=task.optString("id");Set<LocalDate> dates=new LinkedHashSet<>();
             for(int day=-1;day<=366;day++){LocalDate date=today.plusDays(day);if(scheduled(task,date))dates.add(date);}
             if(moved!=null){Iterator<String> keys=moved.keys();while(keys.hasNext()){String key=keys.next();if(key.startsWith(id+":")){try{dates.add(LocalDate.parse(key.substring(id.length()+1)));}catch(RuntimeException ignored){}}}}
-            for(LocalDate date:dates){String stateDate=date.toString(),key=id+":"+stateDate;if(!scheduled(task,date))continue;if(task.has("recurrenceResetOn")&&stateDate.compareTo(task.optString("recurrenceResetOn"))<0)continue;LocalDate display=date;try{if(moved!=null&&moved.has(key))display=LocalDate.parse(moved.getString(key));if(done(task,stateDate,state))continue;long millis=display.atTime(at).atZone(ZONE).toInstant().toEpochMilli();if(millis<=now||millis>earliest)continue;if(millis<earliest){result=new JSONArray();earliest=millis;}result.put(new JSONObject().put("id",id).put("title",task.optString("title")).put("key",key).put("date",stateDate).put("at",millis));}catch(JSONException|RuntimeException ignored){}}
+            for(LocalDate date:dates){String stateDate=date.toString(),key=id+":"+stateDate;if(!scheduled(task,date))continue;if(task.has("recurrenceResetOn")&&stateDate.compareTo(task.optString("recurrenceResetOn"))<0)continue;LocalDate display=date;try{display=LocalDate.parse(chosenDate(task,stateDate,state));if(done(task,stateDate,state))continue;long millis=display.atTime(at).atZone(ZONE).toInstant().toEpochMilli();if(millis<=now||millis>earliest)continue;if(millis<earliest){result=new JSONArray();earliest=millis;}result.put(new JSONObject().put("id",id).put("title",task.optString("title")).put("key",key).put("date",stateDate).put("at",millis));}catch(JSONException|RuntimeException ignored){}}
         }return result;
     }
 }
