@@ -10,7 +10,7 @@ import android.util.Log;
 import org.json.*;
 import java.time.*;
 
-/** One-shot alarms for timed tasks, snoozes, the daily reminder and weekend opening. */
+/** One-shot alarms for timed tasks, snoozes, the daily reminder and calendar-day refresh. */
 final class TaskReminders {
     static final String TASK="com.personal.tasklist.REMIND_TASK",DAILY="com.personal.tasklist.REMIND_DAILY";
     static final String PROGRESS_COMPLETE="com.personal.tasklist.COMPLETE_PROGRESS";
@@ -40,11 +40,11 @@ final class TaskReminders {
             NotificationManager notifications=c.getSystemService(NotificationManager.class);
             for(android.service.notification.StatusBarNotification shown:notifications.getActiveNotifications()){String tag=shown.getTag();if(tag==null)continue;if(tag.equals("daily")){if(!daily)notifications.cancel(tag,0);continue;}for(int i=0;i<tasks.length();i++){JSONObject task=tasks.getJSONObject(i);String prefix=task.optString("id")+":";if(tag.startsWith(prefix)&&(!timed||!task.optBoolean("notify")||ReminderPlanner.done(task,tag.substring(prefix.length()),state)))notifications.cancel(tag,0);}}
             JSONObject shown=new JSONObject(prefs(c).getString("shown","{}"));java.util.List<String> stale=new java.util.ArrayList<>();for(java.util.Iterator<String> it=shown.keys();it.hasNext();){String key=it.next();JSONObject record=shown.optJSONObject(key),task=record==null?null:taskFor(tasks,record.optString("id"));if(!timed||record==null||!valid(task,record.optString("date"),state)||!sameSchedule(record,task,state))stale.add(key);}for(String key:stale){shown.remove(key);notifications.cancel(key,0);}if(!prefs(c).edit().putString("shown",shown.toString()).commit())throw new IllegalStateException("Could not update reminder actions");
-            alarms.cancel(alarm(c,VISIBILITY));long reveal=TaskVisibility.next(tasks,state,nowMillis);if(reveal>0){long midnight=Instant.ofEpochMilli(nowMillis).atZone(ReminderPlanner.ZONE).toLocalDate().plusDays(1).atStartOfDay(ReminderPlanner.ZONE).toInstant().toEpochMilli();reveal=Math.min(reveal,midnight);}if(!prefs(c).edit().putLong("visibilityAt",reveal).commit())throw new IllegalStateException("Could not save task reveal time");if(reveal>0)schedule(c,alarms,reveal,alarm(c,VISIBILITY));
+            alarms.cancel(alarm(c,VISIBILITY));long midnight=Instant.ofEpochMilli(nowMillis).atZone(ReminderPlanner.ZONE).toLocalDate().plusDays(1).atStartOfDay(ReminderPlanner.ZONE).toInstant().toEpochMilli();long nextReveal=TaskVisibility.next(tasks,state,nowMillis),reveal=nextReveal>0?Math.min(nextReveal,midnight):midnight;if(!prefs(c).edit().putLong("visibilityAt",reveal).commit())throw new IllegalStateException("Could not save task reveal time");schedule(c,alarms,reveal,alarm(c,VISIBILITY));
             progressNotification(c,state,tasks,settings);
             rescheduleSnoozes(c,alarms,state,tasks,timed,nowMillis);
             if(next.length()>0)schedule(c,alarms,Math.max(nowMillis+1000,next.getJSONObject(0).getLong("at")),alarm(c,TASK));
-            schedule(c,alarms,WeekendSchedule.nextOpening(ZonedDateTime.now(ReminderPlanner.ZONE),WeekendSchedule.cutoff(state)).toInstant().toEpochMilli(),alarm(c,WEEKEND));
+            alarms.cancel(alarm(c,WEEKEND));
             if(daily||timed){LocalTime time=ReminderPlanner.time(settings==null?"09:00":settings.optString("dailyTime","09:00"));if(time==null)time=LocalTime.of(9,0);ZonedDateTime now=ZonedDateTime.now(ReminderPlanner.ZONE),when=now.toLocalDate().atTime(time).atZone(ReminderPlanner.ZONE);if(!when.isAfter(now))when=now.toLocalDate().plusDays(1).atTime(time).atZone(ReminderPlanner.ZONE);schedule(c,alarms,when.toInstant().toEpochMilli(),alarm(c,DAILY));}
         }catch(JSONException|RuntimeException error){Log.e("Tasks","Could not refresh reminder alarms",error);}}
     }

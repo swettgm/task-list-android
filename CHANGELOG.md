@@ -1,5 +1,12 @@
 # Changelog
 
+## Android 0.69.0 — 2026-11-06
+
+- Tasks now appear only on their scheduled date or an explicitly chosen move date. Removed Friday weekend previews and automatic carry-over into later days in both Today and the widget. Past unfinished tasks and completion history remain saved.
+- Upcoming shows each scheduled repeat even if an earlier occurrence is unfinished. Chosen weekdays override stale one-time due fields, and every-other-week cycles keep their original anchor.
+- Added a refresh button beside Settings. It reloads saved tasks, updates the widget and reminders, and requests companion sync while preserving your tab and context filter. The calendar also refreshes automatically at midnight and when the app regains focus.
+- Removed the old Friday weekend-opening setting. The Weekend date shortcut still explicitly selects Friday, while Saturday/Sunday recurring choices stay on those selected days.
+
 ## Android 0.68.0 — 2026-11-06
 
 - The task editor shows a subtle creation date in its top-right corner, formatted as Created Monday, Nov 4. New tasks record their creation time, edits and rescheduling preserve it, and older app tasks recover it from their original IDs where available. Older tasks without a recorded date show Created date unavailable.

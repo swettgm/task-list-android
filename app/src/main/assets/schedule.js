@@ -125,9 +125,19 @@
   }
 
   function addDay(day,n){const date=new Date(day+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+n);return date.toISOString().slice(0,10);}
-  function occurs(task,day){const date=parseDate(day);if(!date||!task||task.retired||task.startsOn&&day<task.startsOn)return false;if(task.repeat)return matches(task,day);if(task.due===day||task.dates?.includes(day)||task.days?.includes(date.weekday))return true;const start=parseDate(task.intervalStart),amount=validAmount(task.intervalDays);if(start&&amount&&date.ordinal>=start.ordinal&&(date.ordinal-start.ordinal)%amount===0)return true;const weekend=parseDate(task.weekendCycleStart);if(weekend){const diff=date.ordinal-weekend.ordinal;if(diff===0)return date.weekday===0;return diff>=13&&(diff%14===0||diff%14===13);}return false;}
-  function weekendTask(task){if(task.weekend||task.weekendCycleStart)return true;let days=task.days;if(task.repeat){const spec=normalize(task.repeat);if(!spec||spec.unit!=='week')return false;if(!spec.weekdays.length)return false;days=spec.weekdays;}if(days?.length){const selected=new Set(days);return selected.size===2&&selected.has(0)&&selected.has(6);}const due=parseDate(task.due);return !!due&&(due.weekday===0||due.weekday===6);}
-  function weekendOpening(task,day){const date=parseDate(day);if(!date||!weekendTask(task))return '';if(date.weekday===6)return addDay(day,-1);if(date.weekday===0&&!occurs(task,addDay(day,-1)))return addDay(day,-2);return '';}
+  function occurs(task,day){
+    const date=parseDate(day);if(!date||!task||task.retired||task.startsOn&&day<task.startsOn)return false;
+    if(task.repeat)return matches(task,day);
+    const weekend=parseDate(task.weekendCycleStart);
+    if(weekend){const diff=date.ordinal-weekend.ordinal;return diff===0?date.weekday===0:diff>=13&&(diff%14===0||diff%14===13);}
+    const start=parseDate(task.intervalStart),amount=validAmount(task.intervalDays);
+    if(start&&amount)return date.ordinal>=start.ordinal&&(date.ordinal-start.ordinal)%amount===0;
+    if(Array.isArray(task.days)&&task.days.length)return task.days.includes(date.weekday);
+    if(Array.isArray(task.dates)&&task.dates.length)return task.dates.includes(day);
+    return task.due===day;
+  }
+  // Kept for older widget snapshots; strict schedules have no early opening.
+  function weekendOpening(){return '';}
   function nextWeekend(day){const date=parseDate(day);return addDay(day,date.weekday===0?-2:date.weekday===6?-1:(5-date.weekday+7)%7);}
   const taskClock=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
   function clockWall(epoch){const parts=Object.fromEntries(taskClock.formatToParts(new Date(epoch)).filter(part=>part.type!=='literal').map(part=>[part.type,Number(part.value)]));const date=new Date(0);date.setUTCFullYear(parts.year,parts.month-1,parts.day);date.setUTCHours(parts.hour,parts.minute,parts.second,0);return date.getTime();}

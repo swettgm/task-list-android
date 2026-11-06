@@ -297,6 +297,7 @@ public class MainActivity extends Activity {
         }
         @JavascriptInterface public void connectPC(){runOnUiThread(()->{if(desktopSync!=null)enterPCLink();});}
         @JavascriptInterface public String getSyncStatus(){return desktopSync==null?"{}":desktopSync.status();}
+        @JavascriptInterface public void refreshTasks(){TaskReminders.reschedule(MainActivity.this);TaskWidgetProvider.refreshAll(MainActivity.this);if(desktopSync!=null)desktopSync.requestSync();}
         @JavascriptInterface public void syncNow(){if(desktopSync!=null)desktopSync.requestSync();}
         @JavascriptInterface public void disconnectPC(){if(desktopSync!=null)desktopSync.unpair();}
         @JavascriptInterface public void updateReminders(String json) { TaskReminders.definitions(MainActivity.this,json); }

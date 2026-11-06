@@ -155,4 +155,7 @@ test('task visibility uses the earlier repeated daylight-saving hour',()=>{
 test('task visibility shifts forward over a missing daylight-saving hour',()=>{
  assert.equal(S.showAt({time:'2:30 AM',showBeforeMinutes:30},'2026-03-08'),Date.parse('2026-03-08T07:00:00Z'));
 });
+test('selected weekdays override stale due dates',()=>{const t={days:[0,6],due:'2026-11-06'};assert.equal(S.occurs(t,'2026-11-06'),false);assert.equal(S.occurs(t,'2026-11-07'),true);assert.equal(S.occurs(t,'2026-11-08'),true);});
+test('weekend flags cannot open tasks on Friday',()=>{for(const t of [{due:'2026-11-07',weekend:true},{days:[0,6]},{weekendCycleStart:'2026-10-25'}])assert.equal(S.weekendOpening(t,'2026-11-07'),'');});
+test('alternate weekend occurrences remain on their actual selected dates',()=>{const t={weekendCycleStart:'2026-10-25'};for(const date of ['2026-11-06','2026-11-09','2026-11-14','2026-11-15'])assert.equal(S.occurs(t,date),false);for(const date of ['2026-11-07','2026-11-08','2026-11-21','2026-11-22'])assert.equal(S.occurs(t,date),true);});
 console.log(JSON.stringify({ passed, suite:'calendar recurrence' }));

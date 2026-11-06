@@ -67,6 +67,7 @@ try {
       task(ids.overdue, 'Z finished today QA', dates.yesterday), task(ids.older, 'A completed earlier QA', dates.yesterday)];
     canonical.completed = { ...(canonical.completed || {}), [keys.touch]:false, [keys.hold]:false, [keys.overdue]:false, [keys.older]:true };
     canonical.completedOn = { ...(canonical.completedOn || {}), [keys.older]:dates.earlier };
+    canonical.movedTo={...(canonical.movedTo||{}),[keys.overdue]:dates.today};
     canonical.inProgress = null; canonical.progressStateInitialized = true;
     __undoNative.setState(canonical); TaskListApp.reloadFromNative(); TaskListApp.setContextFilter('Undo QA');
   }, { ids, keys, dates });

@@ -142,21 +142,20 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
     static List<TaskStore.Task> todayTasks(Context context,String listName,String label,long nowMillis){return todayTasks(context,listName,label,false,nowMillis);}
     private static List<TaskStore.Task> todayTasks(Context context,String listName,String label,boolean includeHidden,long nowMillis){
         WidgetCompletions.settleExpired(context);LocalDate today=Instant.ofEpochMilli(nowMillis).atZone(ReminderPlanner.ZONE).toLocalDate();List<TaskStore.Task> result=new ArrayList<>();
-        org.json.JSONObject state;try{state=new org.json.JSONObject(new ReferenceStore(context).readState());}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}java.time.LocalTime cutoff=WeekendSchedule.cutoff(state);java.time.ZonedDateTime now=Instant.ofEpochMilli(nowMillis).atZone(ReminderPlanner.ZONE);org.json.JSONArray definitions;try{definitions=ReminderPlanner.effective(new org.json.JSONArray(TaskReminders.prefs(context).getString("definitions","[]")),state);}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}
+        org.json.JSONObject state;try{state=new org.json.JSONObject(new ReferenceStore(context).readState());}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}org.json.JSONArray definitions;try{definitions=ReminderPlanner.effective(new org.json.JSONArray(TaskReminders.prefs(context).getString("definitions","[]")),state);}catch(org.json.JSONException invalid){throw new IllegalStateException(invalid);}
         for(TaskStore.Task task:selectedTasks(context,listName,false,label)){
-            org.json.JSONObject source=task.sourceRecord();String progress=source.optString("progressKey");int split=progress.lastIndexOf(':');if(split>0&&ReminderPlanner.removed(progress.substring(0,split),progress.substring(split+1),state))continue;String occurrence=source.optString("stateDate",effectiveDate(task)),opening=source.optString("weekendOpening");
-            if(opening.isEmpty()&&task.id.startsWith("html:")){String key=source.optString("progressKey"),id=key.contains(":")?key.substring(0,key.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject definition=definitions.optJSONObject(i);if(definition!=null&&id.equals(definition.optString("id"))){opening=WeekendSchedule.opening(definition,occurrence);break;}}}
-            org.json.JSONObject visibilityTask=source;String taskId=progress.contains(":")?progress.substring(0,progress.indexOf(':')):"";for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&taskId.equals(candidate.optString("id"))){visibilityTask=candidate;break;}}
-            org.json.JSONObject moves=state.optJSONObject("movedTo");String visibilityDate=moves==null?occurrence:moves.optString(progress,occurrence);if(!includeHidden&&!TaskStore.IN_PROGRESS.equals(task.status)&&!TaskVisibility.visible(visibilityTask,visibilityDate,now.toInstant().toEpochMilli()))continue;
-            boolean weekend=(moves==null||!moves.has(source.optString("progressKey")))&&WeekendSchedule.visible(opening,occurrence,now,cutoff);if(weekend){result.add(task);continue;}
-            if(!TaskStore.isForToday(task,today))continue;String planned=effectiveDate(task);if(planned.isEmpty()||LocalDate.parse(planned).isAfter(today))continue;
-            if(!task.id.startsWith("html:")){if(planned.equals(today.toString()))result.add(task);continue;}
-            org.json.JSONObject record=task.sourceRecord();
-            if(today.toString().equals(record.optString("snapshotDate"))){if(record.optBoolean("onToday"))result.add(task);continue;}
-            String stateDate=record.optString("stateDate",planned);
-            if(record.optBoolean("recurringDaily","Daily".equals(record.optString("recurrence")))&&!stateDate.equals(today.toString()))continue;
-            boolean blocked=false;org.json.JSONArray skips=record.optJSONArray("skipCarryDays");if(stateDate.compareTo(today.toString())<0&&skips!=null)for(int i=0;i<skips.length();i++)if(skips.optInt(i,-1)==today.getDayOfWeek().getValue()%7)blocked=true;
-            if(!blocked)result.add(task);
+            org.json.JSONObject source=task.sourceRecord();String progress=source.optString("progressKey");
+            int split=progress.lastIndexOf(':');String taskId=split>0?progress.substring(0,split):"",occurrence=source.optString("stateDate",effectiveDate(task));
+            if(split>0&&ReminderPlanner.removed(taskId,progress.substring(split+1),state))continue;
+            org.json.JSONObject definition=null;
+            for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&taskId.equals(candidate.optString("id"))){definition=candidate;break;}}
+            if(definition!=null)try{if(!ReminderPlanner.scheduled(definition,LocalDate.parse(occurrence)))continue;}catch(RuntimeException invalid){continue;}
+            org.json.JSONObject moves=state.optJSONObject("movedTo");String chosenDate=moves==null?occurrence:moves.optString(progress,occurrence);
+            // Ignore stale onToday/plannedDate/Friday-preview flags from older snapshots.
+            if(!today.toString().equals(chosenDate))continue;
+            org.json.JSONObject visibilityTask=definition==null?source:definition;
+            if(!includeHidden&&!TaskStore.IN_PROGRESS.equals(task.status)&&!TaskVisibility.visible(visibilityTask,chosenDate,nowMillis))continue;
+            result.add(task);
         }
         result.sort(Comparator.comparingInt((TaskStore.Task t)->TaskStore.PRIORITIES.indexOf(t.priority))
                 .thenComparingInt(t->t.sourceRecord().optBoolean("urgent")?0:1)

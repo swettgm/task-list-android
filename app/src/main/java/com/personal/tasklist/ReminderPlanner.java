@@ -31,12 +31,11 @@ final class ReminderPlanner {
                     default:return false;
                 }
             }
-            boolean matches=task.has("due")&&date.equals(LocalDate.parse(task.getString("due")));
-            JSONArray dates=task.optJSONArray("dates");if(dates!=null)for(int i=0;i<dates.length();i++)if(date.toString().equals(dates.optString(i)))matches=true;
-            if(task.has("days")&&selected(task.getJSONArray("days"),date))matches=true;
-            if(task.has("intervalDays")){LocalDate start=LocalDate.parse(task.getString("intervalStart"));int amount=task.getInt("intervalDays");if(amount>0&&!date.isBefore(start)&&ChronoUnit.DAYS.between(start,date)%amount==0)matches=true;}
-            if(task.has("weekendCycleStart")){LocalDate start=LocalDate.parse(task.getString("weekendCycleStart"));long diff=ChronoUnit.DAYS.between(start,date);if((diff==0&&date.getDayOfWeek()==DayOfWeek.SUNDAY)||(diff>=13&&(diff%14==0||diff%14==13)))matches=true;}
-            return matches;
+            if(task.has("weekendCycleStart")){LocalDate start=LocalDate.parse(task.getString("weekendCycleStart"));long diff=ChronoUnit.DAYS.between(start,date);return (diff==0&&date.getDayOfWeek()==DayOfWeek.SUNDAY)||(diff>=13&&(diff%14==0||diff%14==13));}
+            if(task.has("intervalDays")){LocalDate start=LocalDate.parse(task.getString("intervalStart"));int amount=task.getInt("intervalDays");return amount>0&&!date.isBefore(start)&&ChronoUnit.DAYS.between(start,date)%amount==0;}
+            JSONArray days=task.optJSONArray("days");if(days!=null&&days.length()>0)return selected(days,date);
+            JSONArray dates=task.optJSONArray("dates");if(dates!=null&&dates.length()>0){for(int i=0;i<dates.length();i++)if(date.toString().equals(dates.optString(i)))return true;return false;}
+            return task.has("due")&&date.equals(LocalDate.parse(task.getString("due")));
         }catch(JSONException|RuntimeException ignored){}return false;
     }
     static JSONArray checklist(JSONObject task,String date){JSONArray revisions=task.optJSONArray("checklistRevisions"),chosen=null;String latest="";if(revisions!=null)for(int i=0;i<revisions.length();i++){JSONObject rev=revisions.optJSONObject(i);if(rev!=null&&rev.optString("from").compareTo(date)<=0&&rev.optString("from").compareTo(latest)>=0){latest=rev.optString("from");chosen=rev.optJSONArray("items");}}return chosen;}
