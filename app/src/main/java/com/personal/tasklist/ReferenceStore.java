@@ -100,7 +100,7 @@ public final class ReferenceStore {
                 JSONArray custom = customTasks(current);
                 JSONObject definition = new JSONObject().put("id", id).put("title", title.trim())
                     .put("priority", priority).put("labels", new JSONArray(contexts))
-                    .put("due", date).put("when", "Not set");
+                    .put("due", date).put("when", "Not set").put("createdAt", Instant.now().toString());
                 if(time!=null&&!time.isEmpty())definition.put("time",time);if(weekend)definition.put("weekend",true);if(urgent)definition.put("urgent",true).put("priorityBeforeUrgent",priorityBeforeUrgent);
                 JSONArray records = storedSnapshot();
                 records.put(customMirror(definition,!LocalDate.parse(date).isAfter(LocalDate.now(REFERENCE_ZONE))));

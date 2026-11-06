@@ -34,6 +34,16 @@ public class ReferenceStoreTest {
         tasks = new TaskStore(context);
     }
 
+    @Test public void widgetQuickAddRecordsCreationIndependentlyOfTheDueDate() throws Exception {
+        long before=System.currentTimeMillis();String due=today();
+        String id=reference.addCustomTask("Creation timestamp",Collections.emptyList(),"LOW",LocalDate.parse(due).plusDays(14).toString(),"18:00",false);
+        JSONObject state=new JSONObject(reference.readState()),task=state.getJSONArray("customTasks").getJSONObject(0);
+        String created=task.getString("createdAt");long instant=java.time.Instant.parse(created).toEpochMilli();
+        assertEquals(id,task.getString("id"));assertTrue(instant>=before&&instant<=System.currentTimeMillis());
+        task.put("title","Edited task").put("due",LocalDate.parse(due).plusDays(21).toString());reference.writeState(state.toString());
+        assertEquals(created,new JSONObject(new ReferenceStore(context).readState()).getJSONArray("customTasks").getJSONObject(0).getString("createdAt"));
+    }
+
     @Test public void projectsStaySeparateAndSurviveNativeTaskWrites() throws Exception {
         JSONObject projects=new JSONObject().put("project-test",new JSONObject().put("id","project-test").put("title","Assess future idea").put("notes","Private project notes").put("date","2026-12-01").put("minutes",75).put("completed",true));
         reference.writeState(new JSONObject().put("projects",projects).put("projectDeleted",new JSONObject().put("deleted-project","2026-11-02")).put("customTasks",new JSONArray()).put("completed",new JSONObject()).toString());

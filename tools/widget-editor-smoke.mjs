@@ -10,7 +10,7 @@ const fixture={url:pathToFileURL(path.join(dir,'index.html')).href,close:async()
 const browser=await chromium.launch({executablePath:process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/opt/google/chrome/chrome'].find(existsSync),args:['--no-sandbox','--disable-dev-shm-usage']});
 const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',error=>errors.push(error.message));
 await page.addInitScript(()=>{
- let state={customTasks:[{id:'widget-edit-qa',title:'Widget editing test',repeat:{amount:1,unit:'day',start:'2020-01-01'},recurrence:'Daily',priority:'LOW',minutes:5,notes:'Existing notes',_contexts:['At home'],steps:['First step']}]};
+ let state={customTasks:[{id:'widget-edit-qa',title:'Widget editing test',createdAt:'2026-11-05T02:30:00Z',repeat:{amount:1,unit:'day',start:'2020-01-01'},recurrence:'Daily',priority:'LOW',minutes:5,notes:'Existing notes',_contexts:['At home'],steps:['First step']}]};
  window.__qa={closed:0,snapshot:[],fail:false,state:()=>structuredClone(state)};
  window.TaskListNative={readState:()=>JSON.stringify(state),writeState:value=>{if(__qa.fail)throw Error('Save failed');state=JSON.parse(value);},updateSnapshot:value=>__qa.snapshot=JSON.parse(value),setThemeColors:()=>{},finishTaskEditor:()=>__qa.closed++};
 });
@@ -21,6 +21,7 @@ try{
  check(await page.evaluate(()=>getComputedStyle(document.querySelector('main')).display==='none'&&getComputedStyle(document.body).backgroundColor==='rgba(0, 0, 0, 0)'&&getComputedStyle(document.documentElement).backgroundColor==='rgba(0, 0, 0, 0)'),'Overlay leaves the home screen visible');
  check(await page.evaluate(key=>TaskListApp.editWidgetTask(key),key),'Widget identity opens its occurrence');
  check(await page.locator('dialog h2').textContent()==='Edit task','Same app edit task popup');
+ check(await page.locator('dialog .tl-task-created').textContent()==='Created Wednesday, Nov 4','The widget-launched editor shows the same original creation date');
  check(await page.locator('dialog .tl-task-title').first().inputValue()==='Widget editing test','Correct task prefilled');
  check(await page.evaluate(()=>document.activeElement===document.querySelector('dialog')),'Editing does not focus the keyboard');
  check(await page.locator('dialog textarea').count()===3,'Editor includes an expanding title, notes and checklist');

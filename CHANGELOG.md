@@ -1,5 +1,11 @@
 # Changelog
 
+## Android 0.68.0 — 2026-11-06
+
+- The task editor shows a subtle creation date in its top-right corner, formatted as Created Monday, Nov 4. New tasks record their creation time, edits and rescheduling preserve it, and older app tasks recover it from their original IDs where available. Older tasks without a recorded date show Created date unavailable.
+- Revealed hidden tasks have a slightly wider white border with space around their checkbox, preserving task alignment and row spacing.
+- Moved Hide until before due time directly below Date and Time, above Duration, in detailed task forms.
+
 ## Android 0.67.0 — 2026-11-05
 
 - The widget centers the visible text and flower together, including wrapped messages, using its current launcher-provided width. Resizing redraws the message without changing its font size.
