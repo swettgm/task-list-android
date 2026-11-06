@@ -4,7 +4,7 @@
     "date": "2026-11-05",
     "changes": [
       "The widget centers the visible text and flower together, including wrapped messages, using its current launcher-provided width. Resizing redraws the message without changing its font size.",
-      "New widgets use a shorter two-row default and can resize down to 144 dp high; existing widgets keep their launcher placement and can be resized.",
+      "New widgets request a wider, shorter layout (five columns by two rows where supported) and can resize down to 144 dp high. Existing widgets keep their launcher placement and can be resized.",
       "The app’s empty-list messages are left-aligned. The widget keeps its centered message."
     ]
   },
