@@ -1,3 +1,15 @@
+# Android Tasks 0.67.0 verification
+
+Source: `4df05d54951c168fac1a1769e598805d472508c0`. [Android build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42152352238). **186 Android tests, 835 browser checks, 33 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.67.0.apk`, 311229 bytes; SHA-256 `016d6bc245daded44754b3f85dd29a2547a96332f4dec0080707840e56e37c81`. The certificate matches the retained preview signer and all non-signature contents match the tested CI APK.
+
+The widget renders the empty message with the device’s font and emoji, centers the visible glyph bounds on each wrapped line, and exposes the full sentence to accessibility services. It uses the launcher-provided width and redraws after resizing. Native graphics checks inspect actual text/emoji pixels for both rest messages at 140, 250, 360 and 420 dp widths. RemoteViews checks verify centered placement at several widget widths and heights. The app’s rest messages use left alignment, verified in Chromium at 360, 390 and 650 px widths.
+
+The widget requests a five-column, two-row default where supported, with a 144 dp minimum height. Its content fills the size allocated by the launcher. Android launchers control the widget’s grid position and outer size; existing widget allocations are preserved, so users resize those through launcher handles. No task data or widget preferences are reset.
+
+The signed APK is compared with the tested CI artifact, including every non-signature archive entry. Its retained signing identity allows an in-place update. Tests use Robolectric/native graphics and Chromium in GitHub Actions; no physical Samsung launcher was available for verification.
+
 # Android Tasks 0.66.0 verification
 
 Source: `82240b6d0aa0b6182cffa1026ed49f6b9bda3441`. [Build, tests and browser checks](https://github.com/swettgm/task-list-android/actions/runs/42150732017). **185 Android tests, 835 browser checks, 33 calendar checks and zero lint errors passed.**
