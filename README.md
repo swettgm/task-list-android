@@ -1,6 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.67.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.67.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.68.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.68.0.apk). Install over the existing app to retain your tasks and settings.
+
+Task editors show a subtle creation date in the top-right corner. Creation timestamps are saved for new app and widget tasks, preserved through edits and rescheduling, and recovered from older app IDs when possible. Tasks with no creation history say Created date unavailable. Revealed hidden-task borders now clear their checkbox, and Hide until before due time sits below Date and Time, above Duration.
 
 The persistent in-progress notification now has a Complete action. It completes a single active task directly, or lets you choose a task when several are active. The task list, history and widget share the completion.
 

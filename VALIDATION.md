@@ -1,3 +1,17 @@
+# Android Tasks 0.68.0 verification
+
+Source: `00287e7fb7559edd0f46d7c64ffeeeac2913d979`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42201054068). **187 Android tests, 855 browser checks, 33 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.68.0.apk`, 311229 bytes; SHA-256 `9c36a9bed48da431139c20cb91959bb32aedf81ed62d5a0362589186d2a211f9`. The certificate matches the retained preview signer and all non-signature contents match the tested CI APK.
+
+Creation timestamps are stored on task definitions when new tasks are saved from the app, widget Quick add or project conversion. Detailed edits and rescheduling retain the original timestamp. Earlier app task IDs encode their creation instant; the editor recovers that timestamp and makes it durable on the next save. Tasks without recorded creation history display Created date unavailable. Due dates, occurrence dates and widget snapshot timestamps are not used as creation history.
+
+The creation date appears only beside Edit task in the full task editor, including the widget-launched editor. Browser checks cover New York date boundaries, numeric timestamps, legacy IDs, unavailable dates, editing and rescheduling, reopening, quick and detailed creation, and corner placement at 320, 390 and 650 px widths. Native checks verify widget Quick add records its creation instant independently of its future due date.
+
+The hidden-task border extends horizontally by 6 px on each side, with no content movement or vertical expansion. It remains visible beyond the resting page clip while swipe animations retain clipping, and it ignores pointer events. Browser checks verify checkbox clearance, viewport bounds and row spacing. Detailed task forms place Hide until before due time after Date/Time and their shortcuts, before Duration.
+
+Release checks compare all non-signature APK entries with the tested CI artifact, verify the retained signer, package/version, ZIP integrity and packaged assets. Native checks use Robolectric and browser checks use Chromium in GitHub Actions. No physical phone was used.
+
 # Android Tasks 0.67.0 verification
 
 Source: `4df05d54951c168fac1a1769e598805d472508c0`. [Android build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42152352238). **186 Android tests, 835 browser checks, 33 calendar checks and zero lint errors passed.**
