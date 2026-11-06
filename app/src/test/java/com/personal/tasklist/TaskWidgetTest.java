@@ -251,7 +251,7 @@ public class TaskWidgetTest {
         rows.put(widgetRow("new-daily",day,day,false,false,true,yesterday));
         rows.put(widgetRow("carry",yesterday,yesterday,true,false,false,yesterday));
         store.replaceReferenceTasks(rows.toString());
-        assertEquals(new HashSet<>(Arrays.asList("today","new-daily","carry")),new HashSet<>(titles(TaskWidgetProvider.todayTasks(context,"",""))));assertEquals(8,store.all().size());
+        assertEquals(new HashSet<>(Arrays.asList("today","new-daily")),new HashSet<>(titles(TaskWidgetProvider.todayTasks(context,"",""))));assertEquals(8,store.all().size());
     }
     @Test public void collectionCompletionIsPersistentAndStaleTapCannotReopen() throws Exception {
         String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();String id=new ReferenceStore(context).addCustomTask("Scroll complete",Arrays.asList("At home"),"HIGH",false);

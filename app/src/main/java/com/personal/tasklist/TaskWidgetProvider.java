@@ -150,6 +150,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
             org.json.JSONObject definition=null;
             for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&taskId.equals(candidate.optString("id"))){definition=candidate;break;}}
             if(definition!=null)try{if(!ReminderPlanner.scheduled(definition,LocalDate.parse(occurrence)))continue;}catch(RuntimeException invalid){continue;}
+            if(definition==null&&today.toString().equals(source.optString("snapshotDate"))&&!source.optBoolean("onToday"))continue;
             org.json.JSONObject moves=state.optJSONObject("movedTo");String chosenDate=moves==null?occurrence:moves.optString(progress,occurrence);
             // Ignore stale onToday/plannedDate/Friday-preview flags from older snapshots.
             if(!today.toString().equals(chosenDate))continue;
