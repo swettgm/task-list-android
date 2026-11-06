@@ -12,7 +12,11 @@ public class WeekendScheduleTest {
   for(int day=2;day<=8;day++)assertEquals(LocalDate.of(2026,11,6),WeekendSchedule.friday(LocalDate.of(2026,11,day)));
   assertEquals(LocalDate.of(2026,12,4),WeekendSchedule.friday(LocalDate.of(2026,11,30)));
  }
- @Test public void recurringWeekendShowsItsSaturdayFirstAndSundayOnlyTasksStayVisibleSaturday()throws Exception{
-  JSONObject repeat=new JSONObject("{\"days\":[0,6]}");assertEquals("2026-11-06",WeekendSchedule.opening(repeat,"2026-11-07"));assertEquals("",WeekendSchedule.opening(repeat,"2026-11-08"));assertEquals("2026-11-06",WeekendSchedule.opening(new JSONObject("{\"days\":[0]}"),"2026-11-08"));assertEquals("",WeekendSchedule.opening(new JSONObject("{\"days\":[0,1,2,3,4,5,6]}"),"2026-11-07"));
+ @Test public void recurringWeekendShowsItsSaturdayFirstAndSpecificSundayStaysOnSunday()throws Exception{
+  JSONObject repeat=new JSONObject("{\"days\":[0,6]}");assertEquals("2026-11-06",WeekendSchedule.opening(repeat,"2026-11-07"));assertEquals("",WeekendSchedule.opening(repeat,"2026-11-08"));assertEquals("",WeekendSchedule.opening(new JSONObject("{\"days\":[0]}"),"2026-11-08"));assertEquals("",WeekendSchedule.opening(new JSONObject("{\"days\":[0,1,2,3,4,5,6]}"),"2026-11-07"));
+ }
+ @Test public void weeklySundayAnchorsAreNotGenericWeekendTasks()throws Exception{
+  assertEquals("",WeekendSchedule.opening(new JSONObject("{\"repeat\":{\"amount\":1,\"unit\":\"week\",\"start\":\"2026-11-08\"}}"),"2026-11-08"));
+  assertEquals("",WeekendSchedule.opening(new JSONObject("{\"repeat\":{\"amount\":1,\"unit\":\"week\",\"start\":\"2026-11-08\",\"weekdays\":[0]}}"),"2026-11-08"));
  }
 }

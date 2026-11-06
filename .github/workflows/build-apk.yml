@@ -87,6 +87,7 @@ jobs:
             tools/completion-undo-smoke.mjs \
             tools/tasks-v7-smoke.mjs \
             tools/weekend-smoke.mjs \
+            tools/calendar-edit-view-smoke.mjs \
             tools/theme-smoke.mjs \
             tools/row-layout-smoke.mjs \
             tools/checklist-edit-smoke.mjs \

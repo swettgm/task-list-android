@@ -16,6 +16,11 @@ import org.robolectric.shadows.ShadowAlertDialog;
 public class DesktopIntegrationTest {
     Context context;
     @Before public void reset(){context=RuntimeEnvironment.getApplication();context.getSharedPreferences("desktop_sync",0).edit().clear().commit();context.getSharedPreferences("reference_state",0).edit().clear().commit();}
+    @Test public void lastTabIsRememberedOutsideTheSyncedTaskState()throws Exception{
+        context.getSharedPreferences("task_ui",0).edit().clear().commit();
+        org.robolectric.android.controller.ActivityController<MainActivity> first=Robolectric.buildActivity(MainActivity.class).setup();String before=new ReferenceStore(context).readState();first.get().taskBridgeForTests().setLastView("upcoming");assertEquals("upcoming",first.get().taskBridgeForTests().getLastView());first.pause().stop().destroy();
+        org.robolectric.android.controller.ActivityController<MainActivity> second=Robolectric.buildActivity(MainActivity.class).setup();try{assertEquals("upcoming",second.get().taskBridgeForTests().getLastView());second.get().taskBridgeForTests().setLastView("invalid");assertEquals("upcoming",second.get().taskBridgeForTests().getLastView());assertEquals(before,new ReferenceStore(context).readState());}finally{second.pause().stop().destroy();context.getSharedPreferences("task_ui",0).edit().clear().commit();}
+    }
     @Test public void phoneSaveMergesOverAConcurrentDesktopCompletion()throws Exception{
         ReferenceStore store=new ReferenceStore(context);store.writeState("{\"completed\":{\"phone\":false,\"pc\":false}}");
         org.robolectric.android.controller.ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();

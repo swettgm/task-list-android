@@ -11,8 +11,8 @@ final class WeekendSchedule {
     static boolean weekendTask(JSONObject task){
         if(task.optBoolean("weekend")||task.has("weekendCycleStart"))return true;
         JSONObject repeat=task.optJSONObject("repeat");JSONArray days=task.optJSONArray("days");
-        if(repeat!=null){if(!"week".equals(repeat.optString("unit")))return false;days=repeat.optJSONArray("weekdays");if(days==null||days.length()==0)try{int day=LocalDate.parse(repeat.getString("start")).getDayOfWeek().getValue();return day==6||day==7;}catch(Exception invalid){return false;}}
-        if(days!=null&&days.length()>0){for(int i=0;i<days.length();i++){int day=days.optInt(i,-1);if(day!=0&&day!=6)return false;}return true;}
+        if(repeat!=null){if(!"week".equals(repeat.optString("unit")))return false;days=repeat.optJSONArray("weekdays");if(days==null||days.length()==0)return false;}
+        if(days!=null&&days.length()>0){boolean saturday=false,sunday=false;for(int i=0;i<days.length();i++){int day=days.optInt(i,-1);if(day!=0&&day!=6)return false;if(day==0)sunday=true;else saturday=true;}return saturday&&sunday;}
         try{int day=LocalDate.parse(task.getString("due")).getDayOfWeek().getValue();return day==6||day==7;}catch(Exception invalid){return false;}
     }
     static String opening(JSONObject task,String occurrence){

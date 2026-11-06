@@ -5,7 +5,11 @@
     "changes": [
       "Added Complete to the persistent in-progress notification. A single active task completes directly; with several active tasks, Complete… opens a task picker so you choose which one to finish.",
       "Notification completion uses the same saved completion history and widget state as the app, handles complete checklists and recurring occurrences, and leaves other tasks in progress.",
-      "Stopped, moved, deleted and already-completed tasks reject outdated actions. The app refreshes when you return from the notification shade or picker."
+      "Stopped, moved, deleted and already-completed tasks reject outdated actions. The app refreshes when you return from the notification shade or picker.",
+      "Upcoming groups now use actual scheduled dates instead of Friday weekend previews. Single-weekday repeats such as Sunday Groceries keep their chosen weekday, and future task editors show the correct occurrence date and selected days.",
+      "The app reopens on the last selected Today or Upcoming tab, saved only on that device.",
+      "Hidden tasks get a white outline only while temporarily revealed in Today. Upcoming always includes future tasks before their hidden-until time.",
+      "Horizontally centered both rest messages in the app and reinforced widget alignment on refresh, with a fresh widget layout to clear stale launcher styling. Vertical placement stays unchanged."
     ]
   },
   {

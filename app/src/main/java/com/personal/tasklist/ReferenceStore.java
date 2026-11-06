@@ -222,6 +222,7 @@ public final class ReferenceStore {
             }
         }
         // Avoid holding both store locks during widget refreshes or launcher callbacks.
+        replaceLatestMirror();
         synchronized (MIRROR_LOCK) { taskStore.complete(taskId); }
         TaskReminders.reschedule(appContext);
         return true;

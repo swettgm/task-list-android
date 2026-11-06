@@ -160,7 +160,7 @@ public class MainActivity extends Activity {
         }
         if(completeProgressRequested){completeProgressRequested=false;showProgressCompletionChooser();}
         if(pendingPairUrl!=null){String url=pendingPairUrl,token=pendingPairToken;pendingPairUrl=null;pendingPairToken=null;confirmPC(url,token);}
-        web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()", null);
+        web.evaluateJavascript(contextFilter!=null||addRequested?"window.TaskListApp&&window.TaskListApp.showToday()":"window.TaskListApp&&window.TaskListApp.restoreLastView()", null);
         if (contextFilter != null) web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.setContextFilter(" + JSONObject.quote(contextFilter) + ")", null);
         if (addRequested) {
             addRequested = false;
@@ -179,7 +179,7 @@ public class MainActivity extends Activity {
         if (web != null) {
             web.onResume();
             if (pageReady && (reference.revision() != loadedRevision || !loadedDay.equals(LocalDate.now(ZoneId.of("America/New_York")).toString()))) loadTaskList();
-            else if(pageReady&&!isWidgetEditor())web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.showToday()",null);
+            else if(pageReady&&!isWidgetEditor())web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.restoreLastView()",null);
         }
     }
     @Override protected void onPause() { if(desktopSync!=null)desktopSync.stop(); if (web != null) web.onPause(); super.onPause(); }
@@ -286,6 +286,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void finishTaskEditor() { if(isWidgetEditor())runOnUiThread(()->{if(!destroyed)finish();}); }
         @JavascriptInterface public void actionHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);}); }
         @JavascriptInterface public void priorityHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);}); }
+        @JavascriptInterface public String getLastView(){return getSharedPreferences("task_ui",0).getString("lastView","today");}
+        @JavascriptInterface public void setLastView(String view){if("today".equals(view)||"upcoming".equals(view))getSharedPreferences("task_ui",0).edit().putString("lastView",view).apply();}
         @JavascriptInterface public String readState() { String value=reference.readState();bridgeBase=value;return value; }
         @JavascriptInterface public void writeState(String json) {
             try{JSONObject desired=new JSONObject(json),base=new JSONObject(bridgeBase==null?reference.readState():bridgeBase);boolean saved=false;
