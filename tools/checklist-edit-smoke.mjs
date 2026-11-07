@@ -21,7 +21,7 @@ const page=await openPage(seed);
 try{
  const dates=await page.evaluate(()=>{const today=TaskListApp.debugSummary().today,add=n=>{const d=new Date(today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};return{today,yesterday:add(-1),tomorrow:add(1)};});
  await page.evaluate(d=>{
-  const s=__checklist.get();s.inProgress=null;s.inProgressTasks=[];const task=(id,title,extra={})=>({id,title,priority:'HIGH',labels:['Checklist QA'],days:[0,1,2,3,4,5,6],...extra});
+  const s=__checklist.get();s.inProgress=null;s.inProgressTasks=[];const task=(id,title,extra={})=>({id,title,createdAt:new Date().toISOString(),priority:'HIGH',labels:['Checklist QA'],days:[0,1,2,3,4,5,6],...extra});
   s.customTasks=[...(s.customTasks||[]),task('edit-plain','Plain editable task'),task('edit-steps','Existing checklist',{steps:['Alpha','Beta']}),task('edit-groups','Grouped checklist',{children:true})];
   s.completed={...s.completed,['edit-steps:'+d.today+':step:0']:true,['edit-steps:'+d.yesterday+':step:0']:true,['edit-groups:'+d.today+':child:0']:true};s.completedOn={...s.completedOn,['edit-steps:'+d.today+':step:0']:d.today};
   __checklist.set(s);TaskListApp.reloadFromNative();TaskListApp.setContextFilter('Checklist QA');

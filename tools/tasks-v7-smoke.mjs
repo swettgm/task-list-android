@@ -32,7 +32,7 @@ try{
  check(!/daily/i.test(truckMeta)&&/sunday.*thursday/i.test(truckMeta),'Clean out truck frequency is Sunday through Thursday without a Daily prefix');
  const ids={dailyA:'v7-daily-a',dailyB:'v7-daily-b',closed:'v7-closed',future:'v7-future-once',second:'v7-second-once',third:'v7-third-once',futureRepeat:'v7-future-repeat'};
  await page.evaluate(({ids,dates})=>{
-  const current=__v7.getState(),task=(id,title,due)=>({id,title,due,priority:'HIGH',labels:['V7 QA'],minutes:15});
+  const current=__v7.getState(),task=(id,title,due)=>({id,title,due,createdAt:new Date().toISOString(),priority:'HIGH',labels:['V7 QA'],minutes:15});
   current.customTasks=[...(current.customTasks||[]),
    {...task(ids.dailyA,'Daily link A'),due:undefined,days:[0,1,2,3,4,5,6],recurrence:'Daily'},
    {...task(ids.dailyB,'Daily link B'),due:undefined,days:[0,1,2,3,4,5,6],recurrence:'Daily'},
