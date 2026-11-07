@@ -49,7 +49,7 @@ public final class TaskWidgetService extends RemoteViewsService {
             row.setTextColor(R.id.widget_due,Color.parseColor(dark?"#BAC9D9":"#56677F"));
             boolean active=TaskStore.IN_PROGRESS.equals(task.status),urgent=task.sourceRecord().optBoolean("urgent");
             boolean overdue;try{overdue=java.time.LocalDate.parse(ReminderPlanner.chosenDate(task.sourceRecord(),task.sourceRecord().optString("stateDate",task.dueDate),new org.json.JSONObject(new ReferenceStore(context).readState()))).isBefore(java.time.LocalDate.now(ReminderPlanner.ZONE));}catch(Exception invalid){overdue=false;}
-            String status=(active?"🟢 IN PROGRESS":urgent?"🔴 URGENT":overdue?"Overdue":"Today")+((active||urgent)&&overdue?" · Overdue":"");
+            String status=(active?"🟢 IN PROGRESS":urgent?"🔴 URGENT":overdue?"Overdue":"Today")+(!active&&urgent&&overdue?" · Overdue":"");
             row.setTextViewText(R.id.widget_due,status);
             row.setTextColor(R.id.widget_due,active||urgent?Color.WHITE:Color.parseColor(dark?"#BAC9D9":"#56677F"));
             row.setInt(R.id.widget_due,"setBackgroundResource",active?R.drawable.widget_progress_badge:urgent?R.drawable.widget_urgent_badge:0);

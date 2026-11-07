@@ -4,11 +4,11 @@
 
 - In-progress tasks now move as full task cards to the top of Today, replacing the separate title-only progress banner. Multiple active tasks appear there together, with their checkbox, details, checklist and actions. Stopping a task returns it to its normal priority section without changing its saved order.
 - Active future occurrences and tasks with an active checklist step can also appear as full cards at the top. Completing an active task retains the card during the existing undo pause. The Android in-progress notification and widget presentation are unchanged.
-
 - Web addresses in displayed task notes are now tappable and open in the default browser. Notes remain plain text when editing.
 - Swapped the detailed task form columns so Time is on the left and Date is on the right, in both Edit task and Add task.
-
-- Moved Contexts directly below the Time and Date pickers in the detailed Edit task and Add task forms. Urgent remains beneath Priority.
+- Kept Contexts beneath Priority and Urgent. Under the Time field, Hide until due time appears above Notify. Removed the explanatory Hide until sentence and slightly tightened the detailed Add/Edit form spacing while preserving field and button sizes.
+- Task arrow moves fade out briefly before the task appears in its new position, including within-priority reordering and endpoint holds.
+- The widget keeps its plain Overdue status, but an active task’s green pill shows only IN PROGRESS.
 
 ## Android 0.73.0 — 2026-11-07
 
