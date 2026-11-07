@@ -1,10 +1,10 @@
 # Tasks — Android
 
-Download [Tasks 0.72.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.72.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.73.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.73.0.apk). Install over the existing app to retain your tasks and settings.
 
-Task arrows use a single tap to move one task, a double tap to change priority one level, and a hold to jump to High or Low. Every transfer into a different priority goes to the bottom of that section. Holding Up while already High moves to its top; holding Down while already Low moves to its bottom. Successful actions give haptic feedback. Unmoved tasks default to creation time, oldest first. Saved order applies to Today, Upcoming and the widget; Urgent tasks remain first.
+Task arrows use a single tap to move one task, a double tap to change priority one level, and a hold to jump to High or Low. A single up-click at a section edge enters the bottom of the higher priority; a single down-click enters the top of the lower priority. Double taps and holds enter a different priority at its bottom. Holding Up while already High moves to its top; holding Down while already Low moves to its bottom. Successful actions give haptic feedback. Unmoved tasks default to creation time, oldest first. Saved order applies to Today, Upcoming and the widget; Urgent tasks remain first.
 
-Unfinished tasks carry into following days in their normal priority lists with an Overdue tag and their original due date. This includes missed recurring occurrences. Completing an overdue task completes only that occurrence and keeps later repeats intact. The widget also includes unfinished past tasks. Tasks scheduled for the future stay on their selected dates.
+Unfinished tasks carry into following days in their normal priority lists with an Overdue from date line beneath their details. This includes missed recurring occurrences. Completing an overdue task completes only that occurrence and keeps later repeats intact. The widget also includes unfinished past tasks. Tasks scheduled for the future stay on their selected dates.
 
 Task editors show a subtle creation date in the top-right corner. Creation timestamps are saved for new app and widget tasks, preserved through edits and rescheduling, and recovered from older app IDs when possible. Tasks with no creation history say Created date unavailable. Revealed hidden-task borders now clear their checkbox, and Hide until before due time sits below Date and Time, above Duration.
 

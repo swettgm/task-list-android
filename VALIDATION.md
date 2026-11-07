@@ -1,3 +1,13 @@
+# Android Tasks 0.73.0 verification
+
+Source: `8c28c2c77065c51a2268c43149cafaf57a9a8c74`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42344189633). **192 Android tests, 855 browser checks, 37 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.73.0.apk`, 319421 bytes; SHA-256 `d88a9678395e799eb3dcf4b68ff1bb56b922f3826e84a94f6532fba3729c5b5c`. The retained preview certificate matches the prior release, and every non-signature APK entry matches the tested CI artifact.
+
+Removed the extra app Overdue badge and its styling. Carried tasks retain one line such as Overdue from November 4th, always using the original occurrence date, including explicitly moved tasks. A single down-click at a priority-section edge enters the top of the next lower priority. Double taps and holds still append to their destination priority. Task action and arrow/gear gaps increase by 2 px while button sizes stay unchanged. Carry-over, scheduling, completion keys and widget presentation are unchanged. The existing calendar browser regression checks the exact date text and absence of a separate badge, along with recurring completion and future-date preservation.
+
+The APK is verified for package/version, retained signer, alignment, ZIP integrity and exact packaged assets. Tests use Robolectric and Chromium in GitHub Actions; no physical phone was used.
+
 # Android Tasks 0.72.0 verification
 
 Source: `26f1006da171ae50278c3673bcdcc7895753aa99`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42342694863). **192 Android tests, 855 browser checks, 37 calendar checks and zero lint errors passed.**
