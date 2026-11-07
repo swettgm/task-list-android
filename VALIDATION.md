@@ -1,3 +1,17 @@
+# Android Tasks 0.74.0 verification
+
+Source: `47dd1871dc58d72e20d4c33eb03ea6861042a70d`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42382991287). **193 Android tests, 867 browser checks, 37 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.74.0.apk`, 323517 bytes; SHA-256 `0ef5790a1743fd575aa7ceec5603e2aab3b6f6e104a3c0b555fe031bfed90a57`. The retained preview certificate matches the prior release, and every non-signature APK entry matches the tested CI artifact.
+
+Today renders active occurrences as full task cards above the completion progress bar and normal priority sections. The former title-only progress banner and its styling are removed. Active cards retain their checkbox, metadata, notes, checklist, progress action, priority arrows and editor. They are removed from the normal priority rows, deduplicated by occurrence, respect the context filter and retain saved priority/manual ordering. Stopping a task returns it to its normal section without mutating that order.
+
+Active future occurrences keep their due-date caption and Do today control. A task with an active checklist step can pin its parent card. During completion, the active card and its checked undo checkbox retain their position for the existing two-second pause. Completing and undoing one of multiple active tasks preserves the others.
+
+Browser checks cover multiple full cards, absence of a separate banner, no duplicate normal rows, retained notes/checklists/editor controls, stopping and reload persistence, future cards, linked progress, real-touch completion undo and pointer holds. The full calendar, priority, layout, settings and editor suites also pass. The widget retains its plain Overdue label but suppresses the Overdue suffix in the green active pill; native widget tests verify both states. The native in-progress notification is unchanged. Arrow reordering uses the existing fade path before rebuilding, with a browser animation assertion. Web URLs in displayed notes are linked using text nodes and HTTP(S) anchors; literal HTML stays text. Only user-gesture main-frame HTTP(S) requests open an external browser, and all WebView navigation/network blocking stays in place. Tests cover browser intents, blocked schemes and background/frame requests, preserved note text, punctuation and task-click isolation. Detailed Edit and Add forms place Time to the left of Date, keep Contexts below Priority/Urgent, and put Hide until above Notify under Time. The helper sentence is removed and vertical gaps are reduced slightly without resizing controls.
+
+The APK is verified for package/version, retained signer, alignment, ZIP integrity and exact packaged assets. Tests use Robolectric and Chromium in GitHub Actions; no physical phone was used.
+
 # Android Tasks 0.73.0 verification
 
 Source: `8c28c2c77065c51a2268c43149cafaf57a9a8c74`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42344189633). **192 Android tests, 855 browser checks, 37 calendar checks and zero lint errors passed.**

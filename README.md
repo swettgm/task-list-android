@@ -1,6 +1,10 @@
 # Tasks — Android
 
-Download [Tasks 0.73.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.73.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.74.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.74.0.apk). Install over the existing app to retain your tasks and settings.
+
+In-progress tasks move as full cards to the top of Today, replacing the separate title-only banner. Their details, checklist, completion checkbox and actions stay available. Stopping a task returns it to its normal priority section and saved position. Multiple active tasks appear there together; linked and checklist progress retain their existing behavior.
+
+Web links in displayed task notes open in your browser. Detailed Edit task and Add task forms place Time on the left and Date on the right. Contexts stays under Priority/Urgent; Hide until due time and Notify sit below Time. The helper sentence is removed and vertical spacing is slightly tighter. Task arrow moves use a brief fade. The widget keeps its plain Overdue label while its green active pill shows only IN PROGRESS.
 
 Task arrows use a single tap to move one task, a double tap to change priority one level, and a hold to jump to High or Low. A single up-click at a section edge enters the bottom of the higher priority; a single down-click enters the top of the lower priority. Double taps and holds enter a different priority at its bottom. Holding Up while already High moves to its top; holding Down while already Low moves to its bottom. Successful actions give haptic feedback. Unmoved tasks default to creation time, oldest first. Saved order applies to Today, Upcoming and the widget; Urgent tasks remain first.
 
