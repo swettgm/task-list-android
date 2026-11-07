@@ -282,6 +282,13 @@ public class TaskWidgetTest {
         assertEquals(Arrays.asList("urgent","order-2","order-0","order-1"),titles(TaskWidgetProvider.todayTasks(context,"","")));
     }
 
+    @Test public void oldWidgetSnapshotsUseCanonicalCreationTimesAfterUpgrade() throws Exception {
+        String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();ReferenceStore reference=new ReferenceStore(context);org.json.JSONArray tasks=new org.json.JSONArray(),rows=new org.json.JSONArray();
+        for(String[] value:new String[][]{{"custom-older","2026-10-01T12:00:00Z"},{"custom-newer","2026-11-01T12:00:00Z"}}){String id=value[0],key=id+":"+day;tasks.put(new org.json.JSONObject().put("id",id).put("title",id).put("priority","LOW").put("due",day).put("labels",new org.json.JSONArray()).put("createdAt",value[1]));rows.put(widgetRow(id,day,day,true,false,false,day).put("createdAt",id.equals("custom-older")?99:1).put("progressKey",key).put("completionKeys",new org.json.JSONArray().put(key)));}
+        reference.writeState(new org.json.JSONObject().put("customTasks",tasks).toString());reference.updateSnapshot(rows.toString());
+        assertEquals(Arrays.asList("custom-older","custom-newer"),titles(TaskWidgetProvider.todayTasks(context,"","")));
+    }
+
     @Test public void widgetUsesQuietPriorityHeadingsInPriorityOrder() {
         String today=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
         for(String priority:Arrays.asList("UNSET","LOW","MEDIUM","HIGH"))store.add(priority,"Work",today,java.util.Collections.emptyList(),TaskStore.NEXT,"",priority,0);
