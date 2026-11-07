@@ -1,5 +1,12 @@
 # Changelog
 
+## Android 0.72.0 — 2026-11-06
+
+- Arrow moves into another priority now always put the task at the bottom of that section, whether using a single tap at a section edge, a double tap, or a hold. Creation-time sorting remains the default until tasks are manually moved.
+- Holding Up on a task already in High moves it to the top; holding Down on a task already in Low moves it to the bottom. Urgent tasks stay first. Successful holds give haptic feedback, and saved ordering is shared by Today, Upcoming and the widget.
+
+- Unfinished tasks now carry into following days in their normal priority lists with an Overdue tag, including missed recurring occurrences. Completing an overdue occurrence preserves later repeats. The widget also shows unfinished past tasks and labels them Overdue. Future tasks keep their chosen dates.
+
 ## Android 0.71.0 — 2026-11-06
 
 - A single up-tap on the first task in a priority section now moves it to the bottom of the next higher priority. A single down-tap on the last task moves it to the top of the next lower priority. Position and priority are saved together across Today, Upcoming and the widget.

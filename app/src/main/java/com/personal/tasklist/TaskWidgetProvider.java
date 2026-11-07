@@ -150,10 +150,10 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
             org.json.JSONObject definition=null;
             for(int i=0;i<definitions.length();i++){org.json.JSONObject candidate=definitions.optJSONObject(i);if(candidate!=null&&taskId.equals(candidate.optString("id"))){definition=candidate;break;}}
             if(definition!=null)try{if(!ReminderPlanner.scheduled(definition,LocalDate.parse(occurrence)))continue;}catch(RuntimeException invalid){continue;}
-            if(definition==null&&today.toString().equals(source.optString("snapshotDate"))&&!source.optBoolean("onToday"))continue;
+            if(definition==null&&today.toString().equals(occurrence)&&today.toString().equals(source.optString("snapshotDate"))&&!source.optBoolean("onToday"))continue;
             String chosenDate=ReminderPlanner.chosenDate(definition==null?source:definition,occurrence,state);
-            // Ignore stale onToday/plannedDate/Friday-preview flags from older snapshots.
-            if(!today.toString().equals(chosenDate))continue;
+            // Future occurrences never show early; unfinished past occurrences carry over.
+            try{if(LocalDate.parse(chosenDate).isAfter(today))continue;}catch(RuntimeException invalid){continue;}
             org.json.JSONObject visibilityTask=definition==null?source:definition;
             if(!includeHidden&&!TaskStore.IN_PROGRESS.equals(task.status)&&!TaskVisibility.visible(visibilityTask,chosenDate,nowMillis))continue;
             result.add(task);
