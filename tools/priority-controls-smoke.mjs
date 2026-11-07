@@ -19,6 +19,7 @@ try{
  const double=async(id,dir,panel)=>{await button(id,dir,panel).dblclick({delay:70});await page.waitForTimeout(240);};
  const hold=async(id,dir,panel)=>{const control=button(id,dir,panel);await control.scrollIntoViewIfNeeded();const box=await control.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(520);await page.mouse.up();await page.waitForTimeout(240);};
  const light=()=>page.evaluate(()=>__priority.taps),strong=()=>page.evaluate(()=>__priority.haptics);
+ check(await page.locator('.tl-refresh').evaluate(button=>{const svg=button.querySelector('svg'),box=button.getBoundingClientRect(),bounds=svg.getBBox(),point=svg.createSVGPoint();point.x=bounds.x+bounds.width/2;point.y=bounds.y+bounds.height/2;const center=point.matrixTransform(svg.getScreenCTM());return Math.abs(center.x-box.x-box.width/2)<.5&&Math.abs(center.y-box.y-box.height/2)<.5&&box.width===48&&box.height===48;}),'The rounded refresh-arrow geometry is centered horizontally and vertically in its button');
  const initialLow=['order-z','order-a','order-m','order-new','order-none'];
  check(JSON.stringify(await ids('#pt-list','LOW'))===JSON.stringify(initialLow),'Creation time, oldest first, overrides title and due time by default');
  check(JSON.stringify(await ids('#pt-list','MEDIUM'))===JSON.stringify(['order-unknown-z','order-unknown-a','order-medium']),'Unknown creation dates retain original definition order without inventing dates');
