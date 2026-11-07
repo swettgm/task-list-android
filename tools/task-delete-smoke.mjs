@@ -5,7 +5,7 @@ import {pathToFileURL} from 'node:url';
 const browser=await chromium.launch({executablePath:process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium'].find(existsSync),args:['--no-sandbox','--disable-dev-shm-usage']});
 const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.addInitScript(()=>{
- let state={customTasks:[{id:'delete-series',title:'Delete repeating task',repeat:{amount:1,unit:'day',start:'2020-01-01'},priority:'LOW',notify:true,time:'6:00 PM'},{id:'delete-keeper',title:'Keep this task',repeat:{amount:1,unit:'day',start:'2020-01-01'},priority:'HIGH'}],completed:{'delete-series:2026-01-01':true},manualLinks:{'delete-series':['delete-keeper'],'delete-keeper':['delete-series']}};
+ let state={customTasks:[{id:'delete-series',createdAt:new Date().toISOString(),title:'Delete repeating task',repeat:{amount:1,unit:'day',start:'2020-01-01'},priority:'LOW',notify:true,time:'6:00 PM'},{id:'delete-keeper',createdAt:new Date().toISOString(),title:'Keep this task',repeat:{amount:1,unit:'day',start:'2020-01-01'},priority:'HIGH'}],completed:{'delete-series:2026-01-01':true},manualLinks:{'delete-series':['delete-keeper'],'delete-keeper':['delete-series']}};
  window.__del={get:()=>structuredClone(state),set:value=>state=value,snapshot:[],definitions:[],fail:false};
  window.TaskListNative={readState:()=>JSON.stringify(state),writeState:value=>{if(__del.fail)throw Error('Save failed');state=JSON.parse(value);},updateSnapshot:value=>__del.snapshot=JSON.parse(value),updateReminders:value=>__del.definitions=JSON.parse(value),setThemeColors(){},hideKeyboard(){}};
 });
