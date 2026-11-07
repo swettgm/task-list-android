@@ -1,5 +1,12 @@
 # Changelog
 
+## Android 0.70.0 — 2026-11-06
+
+- Task arrows now use a single tap to move one task within its priority section, a double tap to change priority one level, and a hold to jump to High or Low. Successful actions give haptic feedback, and drags cancel arrow gestures.
+- Tasks default to creation time, oldest first. Manual order is saved across Today, Upcoming and the widget, including future recurring occurrences. Older tasks without recorded creation times retain their original definition order. Urgent tasks remain first and completed history remains newest-completed first.
+- Replaced the refresh icon with a centered rounded two-arrow design. It reloads saved tasks, updates the widget and reminders, and requests companion sync without changing dates.
+- Interval repeat editors now show the actual repeat start date beneath Date, distinguishing the repeat anchor from the occurrence being edited. Existing repeat schedules remain unchanged.
+
 ## Android 0.69.0 — 2026-11-06
 
 - Tasks now appear only on their scheduled date or an explicitly chosen move date. Removed Friday weekend previews and automatic carry-over into later days in both Today and the widget. Past unfinished tasks and completion history remain saved.

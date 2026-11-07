@@ -344,7 +344,7 @@ public final class ReferenceStore {
             .put("listName", TaskStore.DEFAULT_LIST).put("dueDate", due).put("plannedDate", due)
             .put("done", false).put("status", TaskStore.NEXT).put("labels", definition.getJSONArray("labels"))
             .put("priority", requiredString(definition, "priority")).put("minutes", 0)
-            .put("urgent",definition.optBoolean("urgent")).put("createdAt", System.currentTimeMillis()).put("completionKeys", new JSONArray().put(key))
+            .put("urgent",definition.optBoolean("urgent")).put("taskCreatedAt",TaskOrdering.creation(definition)).put("createdAt", System.currentTimeMillis()).put("completionKeys", new JSONArray().put(key))
             .put("progressKey", key).put("stateDate", due).put("onToday", onToday).put("source", "html").put("snapshotDate",LocalDate.now(REFERENCE_ZONE).toString()).put("time",definition.optString("time"));
         row.put("weekendOpening",WeekendSchedule.opening(definition,due));
         if(definition.has("showBeforeMinutes"))row.put("showBeforeMinutes",definition.opt("showBeforeMinutes"));

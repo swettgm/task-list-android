@@ -264,12 +264,22 @@ public class TaskWidgetTest {
         return new org.json.JSONObject().put("id","html:"+id+":"+stateDate).put("title",id).put("listName","My tasks").put("dueDate",planned).put("plannedDate",planned).put("done",done).put("status",done?TaskStore.DONE:TaskStore.NEXT).put("labels",new org.json.JSONArray()).put("onToday",onToday).put("recurringDaily",daily).put("stateDate",stateDate).put("snapshotDate",snapshot);
     }
 
-    @Test public void todayWidgetSortsWithinPriorityByTimeThenTitle() throws Exception {
+    @Test public void todayWidgetSortsByCreationTimeAndKeepsUrgentFirst() throws Exception {
         String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();org.json.JSONArray rows=new org.json.JSONArray();
         String[][] values={{"Zulu",""},{"Noon","12:00 PM"},{"alpha",""},{"Late","23:59"},{"Zulu morning","9:00 AM"},{"Midnight","12:00 AM"},{"Alpha morning","09:00"}};
-        for(String[] value:values)rows.put(widgetRow(value[0],day,day,true,false,false,day).put("time",value[1]).put("priority","HIGH"));
+        int born=1;for(String[] value:values)rows.put(widgetRow(value[0],day,day,true,false,false,day).put("time",value[1]).put("taskCreatedAt",born++).put("priority","HIGH"));
         rows.put(widgetRow("First priority",day,day,true,false,false,day).put("priority","HIGH").put("urgent",true).put("time","23:59"));store.replaceReferenceTasks(rows.toString());
-        assertEquals(Arrays.asList("First priority","Midnight","Alpha morning","Zulu morning","Noon","Late","alpha","Zulu"),titles(TaskWidgetProvider.todayTasks(context,"","")));
+        assertEquals(Arrays.asList("First priority","Zulu","Noon","alpha","Late","Zulu morning","Midnight","Alpha morning"),titles(TaskWidgetProvider.todayTasks(context,"","")));
+    }
+
+    @Test public void widgetManualOrderSurvivesReloadAndUrgentStaysFirst() throws Exception {
+        String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();org.json.JSONArray rows=new org.json.JSONArray();
+        for(int i=0;i<3;i++){String id="order-"+i,key=id+":"+day;rows.put(widgetRow(id,day,day,true,false,false,day).put("priority","HIGH").put("taskCreatedAt",i+1).put("progressKey",key).put("completionKeys",new org.json.JSONArray().put(key)));}
+        String urgent="urgent:"+day;rows.put(widgetRow("urgent",day,day,true,false,false,day).put("priority","HIGH").put("urgent",true).put("taskCreatedAt",99).put("progressKey",urgent).put("completionKeys",new org.json.JSONArray().put(urgent)));
+        ReferenceStore reference=new ReferenceStore(context);reference.writeState(new org.json.JSONObject().put("taskOrder",new org.json.JSONObject().put("HIGH",new org.json.JSONArray().put("order-2").put("order-0").put("order-1"))).toString());reference.updateSnapshot(rows.toString());
+        assertEquals(Arrays.asList("urgent","order-2","order-0","order-1"),titles(TaskWidgetProvider.todayTasks(context,"","")));
+        assertEquals("order-2",new org.json.JSONObject(new ReferenceStore(context).readState()).getJSONObject("taskOrder").getJSONArray("HIGH").getString(0));
+        assertEquals(Arrays.asList("urgent","order-2","order-0","order-1"),titles(TaskWidgetProvider.todayTasks(context,"","")));
     }
 
     @Test public void widgetUsesQuietPriorityHeadingsInPriorityOrder() {
