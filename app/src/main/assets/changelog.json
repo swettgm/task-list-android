@@ -3,7 +3,8 @@
     "version": "0.75.0",
     "date": "2026-11-07",
     "changes": [
-      "Moved Notify above Hide until due time beneath the Time field in the detailed Edit task and Add task forms."
+      "Moved Notify above Hide until due time beneath the Time field in the detailed Edit task and Add task forms.",
+      "Lengthened task-arrow fades to 350 ms so movement is easier to notice. Reduced-motion preferences remain respected."
     ]
   },
   {
