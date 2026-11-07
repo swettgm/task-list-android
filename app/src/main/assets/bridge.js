@@ -435,7 +435,7 @@
     const title = taskTitleField(form, original.title || (prefill && prefill.title) || ''); title.required = true;
     const priority = choiceField(form, 'Priority', scope.groups.map(([key,label])=>[key,label.replace(' priority','')]), original.priority || 'LOW');
     const schedule = node('div', 'tl-schedule-grid'); form.append(schedule);
-    const initialDate = item ? (item.weekendPreview ? item.stateDate : item.date) : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
+    const initialDate = item ? (item.carried?global.TasksSchedule.chosenDate(original,item.stateDate,scope.getState().movedTo):(item.weekendPreview ? item.stateDate : item.date)) : (original.due || original.intervalStart || original.weekendCycleStart || (prefill && (prefill.dueDate || prefill.plannedDate)) || scope.today);
     const date = inputField(schedule, 'Date', 'date', initialDate); date.required = true;
     const shortcuts=node('div','tl-date-shortcuts');date.parentElement.append(shortcuts);
     shortcuts.append(action('Tomorrow',()=>{date.value=scope.addDays(scope.today,1);actionHaptic();}),action('Weekend',()=>{date.value=global.TasksSchedule.nextWeekend(scope.today);date.dataset.weekend='true';actionHaptic();}));

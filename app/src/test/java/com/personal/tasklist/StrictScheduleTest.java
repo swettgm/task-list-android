@@ -19,7 +19,7 @@ public class StrictScheduleTest {
   assertEquals("2026-11-07",ReminderPlanner.next(new JSONArray().put(oil),movedState,Instant.parse("2026-11-06T12:00:00Z").toEpochMilli()).getJSONObject(0).getString("date"));
   for(int n=0;n<28;n++){LocalDate date=LocalDate.of(2026,11,1).plusDays(n);assertEquals(date.getDayOfWeek()==DayOfWeek.SUNDAY,ReminderPlanner.scheduled(sunday,date));assertEquals(oilDays.contains(date.toString()),ReminderPlanner.scheduled(oil,date));assertEquals(date.getDayOfWeek()!=DayOfWeek.FRIDAY&&date.getDayOfWeek()!=DayOfWeek.SATURDAY,ReminderPlanner.scheduled(truck,date));}
  }
- @Test public void widgetRejectsFridayPreviewsAndCarriedRowsFromOlderSnapshots()throws Exception{
+ @Test public void widgetRejectsEarlyOccurrencesAndCarriesUnfinishedOriginalDates()throws Exception{
   Context context=RuntimeEnvironment.getApplication();context.getSharedPreferences("tasks",0).edit().clear().commit();context.getSharedPreferences("reference_state",0).edit().clear().commit();context.getSharedPreferences("task_reminders",0).edit().clear().commit();
   ReferenceStore store=new ReferenceStore(context);
   JSONObject oil=new JSONObject("{\"id\":\"oil\",\"title\":\"Check oil\",\"priority\":\"LOW\",\"days\":[0,6]}");
@@ -27,10 +27,10 @@ public class StrictScheduleTest {
   JSONObject moved=new JSONObject("{\"id\":\"moved\",\"title\":\"Explicit move\",\"priority\":\"LOW\",\"due\":\"2026-11-05\"}");
   store.writeState(new JSONObject().put("customTasks",new JSONArray().put(oil).put(groceries).put(moved)).put("movedTo",new JSONObject().put("moved:2026-11-05","2026-11-06").put("oil:2026-11-07","2026-11-06").put("groceries:2026-11-08","2026-11-06")).put("reminders",new JSONObject().put("daily",false).put("scheduled",false)).toString());
   store.updateSnapshot(new JSONArray().put(row("oil","2026-11-07")).put(row("oil","2026-11-08")).put(row("oil","2026-11-06")).put(row("groceries","2026-11-01")).put(row("groceries","2026-11-08")).put(row("moved","2026-11-05")).toString());
-  assertEquals(Collections.singletonList("html:moved:2026-11-05"),ids(context,"2026-11-06"));
-  assertEquals(Collections.singletonList("html:oil:2026-11-07"),ids(context,"2026-11-07"));
-  assertEquals(Arrays.asList("html:groceries:2026-11-08","html:oil:2026-11-08"),ids(context,"2026-11-08"));
-  assertTrue(ids(context,"2026-11-09").isEmpty());
+  assertEquals(Arrays.asList("html:groceries:2026-11-01","html:moved:2026-11-05"),ids(context,"2026-11-06"));
+  assertEquals(Arrays.asList("html:groceries:2026-11-01","html:moved:2026-11-05","html:oil:2026-11-07"),ids(context,"2026-11-07"));
+  assertEquals(Arrays.asList("html:groceries:2026-11-01","html:groceries:2026-11-08","html:moved:2026-11-05","html:oil:2026-11-07","html:oil:2026-11-08"),ids(context,"2026-11-08"));
+  assertEquals(5,ids(context,"2026-11-09").size());assertTrue(store.completeTask("html:groceries:2026-11-01"));assertEquals(4,ids(context,"2026-11-09").size());assertTrue(ids(context,"2026-11-09").contains("html:groceries:2026-11-08"));
  }
  private static List<String> ids(Context context,String date){List<String> result=new ArrayList<>();long now=LocalDate.parse(date).atTime(19,0).atZone(ReminderPlanner.ZONE).toInstant().toEpochMilli();for(TaskStore.Task task:TaskWidgetProvider.todayTasks(context,"","",now))result.add(task.id);Collections.sort(result);return result;}
  private static JSONObject row(String id,String date)throws Exception{return new JSONObject().put("id","html:"+id+":"+date).put("title",id).put("listName","My tasks").put("labels",new JSONArray()).put("priority","LOW").put("minutes",0).put("done",false).put("status",TaskStore.NEXT).put("dueDate",date).put("plannedDate","2026-11-06").put("stateDate",date).put("progressKey",id+":"+date).put("completionKeys",new JSONArray().put(id+":"+date)).put("createdAt",1).put("onToday",true).put("snapshotDate","2026-11-06").put("weekendOpening","2026-11-06").put("source","html");}
