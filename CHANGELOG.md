@@ -6,6 +6,8 @@
 
 - A single down-click from the bottom of a priority section now puts the task at the top of the next lower priority. Double taps and holds still enter a different priority at its bottom.
 
+- Added slightly more space between task action buttons while keeping their size unchanged.
+
 ## Android 0.72.0 — 2026-11-06
 
 - Arrow moves into another priority now always put the task at the bottom of that section, whether using a single tap at a section edge, a double tap, or a hold. Creation-time sorting remains the default until tasks are manually moved.
