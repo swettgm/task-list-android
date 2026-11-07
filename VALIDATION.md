@@ -1,3 +1,13 @@
+# Android Tasks 0.75.0 verification
+
+Source: `fe58b4f41011e80f8e9d7c67423910160f41e88e`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42384748918). **193 Android tests, 867 browser checks, 37 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.75.0.apk`, 323517 bytes; SHA-256 `d899a4e70ae0ee6ffdb69de6c1f12a2d206e6be78f5c1d03bff446501142cd68`. The retained preview certificate matches the prior release, and every non-signature APK entry matches the tested CI artifact.
+
+The detailed task forms now place Notify above Hide until due time under Time. The same shared form is used by Edit task and detailed Add task. Existing geometry checks verify Time/Date columns, Contexts placement and the new checkbox order in both forms. Arrow fades are lengthened to 350 ms, with reduced-motion support retained. Existing gesture tests assert the animation duration and final placement, and native sync defers reloads until the fade completes. Field sizes are unchanged.
+
+The APK is verified for package/version, retained signer, alignment, ZIP integrity and exact packaged assets. Tests use Robolectric and Chromium in GitHub Actions; no physical phone was used.
+
 # Android Tasks 0.74.0 verification
 
 Source: `47dd1871dc58d72e20d4c33eb03ea6861042a70d`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42382991287). **193 Android tests, 867 browser checks, 37 calendar checks and zero lint errors passed.**
