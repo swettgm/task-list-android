@@ -2,7 +2,7 @@
 
 ## Android 0.73.0 — 2026-11-07
 
-- Removed the separate Overdue badge. Carried tasks keep a single Overdue from date line beneath their details, including the moved-from date when applicable. Carry-over, completion and task ordering are unchanged.
+- Removed the separate Overdue badge. Carried tasks show one simple line such as Overdue from November 4th, always using the original due date rather than a carry-over or move date. Carry-over, completion and task ordering are unchanged.
 
 ## Android 0.72.0 — 2026-11-06
 
