@@ -1,5 +1,10 @@
 # Changelog
 
+## Android 0.71.0 — 2026-11-06
+
+- A single up-tap on the first task in a priority section now moves it to the bottom of the next higher priority. A single down-tap on the last task moves it to the top of the next lower priority. Position and priority are saved together across Today, Upcoming and the widget.
+- Single taps within a section still move one task, double taps change priority one level, and holding jumps to High or Low. Successful moves keep their haptic feedback, Urgent tasks stay first, and default sorting remains creation time.
+
 ## Android 0.70.0 — 2026-11-06
 
 - Task arrows now use a single tap to move one task within its priority section, a double tap to change priority one level, and a hold to jump to High or Low. Successful actions give haptic feedback, and drags cancel arrow gestures.
