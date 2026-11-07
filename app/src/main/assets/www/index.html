@@ -3615,7 +3615,7 @@ html.tl-widget-editor .tl-task-editor{margin-top:8px;margin-bottom:8px;max-heigh
       return false;
     };
     const progressButton=(key,title,completed=false)=>{
-      const active=inProgressTasks.includes(key);
+      const active=inProgressTasks.some(value=>value===key||value.startsWith(key+':'));
       const button=el('button',active?'tm-progress-control tm-progress-control-active':'tm-progress-control','Do now');
       button.type='button';
       button.setAttribute('aria-pressed',String(active));
@@ -3623,7 +3623,7 @@ html.tl-widget-editor .tl-task-editor{margin-top:8px;margin-bottom:8px;max-heigh
       button.title=active?'Clear the Do now mark':'Mark this as the current task';
       button.disabled=completed&&!active;
       button.addEventListener('click',()=>{
-        if(active){const linked=linkedComponent(key.split(':')[0]);setActiveKeys(inProgressTasks.filter(value=>linked.size>1?!linked.has(value.split(':')[0]):value!==key));}
+        if(active){const linked=linkedComponent(key.split(':')[0]);setActiveKeys(inProgressTasks.filter(value=>linked.size>1?!linked.has(value.split(':')[0]):value!==key&&!value.startsWith(key+':')));}
         else{const next=[...inProgressTasks,key],seen=new Set(),queue=[key.split(':')[0]],date=key.split(':')[1];while(queue.length){const id=queue.shift();if(seen.has(id))continue;seen.add(id);const task=tasks.find(task=>task.id===id);if(!task)continue;for(const peerId of linkedIds(task)){const peer=tasks.find(task=>task.id===peerId);if(!peer||peer.retired)continue;const item=onDate(date).find(item=>item.task.id===peerId),stateDate=item?.stateDate||peer.due||date;if(isDone(peer,stateDate))continue;next.push(progressKey(peer,stateDate));if(!seen.has(peerId))queue.push(peerId);}}setActiveKeys(next);}
         saveLocalState();
         renderToday();
