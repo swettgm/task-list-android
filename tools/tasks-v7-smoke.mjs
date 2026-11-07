@@ -170,7 +170,7 @@ try{
  await page.waitForTimeout(2200);await page.reload();await page.waitForFunction(()=>window.TaskListApp&&__v7.snapshot.length);
  state=await page.evaluate(()=>__v7.getState());
  check(state.completed[ids.dailyA+':'+dates.today]===true&&state.completed[ids.dailyB+':'+dates.today]===true,'Local and previously unseen remote completions both survive context changes and a full reload');
- check(await todayRow(remoteId).isVisible()&&!await todayRow(ids.dailyA).isVisible()&&!await todayRow(ids.dailyB).isVisible(),'Reload displays the companion task and keeps both completed tasks hidden');
+ check(await todayRow(remoteId).isVisible()&&!await page.locator('#pt-list [data-task-id="'+ids.dailyA+'"][data-state-date="'+dates.today+'"]').isVisible()&&!await page.locator('#pt-list [data-task-id="'+ids.dailyB+'"][data-state-date="'+dates.today+'"]').isVisible(),'Reload displays the companion task and keeps both completed tasks hidden');
  for(const mode of ['daily','weekends']){
   await page.evaluate(()=>TaskListApp.addTask());
   await editor.locator('.tl-task-title').first().fill('Shortcut repeat '+mode);
