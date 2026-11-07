@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.70.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.70.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.71.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.71.0.apk). Install over the existing app to retain your tasks and settings.
 
-Task arrows use a single tap to move one task within its priority section, a double tap to change priority one level, and a hold to jump to High or Low. Successful actions give haptic feedback. Tasks default to creation time, oldest first, until manually reordered; the saved order applies to Today, Upcoming and the widget. Original definition order is retained where no creation time is available. Urgent tasks remain first and completed history remains newest-completed first. The refresh control now uses a centered rounded two-arrow symbol, and interval repeat editors show their actual start date.
+Task arrows use a single tap to move one task. At the top of a priority section, up moves the task to the bottom of the next higher priority; at the bottom, down moves it to the top of the next lower priority. Double tap changes priority one level, and holding jumps to High or Low. Successful actions give haptic feedback. Tasks default to creation time, oldest first, until manually reordered; the saved order applies to Today, Upcoming and the widget. Original definition order is retained where no creation time is available. Urgent tasks remain first and completed history remains newest-completed first. The refresh control now uses a centered rounded two-arrow symbol, and interval repeat editors show their actual start date.
 
 Task editors show a subtle creation date in the top-right corner. Creation timestamps are saved for new app and widget tasks, preserved through edits and rescheduling, and recovered from older app IDs when possible. Tasks with no creation history say Created date unavailable. Revealed hidden-task borders now clear their checkbox, and Hide until before due time sits below Date and Time, above Duration.
 

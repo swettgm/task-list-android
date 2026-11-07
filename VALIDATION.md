@@ -1,3 +1,15 @@
+# Android Tasks 0.71.0 verification
+
+Source: `c009b1dc5f26c3f704ddd926725322904a062672`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42320716295). **191 Android tests, 870 browser checks, 37 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.71.0.apk`, 319421 bytes; SHA-256 `5acaaab5e906aee1e87d8a1bb1c35c28f9426991f72fb5957f64a9aa7eaa6d03`. The retained preview certificate matches the previous release, and every non-signature APK entry matches the tested CI build.
+
+A single arrow tap swaps with the visible neighbor inside a priority section. At its first or last row, it moves into the adjacent priority at the nearest end: up enters the bottom of the higher priority, down enters the top of the lower priority. Priority and destination order save in one state write. The order is shared across Today, Upcoming and widget sorting. The same creation-time default and Urgent-first rule remain in effect.
+
+Browser checks cover both boundary directions, insertion despite conflicting creation timestamps, subsequent ordinary reordering, High/Low limits, reload persistence, Upcoming and Today agreement, exactly one light haptic, and an internal Urgent boundary that must not demote a task. A rejected state write leaves both priority and ordering unchanged and a retry succeeds. Notes, checklist and creation time remain intact. Existing real-touch single/double/hold and cancellation checks also passed.
+
+The APK is verified for package/version, retained signer, alignment, ZIP integrity and exact packaged assets. Checks use Robolectric and Chromium in GitHub Actions; no physical phone was used.
+
 # Android Tasks 0.70.0 verification
 
 Source: `6061026c1cadeae5c7ece288a1b3f39f58601115`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42317921720). **191 Android tests, 855 browser checks, 37 calendar checks and zero lint errors passed.**
