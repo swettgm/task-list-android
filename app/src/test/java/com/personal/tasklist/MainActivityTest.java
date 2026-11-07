@@ -26,6 +26,17 @@ public class MainActivityTest {
         context.getSharedPreferences("tasks", Context.MODE_PRIVATE).edit().clear().commit();
         context.getSharedPreferences("reference_state", Context.MODE_PRIVATE).edit().clear().commit();
     }
+    private android.webkit.WebResourceRequest linkRequest(String url,boolean gesture,boolean mainFrame){
+        return new android.webkit.WebResourceRequest(){public android.net.Uri getUrl(){return android.net.Uri.parse(url);}public boolean isForMainFrame(){return mainFrame;}public boolean isRedirect(){return false;}public boolean hasGesture(){return gesture;}public String getMethod(){return "GET";}public java.util.Map<String,String> getRequestHeaders(){return java.util.Collections.emptyMap();}};
+    }
+    @Test public void noteLinksOpenOnlyUserChosenWebAddressesInTheBrowser(){
+        ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity activity=controller.get();android.webkit.WebView web=activity.webForTests();android.webkit.WebViewClient client=web.getWebViewClient();
+        try{
+            for(String url:new String[]{"javascript:alert(1)","file:///tmp/private","content://tasks/private","intent://external","https://tasklist.local/"}){assertTrue(client.shouldOverrideUrlLoading(web,linkRequest(url,true,true)));assertNull(Shadows.shadowOf(activity).getNextStartedActivity());}
+            assertTrue(client.shouldOverrideUrlLoading(web,linkRequest("https://example.com/automatic",false,true)));assertTrue(client.shouldOverrideUrlLoading(web,linkRequest("https://example.com/frame",true,false)));assertNull(Shadows.shadowOf(activity).getNextStartedActivity());
+            for(String url:new String[]{"https://example.com/notes?x=1","http://example.org/reference"}){assertTrue(client.shouldOverrideUrlLoading(web,linkRequest(url,true,true)));Intent opened=Shadows.shadowOf(activity).getNextStartedActivity();assertNotNull(opened);assertEquals(Intent.ACTION_VIEW,opened.getAction());assertEquals(url,opened.getDataString());assertTrue(opened.hasCategory(Intent.CATEGORY_BROWSABLE));assertTrue(web.getSettings().getBlockNetworkLoads());}
+        }finally{controller.pause().stop().destroy();}
+    }
     @Test @Config(sdk=30) public void widgetEditorOpensExactTaskWithoutChangingStateAndClosesSeparately() {
         Intent intent=new Intent(context,TaskEditorActivity.class).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:serum:2026-11-03");
         ActivityController<TaskEditorActivity> controller=Robolectric.buildActivity(TaskEditorActivity.class,intent).setup();

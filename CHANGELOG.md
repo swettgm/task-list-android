@@ -5,6 +5,9 @@
 - In-progress tasks now move as full task cards to the top of Today, replacing the separate title-only progress banner. Multiple active tasks appear there together, with their checkbox, details, checklist and actions. Stopping a task returns it to its normal priority section without changing its saved order.
 - Active future occurrences and tasks with an active checklist step can also appear as full cards at the top. Completing an active task retains the card during the existing undo pause. The Android in-progress notification and widget presentation are unchanged.
 
+- Web addresses in displayed task notes are now tappable and open in the default browser. Notes remain plain text when editing.
+- Swapped the detailed task form columns so Time is on the left and Date is on the right, in both Edit task and Add task.
+
 ## Android 0.73.0 — 2026-11-07
 
 - Removed the separate Overdue badge. Carried tasks show one simple line such as Overdue from November 4th, always using the original due date rather than a carry-over or move date. Carry-over, completion and task ordering are unchanged.

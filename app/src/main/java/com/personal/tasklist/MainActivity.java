@@ -85,7 +85,13 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(bridge, "TaskListNative");
         web.setWebChromeClient(new WebChromeClient());
         web.setWebViewClient(new WebViewClient() {
-            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return true; }
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                android.net.Uri uri=request.getUrl();String scheme=uri.getScheme();
+                if(request.isForMainFrame()&&request.hasGesture()&&("https".equalsIgnoreCase(scheme)||"http".equalsIgnoreCase(scheme))&&uri.getHost()!=null&&!"tasklist.local".equalsIgnoreCase(uri.getHost())){
+                    try{startActivity(new Intent(Intent.ACTION_VIEW,uri).addCategory(Intent.CATEGORY_BROWSABLE));}catch(android.content.ActivityNotFoundException|SecurityException unavailable){Toast.makeText(MainActivity.this,"No browser is available to open this link.",Toast.LENGTH_SHORT).show();}
+                }
+                return true;
+            }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
             }
