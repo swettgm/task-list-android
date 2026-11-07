@@ -1,5 +1,9 @@
 # Changelog
 
+## Android 0.73.0 — 2026-11-07
+
+- Removed the separate Overdue badge. Carried tasks keep a single Overdue from date line beneath their details, including the moved-from date when applicable. Carry-over, completion and task ordering are unchanged.
+
 ## Android 0.72.0 — 2026-11-06
 
 - Arrow moves into another priority now always put the task at the bottom of that section, whether using a single tap at a section edge, a double tap, or a hold. Creation-time sorting remains the default until tasks are manually moved.
