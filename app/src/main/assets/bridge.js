@@ -570,14 +570,14 @@
   function orderNeighbor(context,offset) {
     if(context.completed)return null;const row=liveOrderRow(context),task=scope.tasks.find(task=>task.id===context.id);if(!row||!task||row.classList.contains('tm-completing'))return null;
     const rows=Array.from(row.parentElement.children).filter(other=>{const peer=scope.tasks.find(value=>value.id===other.dataset.taskId);return peer&&peer.priority===task.priority&&!!peer.urgent===!!task.urgent&&!other.classList.contains('tm-completing');});
-    const index=rows.indexOf(row);return index<0?null:rows[index+offset]||null;
+    const index=rows.indexOf(row);if(index<0)return null;for(let at=index+offset;at>=0&&at<rows.length;at+=offset)if(rows[at].dataset.taskId!==task.id)return rows[at];return null;
   }
   function canCrossPriority(context,offset,task,row) {
     if(context.completed||!row||row.classList.contains('tm-completing'))return false;
     const levels=scope.groups.map(([key])=>key),rank=levels.indexOf(task.priority),target=rank+offset;
     if(rank<0||target<0||target>=levels.length)return false;
     const rows=Array.from(row.parentElement.children).filter(other=>{const peer=scope.tasks.find(value=>value.id===other.dataset.taskId);return peer&&peer.priority===task.priority&&!other.classList.contains('tm-completing');});
-    return offset<0?rows[0]===row:rows.at(-1)===row;
+    return (offset<0?rows[0]:rows.at(-1))?.dataset.taskId===task.id;
   }
   function moveTask(context,offset) {
     const neighbor=orderNeighbor(context,offset),task=scope.tasks.find(task=>task.id===context.id);if(!task)return false;

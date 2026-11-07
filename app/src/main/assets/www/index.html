@@ -2506,14 +2506,14 @@ main{max-width:100%;margin:0;padding:0}
   function orderNeighbor(context,offset) {
     if(context.completed)return null;const row=liveOrderRow(context),task=scope.tasks.find(task=>task.id===context.id);if(!row||!task||row.classList.contains('tm-completing'))return null;
     const rows=Array.from(row.parentElement.children).filter(other=>{const peer=scope.tasks.find(value=>value.id===other.dataset.taskId);return peer&&peer.priority===task.priority&&!!peer.urgent===!!task.urgent&&!other.classList.contains('tm-completing');});
-    const index=rows.indexOf(row);return index<0?null:rows[index+offset]||null;
+    const index=rows.indexOf(row);if(index<0)return null;for(let at=index+offset;at>=0&&at<rows.length;at+=offset)if(rows[at].dataset.taskId!==task.id)return rows[at];return null;
   }
   function canCrossPriority(context,offset,task,row) {
     if(context.completed||!row||row.classList.contains('tm-completing'))return false;
     const levels=scope.groups.map(([key])=>key),rank=levels.indexOf(task.priority),target=rank+offset;
     if(rank<0||target<0||target>=levels.length)return false;
     const rows=Array.from(row.parentElement.children).filter(other=>{const peer=scope.tasks.find(value=>value.id===other.dataset.taskId);return peer&&peer.priority===task.priority&&!other.classList.contains('tm-completing');});
-    return offset<0?rows[0]===row:rows.at(-1)===row;
+    return (offset<0?rows[0]:rows.at(-1))?.dataset.taskId===task.id;
   }
   function moveTask(context,offset) {
     const neighbor=orderNeighbor(context,offset),task=scope.tasks.find(task=>task.id===context.id);if(!task)return false;
@@ -3724,8 +3724,8 @@ html.tl-widget-editor .tl-task-editor{margin-top:8px;margin-bottom:8px;max-heigh
       if(item.moved&&item.date<item.stateDate&&!isDone(item.task,item.stateDate,draft))return 'Moved from '+labelDate(item.stateDate);
       if(!item.carried || isDone(item.task,item.stateDate,draft))return null;
       const target=movedTo[occurrenceId(item.task,item.stateDate)];
-      if(item.moved && target && item.date>target)return 'Overdue · moved to '+labelDate(target)+' from '+labelDate(item.stateDate);
-      return 'Overdue · originally due '+labelDate(item.stateDate);
+      if(item.moved && target && item.date>target)return 'Originally due '+labelDate(target)+' · moved from '+labelDate(item.stateDate);
+      return 'Originally due '+labelDate(item.stateDate);
     };
     const clearMovedProgress=(task,date)=>{const prefix=progressKey(task,date);setActiveKeys(inProgressTasks.filter(key=>key!==prefix&&!key.startsWith(prefix+':')));};
     const moveButton=item=>{

@@ -239,7 +239,7 @@ public class TaskWidgetTest {
         assertEquals("Today",((android.widget.TextView)view.findViewById(R.id.widget_title)).getText().toString());assertTrue(view.findViewById(R.id.widget_rows) instanceof android.widget.ListView);assertFalse(view.findViewById(R.id.widget_rows).isVerticalScrollBarEnabled());assertFalse(view.findViewById(R.id.widget_rows).isHorizontalScrollBarEnabled());
         assertEquals(0,context.getResources().getIdentifier("widget_summary","id",context.getPackageName()));
     }
-    @Test public void todaySnapshotExcludesHiddenFutureAndOldDailyRows() throws Exception {
+    @Test public void todaySnapshotCarriesUnfinishedRowsAndExcludesCompletedAndFuture() throws Exception {
         LocalDate today=LocalDate.now(java.time.ZoneId.of("America/New_York"));String day=today.toString(),yesterday=today.minusDays(1).toString(),tomorrow=today.plusDays(1).toString();
         org.json.JSONArray rows=new org.json.JSONArray();
         rows.put(widgetRow("today",day,day,true,false,false,day));
@@ -259,6 +259,16 @@ public class TaskWidgetTest {
         Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.ITEM_ACTION,"complete").putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:"+id+":"+day);
         new TaskWidgetProvider().onReceive(context,tap);new TaskWidgetProvider().onReceive(context,tap);Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(2100));
         assertTrue(new org.json.JSONObject(new ReferenceStore(context).readState()).getJSONObject("completed").getBoolean(id+":"+day));assertTrue(TaskWidgetProvider.todayTasks(context,"","").isEmpty());
+    }
+    @Test public void overdueWidgetLabelsAndCompletesOnlyTheOriginalOccurrence() throws Exception {
+        LocalDate today=LocalDate.now(ReminderPlanner.ZONE);String past=today.minusDays(1).toString(),day=today.toString(),future=today.plusDays(1).toString();
+        ReferenceStore reference=new ReferenceStore(context);org.json.JSONObject definition=new org.json.JSONObject().put("id","carry-repeat").put("title","Carry repeat").put("priority","LOW").put("repeat",new org.json.JSONObject().put("start",past).put("unit","day").put("amount",1));
+        reference.writeState(new org.json.JSONObject().put("customTasks",new org.json.JSONArray().put(definition)).put("reminders",new org.json.JSONObject().put("daily",false).put("scheduled",false)).toString());
+        org.json.JSONArray rows=new org.json.JSONArray();for(String date:new String[]{past,day,future}){String key="carry-repeat:"+date;rows.put(widgetRow("carry-repeat",date,date,date.equals(day),false,true,past).put("progressKey",key).put("completionKeys",new org.json.JSONArray().put(key)));}reference.updateSnapshot(rows.toString());
+        assertEquals(2,TaskWidgetProvider.todayTasks(context,"","").size());
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();android.view.View overdue=factory.getViewAt(1).apply(context,null);assertEquals("Overdue",((android.widget.TextView)overdue.findViewById(R.id.widget_due)).getText().toString());
+        assertTrue(reference.completeTask("html:carry-repeat:"+past));org.json.JSONObject completed=new org.json.JSONObject(reference.readState()).getJSONObject("completed");assertTrue(completed.getBoolean("carry-repeat:"+past));assertFalse(completed.optBoolean("carry-repeat:"+day));assertFalse(completed.optBoolean("carry-repeat:"+future));assertEquals(1,TaskWidgetProvider.todayTasks(context,"","").size());
+        long later=today.plusDays(3).atTime(12,0).atZone(ReminderPlanner.ZONE).toInstant().toEpochMilli();assertEquals(2,TaskWidgetProvider.todayTasks(context,"","",later).size());
     }
     private org.json.JSONObject widgetRow(String id,String planned,String stateDate,boolean onToday,boolean done,boolean daily,String snapshot) throws Exception {
         return new org.json.JSONObject().put("id","html:"+id+":"+stateDate).put("title",id).put("listName","My tasks").put("dueDate",planned).put("plannedDate",planned).put("done",done).put("status",done?TaskStore.DONE:TaskStore.NEXT).put("labels",new org.json.JSONArray()).put("onToday",onToday).put("recurringDaily",daily).put("stateDate",stateDate).put("snapshotDate",snapshot);

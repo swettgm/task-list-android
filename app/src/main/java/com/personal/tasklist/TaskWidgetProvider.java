@@ -137,7 +137,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         return tasks;
     }
 
-    /** Only rows belonging to the app's current Today list; completed history stays in storage. */
+    /** Scheduled Today rows and unfinished past occurrences; future rows and completed history stay out. */
     static List<TaskStore.Task> todayTasks(Context context,String listName,String label){return todayTasks(context,listName,label,System.currentTimeMillis());}
     static List<TaskStore.Task> todayTasks(Context context,String listName,String label,long nowMillis){return todayTasks(context,listName,label,false,nowMillis);}
     private static List<TaskStore.Task> todayTasks(Context context,String listName,String label,boolean includeHidden,long nowMillis){
