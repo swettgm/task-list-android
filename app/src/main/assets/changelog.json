@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.76.0",
+    "date": "2026-11-07",
+    "changes": [
+      "Removed the Repeat starts date note from the detailed editor. Saved repeat schedules are unchanged.",
+      "Hide until before due time and its hour/minute fields now span the full form width below Time, Date and their shortcut buttons. Notify stays under Time, above Hide until. This applies to both Edit task and detailed Add task."
+    ]
+  },
+  {
     "version": "0.75.0",
     "date": "2026-11-07",
     "changes": [
