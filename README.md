@@ -1,12 +1,14 @@
 # Tasks — Android
 
-Download [Tasks 0.71.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.71.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.72.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.72.0.apk). Install over the existing app to retain your tasks and settings.
 
-Task arrows use a single tap to move one task. At the top of a priority section, up moves the task to the bottom of the next higher priority; at the bottom, down moves it to the top of the next lower priority. Double tap changes priority one level, and holding jumps to High or Low. Successful actions give haptic feedback. Tasks default to creation time, oldest first, until manually reordered; the saved order applies to Today, Upcoming and the widget. Original definition order is retained where no creation time is available. Urgent tasks remain first and completed history remains newest-completed first. The refresh control now uses a centered rounded two-arrow symbol, and interval repeat editors show their actual start date.
+Task arrows use a single tap to move one task, a double tap to change priority one level, and a hold to jump to High or Low. Every transfer into a different priority goes to the bottom of that section. Holding Up while already High moves to its top; holding Down while already Low moves to its bottom. Successful actions give haptic feedback. Unmoved tasks default to creation time, oldest first. Saved order applies to Today, Upcoming and the widget; Urgent tasks remain first.
+
+Unfinished tasks carry into following days in their normal priority lists with an Overdue tag and their original due date. This includes missed recurring occurrences. Completing an overdue task completes only that occurrence and keeps later repeats intact. The widget also includes unfinished past tasks. Tasks scheduled for the future stay on their selected dates.
 
 Task editors show a subtle creation date in the top-right corner. Creation timestamps are saved for new app and widget tasks, preserved through edits and rescheduling, and recovered from older app IDs when possible. Tasks with no creation history say Created date unavailable. Revealed hidden-task borders now clear their checkbox, and Hide until before due time sits below Date and Time, above Duration.
 
-Task dates are strict: Today and the widget show only the scheduled occurrence or an explicit move date. Friday previews and automatic carry-over are removed. Upcoming shows later repeats even if an older occurrence is unfinished. Recurring schedules ignore obsolete day-move entries. A refresh icon beside Settings reloads saved tasks and refreshes native widgets/reminders; the calendar also updates at midnight and on focus.
+Upcoming and reminders follow the selected dates and weekdays. Today and the widget include scheduled occurrences, explicit moves and unfinished past occurrences. Friday previews remain removed. Upcoming shows later repeats even if an older occurrence is unfinished. Recurring schedules ignore obsolete day-move entries. A refresh icon beside Settings reloads saved tasks and refreshes native widgets/reminders; the calendar also updates at midnight and on focus.
 
 The persistent in-progress notification now has a Complete action. It completes a single active task directly, or lets you choose a task when several are active. The task list, history and widget share the completion.
 

@@ -1,3 +1,17 @@
+# Android Tasks 0.72.0 verification
+
+Source: `26f1006da171ae50278c3673bcdcc7895753aa99`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42342694863). **192 Android tests, 855 browser checks, 37 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.72.0.apk`, 319421 bytes; SHA-256 `5b745f6fd27031bcf0c7ba76d07bd87e91c88d7974fcb7a73f439129abc074df`. The retained preview certificate matches the prior release, and every non-signature APK entry matches the tested CI artifact.
+
+Every arrow transfer to a different priority appends the task at the bottom, including section-edge single taps, double taps and holds. Holding Up while already High moves to the top of its urgency group; holding Down while already Low moves to the bottom. Urgent tasks remain first. Priority and destination order save together; creation time remains the default for unmoved tasks. Browser tests include real touch gestures, haptics, hold-release suppression, cancelled drags, rejected writes and retries, reload persistence and Upcoming/Today agreement.
+
+Unfinished occurrences carry into following days in the normal priority lists, with an Overdue tag and original due date. Their original completion keys remain unchanged. Recurring carry-over starts at the task's creation/schedule boundary, skips deleted, completed and superseded occurrences, respects explicit moves, and leaves future dates intact. Multiple pending occurrences of one task share task order without trapping single-tap reordering. The editor shows the original chosen due date for an overdue occurrence.
+
+Browser checks exercise one-time and recurring overdue rows, visible tags, completion of only the original occurrence, future recurrence preservation, alternate-weekend schedules, explicit moves, automatic midnight refresh and rescheduling. Native checks confirm that widget snapshots carry unfinished past rows, reject future and invalid weekday rows, show an Overdue label, complete only the selected occurrence, and remain carried over several days later. New-task test fixtures record creation timestamps so layout-only repeat anchors do not invent pre-creation history.
+
+The APK is verified for package/version, retained signer, alignment, ZIP integrity and exact packaged assets. Tests use Robolectric and Chromium in GitHub Actions; no physical phone was used.
+
 # Android Tasks 0.71.0 verification
 
 Source: `c009b1dc5f26c3f704ddd926725322904a062672`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42320716295). **191 Android tests, 870 browser checks, 37 calendar checks and zero lint errors passed.**
