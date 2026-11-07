@@ -3,7 +3,8 @@
     "version": "0.73.0",
     "date": "2026-11-07",
     "changes": [
-      "Removed the separate Overdue badge. Carried tasks show one simple line such as Overdue from November 4th, always using the original due date rather than a carry-over or move date. Carry-over, completion and task ordering are unchanged."
+      "Removed the separate Overdue badge. Carried tasks show one simple line such as Overdue from November 4th, always using the original due date rather than a carry-over or move date. Carry-over, completion and task ordering are unchanged.",
+      "A single down-click from the bottom of a priority section now puts the task at the top of the next lower priority. Double taps and holds still enter a different priority at its bottom."
     ]
   },
   {
