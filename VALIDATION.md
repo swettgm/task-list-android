@@ -1,3 +1,17 @@
+# Android Tasks 0.70.0 verification
+
+Source: `6061026c1cadeae5c7ece288a1b3f39f58601115`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42317921720). **191 Android tests, 855 browser checks, 37 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.70.0.apk`, 315325 bytes; SHA-256 `d4fbe311b5e9b692a2d2d5b70905ba2cf035849a0f9de1303c371be1325b9e33`. The certificate matches the retained preview signer and every non-signature ZIP entry matches the tested CI APK.
+
+Default task order is actual creation time, oldest first, within priority and urgency groups. Unknown creation times use original definition order. A single arrow tap swaps the task with its visible neighbor and saves a global per-priority ID order. Double taps cancel the queued single action and change priority one level. Holding jumps to High or Low. Native light/long haptics accompany successful actions. Movement, cancellation and hold-release suppression are checked with mouse and real touch input. Shift+Enter/Space provides a keyboard priority action.
+
+Manual order is shared by Today, Upcoming and future recurring occurrences, and carried to native widget sorting through saved task IDs and explicit creation metadata. The widget never treats an occurrence date as a task’s creation time. Urgent tasks stay first, and manual moves cannot cross the urgent boundary. Completed history retains its completion-time ordering. Tests preserve checklist history, task details, creation timestamps, links and identities.
+
+The refresh icon uses symmetric rounded arrows centered in its existing control. Interval editors show the repeat anchor separately from the occurrence date, without changing saved schedules. The user corrected Check oil’s start date; this release retains the strict scheduling rules and does not rewrite recurrence anchors.
+
+The release APK is verified against the CI artifact, retained signer, package/version, alignment, ZIP integrity and exact packaged assets. Checks use Robolectric and Chromium in GitHub Actions; no physical phone was used.
+
 # Android Tasks 0.69.0 verification
 
 Source: `eb14715f29ca3628fba765bf3029cfc5ffb473a7`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42313719512). **189 Android tests, 865 browser checks, 37 calendar checks and zero lint errors passed.**
