@@ -1,5 +1,9 @@
 # Changelog
 
+## Android 0.75.0 — 2026-11-07
+
+- Moved Notify above Hide until due time beneath the Time field in the detailed Edit task and Add task forms.
+
 ## Android 0.74.0 — 2026-11-07
 
 - In-progress tasks now move as full task cards to the top of Today, replacing the separate title-only progress banner. Multiple active tasks appear there together, with their checkbox, details, checklist and actions. Stopping a task returns it to its normal priority section without changing its saved order.

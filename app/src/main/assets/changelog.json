@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.75.0",
+    "date": "2026-11-07",
+    "changes": [
+      "Moved Notify above Hide until due time beneath the Time field in the detailed Edit task and Add task forms."
+    ]
+  },
+  {
     "version": "0.74.0",
     "date": "2026-11-07",
     "changes": [
