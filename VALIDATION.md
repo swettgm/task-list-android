@@ -1,3 +1,15 @@
+# Android Tasks 0.76.0 verification
+
+Source: `31c3fb0229eb61834a06174742f36f10684f1327`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42385687191). **193 Android tests, 867 browser checks, 37 calendar checks and zero lint errors passed.**
+
+APK: `Tasks-v0.76.0.apk`, 323517 bytes; SHA-256 `6ea9a33248562aa9c23750c0cd3b17bccad43d7634b1d1fb4ba6be0c9e4ee6ef`. The retained preview certificate matches the prior release, and every non-signature APK entry matches the tested CI artifact.
+
+Removed the Repeat starts caption and its display-only event listeners. Repeat scheduling and saved anchors remain unchanged. Hide until before due time now occupies a full-width grid row below both Time/Notify and Date/shortcut buttons, with its lead-time inputs using that same width when enabled. Notify stays under Time. The shared Edit and detailed Add forms use the same layout.
+
+Existing geometry regressions verify that Hide until begins below both columns, reaches the right edge of the date column, and remains above Duration, with Notify under Time and no repeat caption. The full scheduling, gesture, editor, completion and native suites pass.
+
+The APK is verified for package/version, retained signer, alignment, ZIP integrity and exact packaged assets. Tests use Robolectric and Chromium in GitHub Actions; no physical phone was used.
+
 # Android Tasks 0.75.0 verification
 
 Source: `fe58b4f41011e80f8e9d7c67423910160f41e88e`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42384748918). **193 Android tests, 867 browser checks, 37 calendar checks and zero lint errors passed.**
