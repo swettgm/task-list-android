@@ -1,3 +1,13 @@
+# Route Manager 1.0.3 validation
+
+Source: `d35ebc3d84536e0fc08e4d6b78079bbd6da53d7f`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/42531214614). **11 Android tests, 80 Chromium checks and zero lint errors passed.**
+
+Every route header now shows the number of notes across all five routes in the existing count area, such as 4 notes total. This replaces the route-specific stop/note count and preserves the weekday label. The count is derived from note records, updates on save/delete and counts a note with multiple stop associations once. Browser checks cover zero, singular wording, multiple-stop notes, changes after deletion and the same count on all five pages including empty routes.
+
+Settings now has a general Manage stops button. Its page shows all five route groups with route and weekday headings and route labels on each stop. Editors use the clicked stop's route instead of the main page's selected route. Add stop offers a route selector. Tests open Monday editing from Tuesday, add a Monthly stop to Friday from Tuesday, and verify deleting a same-named Tuesday stop preserves Monday. Existing stops and notes keep their route associations.
+
+Header and all-route management screenshots were reviewed. The signed APK matches tested CI entries except signatures. Manifest, exact HTML, ZIP integrity, alignment, APK signatures and the retained certificate match to 1.0.2 passed. Package `com.personal.routemanager`, version 1.0.3 (4), 33361 bytes. SHA-256 `cea092661ee10b61a8bd5d7f00811dc09454f785732e984852057c3bde89c263`. Testing used Robolectric and Chromium; no physical phone was used.
+
 # Route Manager 1.0.2 validation
 
 Source: `a9ff3a0cb2378208a713d078c75e419307b13187`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/42525642527). **11 Android tests, 68 Chromium checks and zero lint errors passed.**
