@@ -5,8 +5,8 @@ A separate, offline Android app for route notes. Installs alongside Tasks with i
 - G200 Monday, G300 Tuesday, G400 Wednesday, G500 Thursday, G600 Friday.
 - Opens the current weekday's page; weekends open Monday. Swipe between routes; both ends loop around.
 - Save stop names with the disk button, or save a typed new stop when adding a note. Autocomplete saved names and select multiple stops per note.
-- Weekly and Biweekly labels are informational: notes always remain visible.
-- Add, edit and delete notes; maintain saved stops in Settings; adjust colors, gradient and text size. The main route page shows all notes without a filter.
+- Weekly, Biweekly and Monthly labels are informational: notes always remain visible.
+- Add, edit and delete notes; maintain saved stops in Settings with their route and weekday clearly shown; adjust colors, gradient and text size. The main route page shows all notes without a filter.
 - The compact note field starts on one line and grows with text; the keyboard keeps editor headings and action buttons visible.
 - Delete requires two taps within three seconds. Removing a stop keeps its notes.
 - Local Android storage only; no account, network permission, widget or reminders.
