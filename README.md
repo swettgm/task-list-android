@@ -1,6 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.76.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.76.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.77.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.77.0.apk). Install over the existing app to retain your tasks and settings.
+
+Settings → Task ordering now offers Hold and drag alongside the existing arrows. Hold a task, then use the solid preview and insertion line to reorder it or change its priority. The Weekend shortcut always chooses the next Friday strictly after today, including when used on Friday, Saturday or Sunday.
 
 In-progress tasks move as full cards to the top of Today, replacing the separate title-only banner. Their details, checklist, completion checkbox and actions stay available. Stopping a task returns it to its normal priority section and saved position. Multiple active tasks appear there together; linked and checklist progress retain their existing behavior.
 
@@ -95,3 +97,7 @@ GitHub Actions also checks the real packaged UI in Chromium. Release signing key
 See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 For each release, add the newest entry to `app/src/main/assets/changelog.json`, mirror the history in `APP_CHANGELOG` in `bridge.js` and its packaged HTML copy, and update `CHANGELOG.md`. The browser checks require the Settings history to match the packaged history and current app version.
+
+## Route Manager
+
+[Download Route Manager 1.0.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Route-Manager-v1.0.0.apk), a separate lightweight offline Android app for G200–G600 route notes. [Project and features](route-manager/README.md). Installs alongside Tasks with its own saved data and no widget.

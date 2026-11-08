@@ -1,3 +1,15 @@
+# Android Tasks 0.77.0 verification
+
+Source: `1c8026fceb36cfd7d909ad253e4ab55611580c1b`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42519398165). **193 Android tests, 887 browser checks, 37 calendar checks and zero lint errors passed.**
+
+Settings → Task ordering now offers Hold and drag as an alternative to priority arrows. Long press picks up a solid preview using the task's actual styling, with a white insertion line marking the landing position. Empty priority sections remain available while there are tasks to drag. Moving before the hold keeps native scrolling; active drags scroll at the screen edges. Pickup and successful drop provide haptic feedback. Order and priority save together using the existing task definition/order model; task dates, note content and completion history are preserved. Urgent tasks remain first and lowering an urgent task clears Urgent, matching arrows. Completed/trash items and interactive row controls cannot initiate a drag. The widget front is unchanged.
+
+Browser regressions verify real touch pickup and cross-priority dropping, within-priority insertion, opaque correctly styled preview, insertion target, no unintended editor/completion/page swipe, Escape cancellation, scroll-before-hold cancellation, rejected-write recovery, persistence and restoring arrows. Screenshots were reviewed. Existing arrow, calendar, overdue, editor, widget and other browser suites remain passing.
+
+The Weekend date shortcut now picks the next Friday strictly after today, including Friday (+7 days), Saturday and Sunday. JS and native implementations are covered across weekdays and year boundaries, with browser checks of the detailed form and native widget Quick add coverage. Recurring weekday selections are unchanged.
+
+APK: `Tasks-v0.77.0.apk`, 327613 bytes. SHA-256 `9ce0315873af543dafa01898570ca11150804004a4f399a5d71c8021fa75b94a`. Package/version, retained update signer, alignment, ZIP integrity and exact packaged assets were verified. Every non-signature entry matches the tested CI artifact. Tests use Robolectric and Chromium; no physical phone was used.
+
 # Android Tasks 0.76.0 verification
 
 Source: `31c3fb0229eb61834a06174742f36f10684f1327`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42385687191). **193 Android tests, 867 browser checks, 37 calendar checks and zero lint errors passed.**
