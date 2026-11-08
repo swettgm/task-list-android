@@ -1,3 +1,13 @@
+# Android Tasks 0.78.0 verification
+
+Source: `20869ca39612d329177a89011f1d13470bb730e2`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42524394530). **193 Android tests, 893 browser checks, 37 calendar checks and zero lint errors passed.**
+
+Clock and repeat artwork now begins at the same content column as the task title, priority text, action buttons and checklist controls. The checkbox keeps its own column. The fixed icon boxes and SVG shapes retain their sizes; only their internal horizontal inset is compensated within metadata flow. This preserves icon/text spacing, dot-separator wrapping, fonts and task ordering. The adjustment excludes the widget editor, and the widget front is unchanged.
+
+Geometry checks compare the clock's painted left edge, first task button and checklist disclosure against the title at 320, 390 and 600 px in Today and Upcoming. The prior state is restored before the existing layout tests. The full drag, calendar, completion, editor, notification, widget and other suites pass.
+
+APK: `Tasks-v0.78.0.apk`, 331709 bytes. SHA-256 `c38474a81f48c59d77ee2ce72c6a62f7b6fd214c96a388a3c9fb77c5be69dc60`. Package/version, retained update signer, alignment, ZIP integrity and exact packaged assets were verified. Every non-signature entry matches the tested CI artifact. Tests use Robolectric and Chromium; no physical phone was used.
+
 # Android Tasks 0.77.0 verification
 
 Source: `1c8026fceb36cfd7d909ad253e4ab55611580c1b`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42519398165). **193 Android tests, 887 browser checks, 37 calendar checks and zero lint errors passed.**

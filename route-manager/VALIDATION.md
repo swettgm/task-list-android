@@ -1,3 +1,15 @@
+# Route Manager 1.0.1 validation
+
+Source: `5cc4d3a1faf7e085b325f09a67b12f22b21a2eff`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/42524680754). Nine Android tests, 60 Chromium workflow checks and zero lint errors passed.
+
+The Add/Edit note field starts on one line and grows with text. Editor headings and fields do not shrink, and the inner fields scroll separately from the fixed action row. The top-anchored dialog uses both the dynamic viewport and visual viewport height to stay inside the keyboard area. Field focus avoids scrolling the page; keyboard resize keeps the first stop field and its caption intact. Tests cover 390×420, 320×360 and 600×480 keyboard-sized viewports, dynamic grow/shrink, larger text, long notes and a visible separate footer.
+
+The settings control now uses the same gear character as Tasks. The main page no longer has a stop dropdown or Stops button. Manage stops is available inside the separate Settings page; Back from stop management returns there. Existing stop names, cadence labels, note associations, routes and appearance remain saved.
+
+The editor screenshot was reviewed. The signed APK's non-signature entries match the tested CI artifact, including exact packaged HTML. Package `com.personal.routemanager`, version 1.0.1 (2), 33361 bytes. APK signatures, retained certificate match to 1.0.0, alignment, manifest and ZIP integrity passed. SHA-256 `bf60c26f412968d940794511cfdb06e613120a6dea0a7fcc666f6a2d81ad2277`.
+
+Validation used Robolectric and Chromium; no physical phone was used.
+
 # Route Manager 1.0.0 validation
 
 Source: `4bfa360a17d5253e5444f9fb441b7641b96d68ed`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/42512153493).
