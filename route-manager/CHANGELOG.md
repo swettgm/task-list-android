@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.3
+
+- Manage stops now includes all five routes grouped by route and weekday. Edit any route from Settings, or choose the route when adding a stop.
+
+- Replaced the per-route stop/note count with a total count of notes across all five route pages, shown on every page.
+- The total updates when notes are added or deleted; a note assigned to multiple stops counts once.
+
 ## 1.0.2
 
 - Added Monthly alongside Weekly and Biweekly for saved stops. All notes remain visible.
