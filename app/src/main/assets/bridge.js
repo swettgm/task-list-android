@@ -690,10 +690,10 @@
   function beginTaskDrag(drag){
     if(taskDrag!==drag||!drag.row.isConnected||document.querySelector('dialog[open],.tl-settings-screen'))return;
     drag.active=true;const r=drag.row.getBoundingClientRect();drag.width=Math.min(r.width,innerWidth-12);drag.grabX=Math.min(drag.width-12,Math.max(12,drag.x-r.left));drag.grabY=Math.min(r.height,drag.y-r.top);
-    const ghost=drag.row.cloneNode(true);ghost.removeAttribute('id');ghost.querySelectorAll('[id]').forEach(value=>value.removeAttribute('id'));ghost.className='tl-drag-ghost';ghost.inert=true;ghost.setAttribute('aria-hidden','true');ghost.style.width=drag.width+'px';
+    const ghost=drag.row.cloneNode(true);ghost.removeAttribute('id');ghost.querySelectorAll('[id]').forEach(value=>value.removeAttribute('id'));ghost.classList.add('tl-drag-ghost');['taskId','stateDate','displayDate'].forEach(key=>delete ghost.dataset[key]);ghost.inert=true;ghost.setAttribute('aria-hidden','true');ghost.style.width=drag.width+'px';
     // Keep the opaque preview compact enough that its landing line stays visible.
     ghost.querySelectorAll('.tm-checklist,.tm-item-actions,details').forEach(value=>value.remove());
-    const line=node('div','tl-drag-line');line.setAttribute('aria-hidden','true');document.body.append(ghost,line);drag.ghost=ghost;drag.line=line;drag.row.classList.add('tl-drag-source');document.documentElement.classList.add('tl-task-dragging');actionHaptic();updateTaskDrag(drag.x,drag.y);
+    const line=node('div','tl-drag-line');line.setAttribute('aria-hidden','true');scope.root.append(ghost);document.body.append(line);drag.ghost=ghost;drag.line=line;drag.row.classList.add('tl-drag-source');document.documentElement.classList.add('tl-task-dragging');actionHaptic();updateTaskDrag(drag.x,drag.y);
     let last=performance.now();const tick=now=>{if(taskDrag!==drag)return;const elapsed=Math.min(40,now-last);last=now;const edge=76,velocity=drag.y<edge?-Math.min(1,(edge-drag.y)/edge):drag.y>innerHeight-edge?Math.min(1,(drag.y-innerHeight+edge)/edge):0;if(velocity){global.scrollBy(0,velocity*elapsed*.6);locateTaskDrop(drag);}drag.frame=requestAnimationFrame(tick);};drag.frame=requestAnimationFrame(tick);
   }
   function prepareTaskDrag(event,x,y,touchId){
