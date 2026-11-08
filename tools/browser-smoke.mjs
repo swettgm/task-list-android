@@ -226,7 +226,7 @@ const result = await page.evaluate(async () => {
   check(document.documentElement.style.getPropertyValue('--tl-accent')==='#ff9933','Hex theme survives reload');
   document.querySelector('.tl-settings').click();dialog=(document.querySelector('dialog[open]')||document.querySelector('.tl-settings-screen'));accent=dialog.querySelector('input[placeholder="#68B7FF"]');background=dialog.querySelector('input[placeholder="#10151F"]');
   accent.value='invalid';clickText(dialog,'Apply colors');
-  check(!!dialog.querySelector('[role=alert]').textContent&&__nativeQA.getState().uiTheme.accent==='#ff9933','Invalid hex input is rejected without changing saved colors');
+  check(!!dialog.querySelector('.tasks-theme-error').textContent&&__nativeQA.getState().uiTheme.accent==='#ff9933','Invalid hex input is rejected without changing saved colors');
   accent.value='#123';background.value='#fff';clickText(dialog,'Apply colors');
   check(__nativeQA.getState().uiTheme.accent==='#112233'&&getComputedStyle(document.body).backgroundColor==='rgb(255, 255, 255)','Short hex input expands and light backgrounds are supported');
   clickText(dialog,'Reset colors');check(__nativeQA.getState().uiTheme.accent==='#68b7ff'&&__nativeQA.getState().uiTheme.background==='#10151f','Default colors can be restored');

@@ -4,7 +4,8 @@
     "date": "2026-11-08",
     "changes": [
       "Added Settings → Task ordering → Hold and drag as an alternative to priority arrows. Hold a task, then reorder within a priority or drop into another priority group. A solid task preview follows your finger and a white insertion line marks the landing position. Empty priority groups remain available as drop targets.",
-      "Dragging gives haptic feedback on pickup and a successful move, scrolls near screen edges, and saves manual order. Normal scrolling and Today/Upcoming swiping remain available before the hold begins. Urgent tasks remain first; lowering an urgent task clears Urgent, matching the arrows. The widget front is unchanged."
+      "Dragging gives haptic feedback on pickup and a successful move, scrolls near screen edges, and saves manual order. Normal scrolling and Today/Upcoming swiping remain available before the hold begins. Urgent tasks remain first; lowering an urgent task clears Urgent, matching the arrows. The widget front is unchanged.",
+      "The Weekend shortcut now always selects the next Friday strictly after today, including from Friday, Saturday or Sunday. This applies to detailed Add/Edit and widget Quick add. Recurring weekday selections are unchanged."
     ]
   },
   {

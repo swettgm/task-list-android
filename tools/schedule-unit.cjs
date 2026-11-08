@@ -133,8 +133,10 @@ test('calendar years below 100 are not accidentally interpreted as 1900s', () =>
   assert.equal(S.matches(task(1, 'year', '0096-02-29'), '0100-02-28'), true);
 });
 
-test('Weekend shortcut targets Friday including the current weekend',()=>{
-  for(const day of ['2026-11-02','2026-11-03','2026-11-04','2026-11-05','2026-11-06','2026-11-07','2026-11-08'])assert.equal(S.nextWeekend(day),'2026-11-06');
+test('Weekend shortcut always targets a strictly following Friday',()=>{
+  for(let day=2;day<=8;day++)assert.equal(S.nextWeekend('2026-11-0'+day),day<6?'2026-11-06':'2026-11-13');
+  assert.equal(S.nextWeekend('2026-12-31'),'2027-01-01');
+  assert.equal(S.nextWeekend('2027-01-01'),'2027-01-08');
   assert.equal(S.nextWeekend('2026-11-30'),'2026-12-04');
 });
 test('task visibility subtracts hours and minutes from New York due time',()=>{

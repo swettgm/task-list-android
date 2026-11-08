@@ -140,7 +140,7 @@
   function weekendOpening(){return '';}
   function repeating(task){return !!(task.repeat||task.recurrence||task.days?.length||task.intervalDays||task.weekendCycleStart||task.recurringDaily);}
   function chosenDate(task,day,moves){return repeating(task)?day:moves?.[task.id+':'+day]||day;}
-  function nextWeekend(day){const date=parseDate(day);return addDay(day,date.weekday===0?-2:date.weekday===6?-1:(5-date.weekday+7)%7);}
+  function nextWeekend(day){const date=parseDate(day);return addDay(day,(5-date.weekday+7)%7||7);}
   const taskClock=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
   function clockWall(epoch){const parts=Object.fromEntries(taskClock.formatToParts(new Date(epoch)).filter(part=>part.type!=='literal').map(part=>[part.type,Number(part.value)]));const date=new Date(0);date.setUTCFullYear(parts.year,parts.month-1,parts.day);date.setUTCHours(parts.hour,parts.minute,parts.second,0);return date.getTime();}
   function showAt(task,day){

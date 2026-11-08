@@ -4,6 +4,7 @@
 
 - Optional Hold and drag task ordering in Settings replaces priority arrows with direct reordering within and between priority groups.
 - Solid moving task preview, insertion line, haptic pickup/drop feedback, edge scrolling and cancellation without changing saved order.
+- Weekend now always selects the next Friday after today in detailed forms and widget Quick add.
 - Normal scrolling remains available until a hold starts. Existing arrows, task dates, completion history and widget front remain unchanged.
 
 
