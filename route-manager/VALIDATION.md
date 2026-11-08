@@ -1,3 +1,13 @@
+# Route Manager 1.0.2 validation
+
+Source: `a9ff3a0cb2378208a713d078c75e419307b13187`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/42525642527). **11 Android tests, 68 Chromium checks and zero lint errors passed.**
+
+Monthly is accepted by the native store, selectable in Add/Edit stop, preserved on save/reopen and displayed on note tags and managed stops. All notes remain visible. Invalid frequencies reject saves without replacing valid data.
+
+Manage stops shows the route and weekday in its page caption and each stop row. Settings identifies the route on its Manage stops button; Add/Edit stop also shows the route and weekday. Native and browser tests create the same customer name on Monday and Tuesday with separate frequencies, edit Monday and verify Tuesday remains unchanged. The route-specific stop-list screenshot was reviewed.
+
+The signed APK matches the tested CI artifact except its signing entries. ZIP integrity, manifest, exact HTML, alignment, signatures and retained certificate match to 1.0.1 passed. Package `com.personal.routemanager`, version 1.0.2 (3), 33361 bytes. SHA-256 `890ca5e8f6ef5946a6866ede13ce8be78f486240ed388849e006beb1b2f99851`. Validation uses Robolectric and Chromium; no physical phone was used.
+
 # Route Manager 1.0.1 validation
 
 Source: `5cc4d3a1faf7e085b325f09a67b12f22b21a2eff`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/42524680754). Nine Android tests, 60 Chromium workflow checks and zero lint errors passed.
