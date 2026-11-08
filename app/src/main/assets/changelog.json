@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.78.0",
+    "date": "2026-11-08",
+    "changes": [
+      "Aligned the visible clock and repeat symbols at the task-title column, matching priority text, task buttons and checklist disclosure controls. Kept the checkbox in its separate column and preserved text and icon sizes, task ordering, wrapping and widget appearance."
+    ]
+  },
+  {
     "version": "0.77.0",
     "date": "2026-11-08",
     "changes": [

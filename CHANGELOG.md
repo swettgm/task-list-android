@@ -1,5 +1,9 @@
 # Changelog
 
+## Android 0.78.0 — 2026-11-08
+
+- Aligned clock/repeat artwork with the task title, priority text, action buttons and checklist disclosure column while preserving icon/text sizes and wrapping. The checkbox keeps its separate column.
+
 ## 0.77.0 — 2026-11-08
 
 - Optional Hold and drag task ordering in Settings replaces priority arrows with direct reordering within and between priority groups.

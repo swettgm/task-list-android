@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Compact Add note editor with a one-line note field that grows with text, intact field labels and safe keyboard-height scrolling.
+- Matched the Tasks settings icon, removed the main stop filter/Stops button and moved stop management into Settings.
+
 ## 1.0.0
 
 - Separate Route Manager app with five looping route pages and automatic weekday selection.
