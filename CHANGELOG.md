@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.77.0 — 2026-11-08
+
+- Optional Hold and drag task ordering in Settings replaces priority arrows with direct reordering within and between priority groups.
+- Solid moving task preview, insertion line, haptic pickup/drop feedback, edge scrolling and cancellation without changing saved order.
+- Normal scrolling remains available until a hold starts. Existing arrows, task dates, completion history and widget front remain unchanged.
+
+
 ## Android 0.76.0 — 2026-11-07
 
 - Removed the Repeat starts date note from the detailed editor. Saved repeat schedules are unchanged.

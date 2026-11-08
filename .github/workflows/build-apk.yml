@@ -95,6 +95,7 @@ jobs:
             tools/label-emoji-smoke.mjs \
             tools/guild-icon-smoke.mjs \
             tools/priority-controls-smoke.mjs \
+            tools/task-drag-smoke.mjs \
             tools/visibility-smoke.mjs \
             tools/projects-smoke.mjs \
             tools/widget-editor-smoke.mjs \
