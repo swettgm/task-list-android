@@ -1,0 +1,11 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.personal.routemanager'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+    defaultConfig { applicationId 'com.personal.routemanager'; minSdk 26; targetSdk 35; versionCode 5; versionName '1.0.4' }
+    signingConfigs { debug { if(System.getenv('ROUTE_DEBUG_KEYSTORE')) { storeFile file(System.getenv('ROUTE_DEBUG_KEYSTORE')); storePassword 'android'; keyAlias 'androiddebugkey'; keyPassword 'android' } } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    testOptions { unitTests { includeAndroidResources = true; all { systemProperty 'robolectric.dependency.repo.url','https://repo.maven.apache.org/maven2' } } }
+}
+dependencies { testImplementation 'junit:junit:4.13.2'; testImplementation 'org.robolectric:robolectric:4.14.1' }
