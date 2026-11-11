@@ -2,6 +2,9 @@
 
 A separate, offline Android app for route notes. Installs alongside Tasks with its own data and no widget.
 
+- Persistent 1-day/2-day-ahead checkboxes shift the route opened for the weekday, wrapping Friday to Monday. Turn them off to restore the current day.
+- Optional account numbers keep same-named stops separate; account numbers retain leading zeros.
+- Manage stops → Export list previews a clean numbered list for all routes or one route. Copy or Share it into a text message.
 - Route tabs highlight and show a dot when they contain saved notes.
 - Stop saves capitalize word starts while preserving existing internal capitalization, such as UPS or UniFirst.
 - Each route header shows the total number of notes across all five pages. A note with several stops counts once.

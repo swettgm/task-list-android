@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.5
+
+- Persistent 1-day/2-day-ahead checkboxes shift the weekday route selected on launch/foreground. Friday wraps to Monday. Turning both off restores the current weekday route.
+
+- Optional account numbers distinguish same-named stops, including autocomplete, note labels, stop editing and deletion. Existing stop IDs and note links are preserved.
+- Export a clean numbered list of stops, account numbers and frequencies for all routes or one route. Copy to clipboard or open Android sharing to choose a messaging app.
+
 ## 1.0.4
 
 - Route tabs with saved notes get a subtle highlight and dot; the active route keeps its white selection. Indicators refresh after note saves and deletion.
