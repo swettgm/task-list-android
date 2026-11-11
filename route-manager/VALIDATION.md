@@ -1,3 +1,19 @@
+# Route Manager 1.0.5 validation
+
+Source: `ca8ba4869c9e774d59d34166e71c1a160b2be6be`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43035007369). **15 Android tests, 107 Chromium checks and zero lint errors passed.**
+
+This release includes the pending 1.0.4 tab indicators and stop-name capitalization: populated routes have a subtle highlight and dot independently of the selected route; the indicator clears after the last note is deleted. Stop saves capitalize word starts while preserving internal brand/acronym capitalization.
+
+Optional account numbers are stored as text, preserving leading zeros. Name/account pairs identify duplicate stops within each route while stable stop IDs preserve note associations. Accounts appear in suggestions, chips, note labels, managed stops and deletion labels. Validation rejects malformed account data and duplicate pairs without replacing saved data.
+
+Manage stops → Export list previews a clean numbered plain-text list with route headings, names, account numbers and frequencies, for all routes or one route. Copy uses Android ClipboardManager; Share opens an ACTION_SEND text/plain chooser. No message is sent automatically. Tests verify exact copied/shared text, valid chooser intent, independent accounts and rejected duplicate edits.
+
+Saved 1 day / 2 day checkboxes are mutually exclusive. The offset determines the initial/foreground weekday route and survives reopening. Monday +1 opens G300, Monday +2 opens G400; Friday +1 opens G200 and Friday +2 opens G300. Turning the offset off returns to the current weekday. Tests cover saved offsets, launch/foreground behavior, weekend wrapping and failed-write rollback.
+
+The note editor remains compact with its optional account field collapsed initially. Export, tab-indicator and editor screenshots were reviewed. Geometry verifies the Add note button stays in the visible phone viewport with offset controls. The complete project/build workflow files were restored from the prior verified repository tree, retaining current app sources and archived downloads.
+
+APK package `com.personal.routemanager`, version 1.0.5 (6), 37457 bytes. Exact HTML, ZIP integrity, all non-signature CI entries, alignment, APK signatures and retained certificate match to 1.0.3 passed. SHA-256 `8cebf840cadd430e5f822bfed907bd7a04d05ad81c9bd455593299767ac2bc63`. Testing used Robolectric and Chromium; no physical phone was used.
+
 # Route Manager 1.0.3 validation
 
 Source: `d35ebc3d84536e0fc08e4d6b78079bbd6da53d7f`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/42531214614). **11 Android tests, 80 Chromium checks and zero lint errors passed.**

@@ -100,4 +100,4 @@ For each release, add the newest entry to `app/src/main/assets/changelog.json`, 
 
 ## Route Manager
 
-[Download Route Manager 1.0.3](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Route-Manager-v1.0.3.apk), a separate lightweight offline Android app for G200–G600 route notes. [Project and features](route-manager/README.md). Installs alongside Tasks with its own saved data and no widget.
+[Download Route Manager 1.0.5](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Route-Manager-v1.0.5.apk), a separate lightweight offline Android app for G200–G600 route notes. [Project and features](route-manager/README.md). Installs alongside Tasks with its own saved data and no widget.
