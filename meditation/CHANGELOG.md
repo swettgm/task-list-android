@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- Added vibration-length sliders with live seconds readouts and saved values.
+- Reworked sounds into a Mindfulness bell, Singing bowl and Tingsha bells, plus a new Temple gong. Existing sound selections retain their saved IDs.
+- The screen now reads the live monotonic clock and schedules display changes at second boundaries. Native cues schedule against their actual deadlines instead of fixed polling.
+
 ## 1.0.0
 
 - Separate themed meditation app with adjustable session length and a 30-second preparation countdown.

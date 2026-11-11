@@ -1,4 +1,5 @@
 package com.personal.meditation;
+import org.json.*;
 /** Monotonic timer. UI refreshes never move any deadline. */
 final class SessionClock {
  static final long PREP=30000;enum Cue{SHORT_ONE,SHORT_TWO,LONG,START,QUARTER_ONE,QUARTER_TWO,QUARTER_THREE,END}
@@ -13,6 +14,8 @@ final class SessionClock {
  synchronized int quarter(long now){return (int)Math.min(4,Math.max(0,elapsed(now)-PREP)*4/Math.max(1,total)+1);}
  private long deadline(int i){if(i<3)return 27000+i*1000;if(i==3)return PREP;return PREP+total*(i-3)/4;}
  synchronized Cue poll(long now){if(!started||paused)return null;long e=elapsed(now);Cue latest=null;while(next<8&&e>=deadline(next)){latest=Cue.values()[next++];}return latest;}
+ synchronized long nextDelay(long now){if(!started||paused||next>=8)return 1000;return Math.max(1,Math.min(1000,deadline(next)-elapsed(now)));}
+ synchronized JSONObject state(long now){try{return new JSONObject().put("phase",phase(now)).put("period",period(now)).put("remainingMs",remaining(now)).put("durationMs",duration()).put("quarter",quarter(now));}catch(JSONException invalid){throw new IllegalStateException(invalid);}}
  synchronized void pause(long now){if(!active(now)||paused)return;accumulated=elapsed(now);paused=true;}
  synchronized void resume(long now){if(!paused)return;anchor=now;paused=false;}
  synchronized void stop(){started=false;paused=false;next=0;accumulated=0;}

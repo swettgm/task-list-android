@@ -15,7 +15,7 @@ public final class MainActivity extends Activity {
  private void service(String action){Intent intent=new Intent(this,MeditationService.class).setAction(action);if(action.equals(MeditationService.START))startForegroundService(intent);else startService(intent);}
  final class Bridge {
   @JavascriptInterface public String settings(){return MainActivity.this.settings.get().toString();}
-  @JavascriptInterface public String state(){return MeditationService.snapshot;}
+  @JavascriptInterface public String state(){return MeditationService.liveState();}
   @JavascriptInterface public boolean save(String json){return !MeditationService.busy&&settings.save(json);}
   @JavascriptInterface public boolean start(){if(MeditationService.busy)return false;runOnUiThread(()->{preview.stop();((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(web.getWindowToken(),0);if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},20);try{service(MeditationService.START);}catch(RuntimeException failed){Toast.makeText(MainActivity.this,"Couldn’t start the timer. Please try again.",Toast.LENGTH_LONG).show();refresh();}});return true;}
   @JavascriptInterface public void pause(){runOnUiThread(()->service(MeditationService.PAUSE));}
