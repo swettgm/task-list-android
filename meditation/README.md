@@ -2,7 +2,8 @@
 
 A separate lightweight Android app matching the navy-to-gray theme of Tasks and Route Manager.
 
-- Choose 1–240 minutes. A separate 30-second preparation countdown comes first.
+- The main screen has a centered Start button. A small Settings button opens duration, sounds, vibration controls and the changelog on a separate screen.
+- Choose 1–240 minutes in Settings. A separate 30-second preparation countdown comes first.
 - At three, two and one seconds remaining: two short vibrations, then a long vibration. The start bell follows at zero.
 - Quarter cues at 25%, 50% and 75%; the shared start/end bell plays at 100%. Ten minutes has quarter cues at 2:30, 5:00 and 7:30, then the end bell at 10:00.
 - Choose independent start/end and quarter sounds: four meditation bell/bowl presets, silence or your own audio file. Preview sounds before starting.

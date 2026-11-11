@@ -21,3 +21,5 @@ Build: Gradle 8.11.1, Java 21, Android SDK 35. Run `gradle :app:assembleDebug :a
 Browser checks: `npm install --no-save --package-lock=false playwright@1.56.1`, then `node tools/browser-smoke.mjs` with Chrome installed.
 
 The independent Build Route Manager workflow builds and checks this project. Signing keys must stay private; never commit a keystore.
+
+The header’s Export notes button exports the currently viewed day. Choose any of the five days, preview a clean numbered list, then Copy or Share it. Entries include stop names, saved account numbers (including leading zeros), and full notes. Shared notes appear under each associated stop; general route notes are kept. Saved stops without notes are omitted. The separate managed-stop list export remains available.

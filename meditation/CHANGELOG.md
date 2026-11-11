@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Minimal centered Start screen with a small Settings button.
+- Duration, sounds, vibrations and changelog live on a separate Settings screen.
+- Removed countdown vibration instructions and extra main-screen wording.
+
 ## 1.0.1
 
 - Inverted the launcher icon to navy artwork on a white background.

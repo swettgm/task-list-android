@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7
+
+- Export each day’s notes from the header with Copy or Share.
+- Clean numbered lists include stop names, saved account numbers and complete note text. Shared notes appear under each selected stop; general notes remain included.
+
 ## 1.0.6
 
 - Inverted the launcher icon to navy artwork on a white background. The in-app theme is unchanged.

@@ -23,6 +23,7 @@ public final class MainActivity extends Activity {
   @JavascriptInterface public void stop(){runOnUiThread(()->service(MeditationService.STOP));}
   @JavascriptInterface public void chooseSound(String role){if(MeditationService.busy||(!role.equals("bell")&&!role.equals("quarter")))return;runOnUiThread(()->{pendingRole=role;try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("audio/*").addCategory(Intent.CATEGORY_OPENABLE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION),40);}catch(ActivityNotFoundException failed){pendingRole=null;Toast.makeText(MainActivity.this,"No audio file picker is available.",Toast.LENGTH_LONG).show();}});}
   @JavascriptInterface public void preview(String role){if(MeditationService.busy||(!role.equals("bell")&&!role.equals("quarter")))return;runOnUiThread(()->{try{preview.play(settings.get().getString(role),settings.prefs.getString(role+"Uri",""),()->{});}catch(JSONException ignored){}});}
+  @JavascriptInterface public void stopPreview(){runOnUiThread(()->preview.stop());}
   @JavascriptInterface public void ready(){runOnUiThread(()->{ready=true;web.setAlpha(1);});}
  }
  Bridge bridgeForTests(){return new Bridge();}WebView webForTests(){return web;}
