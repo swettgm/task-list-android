@@ -1,0 +1,10 @@
+package com.personal.meditation;
+import android.content.*;import android.media.*;import android.net.Uri;import android.os.*;
+final class CuePlayer {
+ private final Context context;private final Handler handler=new Handler(Looper.getMainLooper());private MediaPlayer player;private Runnable timeout;private int generation;
+ CuePlayer(Context context){this.context=context;}
+ void stop(){generation++;if(timeout!=null)handler.removeCallbacks(timeout);timeout=null;if(player!=null){player.setOnCompletionListener(null);player.setOnErrorListener(null);player.release();player=null;}}
+ void play(String choice,String uri,Runnable finished){stop();int token=generation;if(choice.equals("silent")){finished.run();return;}try{MediaPlayer media=new MediaPlayer();player=media;media.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());if(choice.equals("custom"))media.setDataSource(context,Uri.parse(uri));else{int resource=choice.equals("warm_bowl")?R.raw.warm_bowl:choice.equals("gentle_chime")?R.raw.gentle_chime:R.raw.soft_bell;try(android.content.res.AssetFileDescriptor fd=context.getResources().openRawResourceFd(resource)){media.setDataSource(fd.getFileDescriptor(),fd.getStartOffset(),fd.getLength());}}
+ Runnable complete=()->{if(token!=generation)return;stop();finished.run();};media.setOnCompletionListener(p->complete.run());media.setOnErrorListener((p,a,b)->{if(token==generation){if(choice.equals("custom")){stop();failed(choice,finished);}else complete.run();}return true;});media.setOnPreparedListener(p->{if(token==generation)p.start();});timeout=complete;handler.postDelayed(timeout,10000);media.prepareAsync();}catch(Exception error){stop();failed(choice,finished);}}
+ private void failed(String choice,Runnable finished){if(choice.equals("custom")){android.widget.Toast.makeText(context,"Couldn’t play that file. Using Soft bell.",android.widget.Toast.LENGTH_LONG).show();play("soft_bell","",finished);}else finished.run();}
+}
