@@ -1,3 +1,17 @@
+# Meditation 1.0.1 validation
+
+Source: `cabf049cf0fcaae117e0acf47689690652ad1aad`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43121212429). **15 Android tests, 33 Chromium checks and zero lint errors passed.**
+
+Vibration lengths use sliders with live seconds output, keyboard adjustment, persisted milliseconds and independent cue switches. Countdown sliders cap at 0.9 seconds to leave the next cue clear. Existing saved settings remain compatible.
+
+The display reads a live, coherent native monotonic-clock snapshot and refreshes at second boundaries. Native cue scheduling targets deadlines instead of accumulating polling delays. Tests verify reads between service ticks, exact cue deadlines, delayed UI refresh catching up, even displayed seconds and pause/resume behavior. Existing quarter/start/end timing remains unchanged.
+
+Four original synthesized presets are bundled: Mindfulness bell, Singing bowl, Tingsha bells and Temple gong. Inharmonic partials, gentle beating, soft attacks and longer decays replace the previous simpler tones. WAV format, lengths, nonempty samples and unclipped peaks were checked. Existing preset IDs and custom audio selection remain compatible. Launcher artwork is navy on white; the app theme and monochrome notification icon remain unchanged. Options and timer screenshots were reviewed.
+
+Signed APK: `Meditation-v1.0.1.apk`, 951216 bytes. Package `com.personal.meditation`, version 1.0.1 (2), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches 1.0.0. SHA-256 `6be41c4dda0f885370862afcb36ac6a4634bab5cb7e66c45ef61137c51b29c3a`.
+
+Tests used Robolectric and Chromium; no physical phone or screen-off timing measurement was used. Force-stop, process termination and reboot still end an active session. There is no guided voice or text-to-speech option.
+
 # Meditation 1.0.0 validation
 
 Source: `895fcd6d1d80b96050a7c8f4074cdecf8c58ab7d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43081262998). **12 Android tests, 24 Chromium workflow checks and zero lint errors passed.**

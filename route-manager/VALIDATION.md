@@ -1,3 +1,11 @@
+# Route Manager 1.0.6 validation
+
+Source: `cabf049cf0fcaae117e0acf47689690652ad1aad`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43121212431). **15 Android tests, 107 Chromium checks and zero lint errors passed.**
+
+Launcher artwork is now navy on white. The in-app theme, saved routes, notes, stops, accounts and day-ahead settings are unchanged. Existing workflow coverage passed with the updated version.
+
+Signed APK: `Route-Manager-v1.0.6.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.6 (7), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches 1.0.5. SHA-256 `2d66a6d31933890bc1d6c3919d853f9a452444663f51114e996d36c19ea43f4b`. Tests used Robolectric and Chromium; no physical phone was used.
+
 # Route Manager 1.0.5 validation
 
 Source: `ca8ba4869c9e774d59d34166e71c1a160b2be6be`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43035007369). **15 Android tests, 107 Chromium checks and zero lint errors passed.**
