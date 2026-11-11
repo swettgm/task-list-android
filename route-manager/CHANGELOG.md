@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6
+
+- Inverted the launcher icon to navy artwork on a white background. The in-app theme is unchanged.
+
 ## 1.0.5
 
 - Persistent 1-day/2-day-ahead checkboxes shift the weekday route selected on launch/foreground. Friday wraps to Monday. Turning both off restores the current weekday route.
