@@ -101,3 +101,7 @@ For each release, add the newest entry to `app/src/main/assets/changelog.json`, 
 ## Route Manager
 
 [Download Route Manager 1.0.5](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Route-Manager-v1.0.5.apk), a separate lightweight offline Android app for G200–G600 route notes. [Project and features](route-manager/README.md). Installs alongside Tasks with its own saved data and no widget.
+
+## Meditation
+
+[Download Meditation 1.0.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Meditation-v1.0.0.apk), a separate simple meditation timer with the same theme. Choose a duration, prepare for 30 seconds, then meditate with quarter chimes and a start/end bell. Customize the sounds and vibration cues under Sounds & vibrations. [Details](meditation/README.md).
