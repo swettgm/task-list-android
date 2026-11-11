@@ -1,4 +1,5 @@
 name: Build Meditation
+run-name: Build Meditation · attempt ${{ github.run_number }}
 on:
   workflow_dispatch:
   push:
