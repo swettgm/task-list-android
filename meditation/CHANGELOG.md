@@ -2,9 +2,9 @@
 
 ## 1.0.2
 
-- Minimal centered Start screen with a small Settings button.
+- Minimal centered timer and Start button, with a small Settings button.
 - Duration, sounds, vibrations and changelog live on a separate Settings screen.
-- Removed countdown vibration instructions and extra main-screen wording.
+- Removed the main heading, readiness/preparation wording and countdown vibration instructions.
 
 ## 1.0.1
 
