@@ -1,0 +1,185 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - '*.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/build-apk.yml'
+      - '.github/build-encryption-cert.pem'
+      - 'tools/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and check debug APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Cache Robolectric Android runtimes
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric/android-all-instrumented
+          key: robolectric-4.14.1-android-runtimes-v1
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          TASK_SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$TASK_SDK_DIR"
+          TASK_SDKMANAGER="$TASK_SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -x "$TASK_SDKMANAGER" ]]; then
+            TASK_SDKMANAGER=$(command -v sdkmanager)
+          fi
+          # yes receives SIGPIPE once sdkmanager finishes. Use sdkmanager's
+          # exit status instead of treating that expected SIGPIPE as failure.
+          set +e
+          yes | "$TASK_SDKMANAGER" --sdk_root="$TASK_SDK_DIR" --licenses > /dev/null
+          TASK_LICENSE_STATUS=${PIPESTATUS[1]}
+          set -e
+          if [[ "$TASK_LICENSE_STATUS" -ne 0 ]]; then
+            exit "$TASK_LICENSE_STATUS"
+          fi
+          "$TASK_SDKMANAGER" --sdk_root="$TASK_SDK_DIR" \
+            'platforms;android-35' 'build-tools;35.0.0'
+          printf 'sdk.dir=%s\n' "$TASK_SDK_DIR" > local.properties
+
+      - name: Build APK, run unit tests, and run lint
+        run: |
+          export TASK_DEBUG_KEYSTORE="$RUNNER_TEMP/task-list-debug.keystore"
+          printf 'TASK_DEBUG_KEYSTORE=%s\n' "$TASK_DEBUG_KEYSTORE" >> "$GITHUB_ENV"
+          keytool -genkeypair -keystore "$TASK_DEBUG_KEYSTORE" -storepass android \
+            -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 \
+            -validity 10000 -dname 'CN=Android Debug,O=Android,C=US'
+          gradle --no-daemon --console=plain --stacktrace :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+
+      - name: Check the complete task workflow in Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          TASK_BROWSER_STATUS=0
+          for TASK_BROWSER_SCRIPT in \
+            tools/schedule-unit.cjs \
+            tools/header-detail-smoke.mjs \
+            tools/trash-polish-smoke.mjs \
+            tools/history-alignment-smoke.mjs \
+            tools/editor-footer-smoke.mjs \
+            tools/browser-smoke.mjs \
+            tools/completion-undo-smoke.mjs \
+            tools/tasks-v7-smoke.mjs \
+            tools/weekend-smoke.mjs \
+            tools/calendar-edit-view-smoke.mjs \
+            tools/creation-date-smoke.mjs \
+            tools/theme-smoke.mjs \
+            tools/row-layout-smoke.mjs \
+            tools/checklist-edit-smoke.mjs \
+            tools/label-emoji-smoke.mjs \
+            tools/guild-icon-smoke.mjs \
+            tools/priority-controls-smoke.mjs \
+            tools/task-drag-smoke.mjs \
+            tools/visibility-smoke.mjs \
+            tools/projects-smoke.mjs \
+            tools/widget-editor-smoke.mjs \
+            tools/task-delete-smoke.mjs
+          do
+            if ! node "$TASK_BROWSER_SCRIPT"; then TASK_BROWSER_STATUS=1; fi
+          done
+          exit "$TASK_BROWSER_STATUS"
+
+      - name: Verify APK signature and record checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          TASK_SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          TASK_APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$TASK_APK"
+          "$TASK_SDK_DIR/build-tools/35.0.0/apksigner" verify --verbose "$TASK_APK" \
+            | tee app/build/outputs/apk/debug/signature-verification.txt
+          cd app/build/outputs/apk/debug
+          sha256sum app-debug.apk | tee app-debug.apk.sha256
+          {
+            echo '### Android debug APK'
+            echo 'Signature verification passed. Download the Task-List-Android-Debug-APK artifact below.'
+            echo ''
+            echo '```text'
+            cat app-debug.apk.sha256
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prepare encrypted signing key and offline personalization tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          TASK_SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          TASK_BUILD_TOOLS="$TASK_SDK_DIR/build-tools/35.0.0"
+          TASK_TOOLS_DIR="$RUNNER_TEMP/task-list-personalization-tools"
+          mkdir -p "$TASK_TOOLS_DIR"
+          test -s "$TASK_DEBUG_KEYSTORE"
+          test -s .github/build-encryption-cert.pem
+          # Only the public encryption certificate is in this repository.
+          # The decryption private key stays outside the repository.
+          openssl cms -encrypt -binary -aes-256-cbc \
+            -in "$TASK_DEBUG_KEYSTORE" -outform DER \
+            -out "$TASK_TOOLS_DIR/encrypted-debug-keystore.p7m" \
+            .github/build-encryption-cert.pem
+          cp "$TASK_BUILD_TOOLS/lib/apksigner.jar" "$TASK_TOOLS_DIR/apksigner.jar"
+          cp "$TASK_BUILD_TOOLS/zipalign" "$TASK_TOOLS_DIR/zipalign"
+          if [[ -d "$TASK_BUILD_TOOLS/lib64" ]]; then
+            cp -a "$TASK_BUILD_TOOLS/lib64" "$TASK_TOOLS_DIR/lib64"
+          fi
+          if [[ -f "$TASK_BUILD_TOOLS/NOTICE.txt" ]]; then
+            cp "$TASK_BUILD_TOOLS/NOTICE.txt" "$TASK_TOOLS_DIR/NOTICE.txt"
+          fi
+          ldd "$TASK_BUILD_TOOLS/zipalign" > "$TASK_TOOLS_DIR/zipalign-dependencies.txt"
+          printf 'TASK_PERSONALIZATION_TOOLS=%s\n' "$TASK_TOOLS_DIR" >> "$GITHUB_ENV"
+
+      - name: Upload encrypted signing key and personalization tools
+        uses: actions/upload-artifact@v4
+        with:
+          name: Task-List-Personalization-Tools
+          path: ${{ env.TASK_PERSONALIZATION_TOOLS }}/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload APK and verification files
+        uses: actions/upload-artifact@v4
+        with:
+          name: Task-List-Android-Debug-APK
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
+            app/build/outputs/apk/debug/signature-verification.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-test-and-lint-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            app/build/reports/lint-results-debug.*
+            build/browser-qa/
+          if-no-files-found: warn
+          retention-days: 14

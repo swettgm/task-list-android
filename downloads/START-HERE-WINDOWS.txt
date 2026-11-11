@@ -1,0 +1,35 @@
+Tasks for Windows — simple companion
+
+Run Tasks-Setup.exe on Windows 10 or 11 (64-bit), then open Tasks from the Start
+menu or desktop shortcut. No administrator rights, Python installation or account is
+needed. Tasks opens its own native Windows window, powered by the WebView2 runtime.
+Setup installs Microsoft WebView2 if it is missing; that first-time step needs
+internet access. The window and shortcuts share one taskbar identity. If you pinned an
+older version, unpin its old icon once, then pin Tasks from the Start menu again.
+
+Install the accompanying Tasks Android update first. On Windows choose Link phone,
+scan the QR code with your phone camera, choose Open Tasks, then confirm Link PC.
+You can also paste the pairing link under Android Settings > Windows companion.
+
+Your phone theme, colors, gradient and icon choices transfer during pairing and
+keep updating through sync. The Windows list waits for your phone on first use. It does not import an old
+bundled task list. Use Today or Upcoming, tick a checkbox to complete a task, and
+use Do now to toggle in progress. Linked tasks start and stop together. There are
+no task editors, adding, priority controls or Settings on the Windows screen.
+
+Keep both devices on the same Wi-Fi, with Tasks open on the phone, to synchronize.
+PC changes save locally while the phone is away, then sync when the phone app is
+open again. Windows may ask you to allow Tasks on your private network.
+
+Closing the window keeps local sync running. Open Tasks from its shortcut to return.
+Link phone > Quit PC companion stops the local server.
+
+Setup installs the program under %LOCALAPPDATA%\Programs\Tasks. Run a newer
+installer to update it. Uninstall through Windows Settings > Apps. Updates and
+uninstall preserve your tasks, theme and pairing in %LOCALAPPDATA%\Tasks.
+The portable Tasks-PC.exe is still available as an optional alternative. Tasks needs no cloud account. The first download is not
+code-signed with a Microsoft publisher certificate, so Windows may identify it as
+an unrecognized app.
+
+Optional Python source ZIP: install requirements.txt, then run tasks_pc.py using
+Python 3.10 or later. The executable is the easier option.

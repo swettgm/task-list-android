@@ -1,0 +1,417 @@
+package com.personal.tasklist;
+
+import static org.junit.Assert.*;
+
+import android.app.Activity;
+import android.appwidget.AppWidgetManager;
+import android.content.Context;
+import android.content.Intent;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
+import org.robolectric.annotation.Config;
+import org.robolectric.android.controller.ActivityController;
+
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 28)
+public class TaskWidgetTest {
+    private Context context;
+    private TaskStore store;
+
+    @Before public void setUp() {
+        context = RuntimeEnvironment.getApplication();
+        context.getSharedPreferences("tasks", Context.MODE_PRIVATE).edit().clear().commit();
+        context.getSharedPreferences("reference_state", Context.MODE_PRIVATE).edit().clear().commit();
+        context.deleteSharedPreferences("widget_completions");context.deleteSharedPreferences("widget_17");
+        context.deleteSharedPreferences("widget_29");
+        store = new TaskStore(context);
+    }
+
+    @Test public void checklistFilterIncludesOnlyOpenTasksFromChosenList() {
+        store.add("Personal task", "Personal", "");
+        store.add("Work task", "Work", "");
+        store.add("Completed work task", "Work", "");
+        for (TaskStore.Task task : store.all()) if (task.title.startsWith("Completed")) store.complete(task.id);
+        assertEquals(Arrays.asList("Work task"), titles(TaskWidgetProvider.selectedTasks(context, "Work", false)));
+        List<String> allTitles = titles(TaskWidgetProvider.selectedTasks(context, "", false));
+        assertEquals(2, allTitles.size());
+        assertTrue(allTitles.contains("Personal task"));
+        assertTrue(allTitles.contains("Work task"));
+    }
+
+    @Test public void todayViewIncludesOverdueButExcludesFutureUndatedAndDone() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("America/New_York"));
+        store.add("Overdue", "Work", today.minusDays(2).toString());
+        store.add("Due today", "Work", today.toString());
+        store.add("Tomorrow", "Work", today.plusDays(1).toString());
+        store.add("Undated", "Work", "");
+        store.add("Already done", "Work", today.toString());
+        for (TaskStore.Task task : store.all()) if (task.title.equals("Already done")) store.complete(task.id);
+        assertEquals(Arrays.asList("Overdue", "Due today"), titles(TaskWidgetProvider.selectedTasks(context, "Work", true)));
+    }
+
+    @Test public void contextFilterCombinesChecklistAndOpenStateWithoutChangingOtherContexts() {
+        task("Call supplier", "Work", "", "", TaskStore.NEXT, "On the phone", "On the road");
+        task("Call family", "Personal", "", "", TaskStore.NEXT, "On the phone");
+        task("Write report", "Work", "", "", TaskStore.NEXT, "On the computer");
+        task("Finished call", "Work", "", "", TaskStore.DONE, "On the phone");
+
+        assertEquals(Arrays.asList("Call supplier"),
+                titles(TaskWidgetProvider.selectedTasks(context, "Work", false, "On the phone")));
+        assertEquals(new HashSet<>(Arrays.asList("Call supplier", "Call family")),
+                new HashSet<>(titles(TaskWidgetProvider.selectedTasks(context, "", false, "On the phone"))));
+        assertEquals(titles(TaskWidgetProvider.selectedTasks(context, "", false)),
+                titles(TaskWidgetProvider.selectedTasks(context, "", false, "")));
+        assertTrue(TaskWidgetProvider.selectedTasks(context, "", false, "At home").isEmpty());
+    }
+
+    @Test public void todayViewUsesPlannedDayBeforeDeadlineAndExcludesWaitingOrSomeday() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("America/New_York"));
+        task("Planned tomorrow", "Work", today.minusDays(1).toString(), today.plusDays(1).toString(),
+                TaskStore.NEXT, "On the computer");
+        task("Planned today", "Work", today.plusDays(7).toString(), today.toString(),
+                TaskStore.NEXT, "On the computer");
+        task("Unfinished plan", "Work", "", today.minusDays(1).toString(),
+                TaskStore.NEXT, "On the computer");
+        task("Waiting for reply", "Work", today.toString(), today.toString(),
+                TaskStore.WAITING, "On the computer");
+        task("Someday project", "Work", today.toString(), today.toString(),
+                TaskStore.SOMEDAY, "On the computer");
+        task("Completed plan", "Work", today.toString(), today.toString(),
+                TaskStore.DONE, "On the computer");
+        task("Working now", "Work", "", "", TaskStore.IN_PROGRESS, "On the computer");
+
+        assertEquals(new HashSet<>(Arrays.asList("Planned today", "Unfinished plan", "Working now")),
+                new HashSet<>(titles(TaskWidgetProvider.selectedTasks(context, "Work", true, "On the computer"))));
+        TaskStore.Task postponed = null;
+        for (TaskStore.Task item : store.all()) if (item.title.equals("Planned tomorrow")) postponed = item;
+        assertNotNull(postponed);
+        assertEquals("Filtering must not rewrite the original deadline", today.minusDays(1).toString(), postponed.dueDate);
+    }
+
+    @Test public void allOpenContextViewStillIncludesFutureWaitingAndSomedayTasks() {
+        String tomorrow = LocalDate.now(java.time.ZoneId.of("America/New_York")).plusDays(1).toString();
+        task("Tomorrow call", "Work", "", tomorrow, TaskStore.NEXT, "On the phone");
+        task("Waiting call", "Work", "", "", TaskStore.WAITING, "On the phone");
+        task("Someday call", "Work", "", "", TaskStore.SOMEDAY, "On the phone");
+        assertEquals(new HashSet<>(Arrays.asList("Tomorrow call", "Waiting call", "Someday call")),
+                new HashSet<>(titles(TaskWidgetProvider.selectedTasks(context, "Work", false, "On the phone"))));
+    }
+
+    @Test public void eachWidgetKeepsItsOwnSettingsAndDeletionDoesNotAffectOthers() {
+        TaskWidgetProvider.preferences(context, 17).edit().putString("title", "Work checklist").putString("list", "Work").putString("label", "On the phone").putBoolean("dark", true).commit();
+        TaskWidgetProvider.preferences(context, 29).edit().putString("title", "Personal").putString("list", "Personal").putString("label", "At home").putBoolean("dark", false).putInt("opacity", 60).commit();
+        assertEquals("Work checklist", TaskWidgetProvider.preferences(context, 17).getString("title", ""));
+        assertFalse(TaskWidgetProvider.preferences(context, 29).getBoolean("dark", false));
+        assertEquals(60, TaskWidgetProvider.preferences(context, 29).getInt("opacity", 100));
+        assertEquals("On the phone", TaskWidgetProvider.preferences(context, 17).getString("label", ""));
+        assertEquals("At home", TaskWidgetProvider.preferences(context, 29).getString("label", ""));
+        new TaskWidgetProvider().onDeleted(context, new int[] {17});
+        assertTrue(TaskWidgetProvider.preferences(context, 17).getAll().isEmpty());
+        assertEquals("Personal", TaskWidgetProvider.preferences(context, 29).getString("title", ""));
+        assertEquals("At home", TaskWidgetProvider.preferences(context, 29).getString("label", ""));
+    }
+
+    @Test public void configurationWithoutWidgetIdCancelsSafely() {
+        ActivityController<WidgetConfigActivity> controller = Robolectric.buildActivity(WidgetConfigActivity.class).create();
+        WidgetConfigActivity activity = controller.get();
+        assertTrue(activity.isFinishing());
+        assertEquals(Activity.RESULT_CANCELED, Shadows.shadowOf(activity).getResultCode());
+        controller.destroy();
+    }
+
+    @Test public void configurationWithUnboundWidgetIdDoesNotCreateSettings() {
+        Intent intent = new Intent(context, WidgetConfigActivity.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, 17);
+        ActivityController<WidgetConfigActivity> controller = Robolectric.buildActivity(WidgetConfigActivity.class, intent).create();
+        assertTrue(controller.get().isFinishing());
+        assertEquals(Activity.RESULT_CANCELED, Shadows.shadowOf(controller.get()).getResultCode());
+        assertTrue(TaskWidgetProvider.preferences(context, 17).getAll().isEmpty());
+        controller.destroy();
+    }
+
+    @Test public void widgetCompletionPersistsInTheFullTaskEngine() throws Exception {
+        ReferenceStore reference = new ReferenceStore(context);
+        String taskId = reference.addCustomTask("Widget task", Arrays.asList("At home"), "HIGH", false);
+        String day = LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
+        String key = taskId + ":" + day;
+        int widgetId = Shadows.shadowOf(AppWidgetManager.getInstance(context))
+                .createWidget(TaskWidgetProvider.class, R.layout.widget_tasks);
+        Intent complete = new Intent(context, TaskWidgetProvider.class)
+                .setAction("com.personal.tasklist.WIDGET_COMPLETE")
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+                .putExtra("task_id", "html:" + key);
+        new TaskWidgetProvider().onReceive(context, complete);
+        assertTrue(new org.json.JSONObject(reference.readState()).getJSONObject("completed").getBoolean(key));
+        assertTrue(TaskWidgetProvider.selectedTasks(context, "", false).isEmpty());
+        new TaskWidgetProvider().onReceive(context, complete);
+        assertTrue(new org.json.JSONObject(reference.readState()).getJSONObject("completed").getBoolean(key));
+    }
+
+    @Test public void widgetSupportsFullyTransparentBackgroundAndKeepsItsTextVisible() {
+        store.add("Visible task", "Personal", LocalDate.now(java.time.ZoneId.of("America/New_York")).toString());
+        AppWidgetManager manager = AppWidgetManager.getInstance(context);
+        int id = Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class, R.layout.widget_tasks);
+        for (int opacity : new int[] {0, 50, 100}) {
+            TaskWidgetProvider.preferences(context, id).edit().putInt("opacity", opacity).commit();
+            TaskWidgetProvider.update(context, manager, id);
+            android.view.View view = Shadows.shadowOf(manager).getViewFor(id);
+            assertEquals(Math.round(255 * opacity / 100f), ((android.widget.ImageView) view.findViewById(R.id.widget_background)).getImageAlpha());
+            assertEquals(1f, view.findViewById(R.id.widget_title).getAlpha(), 0f);
+            TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,id);factory.onCreate();android.view.View row=factory.getViewAt(1).apply(context,null);assertEquals(1f,row.findViewById(R.id.widget_check).getAlpha(),0f);
+        }
+    }
+
+    @Test public void widgetConfigurationSavesZeroOpacityAcrossRecreation() {
+        int id = 73;
+        android.appwidget.AppWidgetProviderInfo info = new android.appwidget.AppWidgetProviderInfo();
+        info.provider = new android.content.ComponentName(context, TaskWidgetProvider.class);
+        Shadows.shadowOf(AppWidgetManager.getInstance(context)).addBoundWidget(id, info);
+        TaskWidgetProvider.preferences(context, id).edit().putInt("opacity", 60).commit();
+        Intent intent = new Intent(context, WidgetConfigActivity.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
+        ActivityController<WidgetConfigActivity> controller = Robolectric.buildActivity(WidgetConfigActivity.class, intent).setup();
+        assertFalse(controller.get().isFinishing());
+        android.widget.SeekBar slider = findSlider(controller.get().getWindow().getDecorView());
+        assertEquals(100, slider.getMax()); assertEquals(60, slider.getProgress());
+        slider.setProgress(0);
+        controller.recreate();
+        slider = findSlider(controller.get().getWindow().getDecorView());
+        assertEquals(0, slider.getProgress());
+        findButton(controller.get().getWindow().getDecorView(), "Save widget").performClick();
+        assertEquals(0, TaskWidgetProvider.preferences(context, id).getInt("opacity", -1));
+        controller.pause().stop().destroy();
+    }
+
+    private static android.widget.SeekBar findSlider(android.view.View view) {
+        if (view instanceof android.widget.SeekBar) return (android.widget.SeekBar) view;
+        if (view instanceof android.view.ViewGroup) for (int i = 0; i < ((android.view.ViewGroup) view).getChildCount(); i++) {
+            android.widget.SeekBar found = findSlider(((android.view.ViewGroup) view).getChildAt(i));
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private static android.widget.Button findButton(android.view.View view, String text) {
+        if (view instanceof android.widget.Button && text.contentEquals(((android.widget.Button) view).getText())) return (android.widget.Button) view;
+        if (view instanceof android.view.ViewGroup) for (int i = 0; i < ((android.view.ViewGroup) view).getChildCount(); i++) {
+            android.widget.Button found = findButton(((android.view.ViewGroup) view).getChildAt(i), text);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private static List<String> titles(List<TaskStore.Task> tasks) {
+        List<String> titles = new ArrayList<>();
+        for (TaskStore.Task task : tasks) titles.add(task.title);
+        return titles;
+    }
+
+    private void task(String title, String listName, String dueDate, String plannedDate,
+                      String status, String... labels) {
+        store.add(title, listName, dueDate, Arrays.asList(labels), status, plannedDate, "UNSET", 0);
+    }
+
+    @Test public void scrollableWidgetHasNoRowCapAndOnlyShowsToday() throws Exception {
+        String today=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(),tomorrow=LocalDate.parse(today).plusDays(1).toString();
+        for(int i=0;i<40;i++)store.add("Today row "+i,"Work",today);
+        store.add("Future task","Work",tomorrow);store.add("Undated task","Work","");store.add("Hidden completed","Work",today);
+        for(TaskStore.Task task:store.all())if(task.title.equals("Hidden completed"))store.complete(task.id);
+        TaskWidgetProvider.preferences(context,17).edit().putBoolean("today",false).putString("list","Work").commit();
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();
+        assertEquals(41,factory.getCount());assertTrue(factory.hasStableIds());
+        android.view.View last=factory.getViewAt(40).apply(context,null);
+        assertEquals("Today",((android.widget.TextView)last.findViewById(R.id.widget_due)).getText().toString());assertEquals(android.view.View.VISIBLE,last.findViewById(R.id.widget_due).getVisibility());
+        long firstId=factory.getItemId(0);String other=TaskWidgetProvider.todayTasks(context,"Work","").get(3).id;store.complete(other);factory.onDataSetChanged();assertEquals(40,factory.getCount());assertEquals(firstId,factory.getItemId(0));
+        assertTrue(store.all().stream().anyMatch(t->t.title.equals("Hidden completed")&&t.done));
+    }
+    @Test public void widgetHeaderIsTodayAndRowsUseANativeScrollingList() {
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        TaskWidgetProvider.preferences(context,id).edit().putString("title","My tasks").putBoolean("today",false).commit();TaskWidgetProvider.update(context,manager,id);
+        android.view.View view=Shadows.shadowOf(manager).getViewFor(id);
+        assertEquals("Today",((android.widget.TextView)view.findViewById(R.id.widget_title)).getText().toString());assertTrue(view.findViewById(R.id.widget_rows) instanceof android.widget.ListView);assertFalse(view.findViewById(R.id.widget_rows).isVerticalScrollBarEnabled());assertFalse(view.findViewById(R.id.widget_rows).isHorizontalScrollBarEnabled());
+        assertEquals(0,context.getResources().getIdentifier("widget_summary","id",context.getPackageName()));
+    }
+    @Test public void todaySnapshotCarriesUnfinishedRowsAndExcludesCompletedAndFuture() throws Exception {
+        LocalDate today=LocalDate.now(java.time.ZoneId.of("America/New_York"));String day=today.toString(),yesterday=today.minusDays(1).toString(),tomorrow=today.plusDays(1).toString();
+        org.json.JSONArray rows=new org.json.JSONArray();
+        rows.put(widgetRow("today",day,day,true,false,false,day));
+        rows.put(widgetRow("hidden",day,day,true,true,false,day));
+        rows.put(widgetRow("not-today",day,day,false,false,false,day));
+        rows.put(widgetRow("future",tomorrow,tomorrow,false,false,false,day).put("status",TaskStore.IN_PROGRESS));
+        rows.put(widgetRow("old-daily",yesterday,yesterday,true,false,true,yesterday));
+        org.json.JSONObject legacy=widgetRow("legacy-daily",yesterday,yesterday,true,false,false,"");legacy.remove("recurringDaily");legacy.put("recurrence","Daily");rows.put(legacy);
+        rows.put(widgetRow("new-daily",day,day,false,false,true,yesterday));
+        rows.put(widgetRow("carry",yesterday,yesterday,true,false,false,yesterday));
+        store.replaceReferenceTasks(rows.toString());
+        assertEquals(new HashSet<>(Arrays.asList("today","new-daily","old-daily","legacy-daily","carry")),new HashSet<>(titles(TaskWidgetProvider.todayTasks(context,"",""))));assertEquals(8,store.all().size());
+    }
+    @Test public void collectionCompletionIsPersistentAndStaleTapCannotReopen() throws Exception {
+        String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();String id=new ReferenceStore(context).addCustomTask("Scroll complete",Arrays.asList("At home"),"HIGH",false);
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.ITEM_ACTION,"complete").putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:"+id+":"+day);
+        new TaskWidgetProvider().onReceive(context,tap);new TaskWidgetProvider().onReceive(context,tap);Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(2100));
+        assertTrue(new org.json.JSONObject(new ReferenceStore(context).readState()).getJSONObject("completed").getBoolean(id+":"+day));assertTrue(TaskWidgetProvider.todayTasks(context,"","").isEmpty());
+    }
+    @Test public void overdueWidgetLabelsAndCompletesOnlyTheOriginalOccurrence() throws Exception {
+        LocalDate today=LocalDate.now(ReminderPlanner.ZONE);String past=today.minusDays(1).toString(),day=today.toString(),future=today.plusDays(1).toString();
+        ReferenceStore reference=new ReferenceStore(context);org.json.JSONObject definition=new org.json.JSONObject().put("id","carry-repeat").put("title","Carry repeat").put("priority","LOW").put("repeat",new org.json.JSONObject().put("start",past).put("unit","day").put("amount",1));
+        reference.writeState(new org.json.JSONObject().put("customTasks",new org.json.JSONArray().put(definition)).put("reminders",new org.json.JSONObject().put("daily",false).put("scheduled",false)).toString());
+        org.json.JSONArray rows=new org.json.JSONArray();for(String date:new String[]{past,day,future}){String key="carry-repeat:"+date;rows.put(widgetRow("carry-repeat",date,date,date.equals(day),false,true,past).put("progressKey",key).put("completionKeys",new org.json.JSONArray().put(key)));}reference.updateSnapshot(rows.toString());
+        assertEquals(2,TaskWidgetProvider.todayTasks(context,"","").size());
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();android.view.View overdue=factory.getViewAt(1).apply(context,null);assertEquals("Overdue",((android.widget.TextView)overdue.findViewById(R.id.widget_due)).getText().toString());assertTrue(reference.setTaskInProgress("html:carry-repeat:"+past,true));factory.onDataSetChanged();android.view.View active=factory.getViewAt(0).apply(context,null);assertEquals("🟢 IN PROGRESS",((android.widget.TextView)active.findViewById(R.id.widget_due)).getText().toString());assertTrue(reference.setTaskInProgress("html:carry-repeat:"+past,false));factory.onDataSetChanged();android.view.View restored=factory.getViewAt(1).apply(context,null);assertEquals("Overdue",((android.widget.TextView)restored.findViewById(R.id.widget_due)).getText().toString());
+        assertTrue(reference.completeTask("html:carry-repeat:"+past));org.json.JSONObject completed=new org.json.JSONObject(reference.readState()).getJSONObject("completed");assertTrue(completed.getBoolean("carry-repeat:"+past));assertFalse(completed.optBoolean("carry-repeat:"+day));assertFalse(completed.optBoolean("carry-repeat:"+future));assertEquals(1,TaskWidgetProvider.todayTasks(context,"","").size());
+        long later=today.plusDays(3).atTime(12,0).atZone(ReminderPlanner.ZONE).toInstant().toEpochMilli();assertEquals(2,TaskWidgetProvider.todayTasks(context,"","",later).size());
+    }
+    private org.json.JSONObject widgetRow(String id,String planned,String stateDate,boolean onToday,boolean done,boolean daily,String snapshot) throws Exception {
+        return new org.json.JSONObject().put("id","html:"+id+":"+stateDate).put("title",id).put("listName","My tasks").put("dueDate",planned).put("plannedDate",planned).put("done",done).put("status",done?TaskStore.DONE:TaskStore.NEXT).put("labels",new org.json.JSONArray()).put("onToday",onToday).put("recurringDaily",daily).put("stateDate",stateDate).put("snapshotDate",snapshot);
+    }
+
+    @Test public void todayWidgetSortsByCreationTimeAndKeepsUrgentFirst() throws Exception {
+        String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();org.json.JSONArray rows=new org.json.JSONArray();
+        String[][] values={{"Zulu",""},{"Noon","12:00 PM"},{"alpha",""},{"Late","23:59"},{"Zulu morning","9:00 AM"},{"Midnight","12:00 AM"},{"Alpha morning","09:00"}};
+        int born=1;for(String[] value:values)rows.put(widgetRow(value[0],day,day,true,false,false,day).put("time",value[1]).put("taskCreatedAt",born++).put("priority","HIGH"));
+        rows.put(widgetRow("First priority",day,day,true,false,false,day).put("priority","HIGH").put("urgent",true).put("time","23:59"));store.replaceReferenceTasks(rows.toString());
+        assertEquals(Arrays.asList("First priority","Zulu","Noon","alpha","Late","Zulu morning","Midnight","Alpha morning"),titles(TaskWidgetProvider.todayTasks(context,"","")));
+    }
+
+    @Test public void widgetManualOrderSurvivesReloadAndUrgentStaysFirst() throws Exception {
+        String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();org.json.JSONArray rows=new org.json.JSONArray();
+        for(int i=0;i<3;i++){String id="order-"+i,key=id+":"+day;rows.put(widgetRow(id,day,day,true,false,false,day).put("priority","HIGH").put("taskCreatedAt",i+1).put("progressKey",key).put("completionKeys",new org.json.JSONArray().put(key)));}
+        String urgent="urgent:"+day;rows.put(widgetRow("urgent",day,day,true,false,false,day).put("priority","HIGH").put("urgent",true).put("taskCreatedAt",99).put("progressKey",urgent).put("completionKeys",new org.json.JSONArray().put(urgent)));
+        ReferenceStore reference=new ReferenceStore(context);reference.writeState(new org.json.JSONObject().put("taskOrder",new org.json.JSONObject().put("HIGH",new org.json.JSONArray().put("order-2").put("order-0").put("order-1"))).toString());reference.updateSnapshot(rows.toString());
+        assertEquals(Arrays.asList("urgent","order-2","order-0","order-1"),titles(TaskWidgetProvider.todayTasks(context,"","")));
+        assertEquals("order-2",new org.json.JSONObject(new ReferenceStore(context).readState()).getJSONObject("taskOrder").getJSONArray("HIGH").getString(0));
+        assertEquals(Arrays.asList("urgent","order-2","order-0","order-1"),titles(TaskWidgetProvider.todayTasks(context,"","")));
+    }
+
+    @Test public void oldWidgetSnapshotsUseCanonicalCreationTimesAfterUpgrade() throws Exception {
+        String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();ReferenceStore reference=new ReferenceStore(context);org.json.JSONArray tasks=new org.json.JSONArray(),rows=new org.json.JSONArray();
+        for(String[] value:new String[][]{{"custom-older","2026-10-01T12:00:00Z"},{"custom-newer","2026-11-01T12:00:00Z"}}){String id=value[0],key=id+":"+day;tasks.put(new org.json.JSONObject().put("id",id).put("title",id).put("priority","LOW").put("due",day).put("labels",new org.json.JSONArray()).put("createdAt",value[1]));rows.put(widgetRow(id,day,day,true,false,false,day).put("createdAt",id.equals("custom-older")?99:1).put("progressKey",key).put("completionKeys",new org.json.JSONArray().put(key)));}
+        reference.writeState(new org.json.JSONObject().put("customTasks",tasks).toString());reference.updateSnapshot(rows.toString());
+        assertEquals(Arrays.asList("custom-older","custom-newer"),titles(TaskWidgetProvider.todayTasks(context,"","")));
+    }
+
+    @Test public void widgetUsesQuietPriorityHeadingsInPriorityOrder() {
+        String today=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
+        for(String priority:Arrays.asList("UNSET","LOW","MEDIUM","HIGH"))store.add(priority,"Work",today,java.util.Collections.emptyList(),TaskStore.NEXT,"",priority,0);
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();assertEquals(7,factory.getCount());assertEquals(2,factory.getViewTypeCount());
+        String[] expected={"High","Medium","Low"};for(int i=0;i<expected.length;i++){
+            android.view.View header=factory.getViewAt(i*2).apply(context,null);
+            android.widget.TextView label=header.findViewById(R.id.widget_priority);assertEquals(expected[i],label.getText().toString());assertTrue(android.graphics.Color.alpha(label.getCurrentTextColor())<160);
+            android.graphics.drawable.ColorDrawable divider=(android.graphics.drawable.ColorDrawable)header.findViewById(R.id.widget_priority_divider).getBackground();assertTrue(android.graphics.Color.alpha(divider.getColor())<=24);
+        }
+    }
+    @Test public void widgetActionFeedbackRespectsVisibilityAndPhoneSettings() {
+        String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();store.add("Widget feedback task","Feedback",day);String id=store.all().get(0).id;
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        android.os.Vibrator vibrator=(android.os.Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);Shadows.shadowOf(vibrator).setHasVibrator(true);android.provider.Settings.System.putInt(context.getContentResolver(),android.provider.Settings.System.HAPTIC_FEEDBACK_ENABLED,1);vibrator.cancel();
+        Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,id).putExtra(TaskWidgetProvider.ITEM_ACTION,"start");
+        new TaskWidgetProvider().onReceive(context,tap);assertTrue(Shadows.shadowOf(vibrator).isVibrating());assertEquals(TaskStore.IN_PROGRESS,store.all().get(0).status);
+        vibrator.cancel();new TaskWidgetProvider().onReceive(context,new Intent(tap).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"missing"));assertFalse(Shadows.shadowOf(vibrator).isVibrating());
+        android.provider.Settings.System.putInt(context.getContentResolver(),android.provider.Settings.System.HAPTIC_FEEDBACK_ENABLED,0);new TaskWidgetProvider().onReceive(context,new Intent(tap).putExtra(TaskWidgetProvider.ITEM_ACTION,"stop"));assertFalse(Shadows.shadowOf(vibrator).isVibrating());assertEquals(TaskStore.NEXT,store.all().get(0).status);
+    }
+    @Test public void widgetEditOpensHomeScreenEditorOnlyForVisibleRegisteredTasks() throws Exception {
+        ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();
+        String id=reference.addCustomTask("Edit from widget",java.util.Collections.emptyList(),"LOW",false),rowId="html:"+id+":"+day;
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,rowId).putExtra(TaskWidgetProvider.ITEM_ACTION,"edit");
+        String before=reference.readState();new TaskWidgetProvider().onReceive(context,tap);
+        Intent editor=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();
+        assertNotNull(editor);assertEquals(TaskEditorActivity.class.getName(),editor.getComponent().getClassName());assertEquals(rowId,editor.getStringExtra(TaskWidgetProvider.EXTRA_TASK_ID));
+        assertEquals(before,reference.readState());assertTrue(WidgetCompletions.token(context,rowId).isEmpty());
+        new TaskWidgetProvider().onReceive(context,new Intent(tap).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:missing:"+day));
+        assertNull(Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity());
+        new TaskWidgetProvider().onReceive(context,new Intent(tap).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,-1));
+        assertNull(Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity());
+    }
+    @Test public void widgetDoNowUpdatesAppStateAndStopDoesNotReopenCompletedTasks() throws Exception {
+        ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(),id=reference.addCustomTask("Widget progress task",java.util.Collections.emptyList(),"UNSET",false),key=id+":"+day;
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,"html:"+key).putExtra(TaskWidgetProvider.ITEM_ACTION,"start");new TaskWidgetProvider().onReceive(context,tap);new TaskWidgetProvider().onReceive(context,tap);assertEquals(key,new org.json.JSONObject(reference.readState()).getString("inProgress"));assertNull(Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity());
+        org.robolectric.android.controller.ActivityController<MainActivity> controller=org.robolectric.Robolectric.buildActivity(MainActivity.class).setup();assertEquals(key,new org.json.JSONObject(controller.get().taskBridgeForTests().readState()).getString("inProgress"));
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,widget);factory.onCreate();android.view.View row=factory.getViewAt(0).apply(context,null);assertEquals("🟢 IN PROGRESS",((android.widget.TextView)row.findViewById(R.id.widget_due)).getText().toString());assertEquals("Widget progress task",((android.widget.TextView)row.findViewById(R.id.widget_task_title)).getText().toString());assertNull(row.findViewById(R.id.widget_progress));assertEquals(13.5f,((android.widget.TextView)row.findViewById(R.id.widget_task_title)).getTextSize()/context.getResources().getDisplayMetrics().scaledDensity,.01f);
+        tap.putExtra(TaskWidgetProvider.ITEM_ACTION,"stop");new TaskWidgetProvider().onReceive(context,tap);new TaskWidgetProvider().onReceive(context,tap);assertTrue(new org.json.JSONObject(controller.get().taskBridgeForTests().readState()).isNull("inProgress"));
+        tap.putExtra(TaskWidgetProvider.ITEM_ACTION,"complete");new TaskWidgetProvider().onReceive(context,tap);Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(2100));tap.putExtra(TaskWidgetProvider.ITEM_ACTION,"start");new TaskWidgetProvider().onReceive(context,tap);assertTrue(new org.json.JSONObject(reference.readState()).isNull("inProgress"));assertTrue(new org.json.JSONObject(reference.readState()).getJSONObject("completed").getBoolean(key));controller.pause().stop().destroy();
+    }
+
+    @Test public void activeBadgeMovesOnlyTheWidgetRowAndStopRestoresItsPriorityPosition() throws Exception {
+        ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();String first=reference.addCustomTask("Alpha",java.util.Collections.emptyList(),"HIGH",false),last=reference.addCustomTask("Zulu",java.util.Collections.emptyList(),"LOW",false);
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();assertEquals(4,factory.getCount());long originalId=factory.getItemId(3);
+        assertTrue(reference.setTaskInProgress("html:"+last+":"+day,true));factory.onDataSetChanged();assertEquals(originalId,factory.getItemId(0));android.view.View active=factory.getViewAt(0).apply(context,null);assertEquals("Zulu",((android.widget.TextView)active.findViewById(R.id.widget_task_title)).getText().toString());assertEquals("🟢 IN PROGRESS",((android.widget.TextView)active.findViewById(R.id.widget_due)).getText().toString());assertNull(active.findViewById(R.id.widget_progress));android.widget.TextView badge=active.findViewById(R.id.widget_due);assertEquals(android.graphics.Color.WHITE,badge.getCurrentTextColor());android.graphics.drawable.GradientDrawable background=(android.graphics.drawable.GradientDrawable)badge.getBackground();assertEquals(android.graphics.Color.parseColor("#176B42"),background.getColor().getDefaultColor());assertTrue(background.getCornerRadius()>0);assertTrue(active.findViewById(R.id.widget_status_toggle).getMinimumHeight()>=48*context.getResources().getDisplayMetrics().density);assertEquals("High",((android.widget.TextView)factory.getViewAt(1).apply(context,null).findViewById(R.id.widget_priority)).getText().toString());
+        assertEquals("Alpha",TaskWidgetProvider.todayTasks(context,"","").get(0).title);assertEquals("LOW",new org.json.JSONObject(reference.readState()).getJSONArray("customTasks").getJSONObject(1).getString("priority"));
+        assertTrue(reference.setTaskInProgress("html:"+last+":"+day,false));factory.onDataSetChanged();assertEquals(4,factory.getCount());assertEquals(originalId,factory.getItemId(3));android.view.View restored=factory.getViewAt(3).apply(context,null);assertEquals("Today",((android.widget.TextView)restored.findViewById(R.id.widget_due)).getText().toString());assertNull(restored.findViewById(R.id.widget_due).getBackground());assertEquals("Zulu",((android.widget.TextView)restored.findViewById(R.id.widget_task_title)).getText().toString());
+    }
+
+    @Test public void widgetCompletionCanBeCancelledAndExpiredRequestsSurviveRefresh() throws Exception {
+        ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(),id=reference.addCustomTask("Undo me",java.util.Collections.emptyList(),"HIGH",false),rowId="html:"+id+":"+day;
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,rowId).putExtra(TaskWidgetProvider.ITEM_ACTION,"complete");new TaskWidgetProvider().onReceive(context,tap);String first=WidgetCompletions.token(context,rowId);assertFalse(first.isEmpty());TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,widget);factory.onCreate();android.view.View staged=factory.getViewAt(1).apply(context,null);assertEquals("✓",((android.widget.TextView)staged.findViewById(R.id.widget_check)).getText().toString());assertFalse(new TaskStore(context).all().get(0).done);
+        Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(700));Intent undo=new Intent(tap).putExtra(TaskWidgetProvider.ITEM_ACTION,"undo").putExtra("completion_token",first);new TaskWidgetProvider().onReceive(context,undo);assertEquals("",WidgetCompletions.token(context,rowId));Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(1500));assertFalse(new TaskStore(context).all().get(0).done);
+        new TaskWidgetProvider().onReceive(context,tap);String second=WidgetCompletions.token(context,rowId);assertNotEquals(first,second);new TaskWidgetProvider().onReceive(context,undo);assertEquals(second,WidgetCompletions.token(context,rowId));org.robolectric.shadows.ShadowSystemClock.advanceBy(java.time.Duration.ofMillis(2100));factory.onDataSetChanged();assertTrue(new TaskStore(context).all().get(0).done);assertEquals("",WidgetCompletions.token(context,rowId));assertTrue(new org.json.JSONObject(reference.readState()).getJSONObject("completed").getBoolean(id+":"+day));factory.onDataSetChanged();assertEquals(0,factory.getCount());new TaskWidgetProvider().onReceive(context,undo);assertTrue(new TaskStore(context).all().get(0).done);
+    }
+
+    @Test public void progressBadgeCentersOnSingleAndWrappedTitleText() throws Exception {
+        ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString();String id=reference.addCustomTask("Centered task",java.util.Collections.emptyList(),"HIGH",false);reference.setTaskInProgress("html:"+id+":"+day,true);TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);factory.onCreate();float density=context.getResources().getDisplayMetrics().density;
+        for(int width:new int[]{240,320,420})for(String text:Arrays.asList("Short task","A long task title that needs two lines within a narrow widget")){
+            android.view.View row=factory.getViewAt(0).apply(context,null);android.widget.TextView title=row.findViewById(R.id.widget_task_title),badge=row.findViewById(R.id.widget_due);title.setText(text);row.measure(android.view.View.MeasureSpec.makeMeasureSpec(Math.round(width*density),android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(0,android.view.View.MeasureSpec.UNSPECIFIED));row.layout(0,0,row.getMeasuredWidth(),row.getMeasuredHeight());
+            android.text.Layout lines=title.getLayout();float titleCenter=title.getTop()+title.getBaseline()-lines.getLineBaseline(0)+(lines.getLineTop(0)+lines.getLineBottom(lines.getLineCount()-1))/2f;android.view.View toggle=row.findViewById(R.id.widget_status_toggle);float badgeCenter=toggle.getTop()+badge.getTop()+badge.getHeight()/2f;
+            assertEquals("Badge center must match title text at "+width+"px: "+text,titleCenter,badgeCenter,1f);assertFalse(((android.widget.LinearLayout)row).isBaselineAligned());assertFalse(title.getIncludeFontPadding());assertFalse(badge.getIncludeFontPadding());
+        }
+    }
+
+    @Test public void emptyWidgetKeepsItsAccessibleRestMessage(){
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);
+        int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        TaskWidgetProvider.update(context,manager,widget);
+        android.widget.ImageView message=Shadows.shadowOf(manager).getViewFor(widget).findViewById(R.id.widget_empty);
+        assertEquals("You’re all done! Get some rest. 🪻",message.getContentDescription().toString());
+        assertNotNull(message.getDrawable());
+        assertEquals(android.widget.ImageView.ScaleType.CENTER_INSIDE,message.getScaleType());
+    }
+    @Test public void emptyMessageCentersOnTheWholeWidgetAtSeveralSizes(){
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);
+        int widget=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);
+        float density=context.getResources().getDisplayMetrics().density;
+        for(int width:new int[]{140,250,360})for(int height:new int[]{144,300,500}){
+            android.os.Bundle options=new android.os.Bundle();
+            options.putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,width);
+            options.putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,width);
+            manager.updateAppWidgetOptions(widget,options);TaskWidgetProvider.update(context,manager,widget);
+            android.view.ViewGroup root=(android.view.ViewGroup)Shadows.shadowOf(manager).getViewFor(widget);
+            android.widget.ImageView message=root.findViewById(R.id.widget_empty);message.setVisibility(android.view.View.VISIBLE);
+            int w=Math.round(width*density),h=Math.round(height*density);
+            root.measure(android.view.View.MeasureSpec.makeMeasureSpec(w,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(h,android.view.View.MeasureSpec.EXACTLY));root.layout(0,0,w,h);
+            android.graphics.Rect box=new android.graphics.Rect();message.getDrawingRect(box);root.offsetDescendantRectToMyCoords(message,box);
+            assertEquals(w/2f,box.exactCenterX(),.5f);assertEquals(h/2f,box.exactCenterY(),.5f);
+            android.graphics.RectF image=new android.graphics.RectF(message.getDrawable().getBounds());message.getImageMatrix().mapRect(image);
+            assertEquals("Rendered message is centered after resizing",w/2f,box.left+message.getPaddingLeft()+image.centerX(),1f);
+        }
+    }
+
+    @Test public void widgetHeaderPlusAddsAndHeaderTitleOpensTheApp() {
+        AppWidgetManager manager=AppWidgetManager.getInstance(context);int id=Shadows.shadowOf(manager).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetProvider.update(context,manager,id);
+        android.view.View view=Shadows.shadowOf(manager).getViewFor(id);
+        assertTrue(((android.widget.ImageView)view.findViewById(R.id.widget_add)).getDrawable() instanceof android.graphics.drawable.BitmapDrawable);assertEquals(android.graphics.Color.TRANSPARENT,((android.graphics.drawable.ColorDrawable)view.findViewById(R.id.widget_add).getBackground()).getColor());
+        assertFalse(((android.widget.ListView)view.findViewById(R.id.widget_rows)).isVerticalScrollBarEnabled());
+        android.widget.ImageView plus=view.findViewById(R.id.widget_add);assertEquals(android.widget.ImageView.ScaleType.FIT_CENTER,plus.getScaleType());
+        float density=context.getResources().getDisplayMetrics().density;int width=Math.round(360*density);view.measure(android.view.View.MeasureSpec.makeMeasureSpec(width,android.view.View.MeasureSpec.EXACTLY),android.view.View.MeasureSpec.makeMeasureSpec(Math.round(300*density),android.view.View.MeasureSpec.EXACTLY));view.layout(0,0,width,Math.round(300*density));android.graphics.Rect plusBounds=new android.graphics.Rect();plus.getDrawingRect(plusBounds);((android.view.ViewGroup)view).offsetDescendantRectToMyCoords(plus,plusBounds);assertEquals(width,plusBounds.right);assertEquals(Math.round(48*density),plus.getWidth());
+        assertEquals(0,context.getResources().getIdentifier("widget_settings","id",context.getPackageName()));
+        assertEquals(0,context.getResources().getIdentifier("widget_open","id",context.getPackageName()));
+        view.findViewById(R.id.widget_title).performClick();Intent opened=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();assertEquals(MainActivity.class.getName(),opened.getComponent().getClassName());assertTrue(opened.getBooleanExtra("widget_haptic",false));
+        view.findViewById(R.id.widget_add).performClick();Intent added=Shadows.shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();assertEquals(QuickAddActivity.class.getName(),added.getComponent().getClassName());
+    }
+    @Test public void urgentWidgetBadgeUsesExistingProgressToggleAndReturnsToUrgent() throws Exception {
+        ReferenceStore reference=new ReferenceStore(context);String day=LocalDate.now(java.time.ZoneId.of("America/New_York")).toString(),id=reference.addCustomTask("Urgent widget task",java.util.Collections.emptyList(),"HIGH",false),rowId="html:"+id+":"+day;
+        org.json.JSONObject state=new org.json.JSONObject(reference.readState());state.getJSONArray("customTasks").getJSONObject(0).put("urgent",true);reference.writeState(state.toString());org.json.JSONArray snapshot=new org.json.JSONArray(context.getSharedPreferences("reference_state",0).getString("snapshot","[]"));snapshot.getJSONObject(0).put("urgent",true);reference.updateSnapshot(snapshot.toString());
+        int widget=Shadows.shadowOf(AppWidgetManager.getInstance(context)).createWidget(TaskWidgetProvider.class,R.layout.widget_tasks);TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,widget);factory.onCreate();android.view.View row=factory.getViewAt(1).apply(context,null);android.widget.TextView badge=row.findViewById(R.id.widget_due);assertEquals("🔴 URGENT",badge.getText().toString());assertEquals(android.graphics.Color.WHITE,badge.getCurrentTextColor());android.graphics.drawable.GradientDrawable background=(android.graphics.drawable.GradientDrawable)badge.getBackground();assertEquals(android.graphics.Color.parseColor("#A51D2D"),background.getColor().getDefaultColor());assertTrue(background.getCornerRadius()>0);
+        Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,rowId).putExtra(TaskWidgetProvider.ITEM_ACTION,"start");new TaskWidgetProvider().onReceive(context,tap);factory.onDataSetChanged();assertEquals("🟢 IN PROGRESS",((android.widget.TextView)factory.getViewAt(0).apply(context,null).findViewById(R.id.widget_due)).getText().toString());assertEquals(id+":"+day,new org.json.JSONObject(reference.readState()).getString("inProgress"));
+        tap.putExtra(TaskWidgetProvider.ITEM_ACTION,"stop");new TaskWidgetProvider().onReceive(context,tap);factory.onDataSetChanged();assertEquals("🔴 URGENT",((android.widget.TextView)factory.getViewAt(1).apply(context,null).findViewById(R.id.widget_due)).getText().toString());assertTrue(new org.json.JSONObject(reference.readState()).getJSONArray("customTasks").getJSONObject(0).getBoolean("urgent"));
+    }
+}
