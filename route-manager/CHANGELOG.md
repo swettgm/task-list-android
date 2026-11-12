@@ -1,3 +1,8 @@
+# 1.0.14
+
+- Slightly smaller gray export headings, with route/day in parentheses and no dot separators.
+- Bold white note text in export choices.
+
 # Changelog
 
 ## 1.0.13

@@ -32,4 +32,4 @@ Export dialogs show individual entry checkboxes and Close/Copy/Share actions. Th
 
 Export checkboxes align vertically with the stop name; route and note text sit beneath the title independently.
 
-Export choices show white text with route/day beside the stop name, for example Circle K · (G200 · Monday), wrapping when needed. Note instructions match the stop-name text size.
+Export choices show white text with route/day beside the stop name, for example Circle K (G200 Monday), wrapping when needed. Note instructions match the stop-name text size.
