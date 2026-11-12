@@ -1,3 +1,11 @@
+# Route Notes 1.0.17 validation
+
+Source: `3041fa17a0189aea1132fcfdd5c59567032ee9c1`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43244135561). **16 Android tests, 146 Chromium checks and zero lint errors passed.**
+
+In-progress notes sort above inactive notes on their own route page. Each group retains the existing creation-date ordering. Stopping a note restores its original position without rewriting its creation time. Browser workflows verify an older note moves above a newer inactive note and returns below it after stopping; progress persistence, editing, double-tap interaction and export checks also passed.
+
+Signed APK: `Route-Notes-v1.0.17.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.17 (18), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `c1ab478d0da2fc93470912a3afeb916660686aa688fce561aa82bcd87f658fba`. The retained certificate matches previous releases. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Notes 1.0.16 validation
 
 Source: `e4f25ed534d04a9b06937ca8658e914a33b49c45`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43240706805). **16 Android tests, 143 Chromium checks and zero lint errors passed.**
