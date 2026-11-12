@@ -1,3 +1,8 @@
+## 0.79.0
+
+- Rounded square label tiles in task editors, including widget Quick add, with icon/name labels and white selected borders.
+- Priority buttons use white selected outlines and glow without visible radio circles.
+
 # Changelog
 
 ## Android 0.78.0 — 2026-11-08

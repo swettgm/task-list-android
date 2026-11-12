@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.79.0",
+    "date": "2026-11-11",
+    "changes": [
+      "Made task-editor context labels rounded square tiles with icons and names, larger tap targets and a white selected outline/glow. Applies to detailed Add/Edit, label-only editing and widget-launched editors.",
+      "Widget Quick add uses matching selectable label tiles. Priority choices keep their labels and selected outline/glow while hiding the radio circles. Task rows and the widget front retain their existing appearance."
+    ]
+  },
+  {
     "version": "0.78.0",
     "date": "2026-11-08",
     "changes": [
