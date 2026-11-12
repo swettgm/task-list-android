@@ -1,3 +1,8 @@
+# 1.0.18
+
+- Double tap cycles green In progress, yellow For me and no status. Both marked states stay at the top and survive reopening and editing.
+- Tap a status pill to clear it; keyboard users can cycle with Shift+Enter.
+
 # 1.0.17
 
 - In-progress notes appear at the top of their route page. Stopping restores their usual creation-date order.

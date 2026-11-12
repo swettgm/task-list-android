@@ -36,6 +36,6 @@ Export choices show slightly smaller gray headings with route/day beside the sto
 
 Account numbers use `Acct #number` consistently in labels and exports. All account fields request the numeric keypad and retain leading zeros.
 
-Double tap a note to toggle its saved green in-progress pill; tap the pill to stop. Single tap edits, and Shift+Enter toggles progress for keyboard users. Visit frequency labels remain centered and unbroken beside wrapping stop names.
+Double tap a note to cycle its saved status: green In progress, yellow For me, then none; tap either pill to clear it. Single tap edits, and Shift+Enter cycles status for keyboard users. Visit frequency labels remain centered and unbroken beside wrapping stop names.
 
-In-progress notes appear first within their route. Stopped notes return to their normal creation-date order.
+In-progress and For me notes appear first within their route. Clearing their status restores normal creation-date order.
