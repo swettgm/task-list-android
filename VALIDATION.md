@@ -1,3 +1,13 @@
+# Android Tasks 0.80.0 verification
+
+Source: `f02958474a1e2cf2600210c8d28877aec2cc86f4`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43317595410). **193 Android tests, 893 browser checks, 37 calendar checks and zero lint errors passed.**
+
+Editor label tiles are icon-only squares, six per row. They use the usual 48px button size where space permits and shrink evenly on narrow screens so all six fit. Accessible names, tooltips, icon customization and selected white outlines remain. Geometry checks passed at 320, 390 and 600px; the detailed editor screenshot was reviewed. The native label picker uses six columns with square icon-only buttons and retained selection behavior. Task rows and the widget front are unchanged.
+
+The first CI attempt passed layout and interaction checks but caught a missing version entry in the packaged changelog; the corrected full rerun passed. Packaged HTML, bridge, history and initial-state assets exactly match the source. Native picker selection and existing task workflows passed.
+
+APK: `Tasks-v0.80.0.apk`, 331606 bytes. SHA-256 `54bc7b1c49d68987efed90c0f345d630f8136f321c86e4aaf3dab617b2851659`. Package `com.personal.tasklist.preview`, version 0.80.0 (80). ZIP integrity, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches previous Tasks updates. Tests used Robolectric and Chromium; no physical phone was used.
+
 # Android Tasks 0.79.0 verification
 
 Source: `ae7906dce7eb4ed522a77361fa6998c556d490a2`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43189796687). **193 Android tests, 893 browser checks, 37 calendar checks and zero lint errors passed.**
