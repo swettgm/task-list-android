@@ -33,3 +33,5 @@ Export dialogs show individual entry checkboxes and Close/Copy/Share actions. Th
 Export checkboxes align vertically with the stop name; route and note text sit beneath the title independently.
 
 Export choices show slightly smaller gray headings with route/day beside the stop name, for example Circle K (G200 Monday), wrapping when needed. Note instructions are larger, bold and white.
+
+Account numbers use `Acct #number` consistently in labels and exports. All account fields request the numeric keypad and retain leading zeros.

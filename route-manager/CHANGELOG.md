@@ -1,3 +1,8 @@
+# 1.0.15
+
+- Show account numbers consistently as Acct #number in stop labels, suggestions, selected stops and all exports.
+- Request the full numeric keypad for both account-number entry fields while preserving leading zeros.
+
 # 1.0.14
 
 - Slightly smaller gray export headings, with route/day in parentheses and no dot separators.
