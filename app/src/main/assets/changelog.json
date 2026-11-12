@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.80.0",
+    "date": "2026-11-12",
+    "changes": [
+      "Task-editor context labels now use six icon-only rounded square buttons in one row, matching the usual 48px control height where space permits. Narrow screens reduce their square size to fit. Selected white outlines and accessible label names remain.",
+      "The native label picker uses the same compact six-column icon-only layout. Task rows and the widget front are unchanged."
+    ]
+  },
+  {
     "version": "0.79.0",
     "date": "2026-11-11",
     "changes": [
