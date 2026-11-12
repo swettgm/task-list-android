@@ -1,3 +1,11 @@
+# Route Notes 1.0.18 validation
+
+Source: `138f0cc16154867bbc9ea475062d8077f3e92468`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43249745572). **17 Android tests, 150 Chromium checks and zero lint errors passed.**
+
+Double tap cycles from no status to green In progress, then yellow For me, then no status. Both marked states remain above inactive notes on their own route page and survive reopening and editing. Tapping either pill clears it directly. Shift+Enter follows the same cycle. Optional boolean flags retain compatibility with existing progress data; native validation rejects malformed and conflicting states. Browser checks cover the full cycle, yellow appearance and top position, reload/edit persistence, restoring ordinary order, failed saves and existing account/export workflows. The yellow-pill screenshot was reviewed.
+
+Signed APK: `Route-Notes-v1.0.18.apk`, 41553 bytes. Package `com.personal.routemanager`, version 1.0.18 (19), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `51f2b53e76ecab9c0a8ef54373c5fe48f525c0bb54ab76f7515ab09501086ec0`. The retained certificate matches previous releases. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Notes 1.0.17 validation
 
 Source: `3041fa17a0189aea1132fcfdd5c59567032ee9c1`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43244135561). **16 Android tests, 146 Chromium checks and zero lint errors passed.**
