@@ -35,3 +35,5 @@ Export checkboxes align vertically with the stop name; route and note text sit b
 Export choices show slightly smaller gray headings with route/day beside the stop name, for example Circle K (G200 Monday), wrapping when needed. Note instructions are larger, bold and white.
 
 Account numbers use `Acct #number` consistently in labels and exports. All account fields request the numeric keypad and retain leading zeros.
+
+Double tap a note to toggle its saved green in-progress pill; tap the pill to stop. Single tap edits, and Shift+Enter toggles progress for keyboard users. Visit frequency labels remain centered and unbroken beside wrapping stop names.

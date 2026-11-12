@@ -1,3 +1,8 @@
+# 1.0.16
+
+- Double tap a route note to toggle in progress, with a green pill and haptic feedback. Status persists and survives editing. Tap the pill to stop. Single tap still edits.
+- Keep Weekly, Biweekly and Monthly labels on one line and vertically centered alongside wrapping stop names.
+
 # 1.0.15
 
 - Show account numbers consistently as Acct #number in stop labels, suggestions, selected stops and all exports.
