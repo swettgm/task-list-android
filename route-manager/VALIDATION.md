@@ -1,3 +1,13 @@
+# Route Notes 1.0.16 validation
+
+Source: `e4f25ed534d04a9b06937ca8658e914a33b49c45`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43240706805). **16 Android tests, 143 Chromium checks and zero lint errors passed.**
+
+Double tapping a route note toggles its persisted green in-progress pill with haptic feedback. Tapping the pill stops progress. Single tap still edits after the double-tap recognition window; keyboard users may use Shift+Enter to toggle. Editing preserves status. Native validation accepts optional boolean status and rejects malformed flags. Browser checks cover double-tap on/off, single-tap editing, persistence across reload and edits, pill stop, rejected writes and keyboard access.
+
+Weekly, Biweekly and Monthly labels retain their width without wrapping and center vertically against multi-line stop names. Geometry passed at 320px and 390px; the in-progress screenshot was reviewed. Deferred editor autofocus now respects another already-focused field; this resolved the earlier automated account-entry failures. Account associations, leading zeros, exports and existing workflows passed in the complete rerun.
+
+Signed APK: `Route-Notes-v1.0.16.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.16 (17), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `72e68079e6443388f2f717fdc5d848cd9af6540a7e51a9d04da2fe450e06a18d`. The retained certificate matches previous releases. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Notes 1.0.15 validation
 
 Source: `06f4717979a63d1f7c27a7e0ac2b95a29101619f`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43199246767). **15 Android tests, 134 Chromium checks and zero lint errors passed.**
