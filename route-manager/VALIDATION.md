@@ -1,3 +1,13 @@
+# Route Manager 1.0.11 validation
+
+Source: `f45f7295fe738cc54d02581373351dd89055bf88`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43189304207). **15 Android tests, 131 Chromium checks and zero lint errors passed.**
+
+All export choices start unchecked, with no route dropdown. Entries show their full note text and each checkbox centers vertically against only the stop name. The dialog grows with content up to the safe viewport height, then its fields scroll above the fixed Close/Copy/Share footer. Preview starts collapsed and opens on demand.
+
+Notes export with literal Unicode U+25CF circles (●), grouped by route number and weekday. Tests cover exact selected Copy/Share text, saved numbers and multiline content, unchecked defaults on reopen, preview toggling, long note heights, stop-title checkbox alignment, all-route choices, unchanged saved data, compact/empty states and footer fit at 320x420, 390x844 and 600x844. Stop-only lists retain numbering. Long and compact export screenshots were reviewed.
+
+Signed APK: `Route-Manager-v1.0.11.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.11 (12), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `3f9c6363705c4695797c75c982fdd20e49a4e2aad338bce111c717bfaa7505dc`. The retained certificate matches prior updates. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Manager 1.0.10 validation
 
 Source: `1861a19871bfd178d8e669cde3da2ab83dff69d8`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43132372230). **15 Android tests, 135 Chromium checks and zero lint errors passed.**
