@@ -1,3 +1,11 @@
+# Route Notes 1.0.19 validation
+
+Source: `82f10d64ce394335719f8c17f054c4883a57b79a`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43254178231). **18 Android tests, 155 Chromium checks and zero lint errors passed.**
+
+Added red Delegate. All existing notes across routes switch to Delegate once on upgrade, as requested; a persisted marker prevents reapplying this after later edits or clears. New notes default to Delegate. Double tap cycles Delegate, In progress, For me and no status. Tapping any pill clears it. Green and yellow notes remain above delegated and unmarked notes. Tests cover one-time migration across routes and previous statuses, clearing and reopening, new-note defaults, the complete cycle, persistence, editing, account numbers and exports. Native validation rejects malformed and conflicting flags. The red-pill screenshot was reviewed. The earlier edit-check failure was resolved by clicking a stop label rather than the note center, which could now contain a link.
+
+Signed APK: `Route-Notes-v1.0.19.apk`, 41553 bytes. Package `com.personal.routemanager`, version 1.0.19 (20), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `18d29953a0fe0543c747b3bd2a6499fdd96930fa3f118c5957a83ca44c673cee`. The retained certificate matches previous releases. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Notes 1.0.18 validation
 
 Source: `138f0cc16154867bbc9ea475062d8077f3e92468`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43249745572). **17 Android tests, 150 Chromium checks and zero lint errors passed.**
