@@ -20,3 +20,5 @@ Build with Gradle 8.11.1, Java 21 and Android SDK 35. Run `gradle :app:assembleD
 Version 1.0.1 uses live native timer snapshots and second-boundary display scheduling, with no cached 200 ms timer sampling. Audio presets are original synthesized bell/bowl sounds with inharmonic modes, gentle beating and longer decays; they are not field recordings.
 
 Version 1.0.3 keeps timer geometry stable across session phases, uses equal session-button sizes and crossfades between timer modes without delaying cues. Reduced-motion preferences skip animation.
+
+Vibration sliders play one preview at the chosen length when released. Previews stop when leaving Settings or the app and are disabled during a session.

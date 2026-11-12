@@ -1,3 +1,8 @@
+# 1.0.4
+
+- Preview the chosen vibration length once when releasing a settings slider.
+- Previews stop when leaving Settings or the app and cannot interfere with an active meditation.
+
 # Changelog
 
 ## 1.0.3
