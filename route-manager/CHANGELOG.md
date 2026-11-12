@@ -2,6 +2,8 @@
 
 ## 1.0.11
 
+- Centered each export checkbox vertically against the stop name, independently of route/day and note text.
+
 - Export entries show full note text and start unchecked.
 - Removed the route dropdown; all routes are always available for selection.
 - Preview is collapsed until opened; Close, Copy and Share remain visible.
