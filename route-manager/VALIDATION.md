@@ -1,3 +1,13 @@
+# Route Manager 1.0.7 validation
+
+Source: `2b21b66d65e099856bbea560c7ea4c1fc193bc2c`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43123478569). **15 Android tests, 116 Chromium checks and zero lint errors passed.**
+
+The header exports the currently viewed day’s notes. A five-day selector changes the preview; Copy and Share receive the exact previewed plain text. Entries group complete notes under numbered stop names and saved account numbers, retaining leading zeros and separating same-named accounts. Shared notes appear under each assigned stop. Unassigned notes and notes whose saved stop was removed remain included as route notes. Stops without notes and other days’ notes are excluded. Empty-day exports disable Copy and Share. Exporting never writes saved route state. The existing managed-stop export remains covered.
+
+Checks cover exact multiline formatting, multiple notes, missing numbers, same names across accounts and days, defaulting to the viewed day, clipboard/share payload equality and read-only export. The export screenshot was reviewed.
+
+Signed APK: `Route-Manager-v1.0.7.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.7 (8), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment and v2/v3 signatures passed. SHA-256 `c3adc2faf00bdbead46cf748f228177c59bb5a66984b5d76880743ffe1d16e06`. The retained signing certificate matches prior updates. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Manager 1.0.6 validation
 
 Source: `cabf049cf0fcaae117e0acf47689690652ad1aad`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43121212431). **15 Android tests, 107 Chromium checks and zero lint errors passed.**

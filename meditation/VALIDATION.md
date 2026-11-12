@@ -1,3 +1,13 @@
+# Meditation 1.0.2 validation
+
+Source: `46cedb87efce2aa0e479b743f7fd8640aa357a4b`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43123740419). **15 Android tests, 44 Chromium checks and zero lint errors passed.**
+
+The idle home screen shows only the centered timer, Start button and small Settings icon. Main-screen heading, readiness text, preparation helper and countdown vibration instructions are removed. Duration, independent sounds, custom audio, vibration switches/sliders and changelog live on a separate Settings screen. Back returns home; edits persist automatically, invalid duration stays in Settings with an error, and active-session settings are readable but disabled. Leaving Settings stops audio previews. The 30-second preparation countdown, cue timings, monotonic clock and ongoing-session behavior remain unchanged.
+
+Browser checks verify centered controls and no overflow at 320/390/600 px, minimal home/countdown wording, separate Settings and changelog, settings persistence, errors, Android Back behavior, active-session protection, previews, sound choices, vibration sliders, pause/resume/reopen/end and exact second-boundary refresh/catch-up behavior. Home, Settings and timer screenshots were reviewed.
+
+Signed APK: `Meditation-v1.0.2.apk`, 951216 bytes. Package `com.personal.meditation`, version 1.0.2 (3), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches prior updates. SHA-256 `6cbc04fc5920b074dec016f7e4678b7d7aa85aa4f7a0ab90c91492f720ab0544`. Robolectric and Chromium were used; no physical phone was used.
+
 # Meditation 1.0.1 validation
 
 Source: `cabf049cf0fcaae117e0acf47689690652ad1aad`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43121212429). **15 Android tests, 33 Chromium checks and zero lint errors passed.**
