@@ -1,3 +1,13 @@
+# Route Manager 1.0.9 validation
+
+Source: `cc5f1e855579842bc4520eb4ecf93f78bd153533`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43128168435). **15 Android tests, 130 Chromium checks and zero lint errors passed.**
+
+Both export dialogs show checkbox choices, Select all and a selection count. All entries start selected; unchecked entries are excluded from preview, Copy and Share. Numbering is generated after filtering and runs consecutively from 1, including across route headings in stop-list exports. Saved account numbers remain unchanged. Choices are scoped to the open dialog, survive route/day switching and reset on reopening. Empty selections disable Copy and Share. Notes/stops remain untouched.
+
+Tests cover skipped earlier/middle entries, 1-to-total renumbering, exact selected Copy/Share payloads, mixed/none/all selections, per-route retention, reset on reopen, saved-data equality and visible export footers at 320x420 and 390x844. Existing full-list exports remain covered. The selected-notes preview screenshot was reviewed.
+
+Signed APK: `Route-Manager-v1.0.9.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.9 (10), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `35cd5c46b85ac4d2b2220c42c95892e99590f2f57342a8434146f7203559f8ab`. The retained certificate matches prior updates. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Manager 1.0.8 validation
 
 Source: `a56ae8d6a602a6d19775cee88ec617f588ecb187`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43125611020). **15 Android tests, 116 Chromium checks and zero lint errors passed.**
