@@ -1,4 +1,4 @@
-# Route Manager
+# Route Notes
 
 A separate, offline Android app for route notes. Installs alongside Tasks with its own data and no widget.
 
@@ -20,7 +20,7 @@ A separate, offline Android app for route notes. Installs alongside Tasks with i
 Build: Gradle 8.11.1, Java 21, Android SDK 35. Run `gradle :app:assembleDebug :app:testDebugUnitTest :app:lintDebug`.
 Browser checks: `npm install --no-save --package-lock=false playwright@1.56.1`, then `node tools/browser-smoke.mjs` with Chrome installed.
 
-The independent Build Route Manager workflow builds and checks this project. Signing keys must stay private; never commit a keystore.
+The independent Build Route Notes workflow builds and checks this project. Signing keys must stay private; never commit a keystore.
 
 The header’s Export notes button opens notes from all five routes. Choose entries across the week, then Copy or Share the list grouped by route number and day. Entries include stop names, saved account numbers (including leading zeros), and full notes. Shared notes appear under each associated stop; general route notes are kept. Saved stops without notes are omitted. The separate managed-stop list export remains available.
 

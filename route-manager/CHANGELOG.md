@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.12
+
+- Renamed the launcher and app to Route Notes. The existing app identity, saved stops, notes and preferences are preserved.
+
 ## 1.0.11
 
 - Centered each export checkbox vertically against the stop name, independently of route/day and note text.
