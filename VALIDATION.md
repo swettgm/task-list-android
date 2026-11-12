@@ -1,3 +1,13 @@
+# Android Tasks 0.79.0 verification
+
+Source: `ae7906dce7eb4ed522a77361fa6998c556d490a2`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43189796687). **193 Android tests, 893 browser checks, 37 calendar checks and zero lint errors passed.**
+
+Task-editor context labels use rounded square tiles with icons and names, generous full-tile tap targets, keyboard focus and white selected borders/glow. The shared field covers detailed Add/Edit, label-only popups and widget-launched full editors. Priority choices retain native radio semantics while their visible circles are hidden and selected buttons use the same white outline/glow. Main task rows and widget-front sources are unchanged.
+
+Native widget Quick add uses a three-column label-tile picker with square sizing, preserved custom symbols/images, selected borders and saved multi-label state. Existing Android multi-label/reset tests were updated to use the tiles. Existing browser label-edit checks now tap whole tiles and verify saved associations and cancellation; all other editor, widget, calendar, completion, ordering and settings suites passed. The detailed editor screenshot was reviewed.
+
+APK: `Tasks-v0.79.0.apk`, 331606 bytes. SHA-256 `137d458204bb539766d1170b88d418eaaf341921d12eafd52f0b9b4912250c41`. Package `com.personal.tasklist.preview`, version 0.79.0 (79). ZIP integrity, exact packaged assets, all non-signature entries matching CI, alignment and v2/v3 signatures passed. The retained certificate matches Tasks 0.78.0. Tests used Robolectric and Chromium; no physical phone was used.
+
 # Android Tasks 0.78.0 verification
 
 Source: `20869ca39612d329177a89011f1d13470bb730e2`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/42524394530). **193 Android tests, 893 browser checks, 37 calendar checks and zero lint errors passed.**

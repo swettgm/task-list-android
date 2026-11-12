@@ -1,6 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.78.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.78.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.79.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.79.0.apk). Install over the existing app to retain your tasks and settings.
+
+Task editors now use rounded square label tiles with icons and names. Selected labels and priority buttons have white outlined glows; the visible priority radio circles are removed. Widget Quick add has the same larger label choices.
 
 Settings → Task ordering now offers Hold and drag alongside the existing arrows. Hold a task, then use the solid preview and insertion line to reorder it or change its priority. The Weekend shortcut always chooses the next Friday strictly after today, including when used on Friday, Saturday or Sunday.
 
