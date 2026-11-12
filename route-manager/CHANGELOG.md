@@ -2,6 +2,8 @@
 
 ## 1.0.10
 
+- Export opens all notes across all five routes, with each choice identified by route/day and the exported list grouped accordingly.
+
 - Centered checkboxes vertically against their label rows throughout the app.
 
 - Removed the export heading, Choose entries, Select all, selection count and Numbered list caption.
