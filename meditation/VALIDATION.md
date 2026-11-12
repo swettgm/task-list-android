@@ -1,3 +1,11 @@
+# Meditation 1.0.4 validation
+
+Source: `327b8bb56a9c9bef18db3992fe86ebf50ad22e45`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43319061544). **16 Android tests, 72 Chromium checks and zero lint errors passed.**
+
+Releasing a vibration-length slider saves its selected duration and previews one vibration through the native vibrator. Input events during dragging do not preview repeatedly. Failed saves do not preview unsaved lengths. Native code checks the saved enabled state, foreground activity and active session before playing. Previews stop when leaving Settings, pausing/destroying the activity, or starting a session. The existing timer and cue scheduling are unchanged. Browser checks cover release-only preview, exact duration and failed saves; native checks verify exact vibration duration, cancellation, disabled/invalid keys and blocking during a session.
+
+Signed APK: `Meditation-v1.0.4.apk`, 951216 bytes. Package `com.personal.meditation`, version 1.0.4 (5), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `c5cba7bd488e7cb6a6c4bc06fade838179f84a36f91fda8bcddb247491cfa4cc`. The retained certificate matches Meditation 1.0.3. Tests used Robolectric and Chromium; no physical phone was used.
+
 # Meditation 1.0.3 validation
 
 Source: `215ed899b4508b4cc76c726e6ef7df22cccf793d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43125016206). **15 Android tests, 69 Chromium checks and zero lint errors passed.**
