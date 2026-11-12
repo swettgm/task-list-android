@@ -1,3 +1,13 @@
+# Meditation 1.0.3 validation
+
+Source: `215ed899b4508b4cc76c726e6ef7df22cccf793d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43125016206). **15 Android tests, 69 Chromium checks and zero lint errors passed.**
+
+All session buttons use the same width and 54 px height, with a fixed-height action row. The timer retains its exact vertical position through idle, preparation, meditation, pause and end at 320/390/600 px viewport widths. Tests compare timer and button bounds within half a pixel during transitions and after settling.
+
+Timer modes crossfade over 300 ms using a decorative, accessibility-hidden previous value in the same grid cell. The live timer updates immediately; cue deadlines and second-boundary refresh are unchanged. Ordinary second changes do not animate. Completed fades remove their temporary element; phase changes, Settings, page hiding and reduced-motion preferences clean up or skip the fade. Existing screen, Settings, saved choices, sounds and session controls remain covered. Ready and active timer screenshots were reviewed.
+
+Signed APK: `Meditation-v1.0.3.apk`, 951216 bytes. Package `com.personal.meditation`, version 1.0.3 (4), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `1b5bf25ad7909590046190fa94151b039b9da08003148b7f7da9de99eff0f61b`. The retained certificate matches prior updates. Robolectric and Chromium were used; no physical phone was used.
+
 # Meditation 1.0.2 validation
 
 Source: `46cedb87efce2aa0e479b743f7fd8640aa357a4b`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43123740419). **15 Android tests, 44 Chromium checks and zero lint errors passed.**
