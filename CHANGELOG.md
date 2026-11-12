@@ -1,3 +1,9 @@
+## 0.80.0
+
+- Made editor label tiles icon-only squares, six per row, at the usual button height when space allows.
+- Kept accessible names, white selected outlines, and existing task/widget-front appearance.
+- Applied the compact layout to the native label picker too.
+
 ## 0.79.0
 
 - Rounded square label tiles in task editors, including widget Quick add, with icon/name labels and white selected borders.
