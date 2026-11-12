@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+- Timer stays at the same vertical position before, during and after preparation.
+- Start, Pause, Resume and End share the same button dimensions.
+- Timer modes crossfade without delaying the native clock; reduced-motion preferences skip the fade.
+
 ## 1.0.2
 
 - Minimal centered timer and Start button, with a small Settings button.
