@@ -25,3 +25,5 @@ The independent Build Route Manager workflow builds and checks this project. Sig
 The header’s Export notes button exports the currently viewed day. Choose any of the five days, preview a clean numbered list, then Copy or Share it. Entries include stop names, saved account numbers (including leading zeros), and full notes. Shared notes appear under each associated stop; general route notes are kept. Saved stops without notes are omitted. The separate managed-stop list export remains available.
 
 Export previews, copied lists and shared lists align all lines to the left, including multiline notes.
+
+Choose entries in either export using checkboxes or Select all. Only checked entries appear in the preview, Copy and Share, numbered consecutively from 1. Choices are retained while switching days/routes inside the open dialog and reset to all selected on reopening.

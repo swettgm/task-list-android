@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.9
+
+- Choose entries for notes and stop-list exports using checkboxes and Select all.
+- Selected entries always number consecutively from 1, including across route headings.
+- Selections stay local to the open export dialog and never change saved notes or stops.
+
 ## 1.0.8
 
 - Left-aligned all export text, including note lines, in preview, Copy and Share.
