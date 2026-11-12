@@ -1,3 +1,15 @@
+# Route Manager 1.0.10 validation
+
+Source: `1861a19871bfd178d8e669cde3da2ab83dff69d8`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43132372230). **15 Android tests, 135 Chromium checks and zero lint errors passed.**
+
+Export opens All routes from every route page. Checkbox entries identify their route number and weekday; selected notes export beneath matching route/day headings with consecutive numbering across groups. Optional route filtering remains available. Tests verify all-routes defaults, route labels, cross-route selections, numbering and exact Copy/Share equality. Saved stop names, numbers and note bodies remain covered.
+
+Visible export title, Choose entries, Select all, selection count and Numbered list caption are removed. Individual checkboxes, route selector, preview and action buttons remain. The dialog and preview retain accessible names. Checkbox margins are reset and checkbox rows center their controls vertically throughout Route Manager, including multi-line export entries. Export checkbox geometry, small-screen action visibility and removed-caption checks passed. The cleaned all-routes export screenshot was reviewed.
+
+Earlier browser attempts hit different existing save/account assertions. The diagnostic full rerun passed all workflows, including save rejection, account preservation and exports; note-save logic was unchanged by this release.
+
+Signed APK: `Route-Manager-v1.0.10.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.10 (11), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `eb326d2ceaf119eff9145ae06c6b40fb229fbfab32b327d5e54beae9fca69c2a`. The retained certificate matches prior updates. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Manager 1.0.9 validation
 
 Source: `cc5f1e855579842bc4520eb4ecf93f78bd153533`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43128168435). **15 Android tests, 130 Chromium checks and zero lint errors passed.**
