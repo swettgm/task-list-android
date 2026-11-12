@@ -36,6 +36,8 @@ Export choices show slightly smaller gray headings with route/day beside the sto
 
 Account numbers use `Acct #number` consistently in labels and exports. All account fields request the numeric keypad and retain leading zeros.
 
-Double tap a note to cycle its saved status: green In progress, yellow For me, then none; tap either pill to clear it. Single tap edits, and Shift+Enter cycles status for keyboard users. Visit frequency labels remain centered and unbroken beside wrapping stop names.
+Double tap a note to cycle its saved status: red Delegate, green In progress, yellow For me, then none; tap any pill to clear it. Single tap edits, and Shift+Enter cycles status for keyboard users. Visit frequency labels remain centered and unbroken beside wrapping stop names.
 
 In-progress and For me notes appear first within their route. Clearing their status restores normal creation-date order.
+
+New notes default to red Delegate. Existing notes are set to Delegate once when updating to 1.0.19; later status choices, including no status, are preserved. In progress and For me remain above Delegate and unmarked notes.

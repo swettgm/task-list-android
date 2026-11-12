@@ -1,3 +1,9 @@
+# 1.0.19
+
+- Added red Delegate. All current notes switch to Delegate once on update; new notes default to Delegate.
+- Double tap cycles Delegate, In progress, For me and no status. Tap any pill to clear it.
+- In progress and For me remain above Delegate and unmarked notes. Cleared statuses remain cleared across reopening.
+
 # 1.0.18
 
 - Double tap cycles green In progress, yellow For me and no status. Both marked states stay at the top and survive reopening and editing.
