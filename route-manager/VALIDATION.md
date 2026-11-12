@@ -1,3 +1,11 @@
+# Route Notes 1.0.13 validation
+
+Source: `dba7749b16b1946ef69ef1d497172ea9a70d5ac4`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43193750930). **15 Android tests, 131 Chromium checks and zero lint errors passed.**
+
+Export choices show the route and weekday beside the stop name as `Circle K · (G200 · Monday)`, with natural wrapping. Heading and note text are white and the same size. Checkboxes remain centered against the stop name alone. Note exports use the smaller literal Unicode U+2022 circle (•). Full-height note selection, unchecked defaults, collapsed preview, route grouping, account numbers, exact Copy/Share content and persistence checks passed. Compact and full-height export screenshots were reviewed.
+
+Signed APK: `Route-Notes-v1.0.13.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.13 (14), Android 8.0+. ZIP integrity, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `620ca280327cc9cca887d5c4036836a3feb04dc65d943c3b531b61b627ae467e`. The retained certificate matches Route Notes 1.0.12, so this installs as an update. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Notes 1.0.12 validation
 
 Source: `a8f352b446eed25de4c2a0201f8cc7a238c97b4f`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43191077231). **15 Android tests, 131 Chromium checks and zero lint errors passed.**
