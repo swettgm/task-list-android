@@ -26,4 +26,6 @@ The header’s Export notes button exports the currently viewed day. Choose any 
 
 Export previews, copied lists and shared lists align all lines to the left, including multiline notes.
 
-Choose entries in either export using checkboxes or Select all. Only checked entries appear in the preview, Copy and Share, numbered consecutively from 1. Choices are retained while switching days/routes inside the open dialog and reset to all selected on reopening.
+Choose entries in either export using checkboxes. Only checked entries appear in the preview, Copy and Share, numbered consecutively from 1. Choices are retained while switching days/routes inside the open dialog and reset to all selected on reopening.
+
+Export dialogs keep only the route picker, individual entry checkboxes, preview and Close/Copy/Share actions; extra headings and counts are removed.

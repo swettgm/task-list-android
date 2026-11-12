@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.10
+
+- Centered checkboxes vertically against their label rows throughout the app.
+
+- Removed the export heading, Choose entries, Select all, selection count and Numbered list caption.
+- Kept route selection, individual checkboxes, preview, consecutive numbering and Copy/Share.
+
 ## 1.0.9
 
 - Choose entries for notes and stop-list exports using checkboxes and Select all.
