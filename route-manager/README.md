@@ -29,3 +29,5 @@ Export previews, copied lists and shared lists align all lines to the left, incl
 Choose entries in either export using checkboxes. Only checked entries appear in the preview, Copy and Share, with literal Unicode solid-circle markers (●) for notes; stop lists retain consecutive numbering. Entries start unchecked each time the export dialog opens.
 
 Export dialogs show individual entry checkboxes and Close/Copy/Share actions. The optional Preview opens in a disclosure; there is no route dropdown or selection count. Full note text is shown, and the window grows to fit content up to the screen height.
+
+Export checkboxes align vertically with the stop name; route and note text sit beneath the title independently.
