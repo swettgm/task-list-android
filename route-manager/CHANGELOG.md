@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.13
+
+- Export choices put route and weekday in parentheses beside the stop name with dot separators, wrapping naturally.
+- Entry text is white, and note bodies match the stop-name text size.
+- Exported notes use a smaller literal Unicode circle • (U+2022).
+
 ## 1.0.12
 
 - Renamed the launcher and app to Route Notes. The existing app identity, saved stops, notes and preferences are preserved.
