@@ -100,9 +100,9 @@ See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 For each release, add the newest entry to `app/src/main/assets/changelog.json`, mirror the history in `APP_CHANGELOG` in `bridge.js` and its packaged HTML copy, and update `CHANGELOG.md`. The browser checks require the Settings history to match the packaged history and current app version.
 
-## Route Manager
+## Route Notes
 
-[Download Route Manager 1.0.11](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Route-Manager-v1.0.11.apk), a separate lightweight offline Android app for G200–G600 route notes. [Project and features](route-manager/README.md). Installs alongside Tasks with its own saved data and no widget.
+[Download Route Notes 1.0.12](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Route-Notes-v1.0.12.apk), a separate lightweight offline Android app for G200–G600 route notes. [Project and features](route-manager/README.md). Installs alongside Tasks with its own saved data and no widget.
 
 ## Meditation
 

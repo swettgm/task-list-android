@@ -1,3 +1,13 @@
+# Route Notes 1.0.12 validation
+
+Source: `a8f352b446eed25de4c2a0201f8cc7a238c97b4f`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43191077231). **15 Android tests, 131 Chromium checks and zero lint errors passed.**
+
+Renamed the launcher application label, page title, visible app/version text, error wording and clipboard label to Route Notes. The installed identity remains `com.personal.routemanager`; storage keys, native bridge and shared-preference formats are unchanged. Existing route notes, stops, account numbers, settings and offsets therefore use the same saved state. All prior export, checkbox, layout and persistence checks passed. The compiled resources contain the new launcher label.
+
+This update includes full-height unchecked export choices across all routes, no route dropdown, a collapsed Preview, literal Unicode ● note markers, grouped route/day output, a content-sized window with safe scrolling and fixed Close/Copy/Share actions, and checkboxes centered against the stop name.
+
+Signed APK: `Route-Notes-v1.0.12.apk`, 37457 bytes. Version 1.0.12 (13), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest, compiled name and v2/v3 signatures passed. SHA-256 `f0541b030f9f58f79b302d4efe294a434cff1c682dd56e5bc163355d8700a5f7`. The retained signer matches Route Manager 1.0.11, so this installs as an update. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Manager 1.0.11 validation
 
 Source: `f45f7295fe738cc54d02581373351dd89055bf88`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43189304207). **15 Android tests, 131 Chromium checks and zero lint errors passed.**
