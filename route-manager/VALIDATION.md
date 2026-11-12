@@ -1,3 +1,11 @@
+# Route Manager 1.0.8 validation
+
+Source: `a56ae8d6a602a6d19775cee88ec617f588ecb187`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43125611020). **15 Android tests, 116 Chromium checks and zero lint errors passed.**
+
+Export previews explicitly align text left. Note export removes generated indentation and leading whitespace on each note line, preserving note text, line breaks, stop names and saved numbers. The existing exact-output and Copy/Share equality checks pass with the left-aligned format. Saved notes are unchanged. The note-export screenshot was reviewed.
+
+Signed APK: `Route-Manager-v1.0.8.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.8 (9), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `b229bc08d2b1a23c320775c9847ae3e93236298d0583b31bba741e7af8cccbbd`. The retained certificate matches prior updates. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Manager 1.0.7 validation
 
 Source: `2b21b66d65e099856bbea560c7ea4c1fc193bc2c`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43123478569). **15 Android tests, 116 Chromium checks and zero lint errors passed.**
