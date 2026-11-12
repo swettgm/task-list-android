@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.8
+
+- Left-aligned all export text, including note lines, in preview, Copy and Share.
+
 ## 1.0.7
 
 - Export each day’s notes from the header with Copy or Share.
