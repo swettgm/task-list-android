@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.11
+
+- Export entries show full note text and start unchecked.
+- Removed the route dropdown; all routes are always available for selection.
+- Preview is collapsed until opened; Close, Copy and Share remain visible.
+- Exported notes use the literal Unicode solid circle ●, grouped by route and weekday.
+- The export window grows with its content up to the available screen height, then scrolls inside the window.
+
 ## 1.0.10
 
 - Export opens all notes across all five routes, with each choice identified by route/day and the exported list grouped accordingly.

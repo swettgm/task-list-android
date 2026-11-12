@@ -22,10 +22,10 @@ Browser checks: `npm install --no-save --package-lock=false playwright@1.56.1`, 
 
 The independent Build Route Manager workflow builds and checks this project. Signing keys must stay private; never commit a keystore.
 
-The header’s Export notes button opens notes from all five routes. Choose entries across the week, or filter a route, then Copy or Share the list grouped by route number and day. Entries include stop names, saved account numbers (including leading zeros), and full notes. Shared notes appear under each associated stop; general route notes are kept. Saved stops without notes are omitted. The separate managed-stop list export remains available.
+The header’s Export notes button opens notes from all five routes. Choose entries across the week, then Copy or Share the list grouped by route number and day. Entries include stop names, saved account numbers (including leading zeros), and full notes. Shared notes appear under each associated stop; general route notes are kept. Saved stops without notes are omitted. The separate managed-stop list export remains available.
 
 Export previews, copied lists and shared lists align all lines to the left, including multiline notes.
 
-Choose entries in either export using checkboxes. Only checked entries appear in the preview, Copy and Share, numbered consecutively from 1. Choices are retained while switching days/routes inside the open dialog and reset to all selected on reopening.
+Choose entries in either export using checkboxes. Only checked entries appear in the preview, Copy and Share, with literal Unicode solid-circle markers (●) for notes; stop lists retain consecutive numbering. Entries start unchecked each time the export dialog opens.
 
-Export dialogs keep only the route picker, individual entry checkboxes, preview and Close/Copy/Share actions; extra headings and counts are removed.
+Export dialogs show individual entry checkboxes and Close/Copy/Share actions. The optional Preview opens in a disclosure; there is no route dropdown or selection count. Full note text is shown, and the window grows to fit content up to the screen height.
