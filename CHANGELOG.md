@@ -1,3 +1,8 @@
+## 0.81.0
+
+- Unified app buttons, fields and choice tiles with the label buttons: 12px corners and 2px borders. Native popup controls use matching corners and borders.
+- Tomorrow and Weekend now toggle back to Today when unselected, with mutually exclusive selected outlines. Manual date changes update the outlines; unselecting clears the weekend flag.
+
 ## 0.80.0
 
 - Made editor label tiles icon-only squares, six per row, at the usual button height when space allows.

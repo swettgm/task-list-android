@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.81.0",
+    "date": "2026-11-12",
+    "changes": [
+      "Matched Tasks buttons, editable fields and choice tiles to the label buttons with 12px corners and 2px borders, including the native popup controls. Small checkboxes retain their proportional squircle corners.",
+      "Tomorrow and Weekend in detailed Add/Edit are mutually exclusive toggles with a selected outline. Tapping the selected shortcut returns to Today and clears the weekend flag; manual date changes update the selection."
+    ]
+  },
+  {
     "version": "0.80.0",
     "date": "2026-11-12",
     "changes": [

@@ -20,9 +20,9 @@ final class PopupAppearance {
     private static double contrast(int a,int b){double x=Color.luminance(a),y=Color.luminance(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
     private static int foreground(int a,int b){int dark=Color.rgb(16,21,31),light=Color.rgb(243,246,251);return Math.min(contrast(a,dark),contrast(b,dark))>Math.min(contrast(a,light),contrast(b,light))?dark:light;}
     android.graphics.drawable.GradientDrawable control(Context context,boolean primary){
-        android.graphics.drawable.GradientDrawable shape=new android.graphics.drawable.GradientDrawable();float density=context.getResources().getDisplayMetrics().density;shape.setCornerRadius(10*density);
+        android.graphics.drawable.GradientDrawable shape=new android.graphics.drawable.GradientDrawable();float density=context.getResources().getDisplayMetrics().density;shape.setCornerRadius(12*density);
         shape.setColor(primary?accent:(gradient?Color.argb(110,Color.red(surface),Color.green(surface),Color.blue(surface)):surface));
-        if(!primary)shape.setStroke(Math.max(1,Math.round(density)),Color.argb(85,Color.red(muted),Color.green(muted),Color.blue(muted)));return shape;
+        shape.setStroke(Math.max(1,Math.round(2*density)),primary?accent:Color.argb(85,Color.red(muted),Color.green(muted),Color.blue(muted)));return shape;
     }
     Drawable dropdown(Context context){
         float density=context.getResources().getDisplayMetrics().density;
