@@ -1,3 +1,7 @@
+# 1.0.17
+
+- In-progress notes appear at the top of their route page. Stopping restores their usual creation-date order.
+
 # 1.0.16
 
 - Double tap a route note to toggle in progress, with a green pill and haptic feedback. Status persists and survives editing. Tap the pill to stop. Single tap still edits.
