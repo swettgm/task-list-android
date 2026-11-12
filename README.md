@@ -102,7 +102,7 @@ For each release, add the newest entry to `app/src/main/assets/changelog.json`, 
 
 ## Route Notes
 
-[Download Route Notes 1.0.14](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Route-Notes-v1.0.14.apk), a separate lightweight offline Android app for G200–G600 route notes. [Project and features](route-manager/README.md). Installs alongside Tasks with its own saved data and no widget.
+[Download Route Notes 1.0.15](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Route-Notes-v1.0.15.apk), a separate lightweight offline Android app for G200–G600 route notes. [Project and features](route-manager/README.md). Installs alongside Tasks with its own saved data and no widget.
 
 ## Meditation
 

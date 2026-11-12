@@ -1,3 +1,11 @@
+# Route Notes 1.0.15 validation
+
+Source: `06f4717979a63d1f7c27a7e0ac2b95a29101619f`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43199246767). **15 Android tests, 134 Chromium checks and zero lint errors passed.**
+
+All account labels now use `Acct #number`, including route note tags, stop management, autocomplete, selected stop chips, export choices and copied/shared note and stop lists. Both account entry fields request `inputmode=numeric` while retaining text storage and leading zeros. Checks verify numeric input mode in the stop and note editors, separate accounts with matching names, leading-zero persistence, exact export content and matching Copy/Share text. The account export screenshot was reviewed. Physical keyboard appearance remains controlled by the installed Android keyboard.
+
+Signed APK: `Route-Notes-v1.0.15.apk`, 37457 bytes. Package `com.personal.routemanager`, version 1.0.15 (16), Android 8.0+. ZIP integrity, exact packaged HTML, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. SHA-256 `9ea7125cd20086b681269f82bcb7d3a85ca1cdb406e7171a8eba0edb08f1ec68`. The retained certificate matches previous releases. Robolectric and Chromium were used; no physical phone was used.
+
 # Route Notes 1.0.14 validation
 
 Source: `2f3e7ee19ab6d369ee6dc5a20b57382648e3f41d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43196371455). **15 Android tests, 131 Chromium checks and zero lint errors passed.**
