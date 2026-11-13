@@ -1,3 +1,15 @@
+# Habits 1.0.5 verification
+
+Source: `3db9e576da17c6d6566d6cf663545165af736c4d`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43497236509). **33 native Android tests and zero lint errors passed.**
+
+Habit names are always visible on the widget. Removed reveal preferences, tap-to-hide actions and auto-hide timers. Obsolete name-toggle intents from an older widget view are ignored and trigger a refresh. Restored the earlier 42dp day-heading row, 6dp top margin, 4dp vertical name padding and 10dp row bottom padding. Today remains a dot only; other days keep weekday abbreviations. The app layout is unchanged.
+
+Future dates are read-only in both the widget and app. Future cells are disabled and have read-only accessible descriptions. The shared store rejects edits after the phone’s local today date, so stale pending intents and direct calls cannot bypass the restriction. Today/past marks remain editable. Existing future marks are preserved unchanged and become editable when their date arrives.
+
+Removed obsolete hiding tests and added coverage for always-visible text after six seconds, ignored old hidden flags, restored spacing, past/today edits, disabled future app/widget cells and rejected stale future taps even when a future mark already exists. The complete persistence, rollover, widget-interaction and resizing suite passed. The native widget screenshot was reviewed. Robolectric SDK 28 was used; no physical launcher was tested.
+
+APK: `Habits-v1.0.5.apk`, 37694 bytes. SHA-256 `93767d0c06d7ab82dacdb36f5251cababc07a2c7bff85ddf569b0b7d035fdfe5`. Package `com.personal.habits`, version 1.0.5 (6), API 26/35. Artifact digests, ZIP integrity, non-signature content equality to CI, manifest, alignment and v2/v3 signatures passed. The signer matches previous Habits releases.
+
 # Habits 1.0.4 verification
 
 Source: `5d4eba17b86a41247172095e51f7529e0ba9d624`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43492008137). **37 native Android tests and zero lint errors passed.**
