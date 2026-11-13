@@ -1,3 +1,11 @@
+# Android Tasks 0.83.0 verification
+
+Source: `82d49f70a9143ffe0188774aff262ea670a2a036`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43410898785). **193 Android tests, 899 browser checks, 37 calendar checks and zero lint errors passed.**
+
+Task-row action buttons have 1px less horizontal padding per side and are 2px taller, increasing from 32px to 34px. Matching controls, including arrows and gear, keep aligned heights; icon arrows retain their widths. Child task buttons receive the same height increase and a proportional padding reduction. Rounding, border appearance and fonts are unchanged. Detailed editor, native widget quick-add and widget-front styling are unchanged. Browser checks verify uniform rendered row-control heights and arrow/gear alignment at 320, 390 and 600px. The Today screenshot was reviewed.
+
+APK: `Tasks-v0.83.0.apk`, 331606 bytes. SHA-256 `12ea09f02f72610d6dd5ccf78057741dd992e7917124ec5e8b24cb292d9bdc1d`. Package `com.personal.tasklist.preview`, version 0.83.0 (83). ZIP integrity, exact packaged assets, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches previous Tasks updates. Tests used Robolectric and Chromium; no physical phone was used.
+
 # Android Tasks 0.82.0 verification
 
 Source: `d1ee984168551587e681e8ff52b70392b73d0c25`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43361986193). **193 Android tests, 899 browser checks, 37 calendar checks and zero lint errors passed.**
