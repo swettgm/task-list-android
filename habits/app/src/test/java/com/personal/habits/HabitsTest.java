@@ -1,0 +1,48 @@
+package com.personal.habits;
+import static org.junit.Assert.*;
+import android.app.*;
+import android.appwidget.*;
+import android.content.*;
+import android.graphics.*;
+import android.view.*;
+import android.widget.*;
+import java.time.*;
+import java.util.*;
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.robolectric.*;
+import org.robolectric.annotation.Config;
+import org.robolectric.annotation.GraphicsMode;
+
+@RunWith(RobolectricTestRunner.class) @Config(sdk=28) @GraphicsMode(GraphicsMode.Mode.NATIVE)
+public class HabitsTest {
+ Context c;HabitStore store;LocalDate day=LocalDate.of(2026,11,13);
+ @Before public void setup(){c=RuntimeEnvironment.getApplication();c.getSharedPreferences("habits",0).edit().clear().commit();c.getSharedPreferences("appearance",0).edit().clear().commit();store=new HabitStore(c);}
+ @Test public void newInstallHasNoSampleHabits(){assertTrue(store.habits().isEmpty());}
+ @Test public void windowHasTwoPastAndFourFutureDays(){List<LocalDate>d=HabitStore.window(day);assertEquals(7,d.size());assertEquals(day.minusDays(2),d.get(0));assertEquals(day,d.get(2));assertEquals(day.plusDays(4),d.get(6));}
+ @Test public void windowCrossesYearAndLeapDay(){assertEquals(LocalDate.of(2025,12,30),HabitStore.window(LocalDate.of(2026,1,1)).get(0));assertTrue(HabitStore.window(LocalDate.of(2028,3,1)).contains(LocalDate.of(2028,2,29)));}
+ @Test public void eachNewDayStartsUnmarked(){String id=store.save(null,"Meditate");store.cycle(id,day);assertEquals(0,store.state(id,day.plusDays(1)));}
+ @Test public void tapCyclePersistsThroughReload(){String id=store.save(null,"Walk");assertEquals(1,store.cycle(id,day));assertEquals(1,new HabitStore(c).state(id,day));assertEquals(2,new HabitStore(c).cycle(id,day));assertEquals(2,store.state(id,day));assertEquals(0,store.cycle(id,day));assertEquals(0,new HabitStore(c).state(id,day));}
+ @Test public void rolloverPreservesYesterdayAndHistoryOutsideTheWindow(){String id=store.save(null,"Water");store.cycle(id,day);store.cycle(id,day.minusDays(30));assertEquals(day,HabitStore.window(day.plusDays(1)).get(1));assertEquals(1,new HabitStore(c).state(id,day));assertEquals(1,new HabitStore(c).state(id,day.minusDays(30)));}
+ @Test public void futureAndPastStatesRemainIndependent(){String id=store.save(null,"Read");store.cycle(id,day.minusDays(2));store.cycle(id,day.plusDays(4));store.cycle(id,day.plusDays(4));assertEquals(1,store.state(id,day.minusDays(2)));assertEquals(2,store.state(id,day.plusDays(4)));assertEquals(0,store.state(id,day));}
+ @Test public void renameKeepsMarksAndTrimsName(){String id=store.save(null," Water ");store.cycle(id,day);assertEquals(id,store.save(id," Drink water "));assertEquals("Drink water",store.habits().get(0).name);assertEquals(1,store.state(id,day));}
+ @Test public void sameNameHabitsHaveSeparateHistory(){String one=store.save(null,"Walk"),two=store.save(null,"Walk");assertNotEquals(one,two);store.cycle(one,day);assertEquals(0,store.state(two,day));}
+ @Test public void deleteAndStaleTapDoNotRecreateHabit(){String id=store.save(null,"Water");store.cycle(id,day);store.delete(id);assertEquals(-1,store.cycle(id,day));assertTrue(store.habits().isEmpty());assertEquals(0,store.state(id,day));}
+ @Test public void invalidNameCannotReplaceSavedHabits(){String id=store.save(null,"Keep");for(String name:new String[]{" ","x".repeat(121)}){try{store.save(id,name);fail();}catch(IllegalArgumentException expected){}}assertEquals("Keep",store.habits().get(0).name);}
+ @Test public void corruptStorageIsKeptInsteadOfReset(){c.getSharedPreferences("habits",0).edit().putString("data","broken").commit();try{store.save(null,"Test");fail();}catch(IllegalStateException expected){}assertEquals("broken",c.getSharedPreferences("habits",0).getString("data",null));}
+ @Test public void springForwardRefreshUsesCalendarMidnight(){ZoneId z=ZoneId.of("America/New_York");Clock clock=Clock.fixed(LocalDate.of(2026,3,8).atStartOfDay(z).toInstant(),z);assertEquals(23*3600000L+1000,HabitStore.nextMidnight(clock)-clock.millis());}
+ @Test public void fallBackRefreshUsesCalendarMidnight(){ZoneId z=ZoneId.of("America/New_York");Clock clock=Clock.fixed(LocalDate.of(2026,11,1).atStartOfDay(z).toInstant(),z);assertEquals(25*3600000L+1000,HabitStore.nextMidnight(clock)-clock.millis());}
+ @Test public void defaultsMatchTransparentWhiteWidget(){Appearance a=new Appearance(c);assertEquals(Color.WHITE,a.text);assertEquals(0,a.opacity);assertEquals(16,a.size);}
+ @Test public void settingsSurviveReloadAndRejectBadColors(){Appearance.save(c,"#ABCDEF","#123456","#654321",45,20,false,false);Appearance a=new Appearance(c);assertEquals(Color.parseColor("#ABCDEF"),a.text);assertEquals(45,a.opacity);assertEquals(20,a.size);assertFalse(a.gradient);assertFalse(a.haptics);try{Appearance.save(c,"red","#123456","#654321",45,20,false,false);fail();}catch(IllegalArgumentException expected){}assertEquals(a.text,new Appearance(c).text);}
+ @Test public void transparentBackgroundReallyHasZeroAlpha(){Bitmap b=Artwork.background(new Appearance(c));assertEquals(0,Color.alpha(b.getPixel(48,48)));}
+ @Test public void filledBackgroundRespectsOpacity(){Appearance.save(c,"#FFFFFF","#203747","#5A5C61",100,16,false,true);Bitmap b=Artwork.background(new Appearance(c));assertEquals(Color.parseColor("#203747"),b.getPixel(48,48));}
+ @Test public void allThreeMarksProduceDistinctArtwork(){Bitmap empty=Artwork.mark(c,0,Color.WHITE),done=Artwork.mark(c,1,Color.WHITE),missed=Artwork.mark(c,2,Color.WHITE);assertFalse(empty.sameAs(done));assertFalse(done.sameAs(missed));}
+ @Test public void remoteWidgetHeaderShowsCorrectDates(){Activity a=Robolectric.buildActivity(Activity.class).setup().get();View view=HabitWidget.build(a,17,day).apply(a,new FrameLayout(a));assertEquals("Today\n13",((TextView)view.findViewById(R.id.day2)).getText().toString());assertEquals("Wed\n11",((TextView)view.findViewById(R.id.day0)).getText().toString());assertEquals("Tue\n17",((TextView)view.findViewById(R.id.day6)).getText().toString());}
+ @Test public void collectionSnapshotKeepsDatesAnchoredWhenItReloads(){String id=store.save(null,"Water");HabitRowsService.Factory f=new HabitRowsService.Factory(c,day.minusDays(1));f.onCreate();f.onDataSetChanged();assertEquals(day.minusDays(1),f.days.get(2));assertEquals(1,f.getCount());assertNotNull(f.getViewAt(0));assertNull(f.getViewAt(1));assertEquals(id,f.habits.get(0).id);}
+ @Test public void circlesAreDistinctAccessibleTargetsWithExactDates(){String id=store.save(null,"Water");store.cycle(id,day);Activity a=Robolectric.buildActivity(Activity.class).setup().get();View row=HabitRowsService.row(a,store.habits().get(0),HabitStore.window(day),new Appearance(a)).apply(a,new FrameLayout(a));assertTrue(row.findViewById(R.id.cell2).getContentDescription().toString().contains("Friday, November 13, 2026, done"));assertTrue(row.findViewById(R.id.cell3).getContentDescription().toString().contains("Saturday, November 14, 2026, unmarked"));}
+ @Test public void columnsMatchAtNarrowAndWideWidths(){String id=store.save(null,"A habit with a long title that can wrap naturally");Activity a=Robolectric.buildActivity(Activity.class).setup().get();for(int width:new int[]{250,320,480}){View root=HabitWidget.build(a,17,day).apply(a,new FrameLayout(a));View row=HabitRowsService.row(a,store.habits().get(0),HabitStore.window(day),new Appearance(a)).apply(a,new FrameLayout(a));int px=(int)(width*a.getResources().getDisplayMetrics().density);root.measure(View.MeasureSpec.makeMeasureSpec(px,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(800,View.MeasureSpec.EXACTLY));root.layout(0,0,px,800);int padding=(int)(8*a.getResources().getDisplayMetrics().density);row.measure(View.MeasureSpec.makeMeasureSpec(px-padding,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));row.layout(0,0,px-padding,row.getMeasuredHeight());for(int i=0;i<7;i++){View cell=row.findViewById(HabitRowsService.CELLS[i]),head=root.findViewById(HabitWidget.DAYS[i]);assertTrue(Math.abs(cell.getWidth()-head.getWidth())<=1);assertTrue(cell.getHeight()>=44*a.getResources().getDisplayMetrics().density-1);}}}
+ @Test public void unsignedUnregisteredWidgetTapIsIgnored(){String id=store.save(null,"Walk");new HabitWidget().onReceive(c,new Intent(c,HabitWidget.class).setAction(HabitWidget.CYCLE).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,999).putExtra("habit_id",id).putExtra("day",day.toString()));assertEquals(0,store.state(id,day));}
+ @Test public void launcherScreenShowsHabitsAndCanMarkWithoutOpeningEditor(){String id=store.save(null,"Read");MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();ImageView cell=a.findViewById(R.id.cell2);assertNotNull(cell);cell.performClick();assertEquals(1,store.state(id,HabitStore.today()));cell.performClick();assertEquals(2,store.state(id,HabitStore.today()));}
+ @Test public void editorNameTapOpensFocusedHabitEditor(){store.save(null,"Read");MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();a.findViewById(R.id.habit_title).performClick();AlertDialog d=org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();assertNotNull(d);assertTrue(d.isShowing());assertNotNull(d.getButton(AlertDialog.BUTTON_POSITIVE));}
+ @Test public void settingsScreenContainsSaveAndNoHabitMutation(){store.save(null,"Read");SettingsActivity a=Robolectric.buildActivity(SettingsActivity.class).setup().get();assertNotNull(a.body);assertEquals(1,store.habits().size());}
+}

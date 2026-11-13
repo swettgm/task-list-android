@@ -1,0 +1,62 @@
+name: Build Habits
+run-name: Build Habits · attempt ${{ github.run_number }}
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'habits/**'
+      - '.github/workflows/build-habits.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Build and check Habits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: habits
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric/android-all-instrumented
+          key: robolectric-4.14.1-android-runtimes-v1
+      - name: Prepare Android SDK and ephemeral CI signer
+        shell: bash
+        run: |
+          set -euo pipefail
+          HABITS_SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          "$HABITS_SDK_DIR/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+          printf 'sdk.dir=%s\n' "$HABITS_SDK_DIR" > local.properties
+          export HABITS_DEBUG_KEYSTORE="$RUNNER_TEMP/habits-ci.keystore"
+          printf 'HABITS_DEBUG_KEYSTORE=%s\n' "$HABITS_DEBUG_KEYSTORE" >> "$GITHUB_ENV"
+          keytool -genkeypair -keystore "$HABITS_DEBUG_KEYSTORE" -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Habits CI,O=Personal,C=US'
+      - name: Build, unit tests and lint
+        run: gradle --no-daemon --console=plain :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+      - name: Verify CI APK
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
+          sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/app-debug.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Habits-Android-APK
+          path: habits/app/build/outputs/apk/debug/*.apk*
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Habits-Test-Reports
+          path: |
+            habits/app/build/reports/tests/
+            habits/app/build/test-results/
+            habits/app/build/reports/lint-results-debug.*
+            habits/build/browser-qa/
+          retention-days: 14

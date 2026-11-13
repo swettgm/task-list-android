@@ -1,0 +1,9 @@
+package com.personal.habits;
+import android.graphics.*;
+import android.content.Context;
+public final class Artwork {
+ private Artwork(){}
+ public static Bitmap mark(Context c,int state,int color){int px=Math.round(32*c.getResources().getDisplayMetrics().density);Bitmap b=Bitmap.createBitmap(px,px,Bitmap.Config.ARGB_8888);Canvas canvas=new Canvas(b);canvas.scale(px/32f,px/32f);Paint p=new Paint(3);p.setColor(state==1?Color.rgb(105,220,155):state==2?Color.rgb(255,132,132):color);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);if(state==0)canvas.drawCircle(16,16,11,p);else{Path path=new Path();if(state==1){path.moveTo(7,16);path.lineTo(13,22);path.lineTo(25,9);}else{path.moveTo(9,9);path.lineTo(23,23);path.moveTo(23,9);path.lineTo(9,23);}canvas.drawPath(path,p);}return b;}
+ public static Bitmap background(Appearance a){Bitmap b=Bitmap.createBitmap(96,96,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);Paint p=new Paint(3);int top=(a.background&0xFFFFFF)|(Math.round(a.opacity*2.55f)<<24),bottom=(a.bottom&0xFFFFFF)|(Math.round(a.opacity*2.55f)<<24);if(a.gradient)p.setShader(new LinearGradient(0,0,0,96,top,bottom,Shader.TileMode.CLAMP));else p.setColor(top);c.drawRoundRect(0,0,96,96,8,8,p);return b;}
+ public static Bitmap gear(Context context,int color){int px=Math.round(24*context.getResources().getDisplayMetrics().density);Bitmap b=Bitmap.createBitmap(px,px,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);c.scale(px/24f,px/24f);Paint p=new Paint(3);p.setColor(color);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1.9f);p.setStrokeCap(Paint.Cap.ROUND);c.drawCircle(12,12,7,p);for(int i=0;i<8;i++){double a=i*Math.PI/4;c.drawLine(12+(float)Math.cos(a)*7,12+(float)Math.sin(a)*7,12+(float)Math.cos(a)*10,12+(float)Math.sin(a)*10,p);}p.setStyle(Paint.Style.FILL);c.drawCircle(12,12,2,p);return b;}
+}

@@ -1,0 +1,11 @@
+# Habits
+
+A small, offline Android app with a resizable home-screen habit widget. No account, network, tracking SDK, widget service dependency or notification is required.
+
+Each habit has seven calendar-date cells: the previous two days, today, and the next four days. Tap a circle to cycle unmarked → check → X → unmarked. Marks are stored by habit ID and ISO date; rotating the visible window never resets or moves saved history. Past and future visible days can be marked. Renaming a habit preserves its marks. Deleting a habit asks for confirmation and removes its marks.
+
+Open Habits to add, rename or delete habits. Tap a habit name to edit it. Use Add widget or your launcher's Widgets menu to place it. The widget + opens Add habit, and the gear opens settings. Resize vertically to show more habits; the list scrolls. All widget instances share habits and appearance. The default background is transparent with white text and icons, matching Tasks.
+
+Widget settings: text/background colors, gradient, opacity, habit text size and tap vibration. The day window uses the phone's local calendar and follows time-zone/date changes. A midnight inexact alarm and Android's periodic widget updates refresh the dates; Android may defer background refresh during deep sleep. Opening the app or the next system update refreshes the window. Taps always carry the exact rendered date, so a delayed refresh cannot mark the wrong day.
+
+Build from this directory with Gradle 8.11.1, Java 21 and Android SDK 35: `gradle :app:assembleDebug :app:testDebugUnitTest :app:lintDebug`. No runtime libraries beyond the Android platform. Tests exercise persistence, rolling dates, DST, widget rendering/clicks, appearance and editor flows.

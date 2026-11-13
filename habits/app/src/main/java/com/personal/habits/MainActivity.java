@@ -1,0 +1,27 @@
+package com.personal.habits;
+import android.app.*;
+import android.appwidget.*;
+import android.content.*;
+import android.graphics.Typeface;
+import android.os.*;
+import android.view.*;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.*;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+public final class MainActivity extends AppUi {
+ private final Handler handler=new Handler(Looper.getMainLooper());private final Runnable rollover=()->{if(!HabitStore.today().equals(this.displayed)){render();HabitWidget.refresh(this);}schedule();};private boolean addOpened;private LocalDate displayed;
+ @Override public void onCreate(Bundle state){super.onCreate(state);addOpened=state!=null&&state.getBoolean("addOpened");}
+ @Override protected void onResume(){super.onResume();render();schedule();HabitWidget.refresh(this);if("com.personal.habits.ADD".equals(getIntent().getAction())&&!addOpened){addOpened=true;getIntent().setAction(null);root.post(()->edit(null));}}
+ @Override protected void onPause(){super.onPause();handler.removeCallbacks(rollover);}
+ @Override protected void onSaveInstanceState(Bundle out){out.putBoolean("addOpened",addOpened);super.onSaveInstanceState(out);}
+ private void schedule(){handler.removeCallbacks(rollover);long delay=HabitStore.nextMidnight(Clock.systemDefaultZone())-System.currentTimeMillis();handler.postDelayed(rollover,Math.max(1000,Math.min(delay,60000)));}
+ void render(){displayed=HabitStore.today();page("Habits");ImageButton settings=new ImageButton(this);settings.setImageBitmap(Artwork.gear(this,WHITE));settings.setBackground(surface());settings.setPadding(dp(10),dp(10),dp(10),dp(10));settings.setLayoutParams(new LinearLayout.LayoutParams(dp(48),dp(48)));settings.setContentDescription("Widget settings");settings.setOnClickListener(v->startActivity(new Intent(this,SettingsActivity.class)));header.addView(settings);Button add=button("+");add.setContentDescription("Add habit");add.setOnClickListener(v->edit(null));header.addView(add);
+ List<HabitStore.Habit> habits;try{habits=new HabitStore(this).habits();}catch(RuntimeException e){error(e);return;}List<LocalDate> days=HabitStore.window(HabitStore.today());LinearLayout dates=new LinearLayout(this);for(int i=0;i<7;i++){LocalDate day=days.get(i);TextView t=text((i==2?"Today":day.format(DateTimeFormatter.ofPattern("EEE",Locale.getDefault())))+"\n"+day.getDayOfMonth(),12);t.setGravity(Gravity.CENTER);t.setAlpha(i==2?1:.72f);dates.addView(t,new LinearLayout.LayoutParams(0,dp(44),1));}body.addView(dates);
+ for(HabitStore.Habit h:habits){android.view.View row=HabitRowsService.row(this,h,days,new Appearance(this)).apply(this,body);TextView title=row.findViewById(R.id.habit_title);title.setTextColor(WHITE);title.setOnClickListener(v->edit(h));title.setContentDescription(h.name+". Tap to edit habit");for(int i=0;i<7;i++){final LocalDate day=days.get(i);ImageView cell=row.findViewById(HabitRowsService.CELLS[i]);cell.setImageBitmap(Artwork.mark(this,new HabitStore(this).state(h.id,day),WHITE));cell.setOnClickListener(v->{try{int state=new HabitStore(this).cycle(h.id,day);if(state<0){render();return;}cell.setImageBitmap(Artwork.mark(this,state,WHITE));cell.setContentDescription(HabitRowsService.description(h.name,day,state));if(new Appearance(this).haptics)cell.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);HabitWidget.refresh(this);}catch(RuntimeException e){error(e);}});}body.addView(row);}
+ if(habits.isEmpty()){TextView empty=text("Add a habit, then add the Habits widget to your home screen.",17);empty.setPadding(0,dp(24),0,dp(20));body.addView(empty);}
+ AppWidgetManager m=AppWidgetManager.getInstance(this);if(m.isRequestPinAppWidgetSupported()){Button pin=button("Add widget");pin.setOnClickListener(v->m.requestPinAppWidget(new ComponentName(this,HabitWidget.class),null,null));body.addView(pin);}
+ }
+ void edit(HabitStore.Habit habit){LinearLayout fields=new LinearLayout(this);fields.setOrientation(1);fields.setPadding(dp(20),dp(12),dp(20),0);EditText name=field(habit==null?"":habit.name);name.setHint("Habit name");name.setHintTextColor(0xFFB8C2CC);name.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(120)});fields.addView(name);AlertDialog.Builder b=new AlertDialog.Builder(this).setTitle(habit==null?"Add habit":"Edit habit").setView(fields).setNegativeButton("Cancel",null).setPositiveButton("Save",null);if(habit!=null)b.setNeutralButton("Delete",null);AlertDialog dialog=b.create();dialog.setOnShowListener(v->{dialog.getWindow().setBackgroundDrawable(surface());dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);dialog.getButton(-1).setOnClickListener(button->{try{new HabitStore(this).save(habit==null?null:habit.id,name.getText().toString());dialog.dismiss();HabitWidget.refresh(this);render();}catch(RuntimeException e){name.setError(e.getMessage());}});if(habit!=null)dialog.getButton(-3).setOnClickListener(button->new AlertDialog.Builder(this).setTitle("Delete "+habit.name+"?").setMessage("This removes the habit and its saved marks.").setNegativeButton("Cancel",null).setPositiveButton("Delete",(d,w)->{try{new HabitStore(this).delete(habit.id);dialog.dismiss();HabitWidget.refresh(this);render();}catch(RuntimeException e){error(e);}}).show());name.requestFocus();name.postDelayed(()->{if(dialog.isShowing())((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(name,InputMethodManager.SHOW_IMPLICIT);},120);});dialog.show();}
+}
