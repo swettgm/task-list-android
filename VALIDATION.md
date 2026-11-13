@@ -1,3 +1,13 @@
+# Habits 1.0.3 verification
+
+Source: `1932a1208ce984f2b59c43adb3d31f157a089723`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43489431933). **33 native Android tests and zero lint errors passed.**
+
+Today’s widget heading is only a solid dot, aligned with the other weekday abbreviations. Removed the habit-name outline and its unused drawable. Hidden names leave no border or placeholder; their transparent text preserves the invisible tap target and row dimensions. Tap to reveal/hide remains independent for each habit and retains its saved visibility state. In-app habit names and daily marks are unchanged.
+
+Updated existing native checks assert today’s dot-only header and absent name backgrounds in both hidden/revealed states. The full persistence, rollover, mark/name-tap independence, font-size and resize checks passed. The native widget preview was reviewed. Robolectric SDK 28 was used; no physical launcher was tested.
+
+APK: `Habits-v1.0.3.apk`, 37694 bytes. SHA-256 `c281ee59bb159aed50632c288665d7b2962eb8c29347d059bdbd5fcb66fa649d`. Package `com.personal.habits`, version 1.0.3 (4), API 26/35. Artifact digests, ZIP integrity, non-signature content equality to CI, manifest, alignment and v2/v3 signatures passed. The signer matches previous Habits releases.
+
 # Habits 1.0.2 verification
 
 Source: `70c0a35e37954349a8ebf54143eaac5a64729c91`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43486961270). **33 native Android tests and zero lint errors passed.**
