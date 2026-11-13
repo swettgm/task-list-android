@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.84.0",
+    "date": "2026-11-13",
+    "changes": [
+      "Tap a task’s priority text to open a focused High/Medium/Low picker, like the duration and label editors. Keyboard activation, Cancel and Save are supported.",
+      "Priority-only edits preserve other task details and progress. Choosing Medium or Low clears Urgent, matching the existing priority controls."
+    ]
+  },
+  {
     "version": "0.83.0",
     "date": "2026-11-13",
     "changes": [
