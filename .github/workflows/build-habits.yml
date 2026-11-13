@@ -58,5 +58,5 @@ jobs:
             habits/app/build/reports/tests/
             habits/app/build/test-results/
             habits/app/build/reports/lint-results-debug.*
-            habits/build/browser-qa/
+            habits/app/build/native-qa/
           retention-days: 14
