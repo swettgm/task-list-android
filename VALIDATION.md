@@ -1,3 +1,13 @@
+# Android Tasks 0.84.0 verification
+
+Source: `d68a9c8f4c901cb0410fdb191d16b58589e6117f`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43417762755). **193 Android tests, 906 browser checks, 37 calendar checks and zero lint errors passed.**
+
+The inline High/Med/Low label is a keyboard-accessible button opening a focused Priority picker, reusing the component editor and existing High/Medium/Low choices. Save updates priority through the existing definition-save path and preserves other task details, history, links and progress. Medium/Low clear Urgent consistently with existing priority controls. Cancel and rejected writes preserve saved state. Today and Upcoming are supported without changing task dates. The inline appearance and layout remain unchanged; the Today screenshot was reviewed.
+
+Added browser checks for keyboard activation and focused controls, Cancel, saving and label update, unrelated-field preservation, rejected writes, Urgent clearing, reopening and Upcoming edits. Existing layout, metadata, schedule and widget tests passed.
+
+APK: `Tasks-v0.84.0.apk`, 335702 bytes. SHA-256 `e1e9da92909927e520dbec0770fc563e61e373fd030691f82f5d9f1ab748bc30`. Package `com.personal.tasklist.preview`, version 0.84.0 (84). ZIP integrity, exact packaged assets, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches previous Tasks updates. Tests used Robolectric and Chromium; no physical phone was used.
+
 # Android Tasks 0.83.0 verification
 
 Source: `82d49f70a9143ffe0188774aff262ea670a2a036`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43410898785). **193 Android tests, 899 browser checks, 37 calendar checks and zero lint errors passed.**

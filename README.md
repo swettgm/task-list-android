@@ -1,6 +1,6 @@
 # Tasks — Android
 
-Download [Tasks 0.83.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.83.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.84.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.84.0.apk). Install over the existing app to retain your tasks and settings.
 
 Task editors now use rounded square label tiles with icons and names. Selected labels and priority buttons have white outlined glows; the visible priority radio circles are removed. Widget Quick add has the same larger label choices.
 
