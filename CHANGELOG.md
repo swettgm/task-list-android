@@ -1,3 +1,8 @@
+## 0.83.0
+
+- Reduced task action buttons’ horizontal padding by 1px per side and made them 2px taller (34px), keeping matching controls aligned.
+- Preserved their styling and text size. Detailed editor and native widget quick-add are unchanged.
+
 ## 0.82.0
 
 - Restored original main-screen control dimensions and padding while retaining the current rounded style and thick border appearance.

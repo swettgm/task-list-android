@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.83.0",
+    "date": "2026-11-13",
+    "changes": [
+      "Slightly reduced task-row action-button horizontal padding by 1px per side and increased their height from 32px to 34px. Matching task controls stay aligned.",
+      "Kept the current rounded styling, fonts, detailed editor and widget quick-add unchanged."
+    ]
+  },
+  {
     "version": "0.82.0",
     "date": "2026-11-13",
     "changes": [
