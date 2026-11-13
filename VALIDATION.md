@@ -1,3 +1,15 @@
+# Habits 1.0.2 verification
+
+Source: `70c0a35e37954349a8ebf54143eaac5a64729c91`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43486961270). **33 native Android tests and zero lint errors passed.**
+
+Widget habit names start visually hidden inside 12dp rounded white outlines that fit their text plus 8dp horizontal and 4dp vertical padding. Tapping each outline reveals/hides only that habit’s name. Transparent text retains the measured dimensions, so revealing does not shift the row. The visibility preference is stored per stable habit ID, shared across widget instances and preserved through refresh/reopening, separately from daily marks. Hidden rows expose generic accessible descriptions. This is a visual concealment feature, not encrypted storage.
+
+The app uses a separate, unchanged plain row layout: names remain visible, editable and their original size. Widget names retain the 2sp reduction from 1.0.1. The widget keeps weekday-only labels, today’s dot, no date numbers, no title and no plus/settings buttons.
+
+Four additional native tests verify default hidden state, persistent/independent reveal preferences, deleted-row handling, exact fitted-box dimensions before/after reveal, no daily-mark mutation from widget name taps and unchanged in-app names. Existing persistence, date-window, widget-interaction and resizing checks passed. Native main-screen and static widget previews using the production RemoteViews row layouts were reviewed. Robolectric SDK 28 was used; no physical launcher was tested.
+
+APK: `Habits-v1.0.2.apk`, 37774 bytes. SHA-256 `e28f2236fdfa0a458e065475ecfe9ec7004ef5684ecfa327d4238f9dd43e0543`. Package `com.personal.habits`, version 1.0.2 (3), API 26/35. Artifact digests, ZIP integrity, non-signature content equality to CI, manifest, alignment and v2/v3 signatures passed. The signer matches Habits 1.0.0 and existing data is retained on update.
+
 # Habits 1.0.1 verification
 
 Source: `9b0da89d8d5588cc9c6d412ff28f5ac0e72a8683`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43486189828). **29 native Android tests and zero lint errors passed.**
