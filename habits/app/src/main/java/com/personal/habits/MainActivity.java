@@ -13,7 +13,7 @@ import java.util.*;
 public final class MainActivity extends AppUi {
  private final Handler handler=new Handler(Looper.getMainLooper());private final Runnable rollover=()->{if(!HabitStore.today().equals(this.displayed)){render();HabitWidget.refresh(this);}schedule();};private boolean addOpened;private LocalDate displayed;
  @Override public void onCreate(Bundle state){super.onCreate(state);addOpened=state!=null&&state.getBoolean("addOpened");}
- @Override protected void onResume(){super.onResume();HabitNames.hideAll();render();schedule();HabitWidget.refresh(this);if("com.personal.habits.ADD".equals(getIntent().getAction())&&!addOpened){addOpened=true;getIntent().setAction(null);root.post(()->edit(null));}}
+ @Override protected void onResume(){super.onResume();render();schedule();HabitWidget.refresh(this);if("com.personal.habits.ADD".equals(getIntent().getAction())&&!addOpened){addOpened=true;getIntent().setAction(null);root.post(()->edit(null));}}
  @Override protected void onPause(){super.onPause();handler.removeCallbacks(rollover);}
  @Override protected void onSaveInstanceState(Bundle out){out.putBoolean("addOpened",addOpened);super.onSaveInstanceState(out);}
  private void schedule(){handler.removeCallbacks(rollover);long delay=HabitStore.nextMidnight(Clock.systemDefaultZone())-System.currentTimeMillis();handler.postDelayed(rollover,Math.max(1000,Math.min(delay,60000)));}
