@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.82.0",
+    "date": "2026-11-13",
+    "changes": [
+      "Restored the original control dimensions and padding while keeping rounded corners and the thicker visual border. The extra border stroke is inset and does not take layout space.",
+      "Kept uniform original sizes for matching controls and retained the Tomorrow/Weekend toggles."
+    ]
+  },
+  {
     "version": "0.81.0",
     "date": "2026-11-12",
     "changes": [

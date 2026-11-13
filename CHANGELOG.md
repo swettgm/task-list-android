@@ -1,3 +1,8 @@
+## 0.82.0
+
+- Restored original control dimensions and padding while preserving the current rounding and thick border appearance. Additional border thickness is drawn inward without changing layout.
+- Kept original uniform sizing for matching controls and retained the date toggles.
+
 ## 0.81.0
 
 - Unified app buttons, fields and choice tiles with the label buttons: 12px corners and 2px borders. Native popup controls use matching corners and borders.
