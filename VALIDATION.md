@@ -1,3 +1,13 @@
+# Android Tasks 0.82.0 verification
+
+Source: `d1ee984168551587e681e8ff52b70392b73d0c25`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43361986193). **193 Android tests, 899 browser checks, 37 calendar checks and zero lint errors passed.**
+
+Main-screen controls retain the previous dimensions, padding and font sizes while keeping their rounded appearance and thick visual border. Additional border thickness is drawn as an inset stroke without consuming layout space. A browser comparison disables/re-enables the unified styling and checks the rendered widths, heights and font sizes of visible main controls against the pre-style geometry. Existing arrow/gear uniformity, header fit and row alignment checks passed.
+
+The approved detailed editor and native widget quick-add dimensions and styling are retained. Repeat radio inputs remain semantic controls but their circles are hidden; the selected option has a white outline like Priority. The main-screen and detailed editor screenshots were reviewed. Date toggles, persistence and existing task workflows passed. Native popup and widget-front code are unchanged by this release.
+
+APK: `Tasks-v0.82.0.apk`, 331606 bytes. SHA-256 `384b049cdb40c5aaede44c228d71f1044248d58e2dfce31cf4212fd784483afb`. Package `com.personal.tasklist.preview`, version 0.82.0 (82). ZIP integrity, exact packaged assets, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches previous Tasks updates. Tests used Robolectric and Chromium; no physical phone was used.
+
 # Android Tasks 0.81.0 verification
 
 Source: `8752ce5f6dcb34531d02e34be5d97da67977a8bc`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43347416430). **193 Android tests, 899 browser checks, 37 calendar checks and zero lint errors passed.**
