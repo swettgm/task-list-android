@@ -1,3 +1,13 @@
+# Android Tasks 0.85.0 verification
+
+Source: `5dd0d438dbcca48288c8732fe86a856bff542ad9`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43431898876). **193 Android tests, 912 browser checks, 37 calendar checks and zero lint errors passed.**
+
+Task-row metadata now compensates for the invisible space inside each SVG viewBox. The visible clock, repeat, notification, linked-task and default context symbols align to their containing column; context badges start at the title/action column even when the metadata wraps. The correction is scoped to task metadata across Today, Upcoming and other task-list sections. Icon sizes, task-action dimensions, editor fields and native widget are preserved.
+
+Added six browser geometry checks across Today/Upcoming at 320, 390 and 600px, verifying the visible edges of all five default context symbols and the shared title/action column on wrapped rows. Existing clock/action/checklist layout checks passed. The wrapped task screenshot was reviewed.
+
+APK: `Tasks-v0.85.0.apk`, 335702 bytes. SHA-256 `393cd4d689c545800c866de4994fe5b49f1713a4e3b708585fffd07f9b365932`. Package `com.personal.tasklist.preview`, version 0.85.0 (85). Archive hashes, ZIP integrity, exact packaged assets, non-signature entry equality to CI, manifest, alignment and v2/v3 signatures passed. The retained certificate matches prior Tasks updates. Verification used Robolectric and Chromium; no physical phone was used.
+
 # Android Tasks 0.84.0 verification
 
 Source: `d68a9c8f4c901cb0410fdb191d16b58589e6117f`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43417762755). **193 Android tests, 906 browser checks, 37 calendar checks and zero lint errors passed.**
