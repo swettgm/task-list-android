@@ -1,3 +1,15 @@
+# Habits 1.0.4 verification
+
+Source: `5d4eba17b86a41247172095e51f7529e0ba9d624`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43492008137). **37 native Android tests and zero lint errors passed.**
+
+Widget names no longer restore persisted reveal flags. Each reveal uses an in-process monotonic five-second deadline; tapping again hides immediately. Widget initialization and opening the app clear reveals, and process restart naturally starts hidden. A short asynchronous receiver callback refreshes the widgets after five seconds. Deadline tokens prevent an older callback from ending a later reveal. No extra permissions, foreground service or exact-alarm access is required. Daily marks remain independently persisted.
+
+The widget heading is now a single 24dp row instead of 42dp. Removed the 6dp top margin and 8dp vertical name padding, and reduced row bottom padding from 10dp to 4dp. Habit rows sit about 32dp closer to the weekday row, with less space between habits. The invisible name tap area remains stable when revealing. App layout and typography are unchanged.
+
+Four new native checks cover ignoring legacy saved visibility, resetting on app opening, hiding at five seconds while preserving daily marks, rapid hide/reveal timing and compact heading/row geometry. Existing persistence, widget tapping, rollover, font and width checks passed. The native widget preview was reviewed. Robolectric SDK 28 was used; no physical launcher was tested.
+
+APK: `Habits-v1.0.4.apk`, 37694 bytes. SHA-256 `82ea1335663ad85b4369afb328731f99432ebe89ea7d455870c48e5c6d0230d7`. Package `com.personal.habits`, version 1.0.4 (5), API 26/35. Artifact digests, ZIP integrity, non-signature content equality to CI, manifest, alignment and v2/v3 signatures passed. The signer matches previous Habits releases.
+
 # Habits 1.0.3 verification
 
 Source: `1932a1208ce984f2b59c43adb3d31f157a089723`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43489431933). **33 native Android tests and zero lint errors passed.**
