@@ -3,8 +3,8 @@
     "version": "0.82.0",
     "date": "2026-11-13",
     "changes": [
-      "Restored the original control dimensions and padding while keeping rounded corners and the thicker visual border. The extra border stroke is inset and does not take layout space.",
-      "Kept uniform original sizes for matching controls and retained the Tomorrow/Weekend toggles."
+      "Restored original main-screen control dimensions and padding while retaining the current rounded styling and thicker visual borders. Detailed task-editor fields and native widget quick-add retain their approved dimensions and appearance.",
+      "Removed visible radio circles from Repeat; the selected repeat option uses the same white outline as Priority. Date shortcut toggles remain available."
     ]
   },
   {

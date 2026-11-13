@@ -1,7 +1,8 @@
 ## 0.82.0
 
-- Restored original control dimensions and padding while preserving the current rounding and thick border appearance. Additional border thickness is drawn inward without changing layout.
-- Kept original uniform sizing for matching controls and retained the date toggles.
+- Restored original main-screen control dimensions and padding while retaining the current rounded style and thick border appearance.
+- Preserved the approved detailed editor and native quick-add dimensions and styling.
+- Removed visible Repeat radio circles; selected Repeat uses a white outline like Priority. Date toggles remain.
 
 ## 0.81.0
 
