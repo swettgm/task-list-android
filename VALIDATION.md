@@ -1,3 +1,13 @@
+# Android Tasks 0.81.0 verification
+
+Source: `8752ce5f6dcb34531d02e34be5d97da67977a8bc`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43347416430). **193 Android tests, 899 browser checks, 37 calendar checks and zero lint errors passed.**
+
+Outlined app buttons, editable fields and choice tiles use the label buttons' 12px corners and 2px borders. Native popup controls use matching corners and strokes. Small checkboxes retain proportional squircle corners, inline task details retain their unframed wrapping, and compact arrow/gear controls keep their 32px dimensions. The composite Today/Upcoming frame retains an even inset. The final Today and detailed editor screenshots were reviewed.
+
+Tomorrow and Weekend are mutually exclusive selected toggles in detailed Add/Edit. Tapping the selected shortcut sets Today and explicitly clears the weekend flag. Manual date input updates shortcut selection. Checks cover toggling each shortcut on/off, selected states, manual dates, persistence without a stale weekend flag, strict scheduling and existing edit workflows. An initial run exposed row alignment changes from thicker borders; these were corrected. Screenshot review also caught unwanted frames on inline metadata, which were removed before the final full rerun.
+
+APK: `Tasks-v0.81.0.apk`, 331606 bytes. SHA-256 `1174cdc0ec0d6afc7f6823e616376bc8cd95cc6bf339c5a4b5a84ca502171392`. Package `com.personal.tasklist.preview`, version 0.81.0 (81). ZIP integrity, exact packaged assets, non-signature entry equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches previous Tasks updates. Tests used Robolectric and Chromium; no physical phone was used.
+
 # Android Tasks 0.80.0 verification
 
 Source: `f02958474a1e2cf2600210c8d28877aec2cc86f4`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43317595410). **193 Android tests, 893 browser checks, 37 calendar checks and zero lint errors passed.**
