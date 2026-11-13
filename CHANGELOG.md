@@ -1,3 +1,8 @@
+## 0.85.0
+
+- Aligned visible task-icon artwork to the title/action column, including context icons that start a wrapped metadata line.
+- Applied the same alignment throughout task lists without resizing icons or changing editor/widget layouts.
+
 ## 0.84.0
 
 - Tap the inline High/Med/Low label to edit priority in a focused picker on Today and Upcoming.

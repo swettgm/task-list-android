@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.85.0",
+    "date": "2026-11-13",
+    "changes": [
+      "Aligned the visible artwork of task metadata icons with the title and task-action column, including context icons on wrapped lines. Applies across Today, Upcoming and other task-list sections.",
+      "Kept icon sizes, typography, task controls and editor/widget layouts unchanged."
+    ]
+  },
+  {
     "version": "0.84.0",
     "date": "2026-11-13",
     "changes": [
