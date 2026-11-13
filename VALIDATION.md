@@ -1,3 +1,13 @@
+# Habits 1.0.1 verification
+
+Source: `9b0da89d8d5588cc9c6d412ff28f5ac0e72a8683`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43486189828). **29 native Android tests and zero lint errors passed.**
+
+Removed the widget’s entire 48dp title/action bar and its pending intents. Seven weekday abbreviations remain, with no date numbers and a solid dot beneath today’s weekday. Today keeps its full accessible date description. The widget empty message points to the app instead of a removed + button. Habit names are 2sp smaller on the widget (14sp by default); their in-app size remains unchanged. The settings slider displays the actual widget size while preserving existing saved sizing preferences and habit history.
+
+Updated native checks verify header structure, weekday/dot text, absence of visible date numbers, widget font size and unchanged in-app font size, alongside the existing persistence, rollover, widget interaction and resize checks. A static native preview built with production RemoteViews/row layouts was reviewed. Verification used Robolectric SDK 28; no physical launcher was tested.
+
+APK: `Habits-v1.0.1.apk`, 37620 bytes. SHA-256 `877818cbd3d37a53fc2ffb721681a2876d5f2e701910b969a63329b9e62723b9`. Package `com.personal.habits`, version 1.0.1 (2), API 26/35. Artifact digests, ZIP integrity, non-signature content equality to CI, manifest, alignment and v2/v3 signatures passed. The signing certificate matches Habits 1.0.0, so this installs as an update retaining habits and settings.
+
 # Habits 1.0.0 verification
 
 Source: `9250ac45fa0f86fc1307c33edac6e1c2ed454571`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43479475173). **29 native Android tests and zero lint errors passed.**
