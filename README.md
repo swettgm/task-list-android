@@ -107,3 +107,7 @@ For each release, add the newest entry to `app/src/main/assets/changelog.json`, 
 ## Meditation
 
 [Download Meditation 1.0.4](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Meditation-v1.0.4.apk), a separate simple meditation timer with the same theme. Choose a duration, prepare for 30 seconds, then meditate with quarter chimes and a start/end bell. The main screen shows just the timer, Start and a small Settings icon. Duration, sounds, vibration cues and changelog are in Settings. [Details](meditation/README.md).
+
+## Habits
+
+Download [Habits 1.0.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Habits-v1.0.0.apk). A separate, offline habit app with a resizable home-screen widget matching Tasks. Add habits in the app, then use Add widget or the launcher’s Widgets menu. Seven dates always span two past days, today and four upcoming days. Tap each circle through unmarked → check → X → unmarked; saved marks stay attached to their dates. The widget + adds a habit and its gear opens appearance settings. [Details](habits/README.md).

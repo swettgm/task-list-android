@@ -1,3 +1,15 @@
+# Habits 1.0.0 verification
+
+Source: `9250ac45fa0f86fc1307c33edac6e1c2ed454571`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43479475173). **29 native Android tests and zero lint errors passed.**
+
+A separate native Android app (`com.personal.habits`) with no runtime libraries or network permission. Its scrollable, resizable RemoteViews widget displays a seven-day calendar window from today minus two through today plus four. Each habit/date cycles empty circle → green check → red X → empty. Stable habit IDs and ISO calendar keys retain marks through renaming, reopening and window rollover. Deletion is confirmed. Stale row taps carry their rendered date, and each collection adapter’s snapshot date also anchors its headings. Invalid/deleted rows and unregistered widget taps cannot create marks.
+
+Widget settings cover text/background/gradient colors, opacity, text size and tap vibration. Defaults are transparent with white text/icons. All instances share data and appearance. Midnight inexact alarms, periodic updates and date/time/time-zone/boot broadcasts refresh the window; Android may defer background alarms while asleep. No exact-alarm permission or persistent notification is required. Widget minimum height leaves room for a complete habit row. Existing apps and their APKs remain unchanged.
+
+Tests cover date-window boundaries, leap years, 23/25-hour DST days, persistent checks/Xs, past/future independence, rename/delete/stale taps, corruption retention, appearance validation, background alpha, distinct artwork, real RemoteViews inflation, collection date anchoring, headers and columns at 250/320/480px, registered widget taps, main-screen marking and editor/settings flows. The native screen screenshot was reviewed. Robolectric SDK 28 was used; no physical phone/launcher was tested.
+
+APK: `Habits-v1.0.0.apk`, 37620 bytes. SHA-256 `4211cd8cda23775b94ab4b8d62b869e1695a7991e28b100dca07f0360a9a58e0`. Package/version/minimum/target: `com.personal.habits`, 1.0.0 (1), API 26/35. Artifact digests, ZIP CRCs, signed APK non-signature content equality to CI, manifest, alignment and v2/v3 signatures passed. Retained Habits certificate SHA-256: `1caa94727f98bf0aafc631dca39a03902fa3600c47417028d266bcfc28c35e18`.
+
 # Android Tasks 0.85.0 verification
 
 Source: `5dd0d438dbcca48288c8732fe86a856bff542ad9`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43431898876). **193 Android tests, 912 browser checks, 37 calendar checks and zero lint errors passed.**
