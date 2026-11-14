@@ -1,3 +1,15 @@
+# Meditation 1.0.6 verification
+
+Source: `3e457c92cb3aa9c3f142e6b4380c1117a4654ac4`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43644361427). **24 native tests, 74 browser checks, five decoded-audio checks and zero lint errors passed.**
+
+Kept Zen tone’s existing twenty-second ringing tail and fade. Silenced its first 140ms of low-level lead-in noise and applied a gentle 100ms fade into the actual tone, using Ogg quality 8. The first 130ms decoded peak fell from about 0.00144 to 0.00000073 while the later ringing level and fade remain effectively unchanged. The other four packaged sounds are byte-for-byte identical to 1.0.5.
+
+An original MP3 already selected through the custom-file picker previously continued to use its three-second source. Existing and newly selected copies named `alex_jauk-zen-tone-mid-high-202557.mp3`, including numbered downloads, now resolve to the extended bundled Zen tone. Unrelated custom files retain their existing URI, choice and playback behavior. Added native checks for both paths.
+
+Decoded-audio checks now verify the quiet lead-in and gradual actual onset as well as full duration, tail level, headroom and final silence. Full playback, timer, vibration and UI checks passed. Verification used decoded samples, Robolectric and Chromium; no physical phone listening test was performed.
+
+APK: `Meditation-v1.0.6.apk`, 680946 bytes. SHA-256 `44c6bd3f732704470464ffbaa785c460ebb749a7b78a954ddbae30b95e67231a`. Package `com.personal.meditation`, version 1.0.6 (7), API 26/35. Archive hashes, ZIP integrity, exact packaged audio/UI, four unchanged preset assets, non-signature content equality to CI, alignment, manifest and v2/v3 signatures passed. The retained signer matches previous Meditation updates.
+
 # Meditation 1.0.5 verification
 
 Source: `c535e40e49e45c5ff03ee889e34a0fe8f7ddcffe`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43642594676). **22 native tests, 74 browser checks, five decoded-audio checks and zero lint errors passed.**
