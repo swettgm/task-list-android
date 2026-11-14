@@ -63,10 +63,12 @@
     "fadeEndSeconds": 19.8,
     "sampleRate": 48000,
     "channels": 2,
-    "sha256": "c4f94653f653bd6927ca458d3194ab2915bfa6ff910d49381ad77c1738674190",
+    "sha256": "852d20414a6344b997e7c7046dfc4e8cc7c1f42283deb78ec662f31dd1f8227c",
     "attackStartSeconds": 0.14,
     "attackFadeSeconds": 0.1,
     "vorbisQuality": 8,
-    "bytes": 352040
+    "openingLowPassHz": 3000,
+    "openingBlendEndSeconds": 0.8,
+    "bytes": 343688
   }
 ]

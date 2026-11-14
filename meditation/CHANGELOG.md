@@ -1,3 +1,9 @@
+# 1.0.7
+
+- Smooth isolated high-frequency spikes in Zen tone’s first half-second and blend back into the existing audio by 800ms.
+- Added full-rate stereo checks for sharp sample jumps that downsampled checks could miss.
+- The existing twenty-second tail and other four sounds are unchanged.
+
 # 1.0.6
 
 - Silence Zen tone’s quiet leading noise and use a gentle 100ms onset plus higher-quality encoding to soften the brief crackly attack. Its existing twenty-second ring and fade are retained.

@@ -26,6 +26,13 @@ for entry in json.loads((ROOT/'audio-source/processing.json').read_text()):
  assert first>middle>late>last,(path.name,'gradual decay',first,middle,late,last)
  if entry['name']=='zen_tone':
   assert max(abs(v) for v in samples[:3120])<.00003 and rms(samples[:4800])<rms(samples[4800:9600])*.3,(path.name,'quiet lead-in and gentle onset')
+  # Check full-rate stereo too: downsampling can mask very short HF clicks.
+  raw=subprocess.check_output(['ffmpeg','-v','error','-i',str(path),'-ar','48000','-ac','2','-f','f32le','-'])
+  native=array('f');native.frombytes(raw)
+  if sys.byteorder!='little':native.byteswap()
+  jump=max(abs(native[i]-native[i-2]) for i in range(2,int(.6*48000)*2))
+  assert jump<.06,(path.name,'opening sample spike',jump)
+
  report.append({'name':entry['name'],'seconds':duration,'peak':peak,'firstSecondRms':first,'middleRms':middle,'lateRms':late,'lastSecondRms':last,'last100msPeak':end})
 assert len(report)==5
 out=ROOT/'build/audio-qa';out.mkdir(parents=True,exist_ok=True);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
