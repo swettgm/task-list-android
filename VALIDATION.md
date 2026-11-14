@@ -1,3 +1,13 @@
+# Meditation 1.0.7 verification
+
+Source: `d9dcee73d3b0cc042c6512a166d638efc3f69aa2`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43645894005). **24 native tests, 74 browser checks, five decoded-audio checks and zero lint errors passed.**
+
+Removed isolated sharp high-frequency spikes in Zen tone’s opening using a 129-tap zero-phase 3kHz FIR on the first 600ms, blending back into the original signal by 800ms. Cleanup runs after the original gain calculation, preserving the ringing body’s volume and twenty-second fade. The other four packaged sounds remain byte-identical. The original-file routing fix from 1.0.6 remains available.
+
+The earlier 24kHz mono check could mask these short spikes. The new QA also decodes 48kHz stereo and asserts adjacent same-channel sample jumps stay below 0.06 in the opening. The measured maximum fell from about 0.540 to 0.034, with first-second RMS effectively unchanged. Full native/UI/audio checks passed, including custom-file recognition, duration, stop/replacement and final silence. Verification used sample analysis, Robolectric and Chromium; no physical phone listening test was performed.
+
+APK: `Meditation-v1.0.7.apk`, 672754 bytes. SHA-256 `ee84865101ad39b18b04299abec932dfedad42fa99941cfbaa56edb2abed636a`. Package `com.personal.meditation`, version 1.0.7 (8), API 26/35. Artifact hashes, ZIP integrity, exact packaged UI/audio, four unchanged presets, non-signature content equality to CI, alignment, manifest and v2/v3 signatures passed. The retained signer matches previous Meditation releases.
+
 # Meditation 1.0.6 verification
 
 Source: `3e457c92cb3aa9c3f142e6b4380c1117a4654ac4`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43644361427). **24 native tests, 74 browser checks, five decoded-audio checks and zero lint errors passed.**
