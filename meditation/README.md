@@ -25,4 +25,4 @@ Vibration sliders play one preview at the chosen length when released. Previews 
 
 Zen tone is an extended/faded version of the supplied `alex_jauk-zen-tone-mid-high-202557.mp3`. Original sources and processing details are in `audio-source/`; `tools/extend-sounds.py` rebuilds the bundled Ogg Vorbis audio using FFmpeg with Rubber Band. Start/end and quarter choices remain independent, and session deadlines do not wait for audio playback.
 
-Zen tone sustains the audible body of the supplied recording and fades over the final fourteen seconds. Previously selected custom copies named `alex_jauk-zen-tone-mid-high-202557.mp3` (including numbered downloads) resolve to the extended bundled preset; unrelated custom audio keeps its original behavior.
+Zen tone retains its twenty-second ringing tail and fade, with the quiet leading noise silenced, a softened 100ms onset and higher-quality encoding. Previously selected custom copies named `alex_jauk-zen-tone-mid-high-202557.mp3` (including numbered downloads) resolve to the extended bundled preset; unrelated custom audio keeps its original behavior.

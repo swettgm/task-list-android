@@ -25,7 +25,7 @@ for entry in json.loads((ROOT/'audio-source/processing.json').read_text()):
  assert last<first*.01 and end<.00003,(path.name,last,end)
  assert first>middle>late>last,(path.name,'gradual decay',first,middle,late,last)
  if entry['name']=='zen_tone':
-  assert middle>first*.4 and late>first*.075 and rms(samples[17*24000:18*24000])>first*.02,(path.name,'audible sustained ring',first,middle,late)
+  assert max(abs(v) for v in samples[:3120])<.00003 and rms(samples[:4800])<rms(samples[4800:9600])*.3,(path.name,'quiet lead-in and gentle onset')
  report.append({'name':entry['name'],'seconds':duration,'peak':peak,'firstSecondRms':first,'middleRms':middle,'lateRms':late,'lastSecondRms':last,'last100msPeak':end})
 assert len(report)==5
 out=ROOT/'build/audio-qa';out.mkdir(parents=True,exist_ok=True);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')

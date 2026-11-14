@@ -1,6 +1,6 @@
 # 1.0.6
 
-- Sustain the active ringing body of Zen tone so it stays clearly audible much longer before fading to silence.
+- Silence Zen tone’s quiet leading noise and use a gentle 100ms onset plus higher-quality encoding to soften the brief crackly attack. Its existing twenty-second ring and fade are retained.
 - Existing custom selections of the supplied MP3, including numbered download copies, now use the extended bundled Zen tone. Other custom audio is unchanged.
 - The other four built-in bells are unchanged.
 

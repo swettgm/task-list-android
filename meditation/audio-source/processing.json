@@ -57,13 +57,16 @@
     "sourceSha256": "332cdbd8e9ba67ea333bf02158d316648859018fc7845cca463b660759a7e34a",
     "originalSeconds": 3.024,
     "seconds": 20,
-    "fadeStartSeconds": 6,
+    "fadeStartSeconds": 2,
     "tailSourceStartSeconds": 0.35,
-    "tailSourceEndSeconds": 1.35,
+    "tailSourceEndSeconds": 3.024,
     "fadeEndSeconds": 19.8,
     "sampleRate": 48000,
     "channels": 2,
-    "sha256": "3a373fa7a382bc01ea1bf04e547f9bb5aa7c32449b407c7644b07d8c353d461f",
-    "bytes": 317360
+    "sha256": "c4f94653f653bd6927ca458d3194ab2915bfa6ff910d49381ad77c1738674190",
+    "attackStartSeconds": 0.14,
+    "attackFadeSeconds": 0.1,
+    "vorbisQuality": 8,
+    "bytes": 352040
   }
 ]
