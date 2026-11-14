@@ -1,3 +1,13 @@
+# Meditation 1.0.8 verification
+
+Source: `2b74d50aab0d796d22dde1aa30a53d72cdb3636f`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43647608028). **24 native tests, 74 browser checks, five decoded-audio checks and zero lint errors passed.**
+
+Rebuilt Zen tone as one continuous pitch-preserving stretch instead of joining an unstretched strike to a stretched ring. The old crossfade caused a brief phase-cancelling loudness dip around 400ms that sample-spike cleanup did not fix. Source cleanup runs before stretching; 140ms of output silence is followed by a 650ms raised-cosine onset. The sound remains twenty seconds long with its gradual fade ending at 19.8 seconds. Zen tone uses lossless 16-bit stereo FLAC, packaged uncompressed so Android MediaPlayer can seek the resource. The other four presets are byte-identical to 1.0.7. Saved sound choices and original-MP3 recognition remain compatible.
+
+Decoded-audio QA now checks the full-rate stereo loudness envelope as well as adjacent-sample steps, headroom, duration and final silence. The opening envelope check rejects the published 1.0.7 dip (successive 50ms RMS ratio 0.8015) and passes the rebuilt opening (minimum 1.0268 in the checked rising interval). Additional analysis verifies the complete first two seconds independently in left, right and mono, an unclipped peak of 0.5, and exact silent leading/trailing samples. Native tests verify the complete twenty-second Zen cue, replacement/cancellation, custom audio and timer behavior. Verification used decoded samples, Robolectric and Chromium; no physical-phone listening test was performed.
+
+APK: `Meditation-v1.0.8.apk`, 967667 bytes. SHA-256 `5ff5f882aad06f4dba011aed66fbb08d29da7b779598d6c9b497cefb1668dd4c`. Package `com.personal.meditation`, version 1.0.8 (9), API 26/35. Artifact hashes, ZIP integrity, exact seekable packaged audio, non-signature entry equality to CI, alignment and v2/v3 signatures passed. The retained signer matches previous Meditation releases.
+
 # Meditation 1.0.7 verification
 
 Source: `d9dcee73d3b0cc042c6512a166d638efc3f69aa2`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43645894005). **24 native tests, 74 browser checks, five decoded-audio checks and zero lint errors passed.**
