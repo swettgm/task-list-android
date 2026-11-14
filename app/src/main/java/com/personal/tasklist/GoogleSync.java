@@ -38,6 +38,7 @@ final class GoogleSync {
     private boolean running,closed,signingIn,queued;
     private String message="Not signed in",accessToken;
     GoogleSync(Context context,Runnable changed){app=context.getApplicationContext();reference=new ReferenceStore(app);prefs=app.getSharedPreferences("google_sync",Context.MODE_PRIVATE);this.changed=changed;if(signedIn())message="Waiting to sync";}
+    static JSONObject sharedState(JSONObject value)throws org.json.JSONException{JSONObject result=new JSONObject(value.toString());result.remove("uiContext");result.remove("updatedAt");return result;}
     private boolean signedIn(){return !prefs.getString("email","").isEmpty()&&!prefs.getString("account","").isEmpty();}
     private static AuthorizationRequest request(String email){
         AuthorizationRequest.Builder builder=AuthorizationRequest.builder().setRequestedScopes(Arrays.asList(new Scope("openid"),new Scope("https://www.googleapis.com/auth/userinfo.email"),new Scope("https://www.googleapis.com/auth/drive.appdata")));
@@ -48,7 +49,7 @@ final class GoogleSync {
     void start(){synchronized(lock){if(closed||running)return;running=true;periodic=executor.scheduleWithFixedDelay(this::syncOnce,0,10,TimeUnit.SECONDS);}}
     void stop(){synchronized(lock){running=false;if(periodic!=null){periodic.cancel(false);periodic=null;}}}
     void close(){synchronized(lock){closed=true;running=false;generation++;if(periodic!=null)periodic.cancel(false);}executor.shutdownNow();ui.removeCallbacksAndMessages(null);}
-    void requestSync(){synchronized(lock){if(closed||!running||!signedIn()||queued)return;queued=true;}executor.execute(()->{synchronized(lock){queued=false;}syncOnce();});}
+    void requestSync(){synchronized(lock){if(closed||!running||!signedIn()||queued)return;queued=true;}try{executor.execute(()->{synchronized(lock){queued=false;}syncOnce();});}catch(java.util.concurrent.RejectedExecutionException stopped){synchronized(lock){queued=false;}}}
     String status(){synchronized(lock){try{return new JSONObject().put("signedIn",signedIn()).put("email",prefs.getString("email","")).put("signingIn",signingIn).put("message",message).put("lastSyncAt",prefs.getString("lastSyncAt","")).toString();}catch(Exception invalid){return "{}";}}}
     void signIn(Activity activity){
         synchronized(lock){if(closed||signingIn)return;}
@@ -104,7 +105,7 @@ final class GoogleSync {
         synchronized(lock){
             if(closed||!running||!signedIn()||signingIn)return;
             expected=generation;account=prefs.getString("account","");email=prefs.getString("email","");baseFile=prefs.getString("fileId","");
-            try{sent=new JSONObject(reference.readState());base=new JSONObject(prefs.getString("base","{}"));}catch(Exception unreadable){message="Saved sync data could not be read. Local tasks are kept.";return;}
+            try{sent=sharedState(new JSONObject(reference.readState()));base=sharedState(new JSONObject(prefs.getString("base","{}")));}catch(Exception unreadable){message="Saved sync data could not be read. Local tasks are kept.";return;}
         }
         String token=null;
         try{

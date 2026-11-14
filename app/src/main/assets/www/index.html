@@ -3304,7 +3304,8 @@ html.tl-widget-editor .tl-task-editor{margin-top:8px;margin-bottom:8px;max-heigh
       'ebay-depop-prices:2026-10-22':true,
       'blower:2026-10-25':false
     };
-    let saved = {...initialCompleted};
+    const desktopClient=!!window.TaskListNative?.isDesktop;
+    let saved = desktopClient?{}:{...initialCompleted};
     let inProgress = null;
     let inProgressTasks = [];
     let progressStateInitialized = false;
@@ -3317,7 +3318,7 @@ html.tl-widget-editor .tl-task-editor{margin-top:8px;margin-bottom:8px;max-heigh
     try {
       const value = JSON.parse(localStorage.getItem(storageKey) || '{}');
       if(value.completed && typeof value.completed==='object') {
-        saved={...initialCompleted,...value.completed};
+        saved={...(desktopClient?{}:initialCompleted),...value.completed};
         storedVersion=Number(value.version)||1;
       }
       if(typeof value.movedTo==='object' && value.movedTo) movedTo={...value.movedTo};
@@ -3331,8 +3332,10 @@ html.tl-widget-editor .tl-task-editor{margin-top:8px;margin-bottom:8px;max-heigh
       localStorage.removeItem(storageKey + '-probe');
       storageAvailable=true;
     } catch (error) { storageAvailable=false; }
+    // Phone-only historical imports must never seed a standalone PC or cloud account.
+    if(desktopClient)storedVersion=Math.max(storedVersion,2026103022);
     if(!progressStateInitialized) {
-      inProgress='guild:2026-10-27';
+      inProgress=desktopClient?null:'guild:2026-10-27';
       progressStateInitialized=true;
     }
     if(storedVersion<9) {

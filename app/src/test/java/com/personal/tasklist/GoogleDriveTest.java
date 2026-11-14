@@ -46,6 +46,10 @@ public class GoogleDriveTest {
   Context app=RuntimeEnvironment.getApplication();app.getSharedPreferences("reference_state",0).edit().clear().commit();ReferenceStore store=new ReferenceStore(app);String before=store.readState();
   try{store.updateSharedDefinitions("[{\"id\":\"x\",\"title\":\"One\"},{\"id\":\"x\",\"title\":\"Two\"}]");fail();}catch(IllegalArgumentException expected){assertEquals(before,store.readState());}
  }
+ @Test public void cloudPayloadKeepsTaskDataButExcludesLocalViewAndVolatileTimestamp()throws Exception{
+  JSONObject local=new JSONObject().put("uiContext","Home").put("updatedAt","now").put("completed",new JSONObject().put("task",true));JSONObject shared=GoogleSync.sharedState(local);
+  assertFalse(shared.has("uiContext"));assertFalse(shared.has("updatedAt"));assertTrue(shared.getJSONObject("completed").getBoolean("task"));assertTrue(local.has("uiContext"));
+ }
  @Test public void signingOutKeepsLocalTasksAndDoesNotExposeCredentials()throws Exception{
   Context app=RuntimeEnvironment.getApplication();app.getSharedPreferences("reference_state",0).edit().clear().commit();ReferenceStore store=new ReferenceStore(app);store.writeState("{\"completed\":{\"keep\":true}}");
   app.getSharedPreferences("google_sync",0).edit().clear().putString("email","test@example.com").putString("account","subject").putString("base","{\"secret\":true}").commit();GoogleSync sync=new GoogleSync(app,()->{});
