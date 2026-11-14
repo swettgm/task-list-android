@@ -39,6 +39,10 @@ jobs:
           export MEDITATION_DEBUG_KEYSTORE="$RUNNER_TEMP/meditation-ci.keystore"
           printf 'MEDITATION_DEBUG_KEYSTORE=%s\n' "$MEDITATION_DEBUG_KEYSTORE" >> "$GITHUB_ENV"
           keytool -genkeypair -keystore "$MEDITATION_DEBUG_KEYSTORE" -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Meditation CI,O=Personal,C=US'
+      - name: Install audio verification tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Verify extended audio files
         run: python3 tools/audio-check.py
       - name: Build, unit tests and lint
