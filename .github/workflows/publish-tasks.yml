@@ -1,0 +1,44 @@
+name: Publish verified Tasks downloads
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'release/publish-tasks.json'
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: publish-tasks-main
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify both builds and immutable release inputs
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/publish-tasks.py preflight
+      - name: Download verified Windows build
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.plan.outputs.artifact_id }}
+          path: release-input/windows
+          merge-multiple: true
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.plan.outputs.windows_run }}
+      - name: Verify signatures' exact bytes and prepare downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/publish-tasks.py prepare
+      - name: Commit downloads without changing tested app sources
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 .github/scripts/publish-tasks.py commit
