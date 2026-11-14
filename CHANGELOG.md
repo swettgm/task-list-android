@@ -1,5 +1,6 @@
 ## 0.86.0
 
+- Removed the outline around the home-screen Add task button; its dimensions and fill are unchanged.
 - Added Google account sync for Android and Windows through Drive’s private app-data folder, with offline local saves, version-aware merging, account sign-out and QR pairing retained. Use the same Google test account on both devices.
 - Expanded Windows with the shared full task editor, adding tasks, Today/Upcoming, projects, labels, priorities, repeat schedules, notes, checklists, ordering and theme settings. New PCs work offline immediately; first pairing preserves tasks already created on the PC. Android task-row and widget appearance are unchanged.
 
