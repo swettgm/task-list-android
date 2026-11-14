@@ -1,3 +1,9 @@
+# 1.0.6
+
+- Sustain the active ringing body of Zen tone so it stays clearly audible much longer before fading to silence.
+- Existing custom selections of the supplied MP3, including numbered download copies, now use the extended bundled Zen tone. Other custom audio is unchanged.
+- The other four built-in bells are unchanged.
+
 # 1.0.5
 
 - Extended all four built-in bells to twenty seconds with smooth fades to silence, preserving their original strike and pitch.
