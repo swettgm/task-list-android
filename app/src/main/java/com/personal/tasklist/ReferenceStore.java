@@ -51,6 +51,24 @@ public final class ReferenceStore {
         TaskReminders.reschedule(appContext);
     }
 
+    /** Export base definitions as well as custom tasks for a standalone PC. */
+    boolean updateSharedDefinitions(String json) {
+        try {
+            JSONArray items=new JSONArray(json);JSONObject definitions=new JSONObject();
+            for(int i=0;i<items.length();i++){
+                JSONObject item=items.getJSONObject(i);String id=item.getString("id");
+                if(id.isEmpty()||!item.has("title")||definitions.has(id))throw new IllegalArgumentException("Invalid task definitions");
+                definitions.put(id,item);
+            }
+            synchronized(LOCK){
+                JSONObject current=state(),previous=current.optJSONObject("sharedDefinitions");
+                if(previous!=null&&StateMerge.same(previous,definitions))return false;
+                current.put("sharedDefinitions",definitions);String text=current.toString();checkSize(text);
+                commit(prefs.edit().putString("state",text).putLong("revision",nextRevision()));return true;
+            }
+        } catch(JSONException invalid){throw new IllegalArgumentException("Could not export task definitions",invalid);}
+    }
+
     /** Apply a sync result only if no task or widget edit happened after it was read. */
     boolean compareAndWriteState(long expectedRevision, String json) {
         String normalized = object(json).toString();

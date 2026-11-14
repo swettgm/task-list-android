@@ -93,14 +93,15 @@
   const cacheKey = 'tasks-desktop-pending-v1:' + hash(boot.token);
   const contextKey = cacheKey + ':context';
   let base = shared(validate(boot.state)), canonical = clone(base);
-  let localContext = '', cacheBlocked = false;
+  let localContext = '', cacheBlocked = false, userEditedPending = false;
   try {
     localContext = global.localStorage.getItem(contextKey) || '';
     const text = global.localStorage.getItem(cacheKey);
-    if (text && boot.phoneLinked) {
+    if (text) {
       const pending = JSON.parse(text);
       canonical = merge(shared(validate(pending.base)), shared(validate(pending.state)), base, '');
       if (typeof pending.context === 'string') localContext = pending.context;
+      userEditedPending=!!pending.userEdited;
     }
   } catch (_) {
     cacheBlocked = true;
@@ -114,7 +115,7 @@
   const dirty = () => !equal(base, shared(canonical));
   function persistCache() {
     if (cacheBlocked) throw new Error('A saved pending update could not be read.');
-    global.localStorage.setItem(cacheKey, JSON.stringify({base, state:shared(canonical), context:localContext}));
+    global.localStorage.setItem(cacheKey, JSON.stringify({base, state:shared(canonical), context:localContext, userEdited:userEditedPending}));
   }
   function notifyUI() {
     needsReload = true;
@@ -160,16 +161,17 @@
   async function synchronize() {
     if (stopped || cacheBlocked || inFlight) { if (!stopped && !cacheBlocked) schedule(500); return; }
     inFlight = true; status = 'Syncing';
-    const sent = shared(canonical), previousBase = clone(base), isWrite = dirty();
+    const sent = shared(canonical), previousBase = clone(base), isWrite = dirty(), sentUserEdit = userEditedPending;
     try {
       const reply = await request(isWrite ? '/api/sync' : '/api/state', isWrite
-        ? {method:'POST', body:JSON.stringify({base:previousBase, state:sent})} : {method:'GET'});
+        ? {method:'POST', body:JSON.stringify({base:previousBase, state:sent, userEdited:sentUserEdit})} : {method:'GET'});
       if (reply.revision < revision) throw new Error('Desktop state is older than this window. Your pending changes were kept.');
       // A task may have been edited again while this request was in flight.
       const current = shared(canonical);
       const merged = merge(isWrite ? sent : previousBase, current, reply.state, '');
       const changed = !equal(current, merged);
       phoneLinked=reply.phoneLinked;phoneLastSeenAt=reply.phoneLastSeenAt;
+      if(isWrite&&sentUserEdit)userEditedPending=false;
       base = reply.state;
       canonical = Object.assign(merged, {uiContext:localContext});
       revision = reply.revision; connected = true; status = 'Connected'; error = ''; lastSyncedAt = new Date().toISOString();
@@ -187,33 +189,32 @@
   document.documentElement.classList.add('tl-desktop');
   const style=document.createElement('style');style.textContent=`
     html.tl-desktop body>main{max-width:960px;margin:auto}
-    html.tl-desktop #tl-tools,html.tl-desktop .tl-add-task,html.tl-desktop .tl-priority-tools,html.tl-desktop .tm-move-control,html.tl-desktop .tl-permanent-delete,html.tl-desktop #pt-toggle-trash,html.tl-desktop #pt-trash{display:none!important}
-    html.tl-desktop .tl-meta-edit:disabled,html.tl-desktop .tl-label-edit:disabled{opacity:1!important;color:inherit!important}
-    html.tl-desktop .tl-meta-edit,html.tl-desktop .tl-label-edit,html.tl-desktop #pt-date{pointer-events:none!important;cursor:default!important}
-    html.tl-desktop:not(.tl-phone-linked) body>main{display:none!important}
     .tl-pc-bar,.tl-pc-welcome{position:relative;z-index:1;max-width:934px;margin:0 auto 18px;font:14px/1.5 system-ui;color:var(--tl-muted,#b9c7d9)}
     .tl-pc-bar{display:flex;align-items:center;gap:12px;justify-content:space-between}
     .tl-pc-bar button,.tl-pc-welcome button{font:inherit;border:1px solid var(--tl-border,#536478);border-radius:9px;padding:7px 12px;background:var(--tl-surface,#243649);color:var(--tl-text,#eef3fb);cursor:pointer}
     .tl-pc-welcome{padding:48px 18px;max-width:500px}.tl-pc-welcome h1{color:var(--tl-text,#eef3fb);font-size:30px;margin:0 0 12px}
     html.tl-desktop body{padding-bottom:30px!important}
   `;document.head.append(style);
-  let bar,connectionLabel,welcome;
+  let bar,connectionLabel;
+  let googleStatus={signedIn:false,message:'Not signed in'};
+  async function googleRequest(path){
+    const response=await fetch(new URL('/api/google/'+path,origin),{method:path==='status'?'GET':'POST',credentials:'omit',cache:'no-store',redirect:'error',headers:{Authorization:'Bearer '+boot.token}});
+    if(!response.ok)throw Error('The Google connection is unavailable.');
+    googleStatus=await response.json();updateDesktop();return googleStatus;
+  }
   function updateDesktop(){
     if(!document.body)return;
     document.documentElement.classList.toggle('tl-phone-linked',phoneLinked);
-    if(!bar){bar=document.createElement('div');bar.className='tl-pc-bar';connectionLabel=document.createElement('span');connectionLabel.setAttribute('role','status');const link=document.createElement('button');link.textContent='Link phone';link.onclick=()=>facade.showPairing();bar.append(connectionLabel,link);document.body.prepend(bar);
-      welcome=document.createElement('section');welcome.className='tl-pc-welcome';const heading=document.createElement('h1');heading.textContent='Your tasks, on your PC';const intro=document.createElement('p');intro.textContent='Link your phone once to see your current tasks here. You can check them off and mark them in progress. Keep both devices on the same Wi-Fi, with Tasks open on your phone to sync.';const button=document.createElement('button');button.textContent='Link phone';button.onclick=()=>facade.showPairing();welcome.append(heading,intro,button);bar.after(welcome);}
-    welcome.hidden=phoneLinked;bar.hidden=!phoneLinked;
-    connectionLabel.textContent=!connected?'PC connection unavailable — changes kept locally':Date.now()/1000-phoneLastSeenAt<20?'Phone connected':'Saved on this PC · Open Tasks on your phone to sync';
-    for(const button of document.querySelectorAll('.tl-meta-edit,.tl-label-edit')){if(!button.disabled)button.disabled=true;button.tabIndex=-1;}
-    const date=document.getElementById('pt-date');if(date){date.removeAttribute('tabindex');date.removeAttribute('role');}
+    if(!bar){bar=document.createElement('div');bar.className='tl-pc-bar';connectionLabel=document.createElement('span');connectionLabel.setAttribute('role','status');const link=document.createElement('button');link.textContent='Connect';link.onclick=()=>global.TaskListApp?.showConnections();bar.append(connectionLabel,link);document.body.prepend(bar);}
+    connectionLabel.textContent=!connected?'PC connection unavailable — changes kept locally':googleStatus.signedIn?googleStatus.email+' · '+googleStatus.message:Date.now()/1000-phoneLastSeenAt<20?'Phone connected':'Saved on this PC';
   }
-  document.addEventListener('DOMContentLoaded',()=>{updateDesktop();new MutationObserver(()=>{if(!document.querySelector('#pt-list .tl-meta-edit:not(:disabled),#pt-future-list .tl-meta-edit:not(:disabled),#pt-list .tl-label-edit:not(:disabled),#pt-future-list .tl-label-edit:not(:disabled),#pt-date[tabindex]'))return;updateDesktop();}).observe(document.body,{childList:true,subtree:true});setInterval(updateDesktop,5000);});
+  document.addEventListener('DOMContentLoaded',()=>{updateDesktop();googleRequest('status').catch(()=>{});setInterval(()=>{updateDesktop();googleRequest('status').catch(()=>{});},5000);});
   const facade = {
     isDesktop:true,
+    get hasLinkedPhone(){return phoneLinked;},
     readState() { return JSON.stringify(canonical); },
     writeState(text) {
-      if(!phoneLinked)return;
+      if(global.TaskListApp)userEditedPending=true;
       const incoming = validate(JSON.parse(text));
       const nextContext = typeof incoming.uiContext === 'string' ? incoming.uiContext : localContext;
       const next = merge(shared(uiState), shared(incoming), shared(canonical), '');
@@ -224,7 +225,19 @@
       uiState = clone(incoming);
       if (dirty()) schedule(200);
     },
+    updateReminders(text) {
+      const tasks=JSON.parse(text),definitions={};
+      if(!Array.isArray(tasks))throw Error('Invalid task definitions');
+      for(const task of tasks)if(object(task)&&typeof task.id==='string'&&typeof task.title==='string'&&!FORBIDDEN_KEYS.has(task.id))definitions[task.id]=clone(task);
+      if(!equal(canonical.sharedDefinitions,definitions)){canonical.sharedDefinitions=definitions;persistCache();schedule(250);}
+    },
     updateSnapshot() {},
+    getGoogleStatus(){return JSON.stringify(googleStatus);},
+    connectGoogle(){googleRequest('sign-in').catch(error=>{googleStatus.message=error.message;});},
+    disconnectGoogle(){googleRequest('sign-out').catch(error=>{googleStatus.message=error.message;});},
+    syncGoogle(){googleRequest('sync').catch(error=>{googleStatus.message=error.message;});},
+    getLastView(){return global.localStorage.getItem(contextKey+':view')||'today';},
+    setLastView(value){if(['today','upcoming'].includes(value))global.localStorage.setItem(contextKey+':view',value);},
     setThemeColors(background) { document.documentElement.style.backgroundColor = background; },
     showPairing() { global.open(boot.pairingUrl, '_blank', 'noopener'); },
     connectPC() { facade.showPairing(); },

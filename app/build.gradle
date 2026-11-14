@@ -23,8 +23,8 @@ android {
         applicationIdSuffix '.preview'
         minSdk 26
         targetSdk 35
-        versionCode 85
-        versionName '0.85.0'
+        versionCode 86
+        versionName '0.86.0'
     }
 
     compileOptions {
@@ -43,6 +43,7 @@ android {
 }
 
 dependencies {
+    implementation 'com.google.android.gms:play-services-auth:22.0.0'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.14.1'
 }

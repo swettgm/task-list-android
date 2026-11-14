@@ -146,7 +146,7 @@ class EndpointTests(unittest.TestCase):
         assets.mkdir()
         (assets / "index.html").write_text("<html><head></head><body>Tasks</body></html>")
         self.desktop = Path(__file__).resolve().parents[1]
-        self.server = types.SimpleNamespace(store=self.store, token="f" * 64, assets=assets, desktop=self.desktop,
+        self.server = types.SimpleNamespace(cloud=types.SimpleNamespace(request_sync=lambda:None,close=lambda:None,status=lambda:{"signedIn":False},sign_in=lambda:None,sign_out=lambda:None),store=self.store, token="f" * 64, assets=assets, desktop=self.desktop,
             native_window_enabled=True, window_requests=threading.Event(), pairing_url="http://192.168.1.20:8765/pair#" + "f" * 64, lan_origin="http://192.168.1.20:8765", server_port=8765)
 
     def tearDown(self):
@@ -188,6 +188,13 @@ class EndpointTests(unittest.TestCase):
         status, body = self.request("/", auth=False, address="127.0.0.1", host="untrusted.example:8765")
         self.assertEqual(status, 403)
         self.assertNotIn(self.server.token.encode(), body)
+
+    def test_google_account_controls_are_private_to_this_pc(self):
+        for path,method in [("/api/google/status","GET"),("/api/google/sign-in","POST"),("/api/google/sign-out","POST"),("/api/google/sync","POST")]:
+            self.assertEqual(self.request(path,method,auth=False)[0],401)
+            self.assertEqual(self.request(path,method,address="192.168.1.10")[0],403)
+            self.assertEqual(self.request(path,method,address="127.0.0.1",host="evil.example:8765")[0],403)
+        self.assertEqual(self.request("/api/google/status",address="127.0.0.1",host="127.0.0.1:8765")[0],200)
 
     def test_authorized_sync_merges_and_survives_restart(self):
         status, body = self.request("/api/state")

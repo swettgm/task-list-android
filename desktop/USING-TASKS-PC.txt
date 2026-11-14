@@ -1,35 +1,30 @@
-Tasks for Windows — simple companion
+Tasks for Windows
 
-Run Tasks-Setup.exe on Windows 10 or 11 (64-bit), then open Tasks from the Start
-menu or desktop shortcut. No administrator rights, Python installation or account is
-needed. Tasks opens its own native Windows window, powered by the WebView2 runtime.
-Setup installs Microsoft WebView2 if it is missing; that first-time step needs
-internet access. The window and shortcuts share one taskbar identity. If you pinned an
-older version, unpin its old icon once, then pin Tasks from the Start menu again.
+Install Tasks-Setup-v0.86.0.exe on Windows 10 or 11 (64-bit). Updates retain your
+existing tasks, theme, pairing and taskbar identity. The portable Tasks-PC.exe
+remains available. Microsoft WebView2 is installed if needed.
 
-Install the accompanying Tasks Android update first. On Windows choose Link phone,
-scan the QR code with your phone camera, choose Open Tasks, then confirm Link PC.
-You can also paste the pairing link under Android Settings > Windows companion.
+You can use Tasks immediately, offline, without an account. Windows now has the
+same Today/Upcoming views, task creation and full editor, projects, priorities,
+labels, notes, checklists, repeat schedules, rescheduling, trash, completion,
+in-progress actions, ordering and theme settings as the phone app.
 
-Your phone theme, colors, gradient and icon choices transfer during pairing and
-keep updating through sync. The Windows list waits for your phone on first use. It does not import an old
-bundled task list. Use Today or Upcoming, tick a checkbox to complete a task, and
-use Do now to toggle in progress. Linked tasks start and stop together. There are
-no task editors, adding, priority controls or Settings on the Windows screen.
+Connect > Google sync > Sign in with Google. Sign into the same Google account on
+your Android Tasks 0.86.0 app under Settings > Google sync. Tasks and theme merge
+through Google Drive's private app-data folder; your other Drive files are not
+accessed. The Google project is in testing, so use an account added as a test user.
+Your browser handles Google sign-in. No Google password is entered into Tasks.
 
-Keep both devices on the same Wi-Fi, with Tasks open on the phone, to synchronize.
-PC changes save locally while the phone is away, then sync when the phone app is
-open again. Windows may ask you to allow Tasks on your private network.
+Windows protects its refresh token with the current Windows user's DPAPI key.
+Android asks Google Play services for short-lived access tokens and does not store
+a refresh token. Sign out keeps the local task list. Changes save offline and merge
+when a connection returns. Use Sync now to request an immediate sync.
 
-Closing the window keeps local sync running. Open Tasks from its shortcut to return.
-Link phone > Quit PC companion stops the local server.
+Local QR pairing remains available under Settings > Local pairing. Keep both apps
+open on the same Wi-Fi for LAN sync. Google sync runs while Tasks is open on the
+phone and while its PC background process is running. The Android widget and
+Android reminder/notification controls remain phone features.
 
-Setup installs the program under %LOCALAPPDATA%\Programs\Tasks. Run a newer
-installer to update it. Uninstall through Windows Settings > Apps. Updates and
-uninstall preserve your tasks, theme and pairing in %LOCALAPPDATA%\Tasks.
-The portable Tasks-PC.exe is still available as an optional alternative. Tasks needs no cloud account. The first download is not
-code-signed with a Microsoft publisher certificate, so Windows may identify it as
-an unrecognized app.
-
-Optional Python source ZIP: install requirements.txt, then run tasks_pc.py using
-Python 3.10 or later. The executable is the easier option.
+Closing the PC window keeps sync running. Reopen from the same shortcut. Quit the
+PC companion from its pairing window to stop it. Task data lives separately from
+the install in %LOCALAPPDATA%\Tasks and survives upgrades and uninstall.

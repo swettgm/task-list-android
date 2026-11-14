@@ -36,6 +36,7 @@ public class MainActivity extends Activity {
     private static final int EXPORT_BACKUP = 201;
     private ReferenceStore reference;
     private SyncEngine desktopSync;
+    private GoogleSync googleSync;
     private String pendingPairUrl,pendingPairToken;
     private volatile String bridgeBase;
     private final android.os.Handler syncUi=new android.os.Handler(android.os.Looper.getMainLooper());
@@ -58,7 +59,7 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         reference = new ReferenceStore(this);
-        if(!isWidgetEditor())desktopSync=new SyncEngine(this,this::queueSyncedReload);
+        if(!isWidgetEditor()){desktopSync=new SyncEngine(this,this::queueSyncedReload);googleSync=new GoogleSync(this,this::queueSyncedReload);}
         root = new FrameLayout(this);
         root.setBackgroundColor(isWidgetEditor() ? Color.TRANSPARENT : Color.rgb(16, 21, 31));
         if(isWidgetEditor())updateModalBackdrop();
@@ -181,22 +182,22 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onResume() {
-        super.onResume();if(desktopSync!=null)desktopSync.start();WidgetCompletions.settleExpired(this);TaskReminders.reschedule(this);
+        super.onResume();if(desktopSync!=null)desktopSync.start();if(googleSync!=null)googleSync.start();WidgetCompletions.settleExpired(this);TaskReminders.reschedule(this);
         if (web != null) {
             web.onResume();
             if (pageReady && (reference.revision() != loadedRevision || !loadedDay.equals(LocalDate.now(ZoneId.of("America/New_York")).toString()))) loadTaskList();
             else if(pageReady&&!isWidgetEditor())web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.restoreLastView()",null);
         }
     }
-    @Override protected void onPause() { if(desktopSync!=null)desktopSync.stop(); if (web != null) web.onPause(); super.onPause(); }
+    @Override protected void onPause() { if(desktopSync!=null)desktopSync.stop();if(googleSync!=null)googleSync.stop(); if (web != null) web.onPause(); super.onPause(); }
 
     void showProgressCompletionChooser(){
         JSONArray choices=TaskReminders.progressChoices(this);if(choices.length()==0){message("No tasks are in progress.");return;}java.util.List<String> names=new java.util.ArrayList<>();java.util.Map<String,Integer> counts=new java.util.HashMap<>();for(int i=0;i<choices.length();i++){String title=choices.optJSONObject(i).optString("title");counts.put(title,counts.getOrDefault(title,0)+1);}for(int i=0;i<choices.length();i++){JSONObject item=choices.optJSONObject(i);String title=item.optString("title");names.add(title+(counts.get(title)>1?" · "+item.optString("date"):""));}
         PopupAppearance appearance=PopupAppearance.read(this);android.widget.ArrayAdapter<String> adapter=new android.widget.ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,names){@Override public android.view.View getView(int position,android.view.View recycled,android.view.ViewGroup parent){android.widget.TextView text=(android.widget.TextView)super.getView(position,recycled,parent);text.setTextColor(appearance.foreground);text.setSingleLine(false);ControlAlignment.text(text);return text;}};
-        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Complete task").setAdapter(adapter,(picker,index)->{JSONObject item=choices.optJSONObject(index);if(item==null||!TaskReminders.completeProgress(this,item.optString("key"),item.optString("token")))message("This task is no longer in progress.");else{queueSyncedReload();if(desktopSync!=null)desktopSync.requestSync();}}).setNegativeButton("Cancel",null).show();
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Complete task").setAdapter(adapter,(picker,index)->{JSONObject item=choices.optJSONObject(index);if(item==null||!TaskReminders.completeProgress(this,item.optString("key"),item.optString("token")))message("This task is no longer in progress.");else{queueSyncedReload();if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();}}).setNegativeButton("Cancel",null).show();
         dialog.getWindow().setBackgroundDrawable(appearance.background(this));int titleId=getResources().getIdentifier("alertTitle","id","android");android.widget.TextView title=dialog.findViewById(titleId);if(title!=null)title.setTextColor(appearance.foreground);dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(appearance.accent);ControlAlignment.dialog(dialog);
     }
-    @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(hasFocus&&!isWidgetEditor()&&reference!=null&&pageReady&&reference.revision()!=loadedRevision){queueSyncedReload();if(desktopSync!=null)desktopSync.requestSync();}}
+    @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(hasFocus&&!isWidgetEditor()&&reference!=null&&pageReady&&reference.revision()!=loadedRevision){queueSyncedReload();if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();}}
 
     private void queueSyncedReload(){
         if(destroyed||syncReloadPending)return;syncReloadPending=true;syncUi.post(this::applySyncedReload);
@@ -298,15 +299,19 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void writeState(String json) {
             try{JSONObject desired=new JSONObject(json),base=new JSONObject(bridgeBase==null?reference.readState():bridgeBase);boolean saved=false;
                 for(int retry=0;retry<16;retry++){long revision=reference.revision();JSONObject current=new JSONObject(reference.readState()),merged=StateMerge.merge(base,desired,current);if(reference.compareAndWriteState(revision,merged.toString())){saved=true;break;}}
-                if(!saved)throw new IllegalStateException("Tasks changed while saving. Please try again.");bridgeBase=json;loadedRevision=reference.revision();TaskReminders.reschedule(MainActivity.this);if(desktopSync!=null)desktopSync.requestSync();
+                if(!saved)throw new IllegalStateException("Tasks changed while saving. Please try again.");bridgeBase=json;loadedRevision=reference.revision();TaskReminders.reschedule(MainActivity.this);if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();
             }catch(JSONException invalid){throw new IllegalArgumentException("The task update could not be read.",invalid);}
         }
         @JavascriptInterface public void connectPC(){runOnUiThread(()->{if(desktopSync!=null)enterPCLink();});}
         @JavascriptInterface public String getSyncStatus(){return desktopSync==null?"{}":desktopSync.status();}
-        @JavascriptInterface public void refreshTasks(){TaskReminders.reschedule(MainActivity.this);TaskWidgetProvider.refreshAll(MainActivity.this);if(desktopSync!=null)desktopSync.requestSync();}
-        @JavascriptInterface public void syncNow(){if(desktopSync!=null)desktopSync.requestSync();}
+        @JavascriptInterface public void refreshTasks(){TaskReminders.reschedule(MainActivity.this);TaskWidgetProvider.refreshAll(MainActivity.this);if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();}
+        @JavascriptInterface public void syncNow(){if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();}
         @JavascriptInterface public void disconnectPC(){if(desktopSync!=null)desktopSync.unpair();}
-        @JavascriptInterface public void updateReminders(String json) { TaskReminders.definitions(MainActivity.this,json); }
+        @JavascriptInterface public void updateReminders(String json) { TaskReminders.definitions(MainActivity.this,json);if(reference.updateSharedDefinitions(json)){loadedRevision=reference.revision();if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();} }
+        @JavascriptInterface public void connectGoogle(){runOnUiThread(()->{if(googleSync!=null)googleSync.signIn(MainActivity.this);});}
+        @JavascriptInterface public String getGoogleStatus(){return googleSync==null?"{}":googleSync.status();}
+        @JavascriptInterface public void disconnectGoogle(){if(googleSync!=null)googleSync.signOut();}
+        @JavascriptInterface public void syncGoogle(){if(googleSync!=null)googleSync.requestSync();}
         @JavascriptInterface public void requestNotificationPermission() { runOnUiThread(()->requestReminderPermission(true)); }
         @JavascriptInterface public String notificationStatus() { if(!TaskReminders.allowed(MainActivity.this))return "Notifications are blocked in Android settings";android.app.NotificationChannel channel=getSystemService(android.app.NotificationManager.class).getNotificationChannel(TaskReminders.CHANNEL);return channel!=null&&channel.getImportance()==android.app.NotificationManager.IMPORTANCE_NONE?"Scheduled task reminders are blocked in Android settings":"Notifications allowed"; }
         @JavascriptInterface public String exactAlarmStatus() { return TaskReminders.precise(MainActivity.this)?"Precise reminders enabled":"Precise reminders need Android permission; reminders may be delayed"; }
@@ -357,6 +362,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode==GoogleSync.AUTHORIZE){if(googleSync!=null)googleSync.result(resultCode,data);return;}
         if (requestCode != EXPORT_BACKUP) return;
         File pending = new File(getCacheDir(), "task-list-export.json");
         if (resultCode == RESULT_OK && data != null && data.getData() != null && pending.isFile()) {
@@ -387,7 +393,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         destroyed = true;
-        if(desktopSync!=null)desktopSync.close();syncUi.removeCallbacksAndMessages(null);
+        if(desktopSync!=null)desktopSync.close();if(googleSync!=null)googleSync.close();syncUi.removeCallbacksAndMessages(null);
         if (android.os.Build.VERSION.SDK_INT >= 33 && backCallback != null)
             BackApi33.unregister(this, backCallback);
         if (web != null) {

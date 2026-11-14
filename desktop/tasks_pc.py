@@ -1,4 +1,4 @@
-"""Tasks PC: a small local desktop companion using the system browser, without a cloud account."""
+"""Tasks PC: full offline task management with optional LAN and Google sync."""
 from __future__ import annotations
 
 import argparse
@@ -136,31 +136,47 @@ class StateStore:
             self.revision = value["revision"]
             self.phone_linked = value.get("phoneLinked", False)
             self.phone_seen = value.get("phoneLastSeenAt", 0)
+            self.desktop_edited = value.get("desktopEdited", False)
         else:
             self.state = merge_state({}, seed, {})
             self.revision = 1
             self.phone_linked = False
             self.phone_seen = 0
+            self.desktop_edited = False
             atomic_json(self.path, self.snapshot())
 
     def snapshot(self):
         with self.lock:
-            return {"state": clone(self.state), "revision": self.revision, "phoneLinked":self.phone_linked, "phoneLastSeenAt":self.phone_seen}
+            return {"state": clone(self.state), "revision": self.revision, "phoneLinked":self.phone_linked, "phoneLastSeenAt":self.phone_seen, "desktopEdited":self.desktop_edited}
 
-    def sync(self, base, local, phone=False):
+    def sync(self, base, local, phone=False, user_edited=False):
         with self.lock:
             # First pairing imports the current phone, never the bundled historical seed.
-            merged = merge_state({} if phone and not self.phone_linked else base, local,
-                                 {} if phone and not self.phone_linked else self.state)
+            first_import = phone and not self.phone_linked and not self.desktop_edited
+            merged = merge_state({} if first_import else base, local, {} if first_import else self.state)
             seen = time.time() if phone else self.phone_seen
             linked = self.phone_linked or phone
-            changed = merged != self.state or linked != self.phone_linked
+            edited = self.desktop_edited or user_edited
+            changed = merged != self.state or linked != self.phone_linked or edited != self.desktop_edited
             next_revision = self.revision + (1 if changed else 0)
             if changed or phone:
                 atomic_json(self.path, {"state":merged, "revision":next_revision,
-                                       "phoneLinked":linked, "phoneLastSeenAt":seen})
+                                       "phoneLinked":linked, "phoneLastSeenAt":seen, "desktopEdited":edited})
                 self.state, self.revision = merged, next_revision
-                self.phone_linked, self.phone_seen = linked, seen
+                self.phone_linked, self.phone_seen, self.desktop_edited = linked, seen, edited
+            return self.snapshot()
+
+
+    def apply_remote(self, sent, remote):
+        """Keep edits made locally while a cloud request was in flight."""
+        with self.lock:
+            merged = merge_state(sent, self.state, remote)
+            changed = merged != self.state or not self.desktop_edited
+            revision = self.revision + int(changed)
+            if changed:
+                atomic_json(self.path, {"state": merged, "revision": revision,
+                    "phoneLinked": self.phone_linked, "phoneLastSeenAt": self.phone_seen, "desktopEdited": True})
+                self.state, self.revision, self.desktop_edited = merged, revision, True
             return self.snapshot()
 
 
@@ -213,6 +229,8 @@ class TasksServer(ThreadingHTTPServer):
         self.window_requests = threading.Event()
         self.native_window_enabled = False
         super().__init__(address, TasksHandler)
+        from google_sync import CloudSync
+        self.cloud = CloudSync(store, merge_state, atomic_json)
 
     @property
     def lan_origin(self):
@@ -221,6 +239,11 @@ class TasksServer(ThreadingHTTPServer):
     @property
     def pairing_url(self):
         return self.lan_origin + "/pair#" + self.token
+
+    def server_close(self):
+        if hasattr(self, 'cloud'):
+            self.cloud.close()
+        super().server_close()
 
 
 class TasksHandler(BaseHTTPRequestHandler):
@@ -261,6 +284,9 @@ class TasksHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def server_google(self):
+        return self.loopback() and self.local_host()
+
     def do_GET(self):
         path = urllib.parse.urlsplit(self.path).path
         if path == "/pair":
@@ -270,7 +296,11 @@ class TasksHandler(BaseHTTPRequestHandler):
             if not self.authorized():
                 self.respond(401, {"error": "Pair Tasks to this PC first"})
                 return
-            if path == "/api/state":
+            if path == "/api/google/status":
+                if not self.server_google():
+                    self.respond(403, {"error": "Manage Google on this PC"}); return
+                self.respond(200, self.server.cloud.status())
+            elif path == "/api/state":
                 self.respond(200, self.server.store.snapshot())
             elif path == "/api/pair":
                 import io
@@ -324,6 +354,21 @@ class TasksHandler(BaseHTTPRequestHandler):
         if not self.authorized():
             self.respond(401, {"error": "Pair Tasks to this PC first"})
             return
+        if path.startswith("/api/google/"):
+            if not self.server_google():
+                self.respond(403, {"error": "Manage Google on this PC"}); return
+            actions = {"/api/google/sign-in": self.server.cloud.sign_in,
+                       "/api/google/sign-out": self.server.cloud.sign_out,
+                       "/api/google/sync": self.server.cloud.request_sync}
+            action = actions.get(path)
+            if action is None:
+                self.respond(404, {"error": "Not found"}); return
+            try:
+                action()
+                self.respond(200, self.server.cloud.status())
+            except Exception:
+                self.respond(503, {"error": "The Google connection could not be updated. Local tasks are kept."})
+            return
         if path == "/api/open":
             if not self.loopback():
                 self.respond(403, {"error":"Open Tasks on the PC"});return
@@ -335,6 +380,7 @@ class TasksHandler(BaseHTTPRequestHandler):
                 self.respond(403, {"error": "Close the companion on the PC"})
                 return
             self.respond(200, {"stopping": True})
+            self.server.cloud.close()
             self.server.stop_event.set()
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
@@ -350,7 +396,8 @@ class TasksHandler(BaseHTTPRequestHandler):
             data = parse_json(self.rfile.read(length))
             if not isinstance(data, dict) or not isinstance(data.get("base"), dict) or not isinstance(data.get("state"), dict):
                 raise ValueError("Expected base and state objects")
-            result = self.server.store.sync(data["base"], data["state"], phone=self.headers.get("X-Tasks-Client") == "android")
+            result = self.server.store.sync(data["base"], data["state"], phone=self.headers.get("X-Tasks-Client") == "android", user_edited=data.get("userEdited") is True and self.loopback())
+            self.server.cloud.request_sync()
             self.respond(200, result)
         except (ValueError, UnicodeError, json.JSONDecodeError):
             self.respond(400, {"error": "Tasks update could not be read"})

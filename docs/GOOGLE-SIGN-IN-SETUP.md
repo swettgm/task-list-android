@@ -1,36 +1,34 @@
-# Google sign-in for Tasks: setup needed
+# Tasks Google sign-in and sync
 
-The shipped Windows and Android 0.65.0 builds use local QR pairing. Google sign-in is a proposed additional connection method; it is not enabled in these downloads.
+Tasks Android and Windows 0.86.0 support optional Google sync through Drive’s private app-data folder. You can also use either app offline or pair over local Wi-Fi. Google sync shares tasks, completion/progress, projects, notes, checklists, ordering, labels and theme. UI view/filter choices stay local.
 
-Google sign-in identifies the account. Cross-device task sync also needs storage. The intended option is Google Drive’s private app-data folder: the phone and PC sign into the same Google account and share Tasks data and theme through this folder. This removes the same-Wi-Fi requirement while retaining offline saves and the existing merge rules. QR pairing remains available.
+## Connect
 
-## Google Cloud setup
+Install the Android update and Windows installer. Open Settings → Google sync on each device and sign into the same Google account. On Windows, Connect also opens this screen. The system browser handles desktop authorization; Google Play services handles phone authorization. The account’s email and sync status appear in Settings. Use Sync now to request an immediate sync. Sign out leaves local tasks intact.
 
-1. Create or choose one Google Cloud project for Tasks.
-2. Enable the Google Drive API in that project.
-3. Configure the Google Auth consent screen. For personal testing, add your own Google account as a test user.
-4. Register OAuth clients for the Android app and Windows desktop app in that same project.
-5. Request the app-data-only Drive scope, `https://www.googleapis.com/auth/drive.appdata`, rather than access to all Drive files.
+The configured Google project is Tasks (277712575915). Drive API must be enabled. While Google Auth Platform → Audience is in Testing, add each account under Test users. A testing grant can expire after seven days; sign in again if Google requests consent. No paid GitHub or Google subscription is required for this private app-data sync.
 
-Current Android preview registration:
+## Registered OAuth clients
+
+Android: `277712575915-pc43c20vte31fk611r6r5ipcqu7uml5f.apps.googleusercontent.com`
 
 - Package: `com.personal.tasklist.preview`
-- Signing certificate SHA-1: `2B:E6:14:0F:A0:50:9D:13:6E:18:D5:25:06:2C:85:10:5D:57:9F:9C`
+- Signing SHA-1: `2B:E6:14:0F:A0:50:9D:13:6E:18:D5:25:06:2C:85:10:5D:57:9F:9C`
 
-The signing certificate fingerprint is public configuration. Keep the signing keystore, Google password, refresh tokens and any service-account keys private. A future Google Play signing certificate must be registered separately.
+Windows/Desktop: `277712575915-aum3u79p81j3e83676mme4sgcf2l7ffg.apps.googleusercontent.com`
 
-The installed apps need their own OAuth configuration and interactive user consent. ChatGPT’s Google account connection cannot be embedded into the apps. No account password or service-account key is needed to implement this.
+Both clients belong to the same project. IDs and signing fingerprints are public configuration. Do not share the app signing keystore, refresh tokens or Google password.
 
-## Implementation after configuration
+## Storage and merging
 
-- Add Sign in with Google alongside QR on the connection screen.
-- Use a system-browser OAuth flow with PKCE and state on Windows, and Google’s native authorization flow on Android.
-- Store credentials with Windows user encryption and Android Keystore-backed storage.
-- Share task state and theme in private app-data storage, retaining local changes during outages and using version-aware writes and the existing three-way merge.
-- Test account changes, revoked consent, expired credentials, offline edits and simultaneous task actions before publishing.
+Windows uses the system browser, loopback redirect, state validation and PKCE (S256). A refresh token is encrypted with Windows DPAPI CurrentUser; there is no plaintext fallback. Android keeps short-lived access tokens in memory and asks Google Play services for renewed authorization. Only the chosen account identity and task merge baseline persist in private preferences. Tokens are never sent to the WebView or local HTTP status endpoints.
+
+The requested Drive scope is `https://www.googleapis.com/auth/drive.appdata`, plus verified email identity. The shared document is `tasks-state-v1.json` in `appDataFolder`, with a versioned Tasks envelope. Reads and writes use Drive v2 ETag preconditions; file creation uses Drive v3 private-folder metadata. Version conflicts retry with the existing three-way field/task merge. Local edits made during requests survive. Simultaneous first-time file creation resolves to the oldest file without deleting duplicate files or losing local data.
+
+Google sync runs while the phone app is in the foreground and while the PC background process is running. Widget actions made while the phone app is closed sync when you next open Tasks. No real Google account is signed into automated tests; the actual account/consent flow must be checked after installing.
 
 Official references:
 
 - https://developers.google.com/identity/protocols/oauth2/native-app
-- https://developers.google.com/identity/authorization/android/overview
+- https://developer.android.com/identity/authorization
 - https://developers.google.com/workspace/drive/api/guides/appdata
