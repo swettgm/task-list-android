@@ -257,6 +257,7 @@ class CloudSync:
             if self.auth_busy:
                 return
             self.auth_busy = True
+            self.generation += 1
             generation = self.generation
             self.cancel_auth = threading.Event()
             cancel = self.cancel_auth

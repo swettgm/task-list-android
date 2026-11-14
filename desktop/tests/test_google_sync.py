@@ -126,6 +126,24 @@ class CloudTests(unittest.TestCase):
             drive.before_write=edit;cloud.sync_once()
             self.assertTrue(store.snapshot()['state']['completed']['during'])
             drive.before_write=None;cloud.sync_once();self.assertTrue(drive.state['completed']['during'])
+    def test_starting_new_sign_in_invalidates_a_previous_inflight_sync(self):
+        with tempfile.TemporaryDirectory()as folder:
+            drive=Drive();store,cloud=self.setup_cloud(folder,drive);before=store.snapshot()
+            with patch.object(google.threading.Thread,'start'):
+                drive.before_write=cloud.sign_in;cloud.sync_once()
+            self.assertEqual(store.snapshot(),before)
+            self.assertFalse(cloud.base_path.exists())
+            self.assertTrue(cloud.status()['signingIn'])
+    def test_old_account_refresh_cannot_be_cached_for_a_new_account(self):
+        with tempfile.TemporaryDirectory()as folder:
+            drive=Drive();store,cloud=self.setup_cloud(folder,drive);old=dict(cloud.account)
+            def refresh(fields):
+                cloud.sign_out();cloud.account={'sub':'different','email':'other@example.com','refresh_token':'other-private'}
+                return {'access_token':'old-access','expires_in':3600}
+            with patch.object(google,'form_request',side_effect=refresh):
+                with self.assertRaises(google.CloudError):google.CloudSync.token(cloud,old)
+            self.assertIsNone(cloud.access_token)
+
     def test_network_failure_keeps_local_data_and_baseline(self):
         with tempfile.TemporaryDirectory()as folder:
             drive=Drive();store,cloud=self.setup_cloud(folder,drive);before=store.snapshot()

@@ -362,7 +362,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode==GoogleSync.AUTHORIZE){if(googleSync!=null)googleSync.result(resultCode,data);return;}
+        if(GoogleSync.isAuthorizationRequest(requestCode)){if(googleSync!=null)googleSync.result(requestCode,resultCode,data);return;}
         if (requestCode != EXPORT_BACKUP) return;
         File pending = new File(getCacheDir(), "task-list-export.json");
         if (resultCode == RESULT_OK && data != null && data.getData() != null && pending.isFile()) {

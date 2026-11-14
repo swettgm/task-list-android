@@ -34,6 +34,7 @@ final class GoogleSync {
     private final ScheduledExecutorService executor=Executors.newSingleThreadScheduledExecutor(r->{Thread t=new Thread(r,"Tasks Google sync");t.setDaemon(true);return t;});
     private ScheduledFuture<?> periodic;
     private long generation,authGeneration;
+    private int authRequest=AUTHORIZE;
     private boolean running,closed,signingIn,queued;
     private String message="Not signed in",accessToken;
     GoogleSync(Context context,Runnable changed){app=context.getApplicationContext();reference=new ReferenceStore(app);prefs=app.getSharedPreferences("google_sync",Context.MODE_PRIVATE);this.changed=changed;if(signedIn())message="Waiting to sync";}
@@ -55,23 +56,25 @@ final class GoogleSync {
             .setNegativeButton("Cancel",null).setPositiveButton("Sign in",(dialog,which)->beginSignIn(activity)).show();
     }
     private void beginSignIn(Activity activity){
-        synchronized(lock){if(closed||signingIn)return;signingIn=true;authGeneration=generation;message="Choose your Google account";}
+        final long expected;final int requestCode;
+        synchronized(lock){if(closed||signingIn)return;signingIn=true;authGeneration=++generation;expected=generation;authRequest=AUTHORIZE+(int)(generation%1000);requestCode=authRequest;message="Choose your Google account";}
         try{Identity.getAuthorizationClient(activity).authorize(request(null)).addOnSuccessListener(activity,result->{
-            synchronized(lock){if(closed||authGeneration!=generation)return;}
-            if(result.hasResolution())try{activity.startIntentSenderForResult(result.getPendingIntent().getIntentSender(),AUTHORIZE,null,0,0,0);}catch(Exception error){authFailed();}
-            else accept(result);
-        }).addOnFailureListener(activity,error->authFailed());}catch(Exception unavailable){authFailed();}
+            synchronized(lock){if(closed||expected!=generation)return;}
+            if(result.hasResolution())try{activity.startIntentSenderForResult(result.getPendingIntent().getIntentSender(),requestCode,null,0,0,0);}catch(Exception error){authFailed(expected);}
+            else accept(result,expected);
+        }).addOnFailureListener(activity,error->authFailed(expected));}catch(Exception unavailable){authFailed(expected);}
     }
-    void result(int resultCode,Intent data){
-        synchronized(lock){if(!signingIn||closed||authGeneration!=generation)return;}
-        if(resultCode!=Activity.RESULT_OK||data==null){authFailed();return;}
-        try{accept(Identity.getAuthorizationClient(app).getAuthorizationResultFromIntent(data));}catch(Exception error){authFailed();}
+    static boolean isAuthorizationRequest(int code){return code>=AUTHORIZE&&code<AUTHORIZE+1000;}
+    void result(int requestCode,int resultCode,Intent data){
+        final long expected;
+        synchronized(lock){if(!signingIn||closed||authGeneration!=generation||requestCode!=authRequest)return;expected=authGeneration;}
+        if(resultCode!=Activity.RESULT_OK||data==null){authFailed(expected);return;}
+        try{accept(Identity.getAuthorizationClient(app).getAuthorizationResultFromIntent(data),expected);}catch(Exception error){authFailed(expected);}
     }
-    private void authFailed(){synchronized(lock){signingIn=false;message="Google sign-in was cancelled or unavailable. Local tasks are kept.";}}
-    private void accept(AuthorizationResult authorization){
-        final long expected; synchronized(lock){expected=authGeneration;}
+    private void authFailed(long expected){synchronized(lock){if(closed||expected!=generation)return;signingIn=false;message="Google sign-in was cancelled or unavailable. Local tasks are kept.";}}
+    private void accept(AuthorizationResult authorization,final long expected){
         final String token=authorization.getAccessToken();
-        if(token==null||token.isEmpty()){authFailed();return;}
+        if(token==null||token.isEmpty()){authFailed(expected);return;}
         executor.execute(()->{
             try{
                 JSONObject identity=GoogleDrive.http("GET","/oauth2/v3/userinfo",token,null,null,null);
@@ -86,7 +89,7 @@ final class GoogleSync {
                     accessToken=token;signingIn=false;message="Signed in. Syncing…";
                 }
                 requestSync();
-            }catch(Exception failure){authFailed();}
+            }catch(Exception failure){authFailed(expected);}
         });
     }
     void signOut(){synchronized(lock){generation++;signingIn=false;accessToken=null;if(!prefs.edit().clear().commit())throw new IllegalStateException("The Google connection could not be removed");message="Signed out. Tasks remain on this phone.";}}
