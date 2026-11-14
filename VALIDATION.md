@@ -1,3 +1,15 @@
+# Meditation 1.0.5 verification
+
+Source: `c535e40e49e45c5ff03ee889e34a0fe8f7ddcffe`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43642594676). **22 native tests, 74 browser checks, five decoded-audio checks and zero lint errors passed.**
+
+Extended the four existing presets and the supplied `alex_jauk-zen-tone-mid-high-202557.mp3` to twenty seconds. Zen tone is selectable independently for start/end and quarter cues. The processing preserves the original first half-second strike, stretches the ringing tail with pitch fixed at 1, crossfades the join, limits processing peaks, and applies a raised-cosine fade ending at 19.8 seconds followed by silence. The supplied recording retains stereo channels. Bundled Ogg Vorbis assets keep the APK small; original sources, hashes and the reproducible FFmpeg/Rubber Band recipe are retained outside Android resources.
+
+CuePlayer now separates the preparation watchdog from playback duration, so built-in sounds play their complete fades instead of stopping at ten seconds. Custom audio keeps its existing ten-second playback limit. Stop/replacement cancels old completion callbacks. Timer deadlines, the minimal UI, vibration previews and saved sound identifiers are preserved.
+
+Five new playback tests cover long built-in and Zen playback, single completion, stop/replacement, custom limits and silence. Settings/browser checks cover the added sound and independent role selection. CI decodes each real audio file and checks twenty-second duration, headroom, audible middle/late tails, decreasing RMS and final silence. The first/middle/late/last RMS levels decrease for all five files and the last 100ms is digital silence. Verification used decoded audio, Robolectric and Chromium; no physical phone was tested.
+
+APK: `Meditation-v1.0.5.apk`, 615410 bytes. SHA-256 `cfd62d7863a598ea3def008cea9ad27ba7154417d124e2b63a96c9b325a9447d`. Package `com.personal.meditation`, version 1.0.5 (6), API 26/35. Artifact hashes, ZIP integrity, exact packaged UI/audio, non-signature content equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches Meditation 1.0.4.
+
 # Habits 1.0.5 verification
 
 Source: `3db9e576da17c6d6566d6cf663545165af736c4d`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43497236509). **33 native Android tests and zero lint errors passed.**
