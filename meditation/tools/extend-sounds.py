@@ -14,6 +14,35 @@ for name,filename in SOURCES.items():
  source=ROOT/'audio-source'/filename
  meta=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration:stream=sample_rate,channels','-of','json',str(source)]))
  duration=float(meta['format']['duration']);stream=meta['streams'][0];rate=int(stream['sample_rate']);channels=stream['channels']
+ if name=='zen_tone':
+  # Stretch one continuous recording. Splicing an unstretched attack into a
+  # stretched ring caused phase cancellation and an audible dip near 400ms.
+  # Clean the source before stretching so sharp attack noise is not prolonged.
+  clean='lowpass=f=3000:p=2,areverse,lowpass=f=3000:p=2,areverse,atrim=start=0.16,asetpts=PTS-STARTPTS'
+  cleaned=subprocess.check_output(['ffmpeg','-v','error','-i',str(source),'-af',clean,'-ar',str(rate),'-ac',str(channels),'-f','f32le','-'])
+  ring_seconds=19.86
+  tempo=(len(cleaned)/(4*channels*rate))/ring_seconds
+  stretch=f'rubberband=tempo={tempo:.12f}:pitch=1:transients=smooth:detector=soft:phase=laminar:window=long:smoothing=on:channels=together,apad=whole_dur={ring_seconds},atrim=duration={ring_seconds}'
+  raw=subprocess.check_output(['ffmpeg','-v','error','-f','f32le','-ar',str(rate),'-ac',str(channels),'-i','-','-af',stretch,'-f','f32le','-'],input=cleaned)
+  ring=array('f');ring.frombytes(raw)
+  if sys.byteorder!='little':ring.byteswap()
+  frames=20*rate;lead=round(.14*rate)
+  samples=array('f',[0])* (frames*channels)
+  for frame in range(lead,frames):
+   t=frame/rate
+   rise=.5-.5*math.cos(math.pi*min(1,(t-.14)/.65))
+   fall=1 if t<=2 else (.5+.5*math.cos(math.pi*min(1,(t-2)/17.8)))
+   for channel in range(channels):
+    index=(frame-lead)*channels+channel
+    samples[frame*channels+channel]=(ring[index] if index<len(ring) else 0)*rise*fall
+  gain=.5/max(abs(v) for v in samples)
+  scaled=array('f',(v*gain for v in samples))
+  if sys.byteorder!='little':scaled.byteswap()
+  target=ROOT/'app/src/main/res/raw/zen_tone.flac'
+  subprocess.run(['ffmpeg','-y','-v','error','-f','f32le','-ar',str(rate),'-ac',str(channels),'-i','-','-c:a','flac','-sample_fmt','s16','-compression_level','8',str(target)],input=scaled.tobytes(),check=True)
+  (target.with_suffix('.ogg')).unlink(missing_ok=True)
+  report.append({'name':name,'file':target.name,'source':filename,'sourceSha256':hashlib.sha256(source.read_bytes()).hexdigest(),'originalSeconds':duration,'seconds':20,'fadeStartSeconds':2,'fadeEndSeconds':19.8,'sampleRate':rate,'channels':channels,'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),'attackStartSeconds':.14,'attackFadeSeconds':.65,'sourceTrimStartSeconds':.16,'sourceLowPassHz':3000,'continuousStretch':True,'lossless':True,'bytes':target.stat().st_size})
+  continue
  tail_end=duration
  fade_start=2
  attack_start=.14 if name=='zen_tone' else 0
@@ -27,22 +56,6 @@ for name,filename in SOURCES.items():
  if sys.byteorder!='little':samples.byteswap()
  peak=max(abs(v) for v in samples);gain=.5/peak
  scaled=array('f',(v*gain for v in samples))
- if name=='zen_tone':
-  # Zero-phase FIR removes the opening's isolated high-frequency spikes.
-  # Blend back to the unmodified ring between 600 and 800ms.
-  taps=129;half=taps//2;cutoff=3000/rate
-  kernel=[]
-  for k in range(taps):
-   offset=k-half
-   sinc=2*cutoff if offset==0 else math.sin(2*math.pi*cutoff*offset)/(math.pi*offset)
-   kernel.append(sinc*(.5-.5*math.cos(2*math.pi*k/(taps-1))))
-  total=sum(kernel);kernel=[v/total for v in kernel]
-  original=list(scaled);frames=len(original)//channels
-  for frame in range(min(frames,int(.8*rate))):
-   t=frame/rate;weight=1 if t<=.6 else .5*(1+math.cos(math.pi*(t-.6)/.2))
-   for channel in range(channels):
-    smooth=sum(coef*original[(frame+k-half)*channels+channel] for k,coef in enumerate(kernel) if 0<=frame+k-half<frames)
-    index=frame*channels+channel;scaled[index]=smooth*weight+original[index]*(1-weight)
  if sys.byteorder!='little':scaled.byteswap()
  target=ROOT/'app/src/main/res/raw'/f'{name}.ogg'
  subprocess.run(['ffmpeg','-y','-v','error','-f','f32le','-ar',str(rate),'-ac',str(channels),'-i','-','-c:a','libvorbis','-q:a',str(quality),str(target)],input=scaled.tobytes(),check=True)

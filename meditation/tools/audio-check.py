@@ -14,7 +14,7 @@ def decode(path):
 def rms(samples):return math.sqrt(sum(v*v for v in samples)/len(samples))
 report=[]
 for entry in json.loads((ROOT/'audio-source/processing.json').read_text()):
- path=ROOT/'app/src/main/res/raw'/f"{entry['name']}.ogg"
+ path=ROOT/'app/src/main/res/raw'/entry.get("file",f"{entry['name']}.ogg")
  assert hashlib.sha256(path.read_bytes()).hexdigest()==entry['sha256'],path.name
  source=ROOT/'audio-source'/entry['source'];assert hashlib.sha256(source.read_bytes()).hexdigest()==entry['sourceSha256']
  samples=decode(path);duration=len(samples)/24000;peak=max(abs(v) for v in samples)
@@ -32,8 +32,16 @@ for entry in json.loads((ROOT/'audio-source/processing.json').read_text()):
   if sys.byteorder!='little':native.byteswap()
   jump=max(abs(native[i]-native[i-2]) for i in range(2,int(.6*48000)*2))
   assert jump<.06,(path.name,'opening sample spike',jump)
+  # A click-free waveform can still jump in loudness at a phase-cancelling
+  # splice. Check the decoded stereo envelope, including the old 350–500ms join.
+  windows=[rms(native[i*4800:(i+1)*4800]) for i in range(16)]
+  for previous,current in zip(windows[4:15],windows[5:16]):
+   assert current>=previous*.90,(path.name,'opening volume dip',windows)
+  assert path.suffix=='.flac' and entry['continuousStretch'] and entry['lossless']
+  entry['openingStereo50msRms']=windows
+  entry['openingMaximumSampleStep']=jump
 
- report.append({'name':entry['name'],'seconds':duration,'peak':peak,'firstSecondRms':first,'middleRms':middle,'lateRms':late,'lastSecondRms':last,'last100msPeak':end})
+ report.append({'name':entry['name'],'seconds':duration,'peak':peak,'firstSecondRms':first,'middleRms':middle,'lateRms':late,'lastSecondRms':last,'last100msPeak':end,**({k:entry[k] for k in ['openingStereo50msRms','openingMaximumSampleStep']} if entry['name']=='zen_tone' else {})})
 assert len(report)==5
 out=ROOT/'build/audio-qa';out.mkdir(parents=True,exist_ok=True);(out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps({'passed':len(report),'audioChecks':report},indent=2))

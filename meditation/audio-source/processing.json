@@ -53,22 +53,22 @@
   },
   {
     "name": "zen_tone",
+    "file": "zen_tone.flac",
     "source": "zen_tone_original.mp3",
     "sourceSha256": "332cdbd8e9ba67ea333bf02158d316648859018fc7845cca463b660759a7e34a",
     "originalSeconds": 3.024,
     "seconds": 20,
     "fadeStartSeconds": 2,
-    "tailSourceStartSeconds": 0.35,
-    "tailSourceEndSeconds": 3.024,
     "fadeEndSeconds": 19.8,
     "sampleRate": 48000,
     "channels": 2,
-    "sha256": "852d20414a6344b997e7c7046dfc4e8cc7c1f42283deb78ec662f31dd1f8227c",
+    "sha256": "9355e6909841a11e60f6aa4b272a8841b3dc4552ab1a445736b44262a33715cf",
     "attackStartSeconds": 0.14,
-    "attackFadeSeconds": 0.1,
-    "vorbisQuality": 8,
-    "openingLowPassHz": 3000,
-    "openingBlendEndSeconds": 0.8,
-    "bytes": 343688
+    "attackFadeSeconds": 0.65,
+    "sourceTrimStartSeconds": 0.16,
+    "sourceLowPassHz": 3000,
+    "continuousStretch": true,
+    "lossless": true,
+    "bytes": 640073
   }
 ]
