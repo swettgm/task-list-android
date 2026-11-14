@@ -14,16 +14,25 @@
   },
   {
     "name": "warm_bowl",
+    "file": "warm_bowl.flac",
     "source": "warm_bowl.wav",
     "sourceSha256": "28a02be6ffc5c6bcb9d2c6dfc47e6bba185faa3ea48b8b1c136317923751b9a7",
     "originalSeconds": 6.5,
     "seconds": 20,
     "fadeStartSeconds": 2,
     "fadeEndSeconds": 19.8,
-    "sampleRate": 22050,
+    "sampleRate": 48000,
     "channels": 1,
-    "sha256": "56d1f2e019964e29df8b13f2619aa02a72c26d560ec26fba04867e6a87c33f29",
-    "bytes": 69055
+    "sha256": "5cf74cb98031412111b903fc52bf195f15d554dd8a6326e6299ace2573765b39",
+    "lossless": true,
+    "bytes": 283353,
+    "tailMethod": "phase-aligned stretched ring",
+    "tailJoinCorrelation": 0.9921595161113362,
+    "attackStartSeconds": 0,
+    "attackFadeSeconds": 0.005,
+    "attackPreservedUntilSeconds": 1.2,
+    "tailJoinEndSeconds": 1.7999999999999998,
+    "strike": "short damped inharmonic mallet modes; no noise"
   },
   {
     "name": "gentle_chime",
@@ -62,13 +71,18 @@
     "fadeEndSeconds": 19.8,
     "sampleRate": 48000,
     "channels": 2,
-    "sha256": "9355e6909841a11e60f6aa4b272a8841b3dc4552ab1a445736b44262a33715cf",
-    "attackStartSeconds": 0.14,
-    "attackFadeSeconds": 0.65,
-    "sourceTrimStartSeconds": 0.16,
-    "sourceLowPassHz": 3000,
-    "continuousStretch": true,
+    "sha256": "bd539306ae71236d571d9b750444da9de4c74f17151c7a67ff8dae849dc28a96",
     "lossless": true,
-    "bytes": 640073
+    "bytes": 580608,
+    "tailMethod": "source-fitted bell modes",
+    "tailModeFrequenciesHz": [
+      547.4739746464716,
+      1409.6847793353795,
+      2635.555053844725
+    ],
+    "attackStartSeconds": 0.14,
+    "attackFadeSeconds": 0.01,
+    "attackPreservedUntilSeconds": 1.4,
+    "tailJoinEndSeconds": 2.0
   }
 ]
