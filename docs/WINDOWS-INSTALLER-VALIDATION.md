@@ -1,3 +1,11 @@
+# Windows installer 0.86.0 verification
+
+[Successful Windows build and checks](https://github.com/swettgm/task-list-android/actions/runs/43653938352). Source: `aec67775bde7312414225f07e4ea2da778472def`.
+
+The actual installer passed fresh per-user installation, Start menu and desktop shortcuts, Apps uninstall registration, installed startup, upgrade while running, shutdown during upgrade/uninstall, program/shortcut removal and byte-for-byte retention of personal tasks, theme and pairing. Program files stay separate from `%LOCALAPPDATA%\Tasks`. The full Windows task UI and Google connection controls are included. DPAPI credential encryption is tested with the current Windows user.
+
+Installer: `Tasks-Setup-v0.86.0.exe`, 17323002 bytes, SHA-256 `0220e99ef9c357b03d2cb4ec4e02011108e349c8119f8294a7b64b5996f76925`.
+
 # Windows installer 0.65.1 verification
 
 [Successful Windows build and checks](https://github.com/swettgm/task-list-android/actions/runs/42115166068). Source: `ee5b932ea58b284a3b17f30642680777c40bc1ad`.

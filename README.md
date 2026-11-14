@@ -1,6 +1,6 @@
 # Tasks — Android
 
-Download [Tasks 0.85.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.85.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.86.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.86.0.apk). Install over the existing app to retain your tasks and settings.
 
 Task editors now use rounded square label tiles with icons and names. Selected labels and priority buttons have white outlined glows; the visible priority radio circles are removed. Widget Quick add has the same larger label choices.
 
@@ -22,13 +22,13 @@ The persistent in-progress notification now has a Complete action. It completes 
 
 Upcoming uses actual occurrence dates: Sunday-only repeats stay on Sunday, and Saturday–Sunday repeats appear under those days rather than Friday. Future editors retain the selected date and weekdays. The app remembers your last Today/Upcoming tab. Upcoming includes tasks with a future reveal time; Today’s Hidden button temporarily reveals them with a white outline. The app’s empty-list messages are left-aligned. The widget centers the visible text and flower together using its current width, with a wider, shorter default size for new widgets. The launcher controls the outer grid placement; existing widgets can be resized with its handles.
 
-Download the [Windows installer](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-Setup.exe): view Today/Upcoming, check off tasks and toggle in progress. Install the Android update, run Tasks-Setup.exe and open Tasks from its shortcut, choose Link phone, scan the QR code and confirm in Tasks. Pairing links can also be pasted under Android Settings → Windows companion. Keep both devices on the same Wi-Fi with Tasks open to sync; changes save locally while disconnected. QR pairing also brings across your phone’s colors, gradient and icons, and syncs later theme changes. The PC has no Settings or task editors. [Windows ZIP download](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-PC-Windows-v0.65.2.zip) · [Windows instructions](desktop/USING-TASKS-PC.txt).
+Download the [Windows installer 0.86.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-Setup-v0.86.0.exe). Windows now supports adding and editing tasks, Today/Upcoming, projects, priorities, labels, repeat schedules, notes, checklists, completion/progress, rescheduling, ordering and theme settings. A new PC works offline immediately with an empty list and history; pairing preserves tasks already created on the PC. The main Add task plus button is now borderless, with its size and fill unchanged.
 
-Windows installer 0.65.2 adds Start menu and optional desktop shortcuts and a standard Windows uninstaller. It installs for your user account without administrator rights. Running a newer installer upgrades the app; updates and uninstall preserve tasks and phone pairing. [Installer verification](docs/WINDOWS-INSTALLER-VALIDATION.md).
+For Google sync, install both Tasks updates, open Settings → Google sync on each device and sign into the same Google account. Windows Connect also opens this screen. Tasks and theme merge through Drive’s private app-data folder. While the Google project is in Testing, use an account added under Audience → Test users. [Google connection details](docs/GOOGLE-SIGN-IN-SETUP.md).
 
-Tasks now uses its own native Windows window with one taskbar identity shared by the installed shortcuts. Relaunching restores the same window. After updating from the Edge-based version, close the old window, unpin the old taskbar icon once and pin Tasks from Start again. [Taskbar verification](docs/WINDOWS-TASKBAR-VALIDATION.md).
+Local QR pairing remains available under Settings → Local pairing. Keep both apps open on the same Wi-Fi for LAN sync. Google sync runs while the Android app is in the foreground and while the PC background process is running; local edits remain saved during outages. [Portable Windows executable](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-PC-v0.86.0.exe) · [Windows instructions](desktop/USING-TASKS-PC.txt).
 
-Google sign-in is not enabled in this release. [Setup for the proposed Google sync option](docs/GOOGLE-SIGN-IN-SETUP.md).
+The per-user installer, application identity and taskbar pinning remain stable. Updates and uninstall preserve personal task data and account/pairing files under `%LOCALAPPDATA%\Tasks`. [Installer verification](docs/WINDOWS-INSTALLER-VALIDATION.md) · [Taskbar verification](docs/WINDOWS-TASKBAR-VALIDATION.md).
 
 A personal Android checklist based on the supplied task list. The app includes the original task definitions and saved history, works offline, and keeps existing installed data when updated.
 
@@ -80,7 +80,7 @@ A personal Android checklist based on the supplied task list. The app includes t
 
 Multiple tasks and checklist steps can be in progress together. The top banner joins their titles with commas; stopping or completing one preserves the others. Legacy single-task progress is migrated without changing task identities.
 
-The app is called Tasks and uses a rounded gradient checkmark icon. The Windows companion uses the same icon and task interface. Android has Internet permission for the native local-Wi-Fi sync client; the packaged WebView still blocks network loads.
+The app is called Tasks and uses a rounded gradient checkmark icon. The Windows companion uses the same icon and task interface. Android has Internet permission for native LAN and Google sync; the packaged WebView still blocks network loads.
 
 ## Install
 

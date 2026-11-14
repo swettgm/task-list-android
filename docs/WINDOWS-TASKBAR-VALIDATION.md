@@ -1,3 +1,11 @@
+# Windows 0.86.0 taskbar verification
+
+[Successful native-window and installed-window checks](https://github.com/swettgm/task-list-android/actions/runs/43653938352). Source: `aec67775bde7312414225f07e4ea2da778472def`.
+
+The frozen executable and installed copy retain the stable `Personal.Tasks.PC` AppUserModelID on the process, visible window and shortcuts. Nine checks verify executable-owned native window, shortcut/window identity, relaunch target, pinning allowed, single-window reuse, minimized restoration, hide-on-close with sync retained, hidden-window restoration and complete shutdown. The full task UI and Google sync do not change the native-window identity.
+
+Portable EXE: `Tasks-PC-v0.86.0.exe`, 13778104 bytes, SHA-256 `a44b907d46749ae94dd0971f67f78ccd631f5d1c8fa76955baf84906df2e00f5`.
+
 # Windows 0.65.2 taskbar verification
 
 [Successful Windows build and checks](https://github.com/swettgm/task-list-android/actions/runs/42117912556). Source: `7a864511a648467ab764d99763e64d31ed7e4809`.
