@@ -1,3 +1,13 @@
+# Meditation 1.0.9 verification
+
+Source: `a1a04e51c4244004453e1e5fa681fec7523dbd6d`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43651288722). **24 native tests, 74 browser checks, five decoded-audio checks and zero lint errors passed.**
+
+Restored Zen tone’s original real-time strike through 1.4 seconds, with only the recording’s quiet pre-strike lead silenced and a 10ms entry fade. Its late ringing modes are fitted from the recording and extended, avoiding time-stretch processing on the attack. Singing bowl retains its real-time attack, gains a brief mallet strike made from deterministic damped inharmonic modes without random noise, and joins a phase-aligned extended ring. Both use seekable lossless FLAC and retain twenty-second decays that reach silence at 19.8 seconds. The other three preset files are unchanged.
+
+Audio checks now compare the opening waveform against the original source so the previous whole-file stretch and long fade-in fail verification. Relative waveform residuals from 350–700ms are below 0.00004 for both sounds. The bowl tail’s normalized join correlation is above 0.99. Full-rate stereo sample steps, clipping, sustained decay, duration and silent endings are checked. Native tests cover full cue playback, stop/replacement, custom-file recognition and timer behavior. Verification used decoded samples, Robolectric and Chromium; no physical-phone listening test was performed.
+
+APK: `Meditation-v1.0.9.apk`, 1123316 bytes. SHA-256 `3d6d536eea752627df1ff4eed9281810131b94195018bf9bd6cb6fee2b97d7c1`. Package `com.personal.meditation`, version 1.0.9 (10), API 26/35. Artifact hashes, ZIP integrity, exact uncompressed bell resources, non-signature content equality to CI, alignment and v2/v3 signatures passed. The retained signer matches prior Meditation releases.
+
 # Meditation 1.0.8 verification
 
 Source: `2b74d50aab0d796d22dde1aa30a53d72cdb3636f`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43647608028). **24 native tests, 74 browser checks, five decoded-audio checks and zero lint errors passed.**
