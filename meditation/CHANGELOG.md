@@ -1,3 +1,9 @@
+# 1.0.5
+
+- Extended all four built-in bells to twenty seconds with smooth fades to silence, preserving their original strike and pitch.
+- Added the supplied recording as Zen tone, with the same longer ringing tail and fade.
+- Bundled compressed Ogg audio and removed the ten-second cutoff for built-in presets. Timer deadlines, custom audio and vibration behavior remain unchanged.
+
 # 1.0.4
 
 - Preview the chosen vibration length once when releasing a settings slider.

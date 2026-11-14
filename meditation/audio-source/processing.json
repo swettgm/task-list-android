@@ -1,0 +1,67 @@
+[
+  {
+    "name": "soft_bell",
+    "source": "soft_bell.wav",
+    "sourceSha256": "26fe12f1cdf5f4d0128c96a4de129e6812b3185dece5b34bc987b5e0fb36661d",
+    "originalSeconds": 5.0,
+    "seconds": 20,
+    "fadeStartSeconds": 2,
+    "fadeEndSeconds": 19.8,
+    "sampleRate": 22050,
+    "channels": 1,
+    "sha256": "281738ac1c822f392e991bd66218dfe99a4aa6be9a6f1059d354dbfe4822147c",
+    "bytes": 76170
+  },
+  {
+    "name": "warm_bowl",
+    "source": "warm_bowl.wav",
+    "sourceSha256": "28a02be6ffc5c6bcb9d2c6dfc47e6bba185faa3ea48b8b1c136317923751b9a7",
+    "originalSeconds": 6.5,
+    "seconds": 20,
+    "fadeStartSeconds": 2,
+    "fadeEndSeconds": 19.8,
+    "sampleRate": 22050,
+    "channels": 1,
+    "sha256": "56d1f2e019964e29df8b13f2619aa02a72c26d560ec26fba04867e6a87c33f29",
+    "bytes": 69055
+  },
+  {
+    "name": "gentle_chime",
+    "source": "gentle_chime.wav",
+    "sourceSha256": "122d9d807134a7ee4cf59fb6ab635b0691b18883a355685549b541424e2182b6",
+    "originalSeconds": 3.2,
+    "seconds": 20,
+    "fadeStartSeconds": 2,
+    "fadeEndSeconds": 19.8,
+    "sampleRate": 22050,
+    "channels": 1,
+    "sha256": "3ffe4b499397003c3344ecf152dcf1f3333402532c946460f7f86573c50efaa6",
+    "bytes": 61986
+  },
+  {
+    "name": "temple_gong",
+    "source": "temple_gong.wav",
+    "sourceSha256": "8baa93ba9b5521a64ca675043f6cc3bbf010b4ba9ec4240805f0069dfb9f8b10",
+    "originalSeconds": 6.0,
+    "seconds": 20,
+    "fadeStartSeconds": 2,
+    "fadeEndSeconds": 19.8,
+    "sampleRate": 22050,
+    "channels": 1,
+    "sha256": "dbec91a8e39b5f9bc335fad58d5262f7afa5d0642d657ce6fb0e6827557e20e2",
+    "bytes": 81513
+  },
+  {
+    "name": "zen_tone",
+    "source": "zen_tone_original.mp3",
+    "sourceSha256": "332cdbd8e9ba67ea333bf02158d316648859018fc7845cca463b660759a7e34a",
+    "originalSeconds": 3.024,
+    "seconds": 20,
+    "fadeStartSeconds": 2,
+    "fadeEndSeconds": 19.8,
+    "sampleRate": 48000,
+    "channels": 2,
+    "sha256": "a0b8ab7573b2e42c45bbff04a72a6e3c706a3317e9ce13d2aa0a0a0fd2977828",
+    "bytes": 286427
+  }
+]
