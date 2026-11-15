@@ -2,12 +2,12 @@
 
 A separate lightweight Android app matching the navy-to-gray theme of Tasks and Route Manager.
 
-- The main screen has only a centered timer and Start button, plus a small Settings icon. A small Settings button opens duration, intermediate bells, sounds and vibration controls on a separate screen.
+- The main screen has only a centered timer and Start button, plus a small Settings icon. A small Settings button opens duration, interval bells, sounds and vibration controls on a separate screen.
 - Choose 1–240 minutes in Settings. A separate preparation countdown comes first; choose 0–300 seconds in Settings, defaulting to 30. Zero starts meditation immediately.
 - At three, two and one seconds remaining: two short vibrations, then a long vibration. The start bell follows at zero.
-- Choose Off or 1–5 intermediate bells, evenly spaced during the session. The default is three, preserving the previous timing. Eight minutes with three intermediate bells cues at 2:00, 4:00 and 6:00; the end cue remains at 8:00. Off disables both intermediate sound and vibration.
-- Choose independent start/end and intermediate sounds: five meditation bell/bowl presets, including Zen tone, silence or your own audio file. Preview sounds before starting.
-- Enable and use sliders to set vibration lengths separately for the first two preparation pulses, final preparation pulse, start, intermediate cues and end. Preparation pulses allow 0.05–0.9 seconds; other cues allow 0.05–5 seconds. Vibration sliders snap to 0.05-second steps.
+- Choose Off or 1–5 interval bells, evenly spaced during the session. The default is three, preserving the previous timing. Eight minutes with three interval bells cues at 2:00, 4:00 and 6:00; the end cue remains at 8:00. Off disables both interval sound and vibration.
+- Choose independent start/end and interval sounds: five meditation bell/bowl presets, including Zen tone, silence or your own audio file. Preview sounds before starting.
+- Enable and use sliders to set vibration lengths separately for the first two preparation pulses, final preparation pulse, start, interval cues and end. Preparation pulses allow 0.05–0.9 seconds; other cues allow 0.05–5 seconds. Vibration sliders snap to 0.05-second steps.
 - Pause, resume or end from the app or ongoing session notification. The foreground service uses a monotonic clock and a partial wake lock while counting so cues continue with the screen off. Pausing releases the wake lock; ending releases all session resources.
 - Settings stay saved. No guidance, text-to-speech, account, widget, statistics or Internet permission.
 
@@ -27,7 +27,7 @@ Zen tone is an extended/faded version of the supplied `alex_jauk-zen-tone-mid-hi
 
 Zen tone retains the original recording’s real-time bell strike, with only the quiet pre-strike noise silenced and a short 10ms entry fade. Its late ringing modes are extended without time stretching the attack. Singing bowl retains its natural attack with an added short, clean mallet strike and a phase-aligned extended tail. Both use lossless FLAC, last twenty seconds and fade to silence. Other presets are unchanged. Previously selected custom copies named `alex_jauk-zen-tone-mid-high-202557.mp3` (including numbered downloads) resolve to the bundled Zen tone; unrelated custom files retain their existing behavior.
 
-At completion, the chosen end sound/vibration plays once and the home display returns to the configured duration with Start available. It never starts the next session automatically. For vibration-only intermediate cues, select Silent and enable Intermediate bells vibration. For sound-only cues, uncheck that vibration; both are also supported. Sound choices and vibration lengths remain saved when intermediate bells are Off.
+At completion, the chosen end sound/vibration plays once and the home display returns to the configured duration with Start available. It never starts the next session automatically. For vibration-only interval cues, select Silent and enable Interval cues vibration. For sound-only cues, uncheck that vibration; both are also supported. Sound choices and vibration lengths remain saved when interval bells are Off.
 
 Settings uses uniform centered dropdown chevrons, aligned preview buttons, centered checkbox ticks and slider rows. The in-app changelog is removed. The home layout and timer fades are unchanged. Distribution uses a non-debuggable release APK, signed locally with the retained Meditation key for in-place upgrades.
 
@@ -37,4 +37,6 @@ Short countdowns only play the final pulses that fit: a two-second preparation h
 
 Background style also offers Image. The Android document picker copies a decoded, oriented image into private app storage, scaled to at most 2048 pixels per side. A subtle dark overlay keeps controls readable. The image stays available after closing the app and can be replaced or removed. No broad photo/storage permission or network upload is used.
 
-Background sound is separate from bell cues: Off, Brown noise, White noise, Rain, or a custom audio file, with its own volume. It loops during meditation, pauses/resumes with the timer and stops at the end. Preview lasts ten seconds; actual background playback is not limited to ten seconds. Start/end and intermediate bells play independently over the loop. The three presets are original generated 24-second loops; generation and verification live in tools/make-ambience.py and tools/ambient-check.py.
+Background sound is separate from bell cues: Off, Brown noise, White noise, Rain, or a custom audio file, with its own volume. It loops during meditation, pauses/resumes with the timer and stops at the end. Preview lasts ten seconds; actual background playback is not limited to ten seconds. Start/end and interval bells play independently over the loop. The three presets are original generated 24-second loops; generation and verification live in tools/make-ambience.py and tools/ambient-check.py.
+
+Interval bells use a whole-number slider from Off to 5 bells. The line below describes the actual gap in plain words, such as One bell every 2 minutes or One bell every 1 minute 45 seconds. Settings dropdowns grow with larger text and have matching preview-button heights. Collapsible sections use consistent divider padding; redundant Style captions are removed.

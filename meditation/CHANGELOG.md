@@ -1,3 +1,9 @@
+## 1.0.11
+
+- Let dropdowns grow with their text to prevent clipped labels at larger font sizes. Sound preview buttons match the dropdown height.
+- Renamed controls to Interval bells and Interval cues. Timing text says One bell every 2 minutes, using minutes and seconds as needed without a dot separator.
+- Equalized section heading padding and removed the extra gap between collapsed divider lines.
+
 ## 1.0.10
 
 - Added private image backgrounds with choose/remove controls.
