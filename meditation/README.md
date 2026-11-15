@@ -3,11 +3,11 @@
 A separate lightweight Android app matching the navy-to-gray theme of Tasks and Route Manager.
 
 - The main screen has only a centered timer and Start button, plus a small Settings icon. A small Settings button opens duration, intermediate bells, sounds and vibration controls on a separate screen.
-- Choose 1–240 minutes in Settings. A separate 30-second preparation countdown comes first.
+- Choose 1–240 minutes in Settings. A separate preparation countdown comes first; choose 0–300 seconds in Settings, defaulting to 30. Zero starts meditation immediately.
 - At three, two and one seconds remaining: two short vibrations, then a long vibration. The start bell follows at zero.
 - Choose Off or 1–5 intermediate bells, evenly spaced during the session. The default is three, preserving the previous timing. Eight minutes with three intermediate bells cues at 2:00, 4:00 and 6:00; the end cue remains at 8:00. Off disables both intermediate sound and vibration.
 - Choose independent start/end and intermediate sounds: five meditation bell/bowl presets, including Zen tone, silence or your own audio file. Preview sounds before starting.
-- Enable and use sliders to set vibration lengths separately for the first two preparation pulses, final preparation pulse, start, intermediate cues and end. Preparation pulses allow 0.05–0.9 seconds; other cues allow 0.05–5 seconds.
+- Enable and use sliders to set vibration lengths separately for the first two preparation pulses, final preparation pulse, start, intermediate cues and end. Preparation pulses allow 0.05–0.9 seconds; other cues allow 0.05–5 seconds. Vibration sliders snap to 0.05-second steps.
 - Pause, resume or end from the app or ongoing session notification. The foreground service uses a monotonic clock and a partial wake lock while counting so cues continue with the screen off. Pausing releases the wake lock; ending releases all session resources.
 - Settings stay saved. No guidance, text-to-speech, account, widget, statistics or Internet permission.
 
@@ -32,3 +32,5 @@ At completion, the chosen end sound/vibration plays once and the home display re
 Settings uses uniform centered dropdown chevrons, aligned preview buttons, centered checkbox ticks and slider rows. The in-app changelog is removed. The home layout and timer fades are unchanged. Distribution uses a non-debuggable release APK, signed locally with the retained Meditation key for in-place upgrades.
 
 Appearance in Settings includes independent solid/gradient background and text/button accents. Each color opens a touch/keyboard color wheel with brightness and hex entry; Use color saves, Cancel and Back discard the picker draft. Colors persist privately, system bars follow the background, and Reset colors restores the original palette without changing the timer or cues. Default home-screen pixels and control dimensions remain unchanged.
+
+Short countdowns only play the final pulses that fit: a two-second preparation has one short pulse and one long pulse, a one-second preparation has the long pulse, and zero skips preparation pulses entirely. Cue deadlines still use the monotonic clock.

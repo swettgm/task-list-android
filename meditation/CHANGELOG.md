@@ -1,5 +1,8 @@
 ## 1.0.10
 
+- Added a 0–300 second preparation countdown, including instant start at zero, and 0.05-second vibration-slider steps.
+- Slightly thickened the launcher icon while preserving its shape and colors.
+
 - Added independent solid/gradient backgrounds and text/button accents with color wheels, brightness, hex input and a color reset. Saved themes also update the system bars.
 - Clarified vibration-stage labels, changed the top caption to Duration in minutes, and matched visible dropdown-arrow insets to the text padding.
 
