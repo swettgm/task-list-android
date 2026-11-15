@@ -92,14 +92,15 @@
   if (typeof boot.token !== 'string' || boot.token.length < 32) throw new Error('Tasks desktop pairing token is missing.');
   const cacheKey = 'tasks-desktop-pending-v1:' + hash(boot.token);
   const contextKey = cacheKey + ':context';
-  let base = shared(validate(boot.state)), canonical = clone(base);
+  let base = shared(validate(boot.state)), canonical = clone(base),cloudSession=boot.cloudSession||'';
   let localContext = '', cacheBlocked = false, userEditedPending = false;
   try {
     localContext = global.localStorage.getItem(contextKey) || '';
     const text = global.localStorage.getItem(cacheKey);
     if (text) {
       const pending = JSON.parse(text);
-      canonical = merge(shared(validate(pending.base)), shared(validate(pending.state)), base, '');
+      if(cloudSession&&(pending.cloudSession||'')!==cloudSession){global.localStorage.setItem(cacheKey+':before-cloud-restore:'+Date.now(),text);}
+      else canonical = merge(shared(validate(pending.base)), shared(validate(pending.state)), base, '');
       if (typeof pending.context === 'string') localContext = pending.context;
       userEditedPending=!!pending.userEdited;
     }
@@ -115,7 +116,7 @@
   const dirty = () => !equal(base, shared(canonical));
   function persistCache() {
     if (cacheBlocked) throw new Error('A saved pending update could not be read.');
-    global.localStorage.setItem(cacheKey, JSON.stringify({base, state:shared(canonical), context:localContext, userEdited:userEditedPending}));
+    global.localStorage.setItem(cacheKey, JSON.stringify({base, state:shared(canonical), context:localContext, userEdited:userEditedPending,cloudSession}));
   }
   function notifyUI() {
     needsReload = true;
@@ -155,7 +156,7 @@
       if (new TextEncoder().encode(text).byteLength > MAX_BYTES + 4096) throw new Error('Desktop sync response is too large.');
       const data = JSON.parse(text);
       if (!object(data) || !Number.isSafeInteger(data.revision) || data.revision < 0) throw new Error('Desktop sync returned invalid data.');
-      return {state:shared(validate(data.state)), revision:data.revision, phoneLinked:!!data.phoneLinked, phoneLastSeenAt:Number(data.phoneLastSeenAt)||0};
+      return {state:shared(validate(data.state)), revision:data.revision, phoneLinked:!!data.phoneLinked, phoneLastSeenAt:Number(data.phoneLastSeenAt)||0,cloudSession:data.cloudSession||''};
     } finally { clearTimeout(timeout); }
   }
   async function synchronize() {
@@ -164,11 +165,14 @@
     const sent = shared(canonical), previousBase = clone(base), isWrite = dirty(), sentUserEdit = userEditedPending;
     try {
       const reply = await request(isWrite ? '/api/sync' : '/api/state', isWrite
-        ? {method:'POST', body:JSON.stringify({base:previousBase, state:sent, userEdited:sentUserEdit})} : {method:'GET'});
+        ? {method:'POST', body:JSON.stringify({base:previousBase, state:sent, userEdited:sentUserEdit,cloudSession})} : {method:'GET'});
       if (reply.revision < revision) throw new Error('Desktop state is older than this window. Your pending changes were kept.');
       // A task may have been edited again while this request was in flight.
       const current = shared(canonical);
-      const merged = merge(isWrite ? sent : previousBase, current, reply.state, '');
+      const reset=reply.cloudSession!==cloudSession;
+      if(reset&&dirty())global.localStorage.setItem(cacheKey+':before-cloud-restore:'+Date.now(),JSON.stringify({base,state:current}));
+      const merged = merge(reset?sent:(isWrite ? sent : previousBase), current, reply.state, '');
+      cloudSession=reply.cloudSession;
       const changed = !equal(current, merged);
       phoneLinked=reply.phoneLinked;phoneLastSeenAt=reply.phoneLastSeenAt;
       if(isWrite&&sentUserEdit)userEditedPending=false;
@@ -233,6 +237,7 @@
     },
     updateSnapshot() {},
     getGoogleStatus(){return JSON.stringify(googleStatus);},
+    configureGoogle(){googleRequest('configure').catch(error=>{googleStatus.message=error.message;});},
     connectGoogle(){googleRequest('sign-in').catch(error=>{googleStatus.message=error.message;});},
     disconnectGoogle(){googleRequest('sign-out').catch(error=>{googleStatus.message=error.message;});},
     syncGoogle(){googleRequest('sync').catch(error=>{googleStatus.message=error.message;});},

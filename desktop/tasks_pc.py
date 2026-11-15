@@ -137,20 +137,26 @@ class StateStore:
             self.phone_linked = value.get("phoneLinked", False)
             self.phone_seen = value.get("phoneLastSeenAt", 0)
             self.desktop_edited = value.get("desktopEdited", False)
+            self.cloud_account=value.get("cloudAccount", "")
+            self.cloud_session=value.get("cloudSession", "")
         else:
             self.state = merge_state({}, seed, {})
             self.revision = 1
             self.phone_linked = False
             self.phone_seen = 0
             self.desktop_edited = False
+            self.cloud_account=self.cloud_session=""
             atomic_json(self.path, self.snapshot())
 
     def snapshot(self):
         with self.lock:
-            return {"state": clone(self.state), "revision": self.revision, "phoneLinked":self.phone_linked, "phoneLastSeenAt":self.phone_seen, "desktopEdited":self.desktop_edited}
+            return {"state": clone(self.state), "revision": self.revision, "phoneLinked":self.phone_linked, "phoneLastSeenAt":self.phone_seen, "desktopEdited":self.desktop_edited,"cloudAccount":self.cloud_account,"cloudSession":self.cloud_session}
 
-    def sync(self, base, local, phone=False, user_edited=False):
+    def sync(self, base, local, phone=False, user_edited=False, cloud_session=MISSING):
         with self.lock:
+            if self.cloud_session and ((not phone and cloud_session is not MISSING and cloud_session!=self.cloud_session)or(phone and not local.get('cloudManaged'))):
+                atomic_json(self.directory/'cloud-backups'/('stale-client-'+secrets.token_hex(12)+'.json'),{'state':local})
+                return self.snapshot()
             # First pairing imports the current phone, never the bundled historical seed.
             first_import = phone and not self.phone_linked and not self.desktop_edited
             merged = merge_state({} if first_import else base, local, {} if first_import else self.state)
@@ -161,7 +167,7 @@ class StateStore:
             next_revision = self.revision + (1 if changed else 0)
             if changed or phone:
                 atomic_json(self.path, {"state":merged, "revision":next_revision,
-                                       "phoneLinked":linked, "phoneLastSeenAt":seen, "desktopEdited":edited})
+                                       "phoneLinked":linked, "phoneLastSeenAt":seen, "desktopEdited":edited,"cloudAccount":self.cloud_account,"cloudSession":self.cloud_session})
                 self.state, self.revision = merged, next_revision
                 self.phone_linked, self.phone_seen, self.desktop_edited = linked, seen, edited
             return self.snapshot()
@@ -175,8 +181,18 @@ class StateStore:
             revision = self.revision + int(changed)
             if changed:
                 atomic_json(self.path, {"state": merged, "revision": revision,
-                    "phoneLinked": self.phone_linked, "phoneLastSeenAt": self.phone_seen, "desktopEdited": True})
+                    "phoneLinked": self.phone_linked, "phoneLastSeenAt": self.phone_seen, "desktopEdited": True,"cloudAccount":self.cloud_account,"cloudSession":self.cloud_session})
                 self.state, self.revision, self.desktop_edited = merged, revision, True
+            return self.snapshot()
+
+    def restore_cloud(self,sent,remote,account):
+        with self.lock:
+            merged=merge_state(sent,self.state,remote)
+            atomic_json(self.directory/'cloud-backups'/('before-restore-'+secrets.token_hex(12)+'.json'),self.snapshot())
+            session=secrets.token_hex(16);revision=self.revision+1
+            atomic_json(self.path,{'state':merged,'revision':revision,'phoneLinked':self.phone_linked,'phoneLastSeenAt':self.phone_seen,'desktopEdited':True,'cloudAccount':account,'cloudSession':session})
+            self.state,self.revision,self.desktop_edited=merged,revision,True
+            self.cloud_account,self.cloud_session=account,session
             return self.snapshot()
 
 
@@ -227,6 +243,7 @@ class TasksServer(ThreadingHTTPServer):
         self.lan_host = lan_host or private_addresses()[0]
         self.stop_event = threading.Event()
         self.window_requests = threading.Event()
+        self.google_config_requests=threading.Event()
         self.native_window_enabled = False
         super().__init__(address, TasksHandler)
         from google_sync import CloudSync
@@ -359,7 +376,8 @@ class TasksHandler(BaseHTTPRequestHandler):
                 self.respond(403, {"error": "Manage Google on this PC"}); return
             actions = {"/api/google/sign-in": self.server.cloud.sign_in,
                        "/api/google/sign-out": self.server.cloud.sign_out,
-                       "/api/google/sync": self.server.cloud.request_sync}
+                       "/api/google/sync": self.server.cloud.request_sync,
+                       "/api/google/configure": self.server.google_config_requests.set}
             action = actions.get(path)
             if action is None:
                 self.respond(404, {"error": "Not found"}); return
@@ -396,7 +414,7 @@ class TasksHandler(BaseHTTPRequestHandler):
             data = parse_json(self.rfile.read(length))
             if not isinstance(data, dict) or not isinstance(data.get("base"), dict) or not isinstance(data.get("state"), dict):
                 raise ValueError("Expected base and state objects")
-            result = self.server.store.sync(data["base"], data["state"], phone=self.headers.get("X-Tasks-Client") == "android", user_edited=data.get("userEdited") is True and self.loopback())
+            result = self.server.store.sync(data["base"], data["state"], phone=self.headers.get("X-Tasks-Client") == "android", user_edited=data.get("userEdited") is True and self.loopback(), cloud_session=data.get("cloudSession"))
             self.server.cloud.request_sync()
             self.respond(200, result)
         except (ValueError, UnicodeError, json.JSONDecodeError):
@@ -473,6 +491,14 @@ def open_window(url, directory, server=None):
         while not server.stop_event.wait(.1):
             if server.window_requests.is_set():
                 server.window_requests.clear();window.restore();window.show()
+            if server.google_config_requests.is_set():
+                server.google_config_requests.clear()
+                try:
+                    selected=window.create_file_dialog(webview.FileDialog.OPEN,allow_multiple=False,file_types=('Google Desktop client JSON (*.json)',))
+                    if selected:server.cloud.configure(selected[0])
+                except Exception as error:
+                    from google_sync import CloudError
+                    with server.cloud.lock:server.cloud.message=str(error)if isinstance(error,CloudError)else'Google configuration could not be imported. Choose the Desktop app JSON.' 
         stopping.set();window.destroy()
     webview.start(lifecycle,gui='edgechromium',private_mode=False,storage_path=str(directory/'WebView2'))
 

@@ -1,30 +1,28 @@
-Tasks for Windows
+Tasks for Windows 0.87.0
 
-Install Tasks-Setup-v0.86.0.exe on Windows 10 or 11 (64-bit). Updates retain your
-existing tasks, theme, pairing and taskbar identity. The portable Tasks-PC.exe
-remains available. Microsoft WebView2 is installed if needed.
+Install over the existing version. Tasks, theme, pairing and taskbar identity are
+retained. Open your current phone with Android Tasks 0.87.0 first and wait for
+Settings > Google sync to say Synced with Google. That phone initializes the cloud
+list; other clients restore it instead of importing their old task lists.
 
-You can use Tasks immediately, offline, without an account. Windows now has the
-same Today/Upcoming views, task creation and full editor, projects, priorities,
-labels, notes, checklists, repeat schedules, rescheduling, trash, completion,
-in-progress actions, ordering and theme settings as the phone app.
+Google setup on Windows:
+1. Open https://console.cloud.google.com/auth/clients and select Tasks.
+2. Download the JSON for the Windows Desktop app client. If necessary create a
+   Desktop app client in the same project, then download its JSON.
+3. In Tasks choose Settings > Google sync > Set up Google and select that file.
+4. Sign into the same account as the phone. Your cloud tasks restore automatically.
 
-Connect > Google sync > Sign in with Google. Sign into the same Google account on
-your Android Tasks 0.86.0 app under Settings > Google sync. Tasks and theme merge
-through Google Drive's private app-data folder; your other Drive files are not
-accessed. The Google project is in testing, so use an account added as a test user.
-Your browser handles Google sign-in. No Google password is entered into Tasks.
+The JSON contains the client secret Google requires for desktop token exchange.
+It and your refresh token are encrypted with Windows DPAPI. Do not send the file
+through chat. Once connected, the account row has an X to remove it, plus Sync now.
+Old local task data is backed up privately before first cloud restore. Deleted
+tasks remain deleted across clients; offline changes merge after reconnection.
 
-Windows protects its refresh token with the current Windows user's DPAPI key.
-Android asks Google Play services for short-lived access tokens and does not store
-a refresh token. Sign out keeps the local task list. Changes save offline and merge
-when a connection returns. Use Sync now to request an immediate sync.
+Tasks supports adding/editing tasks, Today/Upcoming, projects (hold the date at
+the top), priorities, labels, recurrence, notes, checklists, completion/progress,
+ordering, history/trash and theme settings. Local QR pairing remains available.
+Android reminder and widget controls remain phone features.
 
-Local QR pairing remains available under Settings > Local pairing. Keep both apps
-open on the same Wi-Fi for LAN sync. Google sync runs while Tasks is open on the
-phone and while its PC background process is running. The Android widget and
-Android reminder/notification controls remain phone features.
-
-Closing the PC window keeps sync running. Reopen from the same shortcut. Quit the
-PC companion from its pairing window to stop it. Task data lives separately from
-the install in %LOCALAPPDATA%\Tasks and survives upgrades and uninstall.
+Closing the window keeps PC sync running. Reopen from the same shortcut. Updates
+and uninstall retain private data in %LOCALAPPDATA%\Tasks. Backup copies made
+before cloud restores are under its cloud-backups directory.

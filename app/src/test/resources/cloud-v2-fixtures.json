@@ -1,0 +1,116 @@
+[
+  {
+    "seed": {
+      "customTasks": [
+        {
+          "id": "a",
+          "title": "Keep",
+          "notes": "seed"
+        },
+        {
+          "id": "deleted",
+          "title": "Remove"
+        }
+      ],
+      "completed": {},
+      "taskPurged": {},
+      "manualLinks": {},
+      "inProgressTasks": [],
+      "cloudManaged": true
+    },
+    "documents": [
+      {
+        "owner": "phone",
+        "registers": {
+          "/customTasks/deleted": {
+            "clock": 1,
+            "deleted": true
+          },
+          "/taskPurged/deleted": {
+            "clock": 1,
+            "value": true
+          },
+          "/customTasks/a/notes": {
+            "clock": 1,
+            "value": "From phone"
+          }
+        }
+      },
+      {
+        "owner": "pc",
+        "registers": {
+          "/customTasks/new/id": {
+            "clock": 1,
+            "value": "new"
+          },
+          "/customTasks/new/title": {
+            "clock": 1,
+            "value": "New on PC"
+          },
+          "/completed/a:2026-11-15": {
+            "clock": 1,
+            "value": true
+          },
+          "/inProgressTasks/a:2026-11-15": {
+            "clock": 1,
+            "value": true
+          }
+        }
+      }
+    ],
+    "expected": {
+      "customTasks": [
+        {
+          "id": "a",
+          "title": "Keep",
+          "notes": "From phone"
+        },
+        {
+          "id": "new",
+          "title": "New on PC"
+        }
+      ],
+      "completed": {
+        "a:2026-11-15": true
+      },
+      "taskPurged": {
+        "deleted": true
+      },
+      "manualLinks": {},
+      "inProgressTasks": [
+        "a:2026-11-15"
+      ],
+      "inProgress": "a:2026-11-15",
+      "cloudManaged": true
+    }
+  },
+  {
+    "seed": {
+      "customTasks": []
+    },
+    "documents": [
+      {
+        "owner": "phone",
+        "registers": {
+          "/customTasks/a~1b/id": {
+            "clock": 2,
+            "value": "a/b"
+          },
+          "/customTasks/a~1b/title": {
+            "clock": 2,
+            "value": "Slash ID"
+          }
+        }
+      }
+    ],
+    "expected": {
+      "customTasks": [
+        {
+          "id": "a/b",
+          "title": "Slash ID"
+        }
+      ],
+      "cloudManaged": true
+    }
+  }
+]

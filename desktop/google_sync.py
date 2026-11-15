@@ -19,6 +19,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import webbrowser
+import uuid
+import cloud_state
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 CLIENT_ID = '277712575915-aum3u79p81j3e83676mme4sgcf2l7ffg.apps.googleusercontent.com'
@@ -27,9 +29,10 @@ FILE_NAME = 'tasks-state-v1.json'
 MAX_BYTES = 2 * 1024 * 1024
 
 class CloudError(Exception):
-    def __init__(self, message, status=0):
+    def __init__(self, message, status=0, kind=""):
         super().__init__(message)
         self.status = status
+        self.kind=kind
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
@@ -47,9 +50,18 @@ def request(method, url, body=None, headers=None):
                 raise CloudError('Google sync data is too large')
             return json.loads(data or b'{}'), dict(response.headers)
     except urllib.error.HTTPError as error:
-        # Never return token responses or callback codes in UI errors/logs.
-        raise CloudError('Google authorization expired. Sign in again.' if error.code in (400, 401) else
-                         'Google Drive rejected this sync request.', error.code) from None
+        detail={}
+        try:detail=json.loads(error.read(8192))
+        except Exception:pass
+        kind=detail.get('error');description=str(detail.get('error_description',''))
+        if parsed.hostname=='oauth2.googleapis.com':
+            if 'client_secret' in description or kind=='invalid_client':message='Import the Windows Google client JSON in Set up Google. The client configuration is missing or incorrect.'
+            elif kind=='invalid_grant':message='Google sign-in is no longer valid. Sign in again.'
+            else:message='Google could not authorize this desktop client. Check the Desktop app configuration.'
+        elif error.code==401:message='Google access expired. Sign in again.'
+        elif error.code==403:message='Google Drive access was denied. Check that Drive API is enabled for Tasks.'
+        else:message='Google Drive is unavailable. Your local tasks are kept.'
+        raise CloudError(message,error.code,kind if isinstance(kind,str)else'') from None
     except (OSError, ValueError):
         raise CloudError('Google is unavailable. Your tasks are saved on this PC.') from None
 
@@ -108,7 +120,8 @@ class TokenVault:
         self.path.unlink(missing_ok=True)
 
 
-def authorize(cancel, open_browser=webbrowser.open, exchange=form_request):
+def authorize(cancel, open_browser=webbrowser.open, exchange=form_request, client_id=CLIENT_ID, client_secret=None):
+    if not client_secret:raise CloudError("Import the Windows Google client JSON using Set up Google before signing in.")
     verifier = secrets.token_urlsafe(64)
     state = secrets.token_urlsafe(32)
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b'=').decode()
@@ -144,7 +157,7 @@ def authorize(cancel, open_browser=webbrowser.open, exchange=form_request):
     with HTTPServer(('127.0.0.1', 0), Callback) as server:
         server.timeout = .5
         redirect = f'http://127.0.0.1:{server.server_port}/oauth/callback'
-        query = urllib.parse.urlencode(dict(client_id=CLIENT_ID, redirect_uri=redirect, response_type='code', scope=SCOPES,
+        query = urllib.parse.urlencode(dict(client_id=client_id, redirect_uri=redirect, response_type='code', scope=SCOPES,
                                             code_challenge=challenge, code_challenge_method='S256', state=state,
                                             access_type='offline', prompt='consent select_account'))
         if not open_browser('https://accounts.google.com/o/oauth2/v2/auth?' + query):
@@ -154,7 +167,7 @@ def authorize(cancel, open_browser=webbrowser.open, exchange=form_request):
             server.handle_request()
         if cancel.is_set() or not outcome or outcome.get('error'):
             raise CloudError('Google sign-in was cancelled or timed out.')
-        tokens = exchange(dict(client_id=CLIENT_ID, code=outcome['code'], code_verifier=verifier,
+        tokens = exchange(dict(client_id=client_id, client_secret=client_secret, code=outcome['code'], code_verifier=verifier,
                                redirect_uri=redirect, grant_type='authorization_code'))
         if not isinstance(tokens.get('access_token'), str) or not tokens.get('refresh_token'):
             raise CloudError('Google did not grant offline access. Sign in again.')
@@ -164,70 +177,60 @@ def authorize(cancel, open_browser=webbrowser.open, exchange=form_request):
             raise CloudError('Google did not return a verified account.')
         return {'sub': identity['sub'], 'email': identity['email'], 'refresh_token': tokens['refresh_token']}
 
-class DriveState:
-    def __init__(self, token, transport=request):
-        self.token, self.transport = token, transport
-    def call(self, method, path, value=None, headers=None):
-        payload = json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode() if value is not None else None
-        if payload is not None and len(payload) > MAX_BYTES:
-            raise CloudError('Tasks sync data is too large')
-        return self.transport(method, 'https://www.googleapis.com' + path, payload,
-                              {'Authorization': 'Bearer ' + self.token, 'Content-Type': 'application/json', **(headers or {})})
-    def find(self):
-        page = ''
-        pages = 0
-        candidates = []
-        while True:
-            pages += 1
-            if pages > 20:
-                raise CloudError('Too many Tasks sync pages')
-            args = {'spaces': 'appDataFolder', 'q': "title = '" + FILE_NAME + "' and trashed = false",
-                    'fields': 'items(id,createdDate),nextPageToken', 'maxResults': '100'}
-            if page:
-                args['pageToken'] = page
-            data, _ = self.call('GET', '/drive/v2/files?' + urllib.parse.urlencode(args))
-            candidates += [(f.get('createdDate', ''), f['id']) for f in data.get('items', []) if isinstance(f.get('id'), str)]
-            page = data.get('nextPageToken')
-            if not page:
-                break
-            if len(candidates) > 1000:
-                raise CloudError('Too many Tasks sync files')
-        return min(candidates)[1] if candidates else None
+class ClientVault(TokenVault):
+    def load(self):
+        if not self.path.exists():return None
+        value=json.loads(self.crypt(self.path.read_bytes(),decrypt=True))
+        return self.validate(value)
     @staticmethod
-    def envelope(state):
-        return {'schema': 1, 'application': 'personal.tasks', 'state': state}
-    def create(self, state):
-        boundary = 'tasks-' + secrets.token_hex(16)
-        meta = json.dumps({'name': FILE_NAME, 'parents': ['appDataFolder'], 'mimeType': 'application/json'}).encode()
-        body = json.dumps(self.envelope(state), ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode()
-        if len(body) > MAX_BYTES:
-            raise CloudError('Tasks sync data is too large')
-        payload = b'--' + boundary.encode() + b'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + meta
-        payload += b'\r\n--' + boundary.encode() + b'\r\nContent-Type: application/json\r\n\r\n' + body + b'\r\n--' + boundary.encode() + b'--\r\n'
-        data, _ = self.transport('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', payload,
-                                {'Authorization': 'Bearer ' + self.token, 'Content-Type': 'multipart/related; boundary=' + boundary})
-        if not isinstance(data.get('id'), str):
-            raise CloudError('Google did not create the Tasks sync file')
-        return data['id']
-    def read(self, file_id):
-        path = '/drive/v2/files/' + urllib.parse.quote(file_id, safe='')
-        metadata, _ = self.call('GET', path + '?fields=id,etag')
-        etag = metadata.get('etag')
-        if not isinstance(etag, str) or not etag:
-            raise CloudError('Google did not provide a safe sync version')
-        data, _ = self.call('GET', path + '?alt=media', headers={'If-Match': etag})
-        if data.get('schema') != 1 or data.get('application') != 'personal.tasks' or not isinstance(data.get('state'), dict):
-            raise CloudError('The Google Tasks sync file could not be read. It was not overwritten.')
-        return data['state'], etag
-    def write(self, file_id, state, etag):
-        self.call('PUT', '/upload/drive/v2/files/' + urllib.parse.quote(file_id, safe='') + '?uploadType=media&fields=id,etag',
-                  self.envelope(state), {'If-Match': etag})
+    def validate(value):
+        if not isinstance(value,dict) or not isinstance(value.get('client_id'),str) or not value['client_id'].startswith('277712575915-') or not value['client_id'].endswith('.apps.googleusercontent.com') or not isinstance(value.get('client_secret'),str) or not 6<len(value['client_secret'])<1000:
+            raise CloudError('Choose the Desktop app client JSON from the Tasks Google project.')
+        return {'client_id':value['client_id'],'client_secret':value['client_secret']}
+
+class NotebookDrive:
+    SEED='tasks-cloud-v2-seed.json'
+    PREFIX='tasks-cloud-v2-device-'
+    def __init__(self,token,transport=request):self.token,self.transport=token,transport
+    def call(self,method,path,value=None):
+        body=json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()if value is not None else None
+        if body is not None and len(body)>MAX_BYTES:raise CloudError('Tasks sync data is too large')
+        return self.transport(method,'https://www.googleapis.com'+path,body,{'Authorization':'Bearer '+self.token,'Content-Type':'application/json'})[0]
+    def files(self):
+        result=[];page=''
+        for _ in range(20):
+            query={'spaces':'appDataFolder','q':"trashed = false and (name = '"+self.SEED+"' or name contains '"+self.PREFIX+"')",'fields':'files(id,name,createdTime),nextPageToken','pageSize':'1000'}
+            if page:query['pageToken']=page
+            value=self.call('GET','/drive/v3/files?'+urllib.parse.urlencode(query));result.extend(value.get('files',[]));page=value.get('nextPageToken')
+            if not page:return sorted(result,key=lambda f:(f.get('createdTime',''),f['id']))
+        raise CloudError('Too many Tasks cloud documents')
+    def read(self,file_id):
+        value=self.call('GET','/drive/v3/files/'+urllib.parse.quote(file_id,safe='')+'?alt=media')
+        if value.get('schema')!=2 or value.get('application')!='personal.tasks':raise CloudError('The cloud data is invalid. It has not been overwritten.')
+        return value
+    def create(self,name,value):
+        boundary='tasks-'+secrets.token_hex(16);metadata=json.dumps({'name':name,'parents':['appDataFolder'],'mimeType':'application/json'}).encode()
+        body=json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+        if len(body)>MAX_BYTES:raise CloudError('Tasks cloud data is too large')
+        payload=b'--'+boundary.encode()+b'\r\nContent-Type: application/json\r\n\r\n'+metadata+b'\r\n--'+boundary.encode()+b'\r\nContent-Type: application/json\r\n\r\n'+body+b'\r\n--'+boundary.encode()+b'--\r\n'
+        result=self.transport('POST','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',payload,{'Authorization':'Bearer '+self.token,'Content-Type':'multipart/related; boundary='+boundary})[0]
+        if not result.get('id'):raise CloudError('Google did not save the Tasks cloud document')
+        return result['id']
+    def write(self,file_id,value):
+        # Only this installation writes its device document. No representation-
+        # dependent ETag is sent to a media endpoint.
+        self.call('PUT','/upload/drive/v2/files/'+urllib.parse.quote(file_id,safe='')+'?uploadType=media',value)
 
 class CloudSync:
-    def __init__(self, store, merge, atomic, vault=None, drive_factory=DriveState):
+    def __init__(self, store, merge, atomic, vault=None, drive_factory=NotebookDrive, config=None):
         self.store, self.merge, self.atomic = store, merge, atomic
         self.vault = vault or TokenVault(store.directory / 'google-account.dpapi')
-        self.base_path = store.directory / 'google-sync.json'
+        self.base_path = store.directory / 'google-sync-v2.json'
+        self.client_vault=ClientVault(store.directory/'google-client.dpapi')
+        self.configuration=config
+        if self.configuration is None:
+            try:self.configuration=self.client_vault.load()
+            except Exception:self.configuration=None
         self.drive_factory = drive_factory
         self.lock = threading.RLock()
         self.account = None
@@ -238,6 +241,8 @@ class CloudSync:
         self.wake = threading.Event()
         self.cancel_auth = threading.Event()
         self.auth_busy = False
+        self.configuration_invalid=False
+        self.needs_reauth=False
         self.message = 'Not signed in'
         self.last_sync = None
         try:
@@ -251,10 +256,13 @@ class CloudSync:
     def status(self):
         with self.lock:
             return {'signedIn': bool(self.account), 'email': self.account['email'] if self.account else '',
-                    'message': self.message, 'signingIn': self.auth_busy, 'lastSyncAt': self.last_sync}
+                    'message': self.message, 'signingIn': self.auth_busy, 'lastSyncAt': self.last_sync,'needsSetup':self.configuration is None or self.configuration_invalid,'needsReauth':self.needs_reauth}
     def sign_in(self):
         with self.lock:
             if self.auth_busy:
+                return
+            if not self.configuration or self.configuration_invalid:
+                self.message='Use Set up Google to import the Windows client JSON.'
                 return
             self.auth_busy = True
             self.generation += 1
@@ -264,19 +272,20 @@ class CloudSync:
             self.message = 'Finish signing in in your browser'
         def authenticate():
             try:
-                account = authorize(cancel)
+                account = authorize(cancel,client_id=self.configuration['client_id'],client_secret=self.configuration['client_secret'])
                 with self.lock:
                     if generation != self.generation or self.closed.is_set() or cancel.is_set():
                         return
                     self.vault.save(account)
                     self.account, self.access_token, self.expiry = account, None, 0
-                    self.base_path.unlink(missing_ok=True)
+                    self.needs_reauth=False
                     self.message = 'Signed in. Syncing…'
                     self.wake.set()
             except Exception as error:
                 with self.lock:
                     if generation == self.generation:
                         self.message = str(error) if isinstance(error, CloudError) else 'Google sign-in could not be completed.'
+                        if isinstance(error,CloudError)and error.kind in ('invalid_client','invalid_request'):self.configuration_invalid=True
             finally:
                 with self.lock:
                     if generation == self.generation:
@@ -287,9 +296,9 @@ class CloudSync:
             self.generation += 1
             self.cancel_auth.set()
             self.vault.clear()
-            self.base_path.unlink(missing_ok=True)
             self.account, self.access_token, self.expiry = None, None, 0
             self.auth_busy = False
+            self.needs_reauth=False
             self.message, self.last_sync = 'Signed out. Tasks remain on this PC.', None
     def close(self):
         self.closed.set()
@@ -300,7 +309,8 @@ class CloudSync:
     def token(self, account):
         if self.access_token and time.monotonic() < self.expiry:
             return self.access_token
-        reply = form_request({'client_id': CLIENT_ID, 'refresh_token': account['refresh_token'], 'grant_type': 'refresh_token'})
+        if not self.configuration:raise CloudError('Use Set up Google to import the Windows client JSON.')
+        reply = form_request({'client_id':self.configuration['client_id'],'client_secret':self.configuration['client_secret'],'refresh_token':account['refresh_token'],'grant_type':'refresh_token'})
         if not isinstance(reply.get('access_token'), str):
             raise CloudError('Sign in to Google again')
         if self.account is None or self.account['sub'] != account['sub']:
@@ -308,56 +318,64 @@ class CloudSync:
         self.access_token = reply['access_token']
         self.expiry = time.monotonic() + max(30, min(int(reply.get('expires_in', 300)), 3600) - 60)
         return self.access_token
+    def configure(self,path):
+        source=Path(path)
+        if source.stat().st_size>65536:raise CloudError('Choose the downloaded Google Desktop client JSON.')
+        value=json.loads(source.read_text(encoding='utf-8-sig'))
+        config=ClientVault.validate(value.get('installed'))
+        with self.lock:
+            self.client_vault.save(config)
+            if self.account and self.configuration and self.configuration['client_id']!=config['client_id']:self.sign_out()
+            self.configuration=config;self.configuration_invalid=False;self.message='Google configured. Sign in to restore your cloud tasks.'
     def sync_once(self):
         with self.lock:
-            if not self.account or self.auth_busy or self.closed.is_set():
-                return
-            account, generation = dict(self.account), self.generation
+            if not self.account or self.auth_busy or self.closed.is_set():return
+            account,generation=dict(self.account),self.generation
         try:
-            drive = self.drive_factory(self.token(account))
-            baseline = {}
-            if self.base_path.exists():
-                baseline = json.loads(self.base_path.read_bytes())
-                if baseline.get('account') != account['sub']:
-                    baseline = {}
-            sent = self.store.snapshot()['state']
-            file_id = drive.find()
-            if file_id is None:
-                with self.lock:
-                    if generation != self.generation or self.closed.is_set():
-                        return
-                drive.create(sent)
-                file_id = drive.find()
-                if file_id is None:
-                    raise CloudError('Waiting for Google Drive to publish your sync file')
-            for attempt in range(8):
-                try:
-                    remote, etag = drive.read(file_id)
-                    base = baseline.get('base', {}) if baseline.get('fileId') == file_id else {}
-                    merged = self.merge(base, sent, remote)
-                    with self.lock:
-                        if generation != self.generation or self.closed.is_set():
-                            return
-                    if merged != remote:
-                        drive.write(file_id, merged, etag)
-                    with self.lock:
-                        if generation != self.generation or self.closed.is_set():
-                            return
-                        self.store.apply_remote(sent, merged)
-                        self.atomic(self.base_path, {'account': account['sub'], 'fileId': file_id, 'base': merged})
-                        self.message, self.last_sync = 'Synced with Google', time.time()
-                    return
-                except CloudError as error:
-                    if error.status != 412:
-                        raise
-            raise CloudError('Tasks changed on another device. Retrying shortly; local edits are kept.')
+            drive=self.drive_factory(self.token(account));files=drive.files();seeds=[f for f in files if f['name']==NotebookDrive.SEED]
+            if not seeds:
+                with self.lock:self.message='Open Tasks on your current phone to initialize the cloud list.'
+                return
+            seed=drive.read(seeds[0]['id'])
+            if seed.get('kind')!='seed' or not isinstance(seed.get('state'),dict)or not isinstance(seed.get('epoch'),str):raise CloudError('The cloud task list is invalid. Local tasks are kept.')
+            epoch=seed['epoch'];sent=self.store.snapshot()['state']
+            path=self.store.directory/('google-v2-'+hashlib.sha256(account['sub'].encode()).hexdigest()[:24]+'.json');self.base_path=path
+            journal=json.loads(path.read_bytes())if path.exists()else None
+            fresh=not journal or journal.get('epoch')!=epoch
+            restore=fresh or self.store.cloud_account!=account['sub']
+            if fresh:journal={'epoch':epoch,'owner':str(uuid.uuid4()),'counter':0,'registers':{},'localHead':{}}
+            elif not restore:
+                journal,_=cloud_state.capture(journal,sent);self.atomic(path,journal)
+            documents=[];own_files=[];own=dict(journal['registers']);canonical_own=None
+            for file in files:
+                if not file['name'].startswith(NotebookDrive.PREFIX+epoch+'-'):continue
+                doc=drive.read(file['id'])
+                if doc.get('epoch')!=epoch or doc.get('kind')!='device':raise CloudError('Invalid cloud device document')
+                if doc.get('owner')==journal['owner']:
+                    own_files.append(file)
+                    if canonical_own is None:canonical_own=doc['registers']
+                    for key,op in doc['registers'].items():
+                        if key not in own or op['clock']>own[key]['clock']:own[key]=op
+                else:documents.append(doc)
+            own_doc={'schema':2,'application':'personal.tasks','kind':'device','epoch':epoch,'owner':journal['owner'],'registers':own}
+            documents.append(own_doc);resolved,counter=cloud_state.resolve(seed['state'],documents)
+            with self.lock:
+                if generation!=self.generation or self.closed.is_set():return
+            if own and not fresh and own!=canonical_own:
+                if own_files:drive.write(own_files[0]['id'],own_doc)
+                else:drive.create(NotebookDrive.PREFIX+epoch+'-'+journal['owner']+'.json',own_doc)
+            with self.lock:
+                if generation!=self.generation or self.closed.is_set():return
+                if restore:self.store.restore_cloud(sent,resolved,account['sub'])
+                else:self.store.apply_remote(sent,resolved)
+                journal.update(registers=own,counter=max(counter,journal['counter']),localHead=resolved)
+                self.atomic(path,journal);self.message='Synced with Google';self.last_sync=time.time();self.needs_reauth=False
         except Exception as error:
             with self.lock:
-                if generation == self.generation:
-                    self.message = str(error) if isinstance(error, CloudError) else 'Sync unavailable. Your tasks are saved on this PC.'
-                    if isinstance(error, CloudError) and error.status == 401:
-                        self.access_token = None
-                        self.expiry = 0
+                if generation==self.generation:
+                    self.message=str(error)if isinstance(error,CloudError)else'Google sync is unavailable. Your tasks remain saved locally.'
+                    if isinstance(error,CloudError)and(error.status==401 or error.kind=='invalid_grant'):self.access_token=None;self.expiry=0;self.needs_reauth=True
+                    if isinstance(error,CloudError)and error.kind in ('invalid_client','invalid_request'):self.configuration_invalid=True
     def run(self):
         while not self.closed.is_set():
             self.sync_once()

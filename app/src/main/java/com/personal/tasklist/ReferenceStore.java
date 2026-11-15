@@ -69,6 +69,17 @@ public final class ReferenceStore {
         } catch(JSONException invalid){throw new IllegalArgumentException("Could not export task definitions",invalid);}
     }
 
+    String cloudAccount(){synchronized(LOCK){return prefs.getString("cloudAccount","");}}
+    void restoreCloud(JSONObject sent,JSONObject remote,String account)throws Exception{
+        synchronized(LOCK){
+            JSONObject current=state(),merged=StateMerge.merge(sent,current,remote);String json=merged.toString();checkSize(json);
+            java.io.File directory=new java.io.File(appContext.getFilesDir(),"cloud-backups");if(!directory.isDirectory()&&!directory.mkdirs())throw new java.io.IOException("Could not create cloud backup");
+            java.io.File backup=new java.io.File(directory,"before-restore-"+UUID.randomUUID()+".json");
+            try(java.io.FileOutputStream out=new java.io.FileOutputStream(backup)){out.write(current.toString().getBytes(StandardCharsets.UTF_8));out.getFD().sync();}
+            commit(prefs.edit().putString("state",json).putString("cloudAccount",account).putString("cloudSession",UUID.randomUUID().toString()).putLong("revision",nextRevision()));
+        }
+    }
+
     /** Apply a sync result only if no task or widget edit happened after it was read. */
     boolean compareAndWriteState(long expectedRevision, String json) {
         String normalized = object(json).toString();

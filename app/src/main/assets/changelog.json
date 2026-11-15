@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.87.0",
+    "date": "2026-11-14",
+    "changes": [
+      "Made the phone’s current task list the initial cloud list when upgrading an already connected phone. Other clients restore that list on first sign-in, with a private local backup before replacement. Previously deleted tasks are not re-imported from a client’s old list.",
+      "Replaced the failing shared-file version checks with compact per-client change records and deletion tombstones. Offline edits, notes, priorities, completions and progress merge across clients without the repeated version-conflict loop.",
+      "Added Windows Google Desktop client JSON import, encrypted with Windows user protection. Token exchange and refresh include the required client secret; setup errors are no longer reported as expired authorization.",
+      "Simplified the connected account section to email, status, Sync now and an × to remove the account. Sign-in/setup buttons hide after connection; reconnect appears only when needed."
+    ]
+  },
+  {
     "version": "0.86.0",
     "date": "2026-11-14",
     "changes": [

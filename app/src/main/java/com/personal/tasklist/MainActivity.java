@@ -311,6 +311,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void connectGoogle(){runOnUiThread(()->{if(googleSync!=null)googleSync.signIn(MainActivity.this);});}
         @JavascriptInterface public String getGoogleStatus(){return googleSync==null?"{}":googleSync.status();}
         @JavascriptInterface public void disconnectGoogle(){if(googleSync!=null)googleSync.signOut();}
+        @JavascriptInterface public void initializeGoogleCloud(){if(googleSync!=null)googleSync.initializeCloud();}
         @JavascriptInterface public void syncGoogle(){if(googleSync!=null)googleSync.requestSync();}
         @JavascriptInterface public void requestNotificationPermission() { runOnUiThread(()->requestReminderPermission(true)); }
         @JavascriptInterface public String notificationStatus() { if(!TaskReminders.allowed(MainActivity.this))return "Notifications are blocked in Android settings";android.app.NotificationChannel channel=getSystemService(android.app.NotificationManager.class).getNotificationChannel(TaskReminders.CHANNEL);return channel!=null&&channel.getImportance()==android.app.NotificationManager.IMPORTANCE_NONE?"Scheduled task reminders are blocked in Android settings":"Notifications allowed"; }

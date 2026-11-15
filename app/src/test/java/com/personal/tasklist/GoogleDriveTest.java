@@ -11,29 +11,31 @@ import java.util.*;
 
 @RunWith(RobolectricTestRunner.class)@Config(sdk=28)
 public class GoogleDriveTest {
- @Test public void readAndWriteUseTheSameEtagAndPrivateEnvelope()throws Exception{
-  List<String> calls=new ArrayList<>();
-  GoogleDrive drive=new GoogleDrive("private",(method,path,token,body,type,etag)->{
-   calls.add(method+" "+path+" "+etag);
-   if(path.contains("fields=id,etag")&&method.equals("GET"))return new JSONObject().put("etag","\"v7\"");
-   if(path.contains("alt=media")){assertEquals("\"v7\"",etag);return GoogleDrive.envelope(new JSONObject().put("completed",new JSONObject().put("a",true)));}
-   assertEquals("PUT",method);assertEquals("\"v7\"",etag);assertEquals("personal.tasks",new JSONObject(new String(body,StandardCharsets.UTF_8)).getString("application"));return new JSONObject();
-  });
-  GoogleDrive.Version version=drive.read("file/id");assertTrue(version.state.getJSONObject("completed").getBoolean("a"));drive.write("file/id",version.state,version.etag);assertEquals(3,calls.size());assertTrue(calls.get(0).contains("file%2Fid"));
+ @Test public void mediaRequestsCarryNoMetadataEtag()throws Exception{
+  List<String> calls=new ArrayList<>();GoogleDrive drive=new GoogleDrive("private",(method,path,token,body,type,etag)->{assertNull(etag);calls.add(method+" "+path);return new JSONObject().put("schema",2).put("application","personal.tasks");});
+  drive.readDocument("file/id");drive.writeDocument("file/id",new JSONObject().put("schema",2));assertEquals(2,calls.size());assertTrue(calls.get(0).contains("file%2Fid?alt=media"));assertTrue(calls.get(1).startsWith("PUT"));
  }
- @Test public void missingEtagNeverReadsOrWritesUnversionedData()throws Exception{
-  int[] calls={0};GoogleDrive drive=new GoogleDrive("private",(m,p,t,b,c,e)->{calls[0]++;return new JSONObject();});
-  try{drive.read("id");fail();}catch(GoogleDrive.Failure expected){assertEquals(1,calls[0]);}
+ @Test public void filesArePrivateAndLegacyCloudFileIsNotUsed()throws Exception{
+  GoogleDrive drive=new GoogleDrive("private",(m,p,t,b,c,e)->{assertTrue(p.contains("spaces=appDataFolder"));assertFalse(p.contains("tasks-state-v1"));return new JSONObject().put("files",new JSONArray());});assertTrue(drive.files().isEmpty());
  }
- @Test public void corruptEnvelopeIsNotAccepted()throws Exception{
-  GoogleDrive drive=new GoogleDrive("private",(m,p,t,b,c,e)->p.contains("fields=id,etag")?new JSONObject().put("etag","v"):new JSONObject().put("state",new JSONObject()));
-  try{drive.read("id");fail();}catch(GoogleDrive.Failure expected){assertTrue(expected.getMessage().contains("not overwritten"));}
+ @Test public void invalidCloudEnvelopeIsRejected()throws Exception{
+  GoogleDrive drive=new GoogleDrive("private",(m,p,t,b,c,e)->new JSONObject().put("schema",1));try{drive.readDocument("id");fail();}catch(GoogleDrive.Failure expected){assertTrue(expected.getMessage().contains("not been overwritten"));}
  }
- @Test public void oldestDuplicateIsUsedOnBothPlatforms()throws Exception{
-  GoogleDrive drive=new GoogleDrive("private",(m,p,t,b,c,e)->new JSONObject().put("items",new JSONArray().put(new JSONObject().put("id","new").put("createdDate","2026-11-03")).put(new JSONObject().put("id","old").put("createdDate","2026-11-01"))));assertEquals("old",drive.find());
+ @Test public void newDocumentsUsePrivateAppDataFolder()throws Exception{
+  GoogleDrive drive=new GoogleDrive("private",(m,p,t,b,c,e)->{assertEquals("POST",m);assertNull(e);assertTrue(new String(b,StandardCharsets.UTF_8).contains("appDataFolder"));return new JSONObject().put("id","created");});assertEquals("created",drive.createDocument(GoogleDrive.SEED,GoogleDrive.document("seed","epoch").put("state",new JSONObject())));
  }
- @Test public void newFilesAreConfinedToPrivateAppData()throws Exception{
-  GoogleDrive drive=new GoogleDrive("private",(m,p,t,b,c,e)->{assertEquals("POST",m);assertTrue(p.contains("uploadType=multipart"));String text=new String(b,StandardCharsets.UTF_8);assertTrue(text.contains("appDataFolder"));assertTrue(text.contains("personal.tasks"));return new JSONObject().put("id","created");});assertEquals("created",drive.create(new JSONObject()));
+ @Test public void crossPlatformRegisterFixturesConvergeInEitherOrder()throws Exception{
+  try(java.io.InputStream input=getClass().getResourceAsStream("/cloud-v2-fixtures.json")){
+   assertNotNull(input);java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();byte[] buffer=new byte[4096];int n;while((n=input.read(buffer))!=-1)bytes.write(buffer,0,n);JSONArray cases=new JSONArray(bytes.toString("UTF-8"));
+   for(int i=0;i<cases.length();i++){JSONObject sample=cases.getJSONObject(i);List<JSONObject> docs=new ArrayList<>();JSONArray values=sample.getJSONArray("documents");for(int j=0;j<values.length();j++)docs.add(values.getJSONObject(j));assertTrue(StateMerge.same(sample.getJSONObject("expected"),CloudState.resolve(sample.getJSONObject("seed"),docs).state));Collections.reverse(docs);assertTrue(StateMerge.same(sample.getJSONObject("expected"),CloudState.resolve(sample.getJSONObject("seed"),docs).state));}
+  }
+ }
+ @Test public void retryDoesNotReclockAnUnchangedOfflineDeletion()throws Exception{
+  JSONObject before=new JSONObject("{\"customTasks\":[{\"id\":\"a\",\"title\":\"Delete\"}],\"inProgressTasks\":[\"a:date\"]}"),after=new JSONObject("{\"customTasks\":[],\"inProgressTasks\":[]}"),journal=new JSONObject().put("counter",0).put("registers",new JSONObject()).put("localHead",before);
+  JSONObject captured=CloudState.capture(journal,after),again=CloudState.capture(captured,after);assertEquals(1,captured.getLong("counter"));assertEquals(1,again.getLong("counter"));JSONObject doc=new JSONObject().put("owner","phone").put("registers",again.getJSONObject("registers"));CloudState.Result result=CloudState.resolve(before,Collections.singletonList(doc));assertEquals(0,result.state.getJSONArray("customTasks").length());assertEquals(0,result.state.getJSONArray("inProgressTasks").length());
+ }
+ @Test public void firstRestoreReplacesOldTasksAndCreatesPrivateBackup()throws Exception{
+  Context app=RuntimeEnvironment.getApplication();app.getSharedPreferences("reference_state",0).edit().clear().commit();ReferenceStore store=new ReferenceStore(app);JSONObject old=new JSONObject("{\"customTasks\":[{\"id\":\"old\",\"title\":\"Old\"}]}"),remote=new JSONObject("{\"customTasks\":[{\"id\":\"phone\",\"title\":\"Phone\"}],\"cloudManaged\":true}");store.writeState(old.toString());store.restoreCloud(old,remote,"account");assertEquals("phone",new JSONObject(store.readState()).getJSONArray("customTasks").getJSONObject(0).getString("id"));assertEquals("account",store.cloudAccount());assertTrue(new java.io.File(app.getFilesDir(),"cloud-backups").listFiles().length>0);
  }
  @Test public void definitionsExportIsStableAndKeepsConcurrentTaskHistory()throws Exception{
   Context app=RuntimeEnvironment.getApplication();app.getSharedPreferences("reference_state",0).edit().clear().commit();ReferenceStore store=new ReferenceStore(app);

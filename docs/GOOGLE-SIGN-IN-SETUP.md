@@ -1,34 +1,30 @@
-# Tasks Google sign-in and sync
+# Tasks cloud setup and restore
 
-Tasks Android and Windows 0.86.0 support optional Google sync through Drive’s private app-data folder. You can also use either app offline or pair over local Wi-Fi. Google sync shares tasks, completion/progress, projects, notes, checklists, ordering, labels and theme. UI view/filter choices stay local.
+## First list: your current phone
 
-## Connect
+Install Tasks Android 0.87.0 over your current app; do not uninstall or clear data. Open that phone first. An account already connected in 0.86.0 uses the phone’s current list to initialize the corrected cloud format automatically. Wait for Settings → Google sync to say Synced with Google. If setting up a brand-new account, choose Use this phone’s tasks when prompted. The failed legacy cloud file is left untouched and is not imported into the new list.
 
-Install the Android update and Windows installer. Open Settings → Google sync on each device and sign into the same Google account. On Windows, Connect also opens this screen. The system browser handles desktop authorization; Google Play services handles phone authorization. The account’s email and sync status appear in Settings. Use Sync now to request an immediate sync. Sign out leaves local tasks intact.
+After initialization, any other Tasks 0.87.0 client restores the cloud list on first sign-in. It does not merge an old installation’s task list into the initial cloud load. A private local backup is saved before replacement. Subsequent edits sync both ways, including deletions. Once connected, the account row shows the email and an × to disconnect; Sync now remains available. Setup and sign-in buttons hide while connected.
 
-The configured Google project is Tasks (277712575915). Drive API must be enabled. While Google Auth Platform → Audience is in Testing, add each account under Test users. A testing grant can expire after seven days; sign in again if Google requests consent. No paid GitHub or Google subscription is required for this private app-data sync.
+## Windows Google client configuration
 
-## Registered OAuth clients
+The 0.86.0 Windows build omitted the client secret from token exchange. A live diagnostic against Google returned `invalid_request: client_secret is missing`. This was incorrectly displayed as expired authorization.
 
-Android: `277712575915-pc43c20vte31fk611r6r5ipcqu7uml5f.apps.googleusercontent.com`
+1. Open https://console.cloud.google.com/auth/clients and select the Tasks project.
+2. Open the Windows client whose application type is Desktop app and download its JSON. If it is a Web application instead, create a Desktop app client in the same Tasks project and download that JSON.
+3. Install Tasks Windows 0.87.0. Open Settings → Google sync → Set up Google and choose that JSON file in the native file picker.
+4. Sign into the same Google account used on the current phone. Windows will restore its cloud tasks automatically.
 
-- Package: `com.personal.tasklist.preview`
-- Signing SHA-1: `2B:E6:14:0F:A0:50:9D:13:6E:18:D5:25:06:2C:85:10:5D:57:9F:9C`
+The imported JSON must contain `installed`, `client_id` and `client_secret`, from project number 277712575915. Its client secret is used for both authorization-code exchange and token refresh, alongside PKCE and state. Configuration and refresh credentials are protected with Windows DPAPI CurrentUser. They never appear in the WebView, sync status or source repository. Import the JSON locally; do not paste it into chat.
 
-Windows/Desktop: `277712575915-aum3u79p81j3e83676mme4sgcf2l7ffg.apps.googleusercontent.com`
+Android registration remains package `com.personal.tasklist.preview`, signing SHA-1 `2B:E6:14:0F:A0:50:9D:13:6E:18:D5:25:06:2C:85:10:5D:57:9F:9C`, client `277712575915-pc43c20vte31fk611r6r5ipcqu7uml5f.apps.googleusercontent.com`. The original Windows client ID is `277712575915-aum3u79p81j3e83676mme4sgcf2l7ffg.apps.googleusercontent.com`; another Desktop app client in that same project can be imported if needed. These IDs and signing fingerprints are public configuration.
 
-Both clients belong to the same project. IDs and signing fingerprints are public configuration. Do not share the app signing keystore, refresh tokens or Google password.
+Drive API must be enabled. While the OAuth project is in Testing, add your Google account under Audience → Test users. Testing grants can expire after seven days and require another sign-in. Android uses Google Play services for short-lived access tokens and does not store a refresh token.
 
-## Storage and merging
+## Cloud storage and deleted tasks
 
-Windows uses the system browser, loopback redirect, state validation and PKCE (S256). A refresh token is encrypted with Windows DPAPI CurrentUser; there is no plaintext fallback. Android keeps short-lived access tokens in memory and asks Google Play services for renewed authorization. Only the chosen account identity and task merge baseline persist in private preferences. Tokens are never sent to the WebView or local HTTP status endpoints.
+Only Google Drive’s private app-data folder is used. An immutable phone seed (`tasks-cloud-v2-seed.json`) starts the list. Each installation writes a separate compact change document. Changes carry logical clocks; deletions remain as tombstones. Each client reconstructs the same list from the seed and changes, so a newly connected client cannot re-upload an old template or undo deletions merely by signing in. Media reads/updates do not use the metadata ETag that caused the repeated 412 loop.
 
-The requested Drive scope is `https://www.googleapis.com/auth/drive.appdata`, plus verified email identity. The shared document is `tasks-state-v1.json` in `appDataFolder`, with a versioned Tasks envelope. Reads and writes use Drive v2 ETag preconditions; file creation uses Drive v3 private-folder metadata. Version conflicts retry with the existing three-way field/task merge. Local edits made during requests survive. Simultaneous first-time file creation resolves to the oldest file without deleting duplicate files or losing local data.
+Task state, projects, notes, checklists, priorities, completion/progress, ordering and theme are shared. UI filters, timestamps, account identity, configuration and tokens are excluded from task payloads. Different-account restores are backed up and isolated. Pending changes for a previously connected account retain their own private journal.
 
-Google sync runs while the phone app is in the foreground and while the PC background process is running. Widget actions made while the phone app is closed sync when you next open Tasks. No real Google account is signed into automated tests; the actual account/consent flow must be checked after installing.
-
-Official references:
-
-- https://developers.google.com/identity/protocols/oauth2/native-app
-- https://developer.android.com/identity/authorization
-- https://developers.google.com/workspace/drive/api/guides/appdata
+Phone sync runs while Tasks is open; widget edits sync on the next app open. PC sync continues while its background process runs. Local QR pairing remains available. Android reminders and the widget are phone features. Automated tests use mocked Google storage/identity, shared Android/Python protocol fixtures and real native Windows installation tests; live consent still requires the user’s Google account and imported Desktop client configuration.
