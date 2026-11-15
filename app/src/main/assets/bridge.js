@@ -998,6 +998,7 @@
     const toolbar = node('div', 'tl-tools'); toolbar.id = 'tl-tools';
     const select = node('select', 'form-control'); select.id = 'tl-context-filter'; select.setAttribute('aria-label', 'Filter tasks by context');
     select.addEventListener('change', () => global.TaskListApp.setContextFilter(select.value)); const filterWrap=node('div','tl-context-filter-wrap'),preview=node('span','tl-context-filter-preview');preview.id='tl-context-filter-preview';preview.hidden=true;preview.setAttribute('aria-hidden','true');filterWrap.append(select,preview);toolbar.append(filterWrap);
+    // Manual refresh reports cloud progress without treating a local redraw as success.
     let refreshPoll=null;
     const refresh=action('',()=>{
       const status=document.getElementById('pt-status'),say=text=>{if(status)status.textContent=text;};
