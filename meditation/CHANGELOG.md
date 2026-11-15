@@ -1,5 +1,8 @@
 ## 1.0.10
 
+- Added independent solid/gradient backgrounds and text/button accents with color wheels, brightness, hex input and a color reset. Saved themes also update the system bars.
+- Clarified vibration-stage labels, changed the top caption to Duration in minutes, and matched visible dropdown-arrow insets to the text padding.
+
 - Polished Settings dropdown arrows, preview-button alignment and checkbox ticks without changing home-page styling. Removed the in-app changelog.
 - Added Off and 1–5 evenly spaced intermediate bells, with matching spacing text and independent sound/vibration controls. Existing settings default to three intermediate bells.
 - Completion plays its configured ending cue and restores the chosen duration with Start ready for another session.
