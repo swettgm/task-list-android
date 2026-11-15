@@ -1,7 +1,7 @@
-Tasks for Windows 0.87.0
+Tasks for Windows 0.88.0
 
 Install over the existing version. Tasks, theme, pairing and taskbar identity are
-retained. Open your current phone with Android Tasks 0.87.0 first and wait for
+retained. Open your current phone with Android Tasks 0.88.0 first and wait for
 Settings > Google sync to say Synced with Google. That phone initializes the cloud
 list; other clients restore it instead of importing their old task lists.
 
@@ -26,3 +26,5 @@ Android reminder and widget controls remain phone features.
 Closing the window keeps PC sync running. Reopen from the same shortcut. Updates
 and uninstall retain private data in %LOCALAPPDATA%\Tasks. Backup copies made
 before cloud restores are under its cloud-backups directory.
+
+The home-screen Refresh button also requests Google sync, just like Sync now in Settings. Pending desktop edits are saved to the local host before requesting cloud sync. Without a Google account, Refresh still updates the local task list.

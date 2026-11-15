@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.88.0",
+    "date": "2026-11-15",
+    "changes": [
+      "The home-screen Refresh button now requests Google sync on both Android and Windows, using the same action as Settings. Windows saves pending window edits before requesting the cloud upload.",
+      "Refresh shows the Google sync result or connection issue instead of immediately claiming success. Local refresh, widgets and reminders remain available without a Google account."
+    ]
+  },
+  {
     "version": "0.87.0",
     "date": "2026-11-14",
     "changes": [

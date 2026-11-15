@@ -37,6 +37,24 @@ await page.goto(pathToFileURL(documentPath).href);
 await page.waitForFunction(() => !!window.TaskListApp && window.__nativeQA.snapshot.length > 0);
 const originalSizes=async(selector)=>page.evaluate(selector=>{const sheet=document.getElementById('tl-unified-controls').sheet,controls=[...document.querySelectorAll(selector)].filter(el=>el.getBoundingClientRect().width>0),read=()=>controls.map(el=>{const b=el.getBoundingClientRect();return[b.width,b.height,getComputedStyle(el).fontSize];});try{sheet.disabled=true;const before=read();sheet.disabled=false;const after=read();return controls.length>=5&&before.every((b,i)=>Math.abs(b[0]-after[i][0])<.5&&Math.abs(b[1]-after[i][1])<.5&&b[2]===after[i][2]);}finally{sheet.disabled=false;}},selector);if(!await originalSizes('#today-task-list-20261023 .tm-item-actions button,#today-task-list-20261023 .tl-tools button,#today-task-list-20261023 .tl-tools select,#today-task-list-20261023 .nav-link,#today-task-list-20261023 .tl-add-task'))throw Error('Main controls retain their pre-style dimensions and font sizes');
 if(!await page.locator('#pt-list .tm-item-actions .tm-progress-control,#pt-list .tm-item-actions .tm-move-control').evaluateAll(buttons=>{const visible=buttons.filter(button=>button.getBoundingClientRect().width>0);return visible.length>0&&visible.every(button=>Math.abs(button.getBoundingClientRect().height-34)<.5);}))throw Error('Task-row controls share the slightly taller 34px height');
+// Home refresh must use the Settings Google action, without claiming success early.
+await page.evaluate(()=>{
+  __nativeQA.google={signedIn:true,email:'test@example.com',message:'Synced with Google',lastSyncAt:'before'};
+  TaskListNative.getGoogleStatus=()=>JSON.stringify(__nativeQA.google);
+  TaskListNative.refreshTasks=()=>{__nativeQA.refreshes=(__nativeQA.refreshes||0)+1;};
+  TaskListNative.syncGoogle=()=>{__nativeQA.googleRequests=(__nativeQA.googleRequests||0)+1;};
+});
+await page.getByRole('button',{name:'Refresh tasks',exact:true}).click();
+if(!await page.evaluate(()=>__nativeQA.refreshes===1&&__nativeQA.googleRequests===1&&document.querySelector('#pt-status').textContent==='Syncing with Google…'&&document.querySelector('.tl-refresh').disabled))throw Error('Home refresh requests Google sync once and waits for its result');
+await page.evaluate(()=>{__nativeQA.google.lastSyncAt='after';});
+await page.waitForFunction(()=>!document.querySelector('.tl-refresh').disabled&&document.querySelector('#pt-status').textContent==='Synced with Google');
+await page.getByRole('button',{name:'Refresh tasks',exact:true}).click();
+await page.evaluate(()=>{__nativeQA.google.message='Google sync is unavailable. Your tasks are saved on this phone.';});
+await page.waitForFunction(()=>!document.querySelector('.tl-refresh').disabled&&document.querySelector('#pt-status').textContent.includes('unavailable'));
+await page.evaluate(()=>{__nativeQA.google={signedIn:false,message:'Not signed in'};});
+await page.getByRole('button',{name:'Refresh tasks',exact:true}).click();
+if(!await page.evaluate(()=>__nativeQA.googleRequests===2&&!document.querySelector('.tl-refresh').disabled&&document.querySelector('#pt-status').textContent.includes('Sign in to Google in Settings')))throw Error('Signed-out refresh keeps local tasks available and explains Google connection');
+await page.evaluate(()=>{delete TaskListNative.getGoogleStatus;delete TaskListNative.syncGoogle;delete TaskListNative.refreshTasks;});
 await page.screenshot({ path: path.join(output, 'today-dark.png'), fullPage: false });
 await page.getByRole('button',{name:'Add task',exact:true}).click();
 await page.getByRole('button',{name:'Details',exact:true}).click();

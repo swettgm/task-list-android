@@ -240,7 +240,15 @@
     configureGoogle(){googleRequest('configure').catch(error=>{googleStatus.message=error.message;});},
     connectGoogle(){googleRequest('sign-in').catch(error=>{googleStatus.message=error.message;});},
     disconnectGoogle(){googleRequest('sign-out').catch(error=>{googleStatus.message=error.message;});},
-    syncGoogle(){googleRequest('sync').catch(error=>{googleStatus.message=error.message;});},
+    async syncGoogle(){
+      try{
+        // Save this window's edits to the native host before asking it to upload.
+        while(inFlight)await new Promise(resolve=>setTimeout(resolve,25));
+        await synchronize();
+        if(!connected||dirty())throw Error('Local edits are still pending. Try syncing again when the PC connection is available.');
+        await googleRequest('sync');
+      }catch(error){googleStatus.message=error.message;updateDesktop();}
+    },
     getLastView(){return global.localStorage.getItem(contextKey+':view')||'today';},
     setLastView(value){if(['today','upcoming'].includes(value))global.localStorage.setItem(contextKey+':view',value);},
     setThemeColors(background) { document.documentElement.style.backgroundColor = background; },

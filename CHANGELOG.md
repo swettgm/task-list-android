@@ -1,3 +1,8 @@
+## 0.88.0
+
+- Home-screen Refresh now requests Google sync on both Android and Windows, using the Settings sync action. Desktop window edits are saved before the upload request.
+- Refresh shows the Google sync result or connection issue instead of immediately claiming success. Local refresh remains available without an account.
+
 ## 0.87.0
 
 - Made the phone’s current task list the initial cloud list when upgrading an already connected phone. Other clients restore that list on first sign-in, with a private local backup before replacement. Previously deleted tasks are not re-imported from a client’s old list.
