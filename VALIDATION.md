@@ -82,6 +82,16 @@ Five new playback tests cover long built-in and Zen playback, single completion,
 
 APK: `Meditation-v1.0.5.apk`, 615410 bytes. SHA-256 `cfd62d7863a598ea3def008cea9ad27ba7154417d124e2b63a96c9b325a9447d`. Package `com.personal.meditation`, version 1.0.5 (6), API 26/35. Artifact hashes, ZIP integrity, exact packaged UI/audio, non-signature content equality to CI, alignment, manifest and v2/v3 signatures passed. The retained certificate matches Meditation 1.0.4.
 
+# Habits 1.0.6 verification
+
+Source: `a9a8ad172e3bf6256ade47df79cda6fc5e72a2ad`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43671797335). **36 native Android tests and zero lint errors passed.**
+
+Widget circles now require two taps on the same habit, date and widget within 600ms. Each pair advances once through unmarked → check → X → unmarked. Single taps and slow taps leave saved marks unchanged and do not vibrate. The pending tap survives receiver recreation; completed pairs clear it so a third tap cannot advance again. Taps on different cells or widget instances cannot combine. Future dates remain locked. In-app marking and widget layout are unchanged. Accessible widget descriptions now say double tap.
+
+Regression checks cover first/second/third taps, complete cycles, slow taps, separate cells/widgets/dates, receiver recreation, future dates and deleted habits. Existing persistence, rollover, layout and app tests also passed. Tested with Robolectric SDK 28; no physical launcher was tested.
+
+APK: `Habits-v1.0.6.apk`, 37694 bytes. SHA-256 `945568e788a0ec39c22ba31349cce92cf54e1afbcab9fcf3134b80bd55df033a`. Package `com.personal.habits`, version 1.0.6 (7), API 26/35. Artifact digests, ZIP integrity, non-signature content equality to CI, alignment and v2/v3 signatures passed. The retained signing certificate matches previous Habits releases, preserving existing habits and settings on update.
+
 # Habits 1.0.5 verification
 
 Source: `3db9e576da17c6d6566d6cf663545165af736c4d`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43497236509). **33 native Android tests and zero lint errors passed.**
