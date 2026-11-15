@@ -1,3 +1,13 @@
+# Tasks 0.88.0 verification
+
+Source: `568cdf2f77b4ac1014732eb977b7e35d0c6d9cb6`. [Android build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43723414185); [Windows build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43723414190). **205 Android tests, 912 browser checks, 37 calendar checks and zero lint errors passed. Windows passed 41 unit tests, 35 browser/HTTP checks, nine native-window checks and eleven installer checks.**
+
+Home-screen Refresh now invokes the same Google sync action as Settings on both clients. Android retains widget/reminder and local-pairing refresh without requesting a second cloud sync. Desktop saves pending window edits to its native host before the cloud request. Refresh reports the Google status after its timestamp or message changes, and reports pending status after thirty seconds rather than claiming success early. Without a connected account, local refresh stays available and the status points to Google sign-in in Settings.
+
+Targeted Chromium checks cover the Google request, waiting for a fresh success, connection errors and signed-out local refresh. The desktop HTTP test clicks the real home button and verifies exactly one Google sync POST after the pending note edit has reached the local host. Google authorization/cloud operations are mocked in these interaction tests; no personal Google credentials or live account were used. Appearance and widget layout are unchanged.
+
+Android: `Tasks-v0.88.0.apk`, 2880589 bytes; SHA-256 `6143b49c13894e1c2cdb00892c06334cfde67e56cab73ca7497d427a3d74e9b7`. Windows portable: 13790923 bytes; SHA-256 `65b14fcbce7677ffdfbab55299f7e12169a0a73b581381d450b91cf3765c37de`. Installer: 17338345 bytes; SHA-256 `7568f8fc09e27ca470b5ce8819b93ebc4239649948555f96d19cda3dcec0560d`. CI artifact digests, ZIP CRCs, package/version, exact Android non-signature content, retained Android signer and alignment passed. The updater installs over existing apps and preserves their saved data. Tested in CI and Chromium, without a physical phone.
+
 # Tasks 0.87.0 verification
 
 Source: `6a864b5d98a5d083fc1f98d270a56710be9e67f1`. [Android checks](https://github.com/swettgm/task-list-android/actions/runs/43666000859) and [Windows checks](https://github.com/swettgm/task-list-android/actions/runs/43666000901) succeeded. **205 Android unit tests, 912 browser checks, 37 calendar checks and zero lint errors passed. Windows passed 41 unit tests, 34 browser/HTTP checks, nine native-window/taskbar checks and eleven installer/upgrade/uninstall checks.**

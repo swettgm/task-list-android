@@ -1,3 +1,9 @@
+# Windows 0.88.0 taskbar verification
+
+[Successful Windows build and checks](https://github.com/swettgm/task-list-android/actions/runs/43723414190). Source `568cdf2f77b4ac1014732eb977b7e35d0c6d9cb6`. All existing native-window, installation, live-upgrade and data-preservation checks passed. Home Refresh now requests Google sync after pending window edits reach the native host; its new HTTP/browser regression test passed. Stable taskbar identity and per-user installation paths are retained.
+
+`Tasks-PC.exe`, 13790923 bytes; SHA-256 `65b14fcbce7677ffdfbab55299f7e12169a0a73b581381d450b91cf3765c37de`.
+
 # Windows 0.87.0 taskbar verification
 
 [Successful native/installed window tests](https://github.com/swettgm/task-list-android/actions/runs/43666000901). Source `6a864b5d98a5d083fc1f98d270a56710be9e67f1`. Nine checks confirm the executable-owned window, stable `Personal.Tasks.PC` identity, shortcut/relaunch target, pinning allowed, single-window reuse, minimized/hidden restoration, hide-on-close with sync and complete shutdown. Cloud restore and account configuration retain this identity.

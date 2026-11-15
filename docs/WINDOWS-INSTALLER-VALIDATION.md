@@ -1,3 +1,9 @@
+# Windows 0.88.0 installer verification
+
+[Successful Windows build and checks](https://github.com/swettgm/task-list-android/actions/runs/43723414190). Source `568cdf2f77b4ac1014732eb977b7e35d0c6d9cb6`. All existing native-window, installation, live-upgrade and data-preservation checks passed. Home Refresh now requests Google sync after pending window edits reach the native host; its new HTTP/browser regression test passed. Stable taskbar identity and per-user installation paths are retained.
+
+`Tasks-Setup-v0.88.0.exe`, 17338345 bytes; SHA-256 `7568f8fc09e27ca470b5ce8819b93ebc4239649948555f96d19cda3dcec0560d`.
+
 # Windows installer 0.87.0 verification
 
 [Successful Windows build](https://github.com/swettgm/task-list-android/actions/runs/43666000901). Source `6a864b5d98a5d083fc1f98d270a56710be9e67f1`. The actual installer passed per-user install, both shortcuts, Apps registration, installed startup, running upgrade, shutdown/removal and retention of personal task/theme/pairing data. Google Desktop configuration is imported locally and encrypted with DPAPI; cloud restore saves an old-list backup before replacement.
