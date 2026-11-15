@@ -112,5 +112,54 @@
       ],
       "cloudManaged": true
     }
+  },
+  {
+    "seed": {
+      "customTasks": [
+        {
+          "id": "gone",
+          "title": "Deleted task"
+        }
+      ],
+      "projects": {
+        "p": {
+          "id": "p",
+          "title": "Deleted project"
+        }
+      }
+    },
+    "documents": [
+      {
+        "owner": "a-delete",
+        "registers": {
+          "/customTasks/gone": {
+            "clock": 3,
+            "deleted": true
+          },
+          "/projects/p": {
+            "clock": 3,
+            "deleted": true
+          }
+        }
+      },
+      {
+        "owner": "z-stale",
+        "registers": {
+          "/customTasks/gone/notes": {
+            "clock": 3,
+            "value": "Stale edit"
+          },
+          "/projects/p/notes": {
+            "clock": 3,
+            "value": "Stale edit"
+          }
+        }
+      }
+    ],
+    "expected": {
+      "customTasks": [],
+      "projects": {},
+      "cloudManaged": true
+    }
   }
 ]

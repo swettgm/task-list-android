@@ -16,9 +16,10 @@ final class CloudState {
  static JSONObject members(JSONArray array)throws JSONException{JSONObject out=new JSONObject();for(int i=0;i<array.length();i++)out.put(array.getString(i),true);return out;}
  static List<String> keys(JSONObject value){List<String> out=new ArrayList<>();value.keys().forEachRemaining(out::add);Collections.sort(out);return out;}
  static JSONObject restored(JSONObject state)throws JSONException{
-  JSONObject out=copy(state),tasks=out.optJSONObject("customTasks");if(tasks!=null){JSONArray list=new JSONArray();for(String key:keys(tasks))list.put(tasks.getJSONObject(key));out.put("customTasks",list);}
+  JSONObject out=copy(state),tasks=out.optJSONObject("customTasks");if(tasks!=null){JSONArray list=new JSONArray();for(String key:keys(tasks)){JSONObject task=tasks.optJSONObject(key);if(task!=null&&key.equals(task.optString("id"))&&task.opt("title") instanceof String)list.put(task);}out.put("customTasks",list);}
   JSONObject links=out.optJSONObject("manualLinks");if(links!=null){JSONObject map=new JSONObject();for(String key:keys(links)){JSONArray list=new JSONArray();JSONObject peers=links.getJSONObject(key);for(String peer:keys(peers))if(peers.optBoolean(peer))list.put(peer);map.put(key,list);}out.put("manualLinks",map);}
   JSONObject active=out.optJSONObject("inProgressTasks");if(active!=null){JSONArray list=new JSONArray();for(String key:keys(active))if(active.optBoolean(key))list.put(key);out.put("inProgressTasks",list).put("inProgress",list.length()>0?list.getString(list.length()-1):JSONObject.NULL);}
+  JSONObject projects=out.optJSONObject("projects");if(projects!=null)for(String key:new ArrayList<>(keys(projects))){JSONObject project=projects.optJSONObject(key);if(project==null||!key.equals(project.optString("id"))||!(project.opt("title") instanceof String))projects.remove(key);}
   return out.put("cloudManaged",true);
  }
  static String escape(String v){return v.replace("~","~0").replace("/","~1");}

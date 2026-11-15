@@ -18,11 +18,12 @@ def normalized(state):
 
 def restored(state):
     out=copy.deepcopy(state)
-    if 'customTasks'in out:out['customTasks']=[out['customTasks'][key]for key in sorted(out['customTasks'])]
+    if 'customTasks'in out:out['customTasks']=[out['customTasks'][key]for key in sorted(out['customTasks']) if isinstance(out['customTasks'][key],dict)and out['customTasks'][key].get('id')==key and isinstance(out['customTasks'][key].get('title'),str)]
     if 'manualLinks'in out:out['manualLinks']={k:sorted(v for v,keep in values.items()if keep)for k,values in out['manualLinks'].items()}
     if 'inProgressTasks'in out:
         out['inProgressTasks']=sorted(v for v,keep in out['inProgressTasks'].items()if keep)
         out['inProgress']=out['inProgressTasks'][-1]if out['inProgressTasks']else None
+    if isinstance(out.get('projects'),dict):out['projects']={key:value for key,value in out['projects'].items()if isinstance(value,dict)and value.get('id')==key and isinstance(value.get('title'),str)}
     out['cloudManaged']=True
     return out
 
