@@ -46,19 +46,19 @@ jobs:
       - name: Verify extended audio files
         run: python3 tools/audio-check.py
       - name: Build, unit tests and lint
-        run: gradle --no-daemon --console=plain :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+        run: gradle --no-daemon --console=plain :app:assembleRelease :app:testDebugUnitTest :app:lintRelease
       - name: Browser workflow checks
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
           node tools/browser-smoke.mjs
       - name: Verify CI APK
         run: |
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
-          sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/app-debug.apk.sha256
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
+          sha256sum app/build/outputs/apk/release/app-release.apk > app/build/outputs/apk/release/app-release.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
           name: Meditation-Android-APK
-          path: meditation/app/build/outputs/apk/debug/*.apk*
+          path: meditation/app/build/outputs/apk/release/*.apk*
           retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
@@ -67,7 +67,7 @@ jobs:
           path: |
             meditation/app/build/reports/tests/
             meditation/app/build/test-results/
-            meditation/app/build/reports/lint-results-debug.*
+            meditation/app/build/reports/lint-results-release.*
             meditation/build/browser-qa/
             meditation/build/audio-qa/
           retention-days: 14

@@ -2,12 +2,12 @@
 
 A separate lightweight Android app matching the navy-to-gray theme of Tasks and Route Manager.
 
-- The main screen has only a centered timer and Start button, plus a small Settings icon. A small Settings button opens duration, sounds, vibration controls and the changelog on a separate screen.
+- The main screen has only a centered timer and Start button, plus a small Settings icon. A small Settings button opens duration, intermediate bells, sounds and vibration controls on a separate screen.
 - Choose 1–240 minutes in Settings. A separate 30-second preparation countdown comes first.
 - At three, two and one seconds remaining: two short vibrations, then a long vibration. The start bell follows at zero.
-- Quarter cues at 25%, 50% and 75%; the shared start/end bell plays at 100%. Ten minutes has quarter cues at 2:30, 5:00 and 7:30, then the end bell at 10:00.
-- Choose independent start/end and quarter sounds: five meditation bell/bowl presets, including Zen tone, silence or your own audio file. Preview sounds before starting.
-- Enable and use sliders to set vibration lengths separately for the first two preparation pulses, final preparation pulse, start, quarters and end. Preparation pulses allow 0.05–0.9 seconds; other cues allow 0.05–5 seconds.
+- Choose Off or 1–5 intermediate bells, evenly spaced during the session. The default is three, preserving the previous timing. Eight minutes with three intermediate bells cues at 2:00, 4:00 and 6:00; the end cue remains at 8:00. Off disables both intermediate sound and vibration.
+- Choose independent start/end and intermediate sounds: five meditation bell/bowl presets, including Zen tone, silence or your own audio file. Preview sounds before starting.
+- Enable and use sliders to set vibration lengths separately for the first two preparation pulses, final preparation pulse, start, intermediate cues and end. Preparation pulses allow 0.05–0.9 seconds; other cues allow 0.05–5 seconds.
 - Pause, resume or end from the app or ongoing session notification. The foreground service uses a monotonic clock and a partial wake lock while counting so cues continue with the screen off. Pausing releases the wake lock; ending releases all session resources.
 - Settings stay saved. No guidance, text-to-speech, account, widget, statistics or Internet permission.
 
@@ -23,6 +23,10 @@ Version 1.0.3 keeps timer geometry stable across session phases, uses equal sess
 
 Vibration sliders play one preview at the chosen length when released. Previews stop when leaving Settings or the app and are disabled during a session.
 
-Zen tone is an extended/faded version of the supplied `alex_jauk-zen-tone-mid-high-202557.mp3`. Original sources and processing details are in `audio-source/`; `tools/extend-sounds.py` rebuilds the bundled Ogg Vorbis audio using FFmpeg with Rubber Band. Start/end and quarter choices remain independent, and session deadlines do not wait for audio playback.
+Zen tone is an extended/faded version of the supplied `alex_jauk-zen-tone-mid-high-202557.mp3`. Original sources and processing details are in `audio-source/`; `tools/extend-sounds.py` rebuilds the bundled Ogg Vorbis audio using FFmpeg with Rubber Band. Start/end and intermediate choices remain independent, and session deadlines do not wait for audio playback.
 
 Zen tone retains the original recording’s real-time bell strike, with only the quiet pre-strike noise silenced and a short 10ms entry fade. Its late ringing modes are extended without time stretching the attack. Singing bowl retains its natural attack with an added short, clean mallet strike and a phase-aligned extended tail. Both use lossless FLAC, last twenty seconds and fade to silence. Other presets are unchanged. Previously selected custom copies named `alex_jauk-zen-tone-mid-high-202557.mp3` (including numbered downloads) resolve to the bundled Zen tone; unrelated custom files retain their existing behavior.
+
+At completion, the chosen end sound/vibration plays once and the home display returns to the configured duration with Start available. It never starts the next session automatically. For vibration-only intermediate cues, select Silent and enable Intermediate bells vibration. For sound-only cues, uncheck that vibration; both are also supported. Sound choices and vibration lengths remain saved when intermediate bells are Off.
+
+Settings uses uniform centered dropdown chevrons, aligned preview buttons, centered checkbox ticks and slider rows. The in-app changelog is removed. The home layout and timer fades are unchanged. Distribution uses a non-debuggable release APK, signed locally with the retained Meditation key for in-place upgrades.

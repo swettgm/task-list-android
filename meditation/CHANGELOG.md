@@ -1,3 +1,10 @@
+## 1.0.10
+
+- Polished Settings dropdown arrows, preview-button alignment and checkbox ticks without changing home-page styling. Removed the in-app changelog.
+- Added Off and 1–5 evenly spaced intermediate bells, with matching spacing text and independent sound/vibration controls. Existing settings default to three intermediate bells.
+- Completion plays its configured ending cue and restores the chosen duration with Start ready for another session.
+- Build a non-debuggable release APK for distribution, preserving the existing signing identity.
+
 # 1.0.7
 
 - Smooth isolated high-frequency spikes in Zen tone’s first half-second and blend back into the existing audio by 800ms.
