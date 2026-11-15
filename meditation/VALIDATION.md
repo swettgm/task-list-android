@@ -1,3 +1,17 @@
+# Meditation 1.0.11 verification
+
+Source: `8df9406ae194e23826d09daf485981e3823663c9`. [Build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/43775571184). **47 native Android tests, 154 Chromium checks, eight audio checks and zero release lint errors passed.**
+
+Settings dropdowns use natural height and proportional line height instead of a fixed-height text box. Their preview buttons stretch to the adjacent dropdown. Checks measure actual font ink against the available content height and equal preview/dropdown bounds at 14px, 24px and 32px text sizes, in addition to the existing narrow/wide layout checks.
+
+The Interval bells control is a whole-number slider from Off to 5 bells, matching the vibration sliders. Saved counts and timing rules are unchanged. Its output shows the count; the line below says One bell every 2 minutes, One bell every 1 minute 45 seconds, or One bell every 10 seconds, with no dot separator. Off still suppresses interval sound and vibration. Visible Style captions are removed from Appearance, preserving accessible names for its dropdowns.
+
+Collapsible section summaries have equal 20px top and bottom padding. Removed the extra margin between collapsed sections and normalized expanded-content bottom padding. Chromium verifies equal header spacing and adjoining divider positions. Home-screen styling and the existing image, theme, background audio, timer and vibration behavior are unchanged.
+
+Artifact hashes, ZIP CRCs, exact packaged UI, non-signature content equality with CI, retained signing identity, alignment, package/version and v2/v3 signatures passed. Tested with Robolectric and Chromium, including enlarged text; no physical phone was tested.
+
+APK: `Meditation-v1.0.11.apk`, 1496068 bytes. SHA-256 `22f8cd2efd8c2ea9e3b520dec7bbba2fdb286625684afa4893854b60de3d2a61`. Package `com.personal.meditation`, version 1.0.11 (12), API 26/35. Installs over previous Meditation releases and retains settings.
+
 # Meditation 1.0.10 verification
 
 Source: `ccd151d37142901667a94eb29d454f84631e7911`. [Build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/43768997941). **47 native Android tests, 143 Chromium checks, eight audio-file checks and zero release lint errors passed.**
