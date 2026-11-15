@@ -1,3 +1,9 @@
+# Windows 0.87.0 taskbar verification
+
+[Successful native/installed window tests](https://github.com/swettgm/task-list-android/actions/runs/43666000901). Source `6a864b5d98a5d083fc1f98d270a56710be9e67f1`. Nine checks confirm the executable-owned window, stable `Personal.Tasks.PC` identity, shortcut/relaunch target, pinning allowed, single-window reuse, minimized/hidden restoration, hide-on-close with sync and complete shutdown. Cloud restore and account configuration retain this identity.
+
+`Tasks-PC-v0.87.0.exe`, 13789163 bytes. SHA-256 `046b9700e67cc20d55fa5cf44b0c94c8363e367b0615c59fe37b4a90940e6ae0`.
+
 # Windows 0.86.0 taskbar verification
 
 [Successful native-window and installed-window checks](https://github.com/swettgm/task-list-android/actions/runs/43653938352). Source: `aec67775bde7312414225f07e4ea2da778472def`.

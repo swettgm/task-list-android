@@ -1,3 +1,9 @@
+# Windows installer 0.87.0 verification
+
+[Successful Windows build](https://github.com/swettgm/task-list-android/actions/runs/43666000901). Source `6a864b5d98a5d083fc1f98d270a56710be9e67f1`. The actual installer passed per-user install, both shortcuts, Apps registration, installed startup, running upgrade, shutdown/removal and retention of personal task/theme/pairing data. Google Desktop configuration is imported locally and encrypted with DPAPI; cloud restore saves an old-list backup before replacement.
+
+`Tasks-Setup-v0.87.0.exe`, 17335515 bytes. SHA-256 `4766522c99ebfeeb3796a4e53a43094e74f81c139772ffada83255f9502e9c3c`.
+
 # Windows installer 0.86.0 verification
 
 [Successful Windows build and checks](https://github.com/swettgm/task-list-android/actions/runs/43653938352). Source: `aec67775bde7312414225f07e4ea2da778472def`.
