@@ -44,7 +44,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Verify extended audio files
-        run: python3 tools/audio-check.py
+        run: |
+          python3 tools/audio-check.py
+          python3 tools/ambient-check.py
       - name: Build, unit tests and lint
         run: gradle --no-daemon --console=plain :app:assembleRelease :app:testDebugUnitTest :app:lintRelease
       - name: Browser workflow checks

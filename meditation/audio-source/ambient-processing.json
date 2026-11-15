@@ -1,0 +1,29 @@
+[
+  {
+    "name": "brown_noise",
+    "file": "brown_noise.ogg",
+    "sha256": "e88d132a7f741fd585817a00108b66da419224efa5d492632b97365653ce2138",
+    "seconds": 24,
+    "sampleRate": 24000,
+    "seed": 20261115,
+    "source": "Original synthesized periodic noise and procedural rain"
+  },
+  {
+    "name": "white_noise",
+    "file": "white_noise.ogg",
+    "sha256": "0c0af08f96fa1b8bfbce58d7b8e7e71d3db41b738e47121ca1122d56ed7f5941",
+    "seconds": 24,
+    "sampleRate": 24000,
+    "seed": 20261115,
+    "source": "Original synthesized periodic noise and procedural rain"
+  },
+  {
+    "name": "rain",
+    "file": "rain.ogg",
+    "sha256": "d8c8938bc9cff8169c5f653d4e7bd1b4181effa89ee331a0dbd0c34db2595dc8",
+    "seconds": 24,
+    "sampleRate": 24000,
+    "seed": 20261115,
+    "source": "Original synthesized periodic noise and procedural rain"
+  }
+]

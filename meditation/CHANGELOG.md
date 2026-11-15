@@ -1,5 +1,8 @@
 ## 1.0.10
 
+- Added private image backgrounds with choose/remove controls.
+- Added looping Brown noise, White noise, Rain and custom background audio, independent volume, preview and session pause/resume/end handling.
+
 - Added a 0–300 second preparation countdown, including instant start at zero, and 0.05-second vibration-slider steps.
 - Slightly thickened the launcher icon while preserving its shape and colors.
 
