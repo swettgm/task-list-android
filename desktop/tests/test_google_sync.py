@@ -119,6 +119,13 @@ class CloudTests(unittest.TestCase):
  def test_signout_keeps_local_tasks_and_retains_their_offline_journal(self):
   with tempfile.TemporaryDirectory()as folder:
    drive=Drive({'customTasks':[]});store,cloud=self.setup_cloud(folder,drive);cloud.sync_once();before=store.snapshot();cloud.sign_out();self.assertEqual(store.snapshot(),before);self.assertTrue(cloud.base_path.exists());self.assertFalse(cloud.status()['signedIn'])
+ def test_pending_account_changes_are_retained_when_switching_away_and_back(self):
+  with tempfile.TemporaryDirectory()as folder:
+   drive_a=Drive({'customTasks':[{'id':'a','title':'Account A'}]});drive_b=Drive({'customTasks':[{'id':'b','title':'Account B'}]});store,cloud=self.setup_cloud(folder,drive_a);cloud.sync_once()
+   before=store.snapshot()['state'];changed=copy.deepcopy(before);changed['customTasks'][0]['notes']='Offline edit';store.sync(before,changed)
+   create=drive_a.create;drive_a.create=lambda *args:(_ for _ in ()).throw(google.CloudError('Offline'));cloud.sync_once()
+   cloud.account={'sub':'different','email':'other@example.com','refresh_token':'private'};cloud.drive_factory=lambda token:drive_b;cloud.sync_once();self.assertEqual(store.state['customTasks'][0]['id'],'b')
+   drive_a.create=create;cloud.account={'sub':'subject','email':'test@example.com','refresh_token':'private'};cloud.drive_factory=lambda token:drive_a;cloud.sync_once();self.assertEqual(store.state['customTasks'][0]['notes'],'Offline edit')
  def test_switching_accounts_restores_instead_of_uploading_previous_account(self):
   with tempfile.TemporaryDirectory()as folder:
    drive=Drive({'customTasks':[{'id':'a','title':'Account A'}]});store,cloud=self.setup_cloud(folder,drive);cloud.sync_once();cloud.account={'sub':'different','email':'other@example.com','refresh_token':'private'};drive.values['seed']['state']={'customTasks':[{'id':'b','title':'Account B'}]};cloud.sync_once();self.assertEqual([t['id']for t in store.state['customTasks']],['b']);self.assertEqual(drive.writes,0)

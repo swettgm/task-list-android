@@ -37,6 +37,11 @@ public class GoogleDriveTest {
  @Test public void firstRestoreReplacesOldTasksAndCreatesPrivateBackup()throws Exception{
   Context app=RuntimeEnvironment.getApplication();app.getSharedPreferences("reference_state",0).edit().clear().commit();ReferenceStore store=new ReferenceStore(app);JSONObject old=new JSONObject("{\"customTasks\":[{\"id\":\"old\",\"title\":\"Old\"}]}"),remote=new JSONObject("{\"customTasks\":[{\"id\":\"phone\",\"title\":\"Phone\"}],\"cloudManaged\":true}");store.writeState(old.toString());store.restoreCloud(old,remote,"account");assertEquals("phone",new JSONObject(store.readState()).getJSONArray("customTasks").getJSONObject(0).getString("id"));assertEquals("account",store.cloudAccount());assertTrue(new java.io.File(app.getFilesDir(),"cloud-backups").listFiles().length>0);
  }
+ @Test public void restoringCloudRemovesOldWidgetMirrorBeforeTheUiPublishesNewRows()throws Exception{
+  Context app=RuntimeEnvironment.getApplication();app.getSharedPreferences("reference_state",0).edit().clear().commit();app.getSharedPreferences("tasks",0).edit().clear().commit();ReferenceStore store=new ReferenceStore(app);
+  String oldId=store.addCustomTask("Old local task",Collections.emptyList(),"LOW",false);JSONObject sent=new JSONObject(store.readState());assertTrue(app.getSharedPreferences("reference_state",0).getString("snapshot","[]").contains(oldId));
+  store.restoreCloud(sent,new JSONObject().put("cloudManaged",true).put("customTasks",new JSONArray()),"account");store.refreshSyncedMirror();assertFalse(app.getSharedPreferences("reference_state",0).getString("snapshot","[]").contains(oldId));for(TaskStore.Task task:new TaskStore(app).all())assertFalse(task.id.contains(oldId));
+ }
  @Test public void definitionsExportIsStableAndKeepsConcurrentTaskHistory()throws Exception{
   Context app=RuntimeEnvironment.getApplication();app.getSharedPreferences("reference_state",0).edit().clear().commit();ReferenceStore store=new ReferenceStore(app);
   store.writeState("{\"completed\":{\"keep\":true},\"projects\":{\"p\":{\"title\":\"keep\"}}}");

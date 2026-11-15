@@ -76,7 +76,7 @@ public final class ReferenceStore {
             java.io.File directory=new java.io.File(appContext.getFilesDir(),"cloud-backups");if(!directory.isDirectory()&&!directory.mkdirs())throw new java.io.IOException("Could not create cloud backup");
             java.io.File backup=new java.io.File(directory,"before-restore-"+UUID.randomUUID()+".json");
             try(java.io.FileOutputStream out=new java.io.FileOutputStream(backup)){out.write(current.toString().getBytes(StandardCharsets.UTF_8));out.getFD().sync();}
-            commit(prefs.edit().putString("state",json).putString("cloudAccount",account).putString("cloudSession",UUID.randomUUID().toString()).putLong("revision",nextRevision()));
+            commit(prefs.edit().putString("state",json).putString("snapshot","[]").putString("cloudAccount",account).putString("cloudSession",UUID.randomUUID().toString()).putLong("revision",nextRevision()));
         }
     }
 

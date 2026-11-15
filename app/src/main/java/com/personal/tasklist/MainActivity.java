@@ -40,7 +40,7 @@ public class MainActivity extends Activity {
     private String pendingPairUrl,pendingPairToken;
     private volatile String bridgeBase;
     private final android.os.Handler syncUi=new android.os.Handler(android.os.Looper.getMainLooper());
-    private boolean syncReloadPending;
+    private boolean syncReloadPending,cloudReloadPending;
     private WebView web;
     private FrameLayout root;
     private Object backCallback;
@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         reference = new ReferenceStore(this);
-        if(!isWidgetEditor()){desktopSync=new SyncEngine(this,this::queueSyncedReload);googleSync=new GoogleSync(this,this::queueSyncedReload);}
+        if(!isWidgetEditor()){desktopSync=new SyncEngine(this,this::queueSyncedReload);googleSync=new GoogleSync(this,this::queueCloudReload);}
         root = new FrameLayout(this);
         root.setBackgroundColor(isWidgetEditor() ? Color.TRANSPARENT : Color.rgb(16, 21, 31));
         if(isWidgetEditor())updateModalBackdrop();
@@ -199,15 +199,17 @@ public class MainActivity extends Activity {
     }
     @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(hasFocus&&!isWidgetEditor()&&reference!=null&&pageReady&&reference.revision()!=loadedRevision){queueSyncedReload();if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();}}
 
+    private void queueCloudReload(){cloudReloadPending=true;queueSyncedReload();}
     private void queueSyncedReload(){
         if(destroyed||syncReloadPending)return;syncReloadPending=true;syncUi.post(this::applySyncedReload);
     }
     private void applySyncedReload(){
         if(destroyed){syncReloadPending=false;return;}
         if(web==null||!pageReady||modalOpen){syncUi.postDelayed(this::applySyncedReload,250);return;}
-        web.evaluateJavascript("Boolean(document.querySelector('dialog[open],.tm-completing')||document.querySelector('.tl-settings-screen')||document.querySelector('.tm-view-animating'))",blocked->{
+        String selector=cloudReloadPending?"dialog[open],.tm-completing,.tm-view-animating":"dialog[open],.tm-completing,.tl-settings-screen,.tm-view-animating";
+        web.evaluateJavascript("Boolean(document.querySelector('"+selector+"'))",blocked->{
             if(destroyed)return;if("true".equals(blocked)){syncUi.postDelayed(this::applySyncedReload,250);return;}
-            syncReloadPending=false;web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.reloadFromNative()",null);loadedRevision=reference.revision();
+            syncReloadPending=false;cloudReloadPending=false;web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.reloadFromNative()",null);loadedRevision=reference.revision();
         });
     }
     private void confirmPC(String url,String token){
