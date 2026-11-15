@@ -16,7 +16,19 @@ public final class HabitWidget extends AppWidgetProvider {
  @Override public void onEnabled(Context c){DayReceiver.schedule(c);}
  @Override public void onDisabled(Context c){DayReceiver.cancel(c);}
  @Override public void onRestored(Context c,int[] oldIds,int[] newIds){onUpdate(c,AppWidgetManager.getInstance(c),newIds);}
- @Override public void onReceive(Context c,Intent intent){if(CYCLE.equals(intent.getAction())){int id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,-1);boolean registered=false;for(int actual:ids(c))if(actual==id)registered=true;if(!registered)return;String action=intent.getStringExtra("item_action");if(action!=null&&!"cycle".equals(action)){refresh(c);return;}try{LocalDate day=LocalDate.parse(intent.getStringExtra("day"));int result=new HabitStore(c).cycle(intent.getStringExtra("habit_id"),day);if(result>=0&&new Appearance(c).haptics){Vibrator v=(Vibrator)c.getSystemService(Context.VIBRATOR_SERVICE);if(v!=null&&v.hasVibrator())v.vibrate(VibrationEffect.createOneShot(18,VibrationEffect.DEFAULT_AMPLITUDE));}}catch(RuntimeException ignored){/* Stale or malformed rows cannot create marks. */}refresh(c);return;}super.onReceive(c,intent);}
+ @Override public void onReceive(Context c,Intent intent){if(CYCLE.equals(intent.getAction())){int id=intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,-1);boolean registered=false;for(int actual:ids(c))if(actual==id)registered=true;if(!registered)return;String action=intent.getStringExtra("item_action");if(action!=null&&!"cycle".equals(action)){refresh(c);return;}try{LocalDate day=LocalDate.parse(intent.getStringExtra("day"));int result=doubleTapCycle(c,id,intent.getStringExtra("habit_id"),day);if(result>=0)refresh(c);if(result>=0&&new Appearance(c).haptics){Vibrator v=(Vibrator)c.getSystemService(Context.VIBRATOR_SERVICE);if(v!=null&&v.hasVibrator())v.vibrate(VibrationEffect.createOneShot(18,VibrationEffect.DEFAULT_AMPLITUDE));}}catch(RuntimeException ignored){/* Stale or malformed rows cannot create marks. */}return;}super.onReceive(c,intent);}
+ // RemoteViews delivers broadcasts, so retain the first tap across receiver instances.
+ // One pending cell at a time prevents taps on different habits/widgets/dates pairing.
+ static synchronized int doubleTapCycle(Context c,int widget,String habit,LocalDate day){
+  android.content.SharedPreferences p=c.getSharedPreferences("widget_taps",Context.MODE_PRIVATE);
+  HabitStore store=new HabitStore(c);
+  if(day.isAfter(HabitStore.today())||store.habits().stream().noneMatch(h->h.id.equals(habit))){p.edit().clear().commit();return -1;}
+  long now=SystemClock.elapsedRealtime(),previous=p.getLong("at",-1);
+  boolean pair=p.getInt("widget",-1)==widget&&Objects.equals(p.getString("habit",null),habit)&&day.toString().equals(p.getString("day",null))&&previous>=0&&now>=previous&&now-previous<=600;
+  if(pair){p.edit().clear().commit();return store.cycle(habit,day);}
+  p.edit().clear().putInt("widget",widget).putString("habit",habit).putString("day",day.toString()).putLong("at",now).commit();
+  return -1;
+ }
  static int[] ids(Context c){return AppWidgetManager.getInstance(c).getAppWidgetIds(new ComponentName(c,HabitWidget.class));}
  public static void refresh(Context c){AppWidgetManager m=AppWidgetManager.getInstance(c);for(int id:ids(c))update(c,m,id);DayReceiver.schedule(c);}
  static void update(Context c,AppWidgetManager m,int id){m.updateAppWidget(id,build(c,id,HabitStore.today()));m.notifyAppWidgetViewDataChanged(id,R.id.widget_rows);}
