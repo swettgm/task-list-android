@@ -72,7 +72,7 @@ public final class ReferenceStore {
     String cloudAccount(){synchronized(LOCK){return prefs.getString("cloudAccount","");}}
     void restoreCloud(JSONObject sent,JSONObject remote,String account)throws Exception{
         synchronized(LOCK){
-            JSONObject current=state(),merged=StateMerge.merge(sent,current,remote);String json=merged.toString();checkSize(json);
+            JSONObject current=state(),merged=StateMerge.merge(sent,current,remote);if(!merged.has("completed"))merged.put("completed",new JSONObject());objectField(merged,"completed");String json=merged.toString();checkSize(json);
             java.io.File directory=new java.io.File(appContext.getFilesDir(),"cloud-backups");if(!directory.isDirectory()&&!directory.mkdirs())throw new java.io.IOException("Could not create cloud backup");
             java.io.File backup=new java.io.File(directory,"before-restore-"+UUID.randomUUID()+".json");
             try(java.io.FileOutputStream out=new java.io.FileOutputStream(backup)){out.write(current.toString().getBytes(StandardCharsets.UTF_8));out.getFD().sync();}

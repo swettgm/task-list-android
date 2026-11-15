@@ -98,6 +98,12 @@ class CloudTests(unittest.TestCase):
   with patch.object(google.threading.Thread,'start'):
    cloud=google.CloudSync(store,tasks_pc.merge_state,tasks_pc.atomic_json,Vault(),lambda token:drive,config={'client_id':google.CLIENT_ID,'client_secret':'fake-client-secret'})
   cloud.token=lambda account:'private-access';self.addCleanup(cloud.close);return store,cloud
+ def test_web_client_json_is_rejected_without_changing_account_or_tasks(self):
+  with tempfile.TemporaryDirectory()as folder:
+   store,cloud=self.setup_cloud(folder,Drive());before=store.snapshot();configuration=copy.deepcopy(cloud.configuration)
+   source=Path(folder)/'wrong-client.json';source.write_text(json.dumps({'web':{'client_id':google.CLIENT_ID,'client_secret':'fake-client-secret'}}))
+   with self.assertRaises(google.CloudError):cloud.configure(source)
+   self.assertEqual(store.snapshot(),before);self.assertEqual(cloud.configuration,configuration)
  def test_phone_list_is_restored_without_uploading_old_desktop_tasks(self):
   with tempfile.TemporaryDirectory()as folder:
    phone={'customTasks':[{'id':'phone','title':'Current phone list'}],'taskPurged':{'deleted':True},'completed':{}}
