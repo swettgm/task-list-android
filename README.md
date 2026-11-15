@@ -110,7 +110,7 @@ For each release, add the newest entry to `app/src/main/assets/changelog.json`, 
 
 ## Meditation
 
-[Download Meditation 1.0.9](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Meditation-v1.0.9.apk), a separate simple meditation timer with the same theme. Choose a duration, prepare for 30 seconds, then meditate with quarter chimes and a start/end bell. The main screen shows just the timer, Start and a small Settings icon. Duration, sounds, vibration cues and changelog are in Settings. [Details](meditation/README.md).
+[Download Meditation 1.0.10](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Meditation-v1.0.10.apk), a separate simple meditation timer with the same theme. Choose a duration and countdown, with Off or 1–5 intermediate bells and independent sounds/vibrations. Settings also offers color wheels, gradients, private image backgrounds and looping noise, rain or custom audio. The main screen shows just the timer, Start and a small Settings icon. Duration, sounds, vibration cues and changelog are in Settings. [Details](meditation/README.md).
 
 ## Habits
 

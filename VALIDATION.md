@@ -1,3 +1,19 @@
+# Meditation 1.0.10 verification
+
+Source: `ccd151d37142901667a94eb29d454f84631e7911`. [Build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/43768997941). **47 native Android tests, 143 Chromium checks, eight audio-file checks and zero release lint errors passed.**
+
+Settings now uses centered, uniform dropdown chevrons with equal visible/text insets, aligned preview buttons and centered checkbox ticks. Labels say Duration in minutes, Countdown in seconds and clear vibration stages; the Vibrations seconds suffix and in-app changelog are removed. The launcher icon stroke is slightly thicker. Home layout and control dimensions remain unchanged.
+
+Choose 0–300 preparation seconds, default 30. Zero starts immediately; one/two-second preparations only emit pulses that fit. Choose Off or 1–5 evenly spaced intermediate bells; Off suppresses both interval sound and vibration. Intermediate sound and vibration remain independent. Vibration sliders snap to 0.05-second increments and preview the saved snapped duration only on release. Session completion plays the configured end cue once and restores the selected duration, ready for Start without automatically restarting.
+
+Background and text/button accents each support solid or two-color gradients, with touch/keyboard color wheels, brightness, validated hex entry, cancel/Back handling and reset. Native system bars follow the background. Image backgrounds use Android's document picker, decode/orient/downsample into a bounded private JPEG, survive reopening and can be removed. No network upload or broad storage permission is introduced.
+
+Background sound supports Off, original synthesized Brown noise, White noise and Rain, or retained custom audio, with independent volume. A separate MediaPlayer loops throughout meditation, follows Pause/Resume and stops at End. Bell cues never replace the background player. Ten-second previews stop when leaving Settings or starting a session; actual custom loop playback has no ten-second limit. Native tests cover repeated loops, custom playback, pause during preparation, stop/timeout, cue coexistence and service integration. The three 24-second presets pass level, clipping, non-silence and loop-boundary checks; existing five bell files are unchanged.
+
+The release APK is non-debuggable and signed locally with the retained Meditation certificate. Its assets match the tested CI artifact, and all non-signature archive content matches before/after signing. Verified artifact SHA-256, ZIP CRCs, package/version, alignment and v2/v3 signatures. Tests use Robolectric SDK 28 and Chromium; no physical phone or personal photo/audio was used.
+
+APK: `Meditation-v1.0.10.apk`, 1496068 bytes. SHA-256 `8c9ae7c8ce8bc26b0e53709bdeb25be06412d19b0759efcbefbbad75893b5fcf`. Package `com.personal.meditation`, version 1.0.10 (11), API 26/35. Installs over existing Meditation releases while retaining settings.
+
 # Tasks 0.88.0 verification
 
 Source: `568cdf2f77b4ac1014732eb977b7e35d0c6d9cb6`. [Android build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43723414185); [Windows build and full checks](https://github.com/swettgm/task-list-android/actions/runs/43723414190). **205 Android tests, 912 browser checks, 37 calendar checks and zero lint errors passed. Windows passed 41 unit tests, 35 browser/HTTP checks, nine native-window checks and eleven installer checks.**
