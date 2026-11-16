@@ -1,3 +1,15 @@
+# Meditation 1.0.12 verification
+
+Source: `9c58f86f923bb743b33cce22daf1ada82ace75f9`. [Build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/43777874138). **47 native Android tests, 159 Chromium checks, eight audio checks and zero release lint errors passed.**
+
+Removed the home Settings gear border/background in all accent modes while preserving its 44px touch target and focus outline. The Settings heading is reduced from 26px to 22px. Browser checks confirm the border does not return with gradient accents.
+
+The clarified interval limit remains five bells before the end cue, at each sixth of the session when the slider is at maximum. Spacing is calculated from duration: eight minutes gives 1 minute 20 seconds, and one minute gives 10 seconds. Tests verify changing duration retains the five-bell cap and updates the shown gap. Existing timer scheduling and saved counts remain unchanged.
+
+Artifact hashes, archive integrity, exact packaged UI, retained signing identity, package/version, alignment, non-signature equality with CI and v2/v3 signatures passed. Tests use Robolectric and Chromium; no physical phone was tested.
+
+APK: `Meditation-v1.0.12.apk`, 1496068 bytes. SHA-256 `0d719d29a3c912289c3939b585b9a05a775fb7bfcf9337cadacc760d8ce455e3`. Package `com.personal.meditation`, version 1.0.12 (13), API 26/35. Installs over previous Meditation releases and retains settings.
+
 # Meditation 1.0.11 verification
 
 Source: `8df9406ae194e23826d09daf485981e3823663c9`. [Build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/43775571184). **47 native Android tests, 154 Chromium checks, eight audio checks and zero release lint errors passed.**
