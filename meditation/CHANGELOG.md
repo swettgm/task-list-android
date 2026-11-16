@@ -1,3 +1,9 @@
+## 1.0.12
+
+- Removed the Settings gear border, including under gradient accents, while preserving its 44px tap target.
+- Reduced the Settings heading to 22px.
+- Confirmed the interval slider caps at five bells, with spacing recalculated from duration so the maximum is one bell at each sixth of the session.
+
 ## 1.0.11
 
 - Let dropdowns grow with their text to prevent clipped labels at larger font sizes. Sound preview buttons match the dropdown height.
