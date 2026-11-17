@@ -1,10 +1,10 @@
-# CRM
+# Relationship Manager
 
 [Download CRM 1.0.6](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.6.apk). Android 8 or later.
 
 A separate Android app for staying in touch, with Friends/Family and Interests pages. Link selected phone contacts (including contacts synced to the phone by Google), add notes, choose a repeat interval and reminder date/time, and record when you last contacted someone. Interests entries have In progress, Hiatus and DTF labels.
 
-Linked names and phone numbers refresh on launch/resume. CRM does not write to the phone contacts database or send messages automatically. Removing a person from CRM leaves the phone contact intact. Notes and schedules are saved in app-private storage. Notifications repeat on a calendar cadence; Contacted today resets that cadence. Delivery uses Android’s battery-aware alarms and may be delayed by battery restrictions.
+Linked names and phone numbers refresh on launch/resume. Relationship Manager does not write to the phone contacts database or send messages automatically. Removing a person from Relationship Manager leaves the phone contact intact. Notes and schedules are saved in app-private storage. Notifications repeat on a calendar cadence; Contacted today resets that cadence. Delivery uses Android’s battery-aware alarms and may be delayed by battery restrictions.
 
 Build: `gradle :app:assembleDebug :app:testDebugUnitTest :app:lintDebug` (JDK 21, Gradle 8.11.1, Android SDK 35). Browser checks: `node tools/browser-smoke.mjs` with Playwright installed.
 
@@ -25,3 +25,5 @@ Cards use smaller app text, tighter spacing and aligned title/status, tag/detail
 Status appears immediately beside the name: Hiatus red, In progress yellow and DTF green. Click status, tags, notes, last-contacted dates or reminder text for a focused quick editor; clicking the name opens the full person editor. Editor scroll areas include space for focus rings so selected fields do not clip at the edges.
 
 New entries start with reach-out notifications off. Enable Reach-out reminders per person when needed; existing reminder settings are preserved.
+
+Relationship Manager updates the existing CRM app in place. The package name, private data store and signing identity are retained.
