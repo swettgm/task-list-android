@@ -25,7 +25,7 @@ public final class HabitWidget extends AppWidgetProvider {
   if(day.isAfter(HabitStore.today())||store.habits().stream().noneMatch(h->h.id.equals(habit))){p.edit().clear().commit();return -1;}
   long now=SystemClock.elapsedRealtime(),previous=p.getLong("at",-1);
   boolean pair=p.getInt("widget",-1)==widget&&Objects.equals(p.getString("habit",null),habit)&&day.toString().equals(p.getString("day",null))&&previous>=0&&now>=previous&&now-previous<=600;
-  if(pair){p.edit().clear().commit();return store.cycle(habit,day);}
+  if(pair){p.edit().clear().commit();return store.cycleWidget(habit,day);}
   p.edit().clear().putInt("widget",widget).putString("habit",habit).putString("day",day.toString()).putLong("at",now).commit();
   return -1;
  }

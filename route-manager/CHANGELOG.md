@@ -1,3 +1,7 @@
+## 1.0.20
+
+- Show each note’s existing status in the export selection screen, including grouped notes under the same stop. Status pills are omitted from Preview, Copy and Share.
+
 # 1.0.19
 
 - Added red Delegate. All current notes switch to Delegate once on update; new notes default to Delegate.

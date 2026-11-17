@@ -41,3 +41,5 @@ Double tap a note to cycle its saved status: red Delegate, green In progress, ye
 In-progress and For me notes appear first within their route. Clearing their status restores normal creation-date order.
 
 New notes default to red Delegate. Existing notes are set to Delegate once when updating to 1.0.19; later status choices, including no status, are preserved. In progress and For me remain above Delegate and unmarked notes.
+
+The export notes selection shows each note’s saved status next to its own text, including different statuses on notes grouped under one stop. These status pills are selection-only and never added to the preview, copied list or shared text.
