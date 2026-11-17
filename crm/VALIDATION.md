@@ -1,3 +1,15 @@
+# CRM 1.0.6 verification
+
+Source: `5f84084357c79bd1fb9a59458499bdf22875641d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44135479634). **23 native Android tests, 90 browser checks and zero lint errors passed.**
+
+With the user's approval, CRM copies the VectorDrawable launcher setup and exact rounded white background path from Route Notes/Meditation. Raster launcher resources and vendor container overrides are removed. Native graphics tests compare CRM's rendered alpha boundary with Android-rendered background paths read from both actual companion sources, pixel-for-pixel. The bold single-person foreground is inset inside that shared boundary. Rounded outer corners remain transparent. No physical launcher was tested.
+
+Status is immediately beside the name and vertically centered: Hiatus is red (#a61b32), In progress yellow (#e7bc35) and DTF green (#176b42). Status, tags, notes, last-contacted dates and reminder text open focused quick editors. Quick edits update only their own fields; save/cancel/failure and swipe behavior are checked. Clicking the name opens the full editor. Editor scroll areas and footers leave space for complete focus outlines, including both sides of the Status selector.
+
+New entries in both tabs default to notifications off. Tests verify that saving a default entry retains reminders=false and does not request notification permission. Reminder opt-in and existing reminder settings are retained. Existing entries are not reset. Compact cards, icon-only tags, full notes and contact links remain available.
+
+APK: `CRM-v1.0.6.apk`, 41631 bytes, package `com.personal.crm`, version code 7. SHA-256 `2a73b09d0bc626d3f9baf6b908aa991126bf9fcd8fbf424d5f7b60913252992f`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over CRM to retain data. Native tests use Robolectric/native graphics and browser checks use Chromium. No physical phone was tested.
+
 # CRM 1.0.5 verification
 
 Source: `3b0014923040a0ebe72e6d9c6d4f937dcfd7cdc7`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44122778755). **23 native Android tests, 67 browser checks and zero lint errors passed.**
