@@ -1,3 +1,11 @@
+# RM 1.0.11 verification
+
+Source: `c8453a11c8bde0014a2f087c0b8ba10c2966f9e5`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44200979195). **27 native Android tests, 127 browser checks and zero lint errors passed.**
+
+The launcher label is RM; the in-app title remains Relationship Manager. Location and next-step caption/text/arrow share the same color, effective opacity, normal weight and compact text size. The smaller arrow aligns with the text baseline instead of its top edge. Location and next steps remain above tag icons. Browser checks cover matching typography, color/opacity, arrow size/alignment and row order. The native manifest-label test verifies RM.
+
+APK: `Relationship-Manager-v1.0.11.apk`, 41631 bytes, package `com.personal.crm`, version code 12. SHA-256 `27619faad45203db478901981f14544cdc2a74f49a72b05b6e9d645f73ec13dc`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over the current app to retain data. Native checks use Robolectric/native graphics and browser checks use Chromium. No physical phone was tested.
+
 # Relationship Manager 1.0.10 verification
 
 Source: `8c97f97d61d0cde18dfe63e2975ff81cac753957`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44198133715). **27 native Android tests, 127 browser checks and zero lint errors passed.**
