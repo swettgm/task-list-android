@@ -1,3 +1,15 @@
+# Relationship Manager 1.0.9 verification
+
+Source: `0516afeff2dfa7195d53a1a12aaa8b43fae94aa2`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44196072579). **27 native Android tests, 126 browser checks and zero lint errors passed.**
+
+Profiles in both tabs support an optional manually entered Location describing where the user knows someone from. Filled locations appear below the name with a pin and can be tapped for focused editing. Older records remain valid; the optional string is limited to 500 characters and is preserved during unrelated profile/reminder updates. No device location permission or geocoding is added.
+
+Status pills follow the Tasks app styling with colored circle markers, bold uppercase text, rounded ends, matching padding, weight and letter spacing. Existing yellow In progress, red Hiatus and green DTF meanings are retained. The smaller app heading and reduced gear remain on one line at 320/390px. The shared dialog component now closes on a deliberate outside tap, discarding unsaved edits like Cancel. Inside/padding taps and drags crossing the edge do not dismiss it.
+
+Checks cover location save/reload/quick edit/cancel/failed write, both groups, native contact-update preservation and invalid-data rejection; task-style pill rendering; header bounds; outside dismissal for Add, full editor, quick editors, status, Settings and contacts, plus inside/drag protection. Existing notes, next steps, tags, reminders and appearance are retained.
+
+APK: `Relationship-Manager-v1.0.9.apk`, 41631 bytes, package `com.personal.crm`, version code 10. SHA-256 `2d4fb88ed6ece2faff31a4cbade2fd9623fb5c064238aa4afb7f88afaa653e55`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over the existing app to retain data. Native checks use Robolectric/native graphics and browser checks use Chromium. No physical phone was tested.
+
 # Relationship Manager 1.0.8 verification
 
 Source: `6dfd1498f8cf14195332e3e82ba6910e639d856d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44184702911). **25 native Android tests, 107 browser checks and zero lint errors passed.**
