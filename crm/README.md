@@ -12,12 +12,14 @@ Friends/Family and Interests are separate pages; entries are added on the curren
 
 Swipe left from Friends/Family to Interests, and right to return. Vertical scrolling, short gestures and editor interactions do not change categories. The Friends/Family tab is wider, and both tab labels stay on one line.
 
-The home screen has no search bar or separate contact-import button. Use the floating + button to choose Add manually or Add from contacts. Import dialogs keep their footer visible with long lists, wrapped headings, larger text or a reduced viewport. Tag buttons and saved tags use yellow Snapchat, purple Discord and white In person icons. The launcher icon uses a transparent background with a bold dark single-person outline.
+The home screen has no search bar or separate contact-import button. Use the floating + button to choose Add manually or Add from contacts. Import dialogs keep their footer visible with long lists, wrapped headings, larger text or a reduced viewport. Tag buttons and saved tags use yellow Snapchat, purple Discord and white In person icons. The launcher icon uses a rounded white square with a bold dark single-person outline.
 
 The Snapchat tag uses the standard Simple Icons ghost silhouette in yellow. See [icon sources](ASSETS.md).
 
-The manifest uses a new density-specific transparent PNG launcher asset with a smaller symbol. Android native graphics tests load the manifest icon, compare its rendered pixel bounds against the previous vector and check empty pixels around the symbol to prevent a background plate. This avoids relying on an internal vector scale alone.
+The launcher now copies the VectorDrawable setup and rounded white background path used by Route Notes and Meditation. Native graphics tests compare the rendered alpha boundary against both actual companion icon sources, pixel-for-pixel. The single-person symbol remains bold and inset inside that shared boundary.
 
-A Samsung launcher compatibility hint requests use of the original icon artwork instead of an added icon container. Other launchers ignore this optional metadata.
+The manifest uses the same icon and roundIcon resource method as the companion apps, without vendor-specific container overrides.
 
 Cards use smaller app text, tighter spacing and aligned title/status, tag/detail and action rows. Tags show larger icons without visible text, with accessible names retained. Interests omit Contacted today and unused contact-history wording; Call/Text remain available for saved phone numbers. Notes and long names wrap in full instead of being clipped.
+
+Status appears immediately beside the name: Hiatus red, In progress yellow and DTF green. Click status, tags, notes, last-contacted dates or reminder text for a focused quick editor; clicking the name opens the full person editor. Editor scroll areas include space for focus rings so selected fields do not clip at the edges.

@@ -2,20 +2,22 @@ package com.personal.crm;
 import android.content.Context;
 import android.graphics.*;
 import android.graphics.drawable.*;
+import android.util.Xml;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.*;
 import org.robolectric.annotation.*;
+import org.xmlpull.v1.XmlPullParser;
 import java.io.*;
 import static org.junit.Assert.*;
-/** Check the actual manifest icon, not just scale values in an SVG or vector. */
+/** Verify the same launcher format and visible alpha boundary as the companion apps. */
 @RunWith(RobolectricTestRunner.class) @Config(sdk=35) @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class LauncherIconTest {
- private Drawable icon(){Context c=RuntimeEnvironment.getApplication();return c.getApplicationInfo().loadIcon(c.getPackageManager());}
+ private Context context(){return RuntimeEnvironment.getApplication();}
+ private Drawable icon(){return context().getApplicationInfo().loadIcon(context().getPackageManager());}
  private Bitmap draw(Drawable d){Bitmap b=Bitmap.createBitmap(108,108,Bitmap.Config.ARGB_8888);d.setBounds(0,0,108,108);d.draw(new Canvas(b));return b;}
- private Rect visible(Bitmap b){Rect r=new Rect(108,108,-1,-1);for(int y=0;y<108;y++)for(int x=0;x<108;x++)if(Color.alpha(b.getPixel(x,y))>8){r.left=Math.min(r.left,x);r.right=Math.max(r.right,x);r.top=Math.min(r.top,y);r.bottom=Math.max(r.bottom,y);}return new Rect(r.left,r.top,r.right+1,r.bottom+1);}
- @Test public void launcherLoadsNewTransparentRasterAsset(){Drawable d=icon();assertTrue("The manifest must load the new raster launcher resource",d instanceof BitmapDrawable);assertTrue(((BitmapDrawable)d).getBitmap().hasAlpha());}
- @Test public void renderedLauncherIsSmallerThanPreviousVectorAndHasNoBackplate()throws Exception{Context context=RuntimeEnvironment.getApplication();Bitmap bitmap=draw(icon());Rect actual=visible(bitmap),previous=visible(draw(context.getDrawable(R.drawable.ic_app)));System.out.println("Manifest launcher bounds: "+actual+"; previous vector: "+previous);File out=new File("../build/browser-qa/crm-launcher-render.png");out.getParentFile().mkdirs();try(OutputStream stream=new FileOutputStream(out)){assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,stream));}assertTrue("Rendered person must be smaller than the previous icon: "+actual+" vs "+previous,actual.width()<previous.width()&&actual.height()<previous.height());assertTrue("Icon padding must survive Android resource loading: "+actual,actual.width()>=42&&actual.width()<=56&&actual.height()>=44&&actual.height()<=58);assertTrue(Math.abs(actual.exactCenterX()-54)<=2&&Math.abs(actual.exactCenterY()-54)<=2);for(int[] point:new int[][]{{0,0},{107,0},{0,107},{107,107},{54,4},{4,54},{103,54},{54,103}})assertEquals("No opaque icon background",0,Color.alpha(bitmap.getPixel(point[0],point[1])));}
- @Test public void samsungLauncherReceivesOriginalIconHint()throws Exception{Context c=RuntimeEnvironment.getApplication();android.content.pm.ApplicationInfo info=c.getPackageManager().getApplicationInfo(c.getPackageName(),android.content.pm.PackageManager.GET_META_DATA);assertNotNull(info.metaData);assertTrue(info.metaData.getBoolean("com.samsung.android.icon_container.has_icon_container"));}
-
+ private File companion(String app){for(File dir=new File(System.getProperty("user.dir"));dir!=null;dir=dir.getParentFile()){File file=new File(dir,app+"/app/src/main/res/drawable/ic_app.xml");if(file.exists())return file;}throw new AssertionError("Companion icon source not found");}
+ @Test public void manifestUsesSameVectorLauncherMethod()throws Exception{assertTrue(icon() instanceof VectorDrawable);assertEquals(R.drawable.ic_app,context().getApplicationInfo().icon);android.content.pm.ApplicationInfo info=context().getPackageManager().getApplicationInfo(context().getPackageName(),android.content.pm.PackageManager.GET_META_DATA);assertTrue(info.metaData==null||!info.metaData.containsKey("com.samsung.android.icon_container.has_icon_container"));}
+ @Test public void renderedAlphaBoundaryExactlyMatchesRouteNotesAndMeditation()throws Exception{Bitmap actual=draw(icon());for(String app:new String[]{"route-manager","meditation"}){try(InputStream stream=new FileInputStream(companion(app))){XmlPullParser parser=Xml.newPullParser();parser.setInput(stream,"UTF-8");Bitmap reference=draw(Drawable.createFromXml(context().getResources(),parser));for(int y=0;y<108;y++)for(int x=0;x<108;x++)assertEquals("Launcher boundary differs from "+app+" at "+x+","+y,Color.alpha(reference.getPixel(x,y)),Color.alpha(actual.getPixel(x,y)));}}System.out.println("CRM alpha silhouette matches Route Notes and Meditation pixel-for-pixel at 108x108");}
+ @Test public void roundedWhiteTileKeepsBoldPersonCentered()throws Exception{Bitmap b=draw(icon());assertEquals(0,Color.alpha(b.getPixel(0,0)));assertEquals(0,Color.alpha(b.getPixel(107,107)));assertEquals(Color.WHITE,b.getPixel(54,9));int left=108,top=108,right=-1,bottom=-1;for(int y=0;y<108;y++)for(int x=0;x<108;x++){int color=b.getPixel(x,y);if(Color.alpha(color)>250&&Color.red(color)<100&&Color.green(color)<110&&Color.blue(color)<130){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}}int width=right-left+1,height=bottom-top+1;System.out.println("Bold single-person foreground: "+width+"x"+height);assertTrue(width>=52&&width<=66&&height>=54&&height<=68);assertTrue(Math.abs((left+right)/2.0-53.5)<=2&&Math.abs((top+bottom)/2.0-53.5)<=2);File out=new File("../build/browser-qa/crm-launcher-render.png");out.getParentFile().mkdirs();try(OutputStream stream=new FileOutputStream(out)){assertTrue(b.compress(Bitmap.CompressFormat.PNG,100,stream));}}
 }
