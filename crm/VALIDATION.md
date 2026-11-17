@@ -1,3 +1,11 @@
+# Relationship Manager 1.0.10 verification
+
+Source: `8c97f97d61d0cde18dfe63e2975ff81cac753957`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44198133715). **27 native Android tests, 127 browser checks and zero lint errors passed.**
+
+Location, the Next step caption and step text share the same compact size. Location pins and solid step arrows are proportionally smaller. Both rows appear above the tag icons on main cards. Browser checks verify equal text sizes, arrow dimensions and row ordering, alongside existing editing, persistence and dialog behavior.
+
+APK: `Relationship-Manager-v1.0.10.apk`, 41631 bytes, package `com.personal.crm`, version code 11. SHA-256 `11846cf16b8066edffedd82fddc2daf2132ebd01745f64bbdebd4c6e287e45b5`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over the current app to retain data. Native checks use Robolectric/native graphics and browser checks use Chromium. No physical phone was tested.
+
 # Relationship Manager 1.0.9 verification
 
 Source: `0516afeff2dfa7195d53a1a12aaa8b43fae94aa2`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44196072579). **27 native Android tests, 126 browser checks and zero lint errors passed.**
