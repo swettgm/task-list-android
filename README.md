@@ -118,4 +118,4 @@ Download [Habits 1.0.7](https://github.com/swettgm/task-list-android/raw/refs/he
 
 ## CRM
 
-[Download CRM 1.0.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.0.apk), a separate Android app with linked phone contacts, People and Dating pages, notes and recurring reach-out reminders. [Project details](crm/README.md) and [validation](crm/VALIDATION.md).
+[Download CRM 1.0.1](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.1.apk), a separate Android app with linked phone contacts, Friends and Dating pages, tags, notes and recurring reach-out reminders. [Project details](crm/README.md) and [validation](crm/VALIDATION.md).
