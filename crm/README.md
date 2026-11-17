@@ -35,3 +35,5 @@ Profiles in either tab can include a manually entered Location describing where 
 Status markers follow the Tasks app pill styling: bold uppercase labels, colored circle markers, rounded ends, matching padding and letter spacing, with the existing red/yellow/green status meanings. The app heading and gear are smaller and remain on one line.
 
 Tap the dimmed area outside any app dialog to close it with the same discard behavior as Cancel. Inside taps and drags crossing the panel edge do not dismiss it.
+
+Location and next-step text use the same compact caption size, with proportionally smaller arrows and pins. Location and next steps appear above the tag icons on main cards.
