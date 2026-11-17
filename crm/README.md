@@ -29,3 +29,7 @@ New entries start with reach-out notifications off. Enable Reach-out reminders p
 Relationship Manager updates the existing CRM app in place. The package name, private data store and signing identity are retained.
 
 Interests can include Next steps, with one step per line. Non-empty steps appear on the main card beside solid right-pointing arrows and can be tapped for focused editing. The full editor also supports adding and clearing them; Friends/Family does not show this field. Existing entries without next steps remain unchanged.
+
+Profiles in either tab can include a manually entered Location describing where you know someone from. It appears below the name with a pin icon when filled, and tapping it opens focused editing. No device location or geocoding is used. Existing profiles without this optional field remain unchanged.
+
+Status markers follow the Tasks app pill styling: bold uppercase labels, colored circle markers, rounded ends, matching padding and letter spacing, with the existing red/yellow/green status meanings. The app heading and gear are smaller and remain on one line.
