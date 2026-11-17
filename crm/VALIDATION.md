@@ -1,3 +1,13 @@
+# Relationship Manager 1.0.8 verification
+
+Source: `6dfd1498f8cf14195332e3e82ba6910e639d856d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44184702911). **25 native Android tests, 107 browser checks and zero lint errors passed.**
+
+Interests have an optional Next steps field in Add/Edit person, with one step per line. Non-empty steps display on the main card with a solid right-pointing arrow for each line, beside a Next step/Next steps caption. Tapping the section opens a focused editor. Text wraps in full on small screens; blank lines do not create arrows. Clearing the field hides the card section. Friends/Family do not show this field, and notifications remain off by default for new entries.
+
+The additive nextSteps string is optional for older records, bounded to 4000 characters and retained by unrelated profile/reminder updates. Native checks cover save/reload/contact-update preservation and rejection of invalid/oversized values without replacing stored data. Browser checks cover full-editor creation, card arrows, multiline wrapping, quick save/cancel/failed writes, reopening, unrelated edits, swipe navigation, clearing and Interests-only scope. Existing notes remain separate and are retained.
+
+APK: `Relationship-Manager-v1.0.8.apk`, 41631 bytes, package `com.personal.crm`, version code 9. SHA-256 `2dbd8d16a6cbbbc865b3d456dfec9beef106f37b5307de6f033264235aa4a9cd`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over Relationship Manager to retain data. Native checks use Robolectric/native graphics and browser checks use Chromium. No physical phone was tested.
+
 # Relationship Manager 1.0.7 verification
 
 Source: `ca03de8ab353aff3f318d8cc95b601daca104158`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44146953177). **23 native Android tests, 90 browser checks and zero lint errors passed.**
