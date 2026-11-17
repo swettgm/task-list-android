@@ -37,3 +37,5 @@ Status markers follow the Tasks app pill styling: bold uppercase labels, colored
 Tap the dimmed area outside any app dialog to close it with the same discard behavior as Cancel. Inside taps and drags crossing the panel edge do not dismiss it.
 
 Location and next-step text use the same compact caption size, with proportionally smaller arrows and pins. Location and next steps appear above the tag icons on main cards.
+
+The launcher label is RM; the in-app title remains Relationship Manager. Location and next-step details share one muted color and text size, with a baseline-aligned arrow.
