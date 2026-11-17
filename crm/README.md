@@ -17,3 +17,5 @@ The home screen has no search bar or separate contact-import button. Use the flo
 The Snapchat tag uses the standard Simple Icons ghost silhouette in yellow. See [icon sources](ASSETS.md).
 
 The manifest uses a new density-specific transparent PNG launcher asset with a smaller symbol. Android native graphics tests load the manifest icon, compare its rendered pixel bounds against the previous vector and check empty pixels around the symbol to prevent a background plate. This avoids relying on an internal vector scale alone.
+
+A Samsung launcher compatibility hint requests use of the original icon artwork instead of an added icon container. Other launchers ignore this optional metadata.
