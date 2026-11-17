@@ -1,3 +1,13 @@
+# CRM 1.0.5 verification
+
+Source: `3b0014923040a0ebe72e6d9c6d4f937dcfd7cdc7`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44122778755). **23 native Android tests, 67 browser checks and zero lint errors passed.**
+
+The launcher uses a new transparent density-specific PNG resource rather than relying on the previous internal vector scale. Native Android graphics tests load the actual manifest icon and measure its visible bounds: 52x54 pixels versus the previous vector's 60x62 on the same 108x108 canvas. Tests verify a BitmapDrawable with alpha, centered smaller bounds and empty pixels around the symbol without an opaque background plate. The manifest includes Samsung original-icon compatibility metadata; its packaged value is tested. PNG sources are in crm/artwork. No physical launcher or Samsung firmware was tested.
+
+The interface retains the navy-to-gray theme, rounded controls and white selected borders. App text is reduced to 16px, fields and spacing are tighter, and cards align title/status, tag/detail and action rows vertically. Tags are larger icons only, with accessible names retained. Interests omit Contacted today and unused contact-history wording; saved phone numbers still offer Call/Text. Friends/Family retain Contacted today. Full notes and wrapping names remain visible. Representative cards measured about 149px for Friends/Family with notes/tags/three actions and 117px for Interests. Browser checks cover compact geometry, tag icons, aligned wrapping titles, full multi-line notes, selection, persistence, legacy records, imports and modal footer sizing.
+
+APK: `CRM-v1.0.5.apk`, 54355 bytes, package `com.personal.crm`, version code 6. SHA-256 `76e14ae2707e78f8f0f043e6ea5cdc990592cf958a216d19c620f634506437bd`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over CRM to retain data. Native tests use Robolectric with native graphics for the icon checks; browser checks use Chromium. No physical phone was tested.
+
 # CRM 1.0.4 verification
 
 Source: `403b3ed1df10e9baf1c3ee8b413a56ed36c2c590`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44113389891). **20 native Android tests, 58 browser checks and zero lint errors passed.**
