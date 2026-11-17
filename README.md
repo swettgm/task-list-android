@@ -116,6 +116,6 @@ For each release, add the newest entry to `app/src/main/assets/changelog.json`, 
 
 Download [Habits 1.0.7](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Habits-v1.0.7.apk). A separate, offline habit app with a resizable home-screen widget matching Tasks. Add habits in the app, then use Add widget or the launcher’s Widgets menu. Seven days span two past days, today and four upcoming days. Double tap a widget circle to cycle unmarked → X → check → unmarked; single taps leave it unchanged. Today and past days are editable; future days are read-only until their date arrives. Saved marks stay attached to their dates. Habit names remain visible with the earlier spacing. The widget shows weekday abbreviations for other days, only a dot for today, and no title or action buttons. Manage habits and widget settings in the app. [Details](habits/README.md).
 
-## CRM
+## Relationship Manager
 
-[Download CRM 1.0.6](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.6.apk), a separate Android app with linked phone contacts, Friends/Family and Interests pages, tags, notes and recurring reach-out reminders. [Project details](crm/README.md) and [validation](crm/VALIDATION.md).
+[Download Relationship Manager 1.0.7](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Relationship-Manager-v1.0.7.apk), a separate Android app with linked phone contacts, Friends/Family and Interests pages, tags, notes and recurring reach-out reminders. [Project details](crm/README.md) and [validation](crm/VALIDATION.md).

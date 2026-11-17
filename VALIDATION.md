@@ -1,3 +1,11 @@
+# Relationship Manager 1.0.7 verification
+
+Source: `ca03de8ab353aff3f318d8cc95b601daca104158`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44146953177). **23 native Android tests, 90 browser checks and zero lint errors passed.**
+
+CRM is now Relationship Manager in the Android application label, home heading, page title and user-facing app-name messages. The longer heading wraps without overlapping the settings icon at 320/390px. Native checks verify the actual application label. The existing package com.personal.crm, private preference store, WebView origin, bridge callbacks and signing identity are retained so this installs over CRM without losing people, notes, tags, reminders or appearance settings. Existing behavior and icon artwork are retained.
+
+APK: `Relationship-Manager-v1.0.7.apk`, 41631 bytes, version code 8. SHA-256 `27cc4014eea146672af518fed10859e2dea9fe643c8d05fb120f73e7556f42f0`. New stable alias Relationship-Manager.apk and legacy CRM.apk point to the same signed bytes. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Native checks use Robolectric/native graphics and browser checks use Chromium. No physical phone was tested.
+
 # CRM 1.0.6 verification
 
 Source: `5f84084357c79bd1fb9a59458499bdf22875641d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44135479634). **23 native Android tests, 90 browser checks and zero lint errors passed.**
