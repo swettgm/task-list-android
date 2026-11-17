@@ -1,3 +1,11 @@
+# Route Notes 1.0.21 verification
+
+Source: `117a4bf175dff380cbdcadb2c9fe8457c29c372f`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44095568370). **18 native Android tests, 166 browser checks and zero lint errors passed.**
+
+Each note export title has a pencil to edit its original note. A stop with several notes offers a note chooser. Saving, cancelling, deleting or using Back returns to refreshed export choices with selections, scroll position and Preview expansion preserved. Cross-route editing keeps the home route unchanged. Pencil actions do not toggle selection checkboxes; status labels stay out of the exported text.
+
+APK: `Route-Notes-v1.0.21.apk`, 41553 bytes. SHA-256 `e361ec65ad8a14a5adaf901e95816a385af5ac1470e496779a32e83ac3395586`. Package `com.personal.routemanager`, version code 22. Artifact hash, ZIP integrity, package/version, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over the current app to retain data. Native checks use Robolectric; browser checks use Chromium. No physical phone was tested.
+
 # Route Notes 1.0.20 verification
 
 Source: `a1e4d6cce7222a14b911920ae64037ac17b107b8`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/44074121754). **18 native Android tests, 157 browser checks and zero lint errors passed.**
