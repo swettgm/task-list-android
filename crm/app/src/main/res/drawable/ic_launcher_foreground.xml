@@ -1,3 +1,0 @@
-<!-- Adaptive layers extend 25% past the mask on every side. Compensate for
-     that expansion so the 108dp artwork retains its intended visible size. -->
-<inset xmlns:android="http://schemas.android.com/apk/res/android" android:drawable="@drawable/ic_app" android:inset="16.666667%"/>

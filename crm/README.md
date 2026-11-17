@@ -1,6 +1,6 @@
 # CRM
 
-[Download CRM 1.0.4](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.4.apk). Android 8 or later.
+[Download CRM 1.0.5](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.5.apk). Android 8 or later.
 
 A separate Android app for staying in touch, with Friends/Family and Interests pages. Link selected phone contacts (including contacts synced to the phone by Google), add notes, choose a repeat interval and reminder date/time, and record when you last contacted someone. Interests entries have In progress, Hiatus and DTF labels.
 
@@ -16,4 +16,4 @@ The home screen has no search bar or separate contact-import button. Use the flo
 
 The Snapchat tag uses the standard Simple Icons ghost silhouette in yellow. See [icon sources](ASSETS.md).
 
-The manifest now uses an adaptive launcher icon with a transparent background and an inset foreground. This gives modern launchers a fixed icon boundary and compensates for adaptive layer expansion. Android native graphics checks render the manifest-loaded icon and verify its visible size, centering and transparent corners.
+The manifest uses a new density-specific transparent PNG launcher asset with a smaller symbol. Android native graphics tests load the manifest icon, compare its rendered pixel bounds against the previous vector and check empty pixels around the symbol to prevent a background plate. This avoids relying on an internal vector scale alone.
