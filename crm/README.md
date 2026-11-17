@@ -15,3 +15,5 @@ Swipe left from Friends/Family to Interests, and right to return. Vertical scrol
 The home screen has no search bar or separate contact-import button. Use the floating + button to choose Add manually or Add from contacts. Import dialogs keep their footer visible with long lists, wrapped headings, larger text or a reduced viewport. Tag buttons and saved tags use yellow Snapchat, purple Discord and white In person icons. The launcher icon uses a transparent background with a bold dark single-person outline.
 
 The Snapchat tag uses the standard Simple Icons ghost silhouette in yellow. See [icon sources](ASSETS.md).
+
+The manifest now uses an adaptive launcher icon with a transparent background and an inset foreground. This gives modern launchers a fixed icon boundary and compensates for adaptive layer expansion. Android native graphics checks render the manifest-loaded icon and verify its visible size, centering and transparent corners.
