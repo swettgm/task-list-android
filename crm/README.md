@@ -19,3 +19,5 @@ The Snapchat tag uses the standard Simple Icons ghost silhouette in yellow. See 
 The manifest uses a new density-specific transparent PNG launcher asset with a smaller symbol. Android native graphics tests load the manifest icon, compare its rendered pixel bounds against the previous vector and check empty pixels around the symbol to prevent a background plate. This avoids relying on an internal vector scale alone.
 
 A Samsung launcher compatibility hint requests use of the original icon artwork instead of an added icon container. Other launchers ignore this optional metadata.
+
+Cards use smaller app text, tighter spacing and aligned title/status, tag/detail and action rows. Tags show larger icons without visible text, with accessible names retained. Interests omit Contacted today and unused contact-history wording; Call/Text remain available for saved phone numbers. Notes and long names wrap in full instead of being clipped.
