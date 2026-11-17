@@ -1,6 +1,6 @@
 # CRM
 
-[Download CRM 1.0.5](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.5.apk). Android 8 or later.
+[Download CRM 1.0.6](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.6.apk). Android 8 or later.
 
 A separate Android app for staying in touch, with Friends/Family and Interests pages. Link selected phone contacts (including contacts synced to the phone by Google), add notes, choose a repeat interval and reminder date/time, and record when you last contacted someone. Interests entries have In progress, Hiatus and DTF labels.
 
@@ -16,10 +16,12 @@ The home screen has no search bar or separate contact-import button. Use the flo
 
 The Snapchat tag uses the standard Simple Icons ghost silhouette in yellow. See [icon sources](ASSETS.md).
 
-The launcher now copies the VectorDrawable setup and rounded white background path used by Route Notes and Meditation. Native graphics tests compare the rendered alpha boundary against both actual companion icon sources, pixel-for-pixel. The single-person symbol remains bold and inset inside that shared boundary.
+The launcher now copies the VectorDrawable setup and rounded white background path used by Route Notes and Meditation. Native graphics tests compare the rendered alpha boundary against both actual companion rounded-square background paths, pixel-for-pixel. The single-person symbol remains bold and inset inside that shared boundary.
 
 The manifest uses the same icon and roundIcon resource method as the companion apps, without vendor-specific container overrides.
 
 Cards use smaller app text, tighter spacing and aligned title/status, tag/detail and action rows. Tags show larger icons without visible text, with accessible names retained. Interests omit Contacted today and unused contact-history wording; Call/Text remain available for saved phone numbers. Notes and long names wrap in full instead of being clipped.
 
 Status appears immediately beside the name: Hiatus red, In progress yellow and DTF green. Click status, tags, notes, last-contacted dates or reminder text for a focused quick editor; clicking the name opens the full person editor. Editor scroll areas include space for focus rings so selected fields do not clip at the edges.
+
+New entries start with reach-out notifications off. Enable Reach-out reminders per person when needed; existing reminder settings are preserved.
