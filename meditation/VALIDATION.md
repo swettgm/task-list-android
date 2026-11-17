@@ -1,3 +1,11 @@
+# Meditation 1.0.13 verification
+
+Source: `05502a8310e9d412f9a67527adf32b45327acaf7`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/44075102111). **47 native Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**
+
+Rebuilt Mindfulness bell, Tingsha bells and Temple gong from clean inharmonic struck modes, without random strike noise, time stretching or lossy encoding. The three files now use lossless FLAC and preserve distinct attacks with twenty-second fades. Replaced rain with softer, warm stereo wash and rounded droplets, lower peaks and less high-frequency energy. Rain checks bound brightness, peaks, audible level and loop continuity. The approved Zen tone and Singing bowl and the existing brown/white noise are locked by their original SHA-256 hashes. Verification compared all eight encoded audio file hashes inside the actual APK, accounting for optimized resource names; all protected bytes are exactly unchanged. Timer/UI code and sound identifiers are unchanged.
+
+APK: `Meditation-v1.0.13.apk`, 2118663 bytes. SHA-256 `aecba26d28a2c105f23d62a6b5fa4b4cff5d2710e1b461a56f5c98b4b235e2f8`. Package `com.personal.meditation`. Artifact hashes, ZIP integrity, package/version, alignment, retained signer and exact non-signature content equality to CI passed. Updates retain existing app data. Native checks use Robolectric; browser checks use Chromium. No physical phone was tested.
+
 # Meditation 1.0.12 verification
 
 Source: `9c58f86f923bb743b33cce22daf1ada82ace75f9`. [Build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/43777874138). **47 native Android tests, 159 Chromium checks, eight audio checks and zero release lint errors passed.**

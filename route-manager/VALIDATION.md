@@ -1,3 +1,11 @@
+# Route Notes 1.0.20 verification
+
+Source: `a1e4d6cce7222a14b911920ae64037ac17b107b8`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/44074121754). **18 native Android tests, 157 browser checks and zero lint errors passed.**
+
+Export selection renders each note’s saved status beside its own body. Notes sharing a stop retain distinct per-note pills. Route-only notes also show their status. The entry text passed to Preview, Copy and Share remains unchanged. Browser checks include mixed-status grouped entries and exact output comparisons. Checkboxes remain centered against the stop title, and exports do not write to saved notes.
+
+APK: `Route-Notes-v1.0.20.apk`, 41553 bytes. SHA-256 `ddc6d4a79ee19a0094db2fc9415206d80eb8667ef9e2165cda3f95d3234922d4`. Package `com.personal.routemanager`. Artifact hashes, ZIP integrity, package/version, alignment, retained signer and exact non-signature content equality to CI passed. Updates retain existing app data. Native checks use Robolectric; browser checks use Chromium. No physical phone was tested.
+
 # Route Notes 1.0.19 validation
 
 Source: `82f10d64ce394335719f8c17f054c4883a57b79a`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/43254178231). **18 Android tests, 155 Chromium checks and zero lint errors passed.**

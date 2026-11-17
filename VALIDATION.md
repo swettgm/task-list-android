@@ -1,3 +1,27 @@
+# Route Notes 1.0.20 verification
+
+Source: `a1e4d6cce7222a14b911920ae64037ac17b107b8`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/44074121754). **18 native Android tests, 157 browser checks and zero lint errors passed.**
+
+Export selection renders each note’s saved status beside its own body. Notes sharing a stop retain distinct per-note pills. Route-only notes also show their status. The entry text passed to Preview, Copy and Share remains unchanged. Browser checks include mixed-status grouped entries and exact output comparisons. Checkboxes remain centered against the stop title, and exports do not write to saved notes.
+
+APK: `Route-Notes-v1.0.20.apk`, 41553 bytes. SHA-256 `ddc6d4a79ee19a0094db2fc9415206d80eb8667ef9e2165cda3f95d3234922d4`. Package `com.personal.routemanager`. Artifact hashes, ZIP integrity, package/version, alignment, retained signer and exact non-signature content equality to CI passed. Updates retain existing app data. Native checks use Robolectric; browser checks use Chromium. No physical phone was tested.
+
+# Habits 1.0.7 verification
+
+Source: `a1e4d6cce7222a14b911920ae64037ac17b107b8`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/44074121766). **37 native Android tests and zero lint errors passed.**
+
+Widget double taps cycle empty → X (state 2) → check (state 1) → empty. The in-app single-tap sequence is unchanged. No persisted state meanings are remapped, so existing saved checks and X marks retain their meanings. The two-tap gate, per-cell/date pairing, future-day locks and haptics remain. Accessible widget descriptions announce the actual next state. Tests cover the reversed sequence, single/slow taps, saved-history meaning and stale/future taps.
+
+APK: `Habits-v1.0.7.apk`, 37694 bytes. SHA-256 `a836f7ce24505fcb5fb6e7fccef3eb9edd0e6ef55243b6811517d644d0b69dee`. Package `com.personal.habits`. Artifact hashes, ZIP integrity, package/version, alignment, retained signer and exact non-signature content equality to CI passed. Updates retain existing app data. Native checks use Robolectric; browser checks use Chromium. No physical phone was tested.
+
+# Meditation 1.0.13 verification
+
+Source: `05502a8310e9d412f9a67527adf32b45327acaf7`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/44075102111). **47 native Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**
+
+Rebuilt Mindfulness bell, Tingsha bells and Temple gong from clean inharmonic struck modes, without random strike noise, time stretching or lossy encoding. The three files now use lossless FLAC and preserve distinct attacks with twenty-second fades. Replaced rain with softer, warm stereo wash and rounded droplets, lower peaks and less high-frequency energy. Rain checks bound brightness, peaks, audible level and loop continuity. The approved Zen tone and Singing bowl and the existing brown/white noise are locked by their original SHA-256 hashes. Verification compared all eight encoded audio file hashes inside the actual APK, accounting for optimized resource names; all protected bytes are exactly unchanged. Timer/UI code and sound identifiers are unchanged.
+
+APK: `Meditation-v1.0.13.apk`, 2118663 bytes. SHA-256 `aecba26d28a2c105f23d62a6b5fa4b4cff5d2710e1b461a56f5c98b4b235e2f8`. Package `com.personal.meditation`. Artifact hashes, ZIP integrity, package/version, alignment, retained signer and exact non-signature content equality to CI passed. Updates retain existing app data. Native checks use Robolectric; browser checks use Chromium. No physical phone was tested.
+
 # Meditation 1.0.12 verification
 
 Source: `9c58f86f923bb743b33cce22daf1ada82ace75f9`. [Build and complete checks](https://github.com/swettgm/task-list-android/actions/runs/43777874138). **47 native Android tests, 159 Chromium checks, eight audio checks and zero release lint errors passed.**
