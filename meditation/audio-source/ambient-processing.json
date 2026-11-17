@@ -20,10 +20,14 @@
   {
     "name": "rain",
     "file": "rain.ogg",
-    "sha256": "d8c8938bc9cff8169c5f653d4e7bd1b4181effa89ee331a0dbd0c34db2595dc8",
+    "sha256": "4df8f37dc82586eb1f8b4c8918c136080aea6fc7725336bab8adb0a78390ccd6",
     "seconds": 24,
     "sampleRate": 24000,
-    "seed": 20261115,
-    "source": "Original synthesized periodic noise and procedural rain"
+    "channels": 2,
+    "seed": 20261117,
+    "source": "Original warm diffuse stereo rain with rounded filtered droplets",
+    "highFrequencyRolloffHz": 2700,
+    "targetRms": 0.075,
+    "peakCeiling": 0.32
   }
 ]

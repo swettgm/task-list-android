@@ -1,16 +1,25 @@
 [
   {
     "name": "soft_bell",
-    "source": "soft_bell.wav",
-    "sourceSha256": "26fe12f1cdf5f4d0128c96a4de129e6812b3185dece5b34bc987b5e0fb36661d",
-    "originalSeconds": 5.0,
+    "file": "soft_bell.flac",
+    "source": "clean-bell-recipes.json",
+    "sourceSha256": "8bb0d5d425c889d7864e7087d6529c922a4bcc5dcbd29914db9cd33b56f59703",
+    "originalSeconds": 20,
     "seconds": 20,
     "fadeStartSeconds": 2,
     "fadeEndSeconds": 19.8,
-    "sampleRate": 22050,
+    "sampleRate": 48000,
     "channels": 1,
-    "sha256": "281738ac1c822f392e991bd66218dfe99a4aa6be9a6f1059d354dbfe4822147c",
-    "bytes": 76170
+    "sha256": "e1c9da131b239b34b61e5efc90e7c471a625077c64b0259c9d6635eb73601f33",
+    "lossless": true,
+    "bytes": 297514,
+    "method": "original analytic damped inharmonic modes; no noise or stretching",
+    "modeFrequenciesHz": [
+      588,
+      1574,
+      3083,
+      4980
+    ]
   },
   {
     "name": "warm_bowl",
@@ -36,29 +45,49 @@
   },
   {
     "name": "gentle_chime",
-    "source": "gentle_chime.wav",
-    "sourceSha256": "122d9d807134a7ee4cf59fb6ab635b0691b18883a355685549b541424e2182b6",
-    "originalSeconds": 3.2,
+    "file": "gentle_chime.flac",
+    "source": "clean-bell-recipes.json",
+    "sourceSha256": "8bb0d5d425c889d7864e7087d6529c922a4bcc5dcbd29914db9cd33b56f59703",
+    "originalSeconds": 20,
     "seconds": 20,
     "fadeStartSeconds": 2,
     "fadeEndSeconds": 19.8,
-    "sampleRate": 22050,
+    "sampleRate": 48000,
     "channels": 1,
-    "sha256": "3ffe4b499397003c3344ecf152dcf1f3333402532c946460f7f86573c50efaa6",
-    "bytes": 61986
+    "sha256": "0e7aa587e5e414187e5ccd769292cb3b155e0c44e2bbd1ce2c44a5359ca96e96",
+    "lossless": true,
+    "bytes": 292676,
+    "method": "original analytic damped inharmonic modes; no noise or stretching",
+    "modeFrequenciesHz": [
+      1046,
+      2153,
+      2893,
+      4427
+    ]
   },
   {
     "name": "temple_gong",
-    "source": "temple_gong.wav",
-    "sourceSha256": "8baa93ba9b5521a64ca675043f6cc3bbf010b4ba9ec4240805f0069dfb9f8b10",
-    "originalSeconds": 6.0,
+    "file": "temple_gong.flac",
+    "source": "clean-bell-recipes.json",
+    "sourceSha256": "8bb0d5d425c889d7864e7087d6529c922a4bcc5dcbd29914db9cd33b56f59703",
+    "originalSeconds": 20,
     "seconds": 20,
     "fadeStartSeconds": 2,
     "fadeEndSeconds": 19.8,
-    "sampleRate": 22050,
+    "sampleRate": 48000,
     "channels": 1,
-    "sha256": "dbec91a8e39b5f9bc335fad58d5262f7afa5d0642d657ce6fb0e6827557e20e2",
-    "bytes": 81513
+    "sha256": "b262d983fbff6e05b862245ae50a5cd57072eff8f7f370f4fafc19a50abacf2a",
+    "lossless": true,
+    "bytes": 262347,
+    "method": "original analytic damped inharmonic modes; no noise or stretching",
+    "modeFrequenciesHz": [
+      174,
+      281,
+      393,
+      509,
+      836,
+      1240
+    ]
   },
   {
     "name": "zen_tone",

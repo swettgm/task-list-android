@@ -1,3 +1,8 @@
+## 1.0.13
+
+- Rebuilt Mindfulness bell, Tingsha bells and Temple gong with clean bell strikes, smooth long decays and lossless audio. Approved Zen tone and Singing bowl remain byte-for-byte unchanged.
+- Replaced the tinny rain with a softer, warmer stereo rain loop. Brown and white noise are unchanged.
+
 ## 1.0.12
 
 - Removed the Settings gear border, including under gradient accents, while preserving its 44px tap target.

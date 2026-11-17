@@ -12,6 +12,9 @@ def decode(path):
  return samples
 
 def rms(samples):return math.sqrt(sum(v*v for v in samples)/len(samples))
+for name,expected in json.loads((ROOT/'audio-source/protected-sounds.json').read_text()).items():
+ assert hashlib.sha256((ROOT/'app/src/main/res/raw'/name).read_bytes()).hexdigest()==expected,('Protected sound changed',name)
+
 report=[]
 for entry in json.loads((ROOT/'audio-source/processing.json').read_text()):
  path=ROOT/'app/src/main/res/raw'/entry.get("file",f"{entry['name']}.ogg")
@@ -24,6 +27,15 @@ for entry in json.loads((ROOT/'audio-source/processing.json').read_text()):
  assert first>.01 and middle>.0001 and late>.0001,(path.name,first,middle,late)
  assert last<first*.01 and end<.00003,(path.name,last,end)
  assert first>middle>late>last,(path.name,'gradual decay',first,middle,late,last)
+ if entry['name'] in ['soft_bell','gentle_chime','temple_gong']:
+  assert path.suffix=='.flac' and entry.get('lossless'),(path.name,'lossless bell required')
+  raw=subprocess.check_output(['ffmpeg','-v','error','-i',str(path),'-ar','48000','-ac','1','-f','f32le','-']);native=array('f');native.frombytes(raw)
+  if sys.byteorder!='little':native.byteswap()
+  assert max(abs(native[i]-native[i-1])for i in range(1,48000))<.12,(path.name,'sharp sample step')
+  raw=subprocess.check_output(['ffmpeg','-v','error','-i',str(path),'-af','highpass=f=6500,highpass=f=6500','-ar','24000','-ac','1','-f','f32le','-']);high=array('f');high.frombytes(raw)
+  if sys.byteorder!='little':high.byteswap()
+  ratio=rms(high[:24000])/first;assert ratio<.02,(path.name,'excess high-frequency strike energy',ratio)
+  entry['openingHighFrequencyRmsRatio']=ratio
  if entry['name'] in ['zen_tone','warm_bowl']:
   # The real-time strike must survive: a whole-file stretch or long fade-in
   # fails this correlation against the source attack, even if click-free.
