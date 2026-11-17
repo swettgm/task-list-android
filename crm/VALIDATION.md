@@ -1,3 +1,11 @@
+# CRM 1.0.3 verification
+
+Source: `076aedd62107cb92822f9c19733cdcd431025aed`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44109083788). **20 native Android tests, 58 browser checks and zero lint errors passed.**
+
+The launcher icon is now a single person with a 7-unit stroke instead of 5. Its opaque background rectangle is removed; the retained dark outline has a transparent background. An SVG render of the vector confirms alpha-zero corners and visible opaque strokes. Snapchat tags now use the standard Simple Icons v16 ghost silhouette in yellow, replacing the approximate drawing in both selectors and saved chips. Icon attribution is in crm/ASSETS.md. Existing app data and other behavior are retained.
+
+APK: `CRM-v1.0.3.apk`, 41631 bytes, package `com.personal.crm`, version code 4. SHA-256 `aa71ee1d901d68c37fc89e40b0970e4b68b12c811a275439c6b8a60497ef93e4`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over CRM to preserve existing data. Native tests use Robolectric; browser checks use Chromium. No physical phone was tested.
+
 # CRM 1.0.2 verification
 
 Source: `2b81c10de7aad8b5fa16a3f235376634f6eb8534`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44106037653). **20 native Android tests, 58 browser checks and zero lint errors passed.**

@@ -1,6 +1,6 @@
 # CRM
 
-[Download CRM 1.0.2](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.2.apk). Android 8 or later.
+[Download CRM 1.0.3](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/CRM-v1.0.3.apk). Android 8 or later.
 
 A separate Android app for staying in touch, with Friends/Family and Interests pages. Link selected phone contacts (including contacts synced to the phone by Google), add notes, choose a repeat interval and reminder date/time, and record when you last contacted someone. Interests entries have In progress, Hiatus and DTF labels.
 
