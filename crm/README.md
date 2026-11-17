@@ -27,3 +27,5 @@ Status appears immediately beside the name: Hiatus red, In progress yellow and D
 New entries start with reach-out notifications off. Enable Reach-out reminders per person when needed; existing reminder settings are preserved.
 
 Relationship Manager updates the existing CRM app in place. The package name, private data store and signing identity are retained.
+
+Interests can include Next steps, with one step per line. Non-empty steps appear on the main card beside solid right-pointing arrows and can be tapped for focused editing. The full editor also supports adding and clearing them; Friends/Family does not show this field. Existing entries without next steps remain unchanged.
