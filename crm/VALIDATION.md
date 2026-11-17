@@ -1,3 +1,15 @@
+# CRM 1.0.2 verification
+
+Source: `2b81c10de7aad8b5fa16a3f235376634f6eb8534`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44106037653). **20 native Android tests, 58 browser checks and zero lint errors passed.**
+
+Friends/Family and Interests replace the previous tab labels. Friends/Family has more width, while both labels stay on one line. Swipe left to Interests and right to Friends/Family, including over person titles; vertical scrolling, short gestures, edge swipes and editor interactions do not change pages accidentally. The home search and separate contact-import button are removed. Floating + offers Add manually or Add from contacts.
+
+Dialogs now size the scrolling content around their actual heading and fixed action footer, keeping Cancel/Add contacts visible with long contact lists, wrapped headings, larger text and shorter viewports. Checkboxes use the same 19px rounded square, 2px border and drawn checkmark as Route Notes. Tag selectors and saved chips show a yellow Snapchat ghost, purple Discord mask and white In person silhouette. The launcher icon is inverted to a light background with dark people outlines. Existing notes, groups, tags, contact links and reminders are retained; internal storage group keys are unchanged.
+
+Browser checks use actual touch gestures, verify tab geometry at 320/390px, check the modal footer with 62 contacts at 320x700, 390x700 with 24px text and 390x480, and cover the add menu, contact import, icon colors, checkbox tick, saved tags, editing, persistence and legacy entries. Native checks use Robolectric; browser checks use Chromium. No physical phone was tested.
+
+APK: `CRM-v1.0.2.apk`, 37535 bytes, package `com.personal.crm`, version code 3. SHA-256 `cffb205a9333eff3c2ec2235043d3bdf6c44d705ed7ea85a2e1d05573cc73342`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over CRM to preserve existing data.
+
 # CRM 1.0.1 verification
 
 Source: `248d683083bfdeb66cd98398d606a08244d94de9`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44100173331). **20 native Android tests, 40 browser checks and zero lint errors passed.**
