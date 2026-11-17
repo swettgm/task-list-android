@@ -1,6 +1,6 @@
 # Relationship Manager
 
-[Download Relationship Manager 1.0.8](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Relationship-Manager-v1.0.8.apk). Android 8 or later.
+[Download Relationship Manager 1.0.9](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Relationship-Manager-v1.0.9.apk). Android 8 or later.
 
 A separate Android app for staying in touch, with Friends/Family and Interests pages. Link selected phone contacts (including contacts synced to the phone by Google), add notes, choose a repeat interval and reminder date/time, and record when you last contacted someone. Interests entries have In progress, Hiatus and DTF labels.
 
@@ -33,3 +33,5 @@ Interests can include Next steps, with one step per line. Non-empty steps appear
 Profiles in either tab can include a manually entered Location describing where you know someone from. It appears below the name with a pin icon when filled, and tapping it opens focused editing. No device location or geocoding is used. Existing profiles without this optional field remain unchanged.
 
 Status markers follow the Tasks app pill styling: bold uppercase labels, colored circle markers, rounded ends, matching padding and letter spacing, with the existing red/yellow/green status meanings. The app heading and gear are smaller and remain on one line.
+
+Tap the dimmed area outside any app dialog to close it with the same discard behavior as Cancel. Inside taps and drags crossing the panel edge do not dismiss it.
