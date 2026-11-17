@@ -1,3 +1,11 @@
+# CRM 1.0.4 verification
+
+Source: `403b3ed1df10e9baf1c3ee8b413a56ed36c2c590`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44113389891). **20 native Android tests, 58 browser checks and zero lint errors passed.**
+
+The launcher symbol is scaled to 85% around the center of the existing 108dp canvas, making it 15% smaller to align with the companion app symbols. The transparent background and bold single-person design are retained. The VectorDrawable has a centered 0.85 scale group; other app icons use the same 108dp canvas. No application data or UI behavior changes.
+
+APK: `CRM-v1.0.4.apk`, 41631 bytes, package `com.personal.crm`, version code 5. SHA-256 `af0bbde75f371216dd2090cb771c70e1addf793c430fb5ecc1c1635ca41fe41d`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over CRM to retain data. Native tests use Robolectric and browser checks use Chromium; no physical phone was tested.
+
 # CRM 1.0.3 verification
 
 Source: `076aedd62107cb92822f9c19733cdcd431025aed`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44109083788). **20 native Android tests, 58 browser checks and zero lint errors passed.**
