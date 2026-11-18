@@ -1,3 +1,9 @@
+# Windows 0.90.0 taskbar verification
+
+[Successful build and checks](https://github.com/swettgm/task-list-android/actions/runs/44224919888). Source `26dbcd8cbc699bb861887f3ce9095fc5f7b5edbf`. Shared task dragging now matches Relationship Manager pickup and placement. All 41 unit, 35 browser/HTTP, nine native-window and eleven installer checks passed, including live upgrade and saved-data retention. Taskbar identity, window reuse and per-user installation paths are unchanged.
+
+`Tasks-PC.exe`, 13790579 bytes; SHA-256 `910828aaf2b66328559e4253581eb796095bb31a78ce8640da92a7ee90d29caf`.
+
 # Windows 0.89.0 taskbar verification
 
 [Successful build and checks](https://github.com/swettgm/task-list-android/actions/runs/44223397443). Source `2cb4e7d9023c0b08d3cbfe2a920296df90c729fa`. Shared task dragging now matches Relationship Manager pickup and placement. All 41 unit, 35 browser/HTTP, nine native-window and eleven installer checks passed, including live upgrade and saved-data retention. Taskbar identity, window reuse and per-user installation paths are unchanged.

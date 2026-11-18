@@ -1,3 +1,11 @@
+# Tasks 0.90.0 verification
+
+Source: `26dbcd8cbc699bb861887f3ce9095fc5f7b5edbf`. [Android build](https://github.com/swettgm/task-list-android/actions/runs/44224919934) and [Windows build](https://github.com/swettgm/task-list-android/actions/runs/44224919888). **205 Android tests, 916 browser checks, 37 calendar checks and zero lint errors passed. Windows passed 41 unit tests, 35 browser/HTTP checks, nine native-window checks and eleven installer checks.**
+
+Successful screen swipes now call the same KEYBOARD_TAP feedback as Relationship Manager. Cancelled swipes are silent; browser tests verify exactly one pulse per committed swipe and none on cancellation. Task pickup matches Relationship Manager: 380ms hold, the full card preview at 0.96 opacity, fixed horizontal position, 1.5px border/13px rounding/10px padding, an actual source space that moves as neighboring cards shift, and 65px edge scrolling capped at 12px per frame. There is no separate insertion line or shortened preview. Existing priority transitions, Urgent constraints, completion state, dates/notes, native scrolling before hold, saved ordering, and cancellation/failed-save recovery are retained. Shared HTML gives Android and Windows identical behavior. Real Chromium mouse/touch tests cover pickup, source space, cross-priority empty-group drops, persistence and error recovery. The widget is unchanged.
+
+Android: `Tasks-v0.90.0.apk`, 2880589 bytes; SHA-256 `efee7215b37f7c55e20e701e59565013a8e1c67e7ec5071e49a6c281da6bb93e`. Windows portable: 13790579 bytes; SHA-256 `910828aaf2b66328559e4253581eb796095bb31a78ce8640da92a7ee90d29caf`. Installer: 17337013 bytes; SHA-256 `74aeccac42f8bb4725681b9c0768fa729742cc974399b4f5f6b78a7c5c1bb199`. Artifact digests, ZIP integrity, Android manifest/alignment/retained signer/non-signature equality and packaged assets passed. Windows source matches after normalizing checkout CRLF line endings. Install and live-upgrade checks preserve existing data. No physical phone was tested.
+
 # RM 1.0.16 verification
 
 Source: `26dbcd8cbc699bb861887f3ce9095fc5f7b5edbf`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44224919820). **29 Android tests, 142 browser checks and zero lint errors passed.**
