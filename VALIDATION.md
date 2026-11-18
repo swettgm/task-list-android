@@ -1,3 +1,19 @@
+# RM 1.0.15 verification
+
+Source: `7fe3f68e8eee69a3089c83aee50a3dfc6f96b462`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44223111173). **29 native Android tests, 142 browser checks and zero lint errors passed.**
+
+Arrow centers now follow the rendered text ink ascent/descent and the line's actual baseline, replacing a fixed offset; alignment updates after fonts and resizes. Browser geometry checks require under half a pixel of center error. Friends/Family and Interests now track the finger during horizontal swipes and settle using the Tasks cubic-bezier easing and 160–240ms timing. Short or cancelled swipes restore the original page. Tests verify intermediate transforms, committed/cancelled cleanup, restored interaction, saved card ordering and focused editing.
+
+APK: `Relationship-Manager-v1.0.15.apk`, 45727 bytes, package `com.personal.crm`, version code 16. SHA-256 `3e2a5054a8f96a8101f794e3288eb015970303417a7b0ac53b69c0c87443cb19`. Artifact digests, ZIP CRC, exact packaged UI, manifest, alignment, retained signing certificate and non-signature equality to CI passed. Install over the current app to retain data. Robolectric and Chromium were used; no physical phone was tested.
+
+# Meditation 1.0.15 verification
+
+Source: `3bb7d1076c09769508836188147d9ae00c8ad52d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44223561863). **47 Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**
+
+Rain replaces synthetic wash/droplets with Soft rain.WAV, a garden field recording by barkenov under CC0: https://freesound.org/people/barkenov/sounds/640655/. The original high-quality preview, license, origin URL and SHA-256 are retained in audio-source. Equal-power overlap makes a continuous loop; isolated peaks are rounded and the heavy high-frequency rolloff is removed to preserve natural rain patter. Brown noise reduces inaudible sub-bass and increases audible warm low-mid energy while retaining smooth circular level stabilization. Half-second level spread is 0.34 dB and opening-versus-rest difference is -0.02 dB. Playback keeps fixed gain; checks verify loop continuity and level consistency. All five bells and white noise are byte-for-byte unchanged, verified in the signed APK against the protected hashes. Timer and UI are unchanged. CI uses pinned imageio-ffmpeg when FFmpeg is absent, avoiding stalled package mirrors.
+
+APK: `Meditation-v1.0.15.apk`, 2462727 bytes; SHA-256 `610e68fddf153b60e10f4d6e480cd55e21d33444f6248edad15b36302123823b`. Package `com.personal.meditation`, version code 16. Artifact digests, ZIP integrity, packaged UI/audio, manifest, alignment, retained signing certificate and non-signature equality to CI passed. Install over the current app to retain settings. Robolectric and Chromium were used; no physical phone listening test was performed.
+
 # Meditation 1.0.14 verification
 
 Source: `2f1647e8a1916a84f953521ac21108bebab6219f`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/44220576688). **47 native Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**

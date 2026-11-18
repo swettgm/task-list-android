@@ -1,3 +1,11 @@
+# RM 1.0.15 verification
+
+Source: `7fe3f68e8eee69a3089c83aee50a3dfc6f96b462`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44223111173). **29 native Android tests, 142 browser checks and zero lint errors passed.**
+
+Arrow centers now follow the rendered text ink ascent/descent and the line's actual baseline, replacing a fixed offset; alignment updates after fonts and resizes. Browser geometry checks require under half a pixel of center error. Friends/Family and Interests now track the finger during horizontal swipes and settle using the Tasks cubic-bezier easing and 160–240ms timing. Short or cancelled swipes restore the original page. Tests verify intermediate transforms, committed/cancelled cleanup, restored interaction, saved card ordering and focused editing.
+
+APK: `Relationship-Manager-v1.0.15.apk`, 45727 bytes, package `com.personal.crm`, version code 16. SHA-256 `3e2a5054a8f96a8101f794e3288eb015970303417a7b0ac53b69c0c87443cb19`. Artifact digests, ZIP CRC, exact packaged UI, manifest, alignment, retained signing certificate and non-signature equality to CI passed. Install over the current app to retain data. Robolectric and Chromium were used; no physical phone was tested.
+
 # RM 1.0.14 verification
 
 Source: `4bf41c8c7abbb76cfc67db34ee7dbfe081035d3d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44220136519). **29 native Android tests, 138 browser checks and zero lint errors passed.**

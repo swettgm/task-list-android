@@ -1,3 +1,11 @@
+# Meditation 1.0.15 verification
+
+Source: `3bb7d1076c09769508836188147d9ae00c8ad52d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44223561863). **47 Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**
+
+Rain replaces synthetic wash/droplets with Soft rain.WAV, a garden field recording by barkenov under CC0: https://freesound.org/people/barkenov/sounds/640655/. The original high-quality preview, license, origin URL and SHA-256 are retained in audio-source. Equal-power overlap makes a continuous loop; isolated peaks are rounded and the heavy high-frequency rolloff is removed to preserve natural rain patter. Brown noise reduces inaudible sub-bass and increases audible warm low-mid energy while retaining smooth circular level stabilization. Half-second level spread is 0.34 dB and opening-versus-rest difference is -0.02 dB. Playback keeps fixed gain; checks verify loop continuity and level consistency. All five bells and white noise are byte-for-byte unchanged, verified in the signed APK against the protected hashes. Timer and UI are unchanged. CI uses pinned imageio-ffmpeg when FFmpeg is absent, avoiding stalled package mirrors.
+
+APK: `Meditation-v1.0.15.apk`, 2462727 bytes; SHA-256 `610e68fddf153b60e10f4d6e480cd55e21d33444f6248edad15b36302123823b`. Package `com.personal.meditation`, version code 16. Artifact digests, ZIP integrity, packaged UI/audio, manifest, alignment, retained signing certificate and non-signature equality to CI passed. Install over the current app to retain settings. Robolectric and Chromium were used; no physical phone listening test was performed.
+
 # Meditation 1.0.14 verification
 
 Source: `2f1647e8a1916a84f953521ac21108bebab6219f`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/44220576688). **47 native Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**
