@@ -1,3 +1,11 @@
+# Tasks 0.89.0 verification
+
+Source: `2cb4e7d9023c0b08d3cbfe2a920296df90c729fa`. [Android build](https://github.com/swettgm/task-list-android/actions/runs/44223397466) and [Windows build](https://github.com/swettgm/task-list-android/actions/runs/44223397443). **205 Android tests, 914 browser checks, 37 calendar checks and zero lint errors passed. Windows passed 41 unit tests, 35 browser/HTTP checks, nine native-window checks and eleven installer checks.**
+
+Task pickup now matches Relationship Manager: 380ms hold, the full card preview at 0.96 opacity, fixed horizontal position, 1.5px border/13px rounding/10px padding, an actual source space that moves as neighboring cards shift, and 65px edge scrolling capped at 12px per frame. There is no separate insertion line or shortened preview. Existing priority transitions, Urgent constraints, completion state, dates/notes, native scrolling before hold, saved ordering, and cancellation/failed-save recovery are retained. Shared HTML gives Android and Windows identical behavior. Real Chromium mouse/touch tests cover pickup, source space, cross-priority empty-group drops, persistence and error recovery. The widget is unchanged.
+
+Android: `Tasks-v0.89.0.apk`, 2880589 bytes; SHA-256 `84b67977a4c500c6cec0f28b2c95c242b819217367b46d63058fc52ad55715f0`. Windows portable: 13790445 bytes; SHA-256 `d6fb2e156c9454c96718acf85f9cf51a138ff85423e2a4958fbcff315f2308ed`. Installer: 17336068 bytes; SHA-256 `7098a3535b2335d89206db70e4af9a6c0c6c4bdd4a9d9e293aa5094a2d14f4b4`. Artifact digests, ZIP integrity, Android manifest/alignment/retained signer/non-signature equality and packaged assets passed. Windows source matches after normalizing checkout CRLF line endings. Install and live-upgrade checks preserve existing data. No physical phone was tested.
+
 # RM 1.0.15 verification
 
 Source: `7fe3f68e8eee69a3089c83aee50a3dfc6f96b462`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44223111173). **29 native Android tests, 142 browser checks and zero lint errors passed.**

@@ -1,3 +1,9 @@
+# Windows 0.89.0 taskbar verification
+
+[Successful build and checks](https://github.com/swettgm/task-list-android/actions/runs/44223397443). Source `2cb4e7d9023c0b08d3cbfe2a920296df90c729fa`. Shared task dragging now matches Relationship Manager pickup and placement. All 41 unit, 35 browser/HTTP, nine native-window and eleven installer checks passed, including live upgrade and saved-data retention. Taskbar identity, window reuse and per-user installation paths are unchanged.
+
+`Tasks-PC.exe`, 13790445 bytes; SHA-256 `d6fb2e156c9454c96718acf85f9cf51a138ff85423e2a4958fbcff315f2308ed`.
+
 # Windows 0.88.0 taskbar verification
 
 [Successful Windows build and checks](https://github.com/swettgm/task-list-android/actions/runs/43723414190). Source `568cdf2f77b4ac1014732eb977b7e35d0c6d9cb6`. All existing native-window, installation, live-upgrade and data-preservation checks passed. Home Refresh now requests Google sync after pending window edits reach the native host; its new HTTP/browser regression test passed. Stable taskbar identity and per-user installation paths are retained.
