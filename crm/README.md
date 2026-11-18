@@ -41,3 +41,5 @@ Location and next-step text use the same compact caption size, with proportional
 The launcher label is RM; the in-app title remains Relationship Manager. Location and next-step details share one muted color and text size, with a baseline-aligned arrow.
 
 Cards combine location and next steps on a single wrapping line above tags: location → steps. The arrow appears only when both are present; no Next step caption appears on cards. Each field remains separately editable.
+
+Location and step details sit beside the tag icons, vertically centered and using the same typography and muted color as Friends/Family metadata. Locations do not display a pin icon.
