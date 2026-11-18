@@ -1,3 +1,9 @@
+# Windows 0.91.0 taskbar verification
+
+[Successful build and checks](https://github.com/swettgm/task-list-android/actions/runs/44293762640). Source `474c34208af8c135b084f2c3f388d3057eb90e16`. The shared Tasks UI now shows an active-project count badge beside the date. Existing dragging and swipe behavior are retained. All 41 unit, 35 browser/HTTP, nine native-window and eleven installer checks passed, including live upgrade and saved-data retention. Taskbar identity, window reuse and per-user installation paths are unchanged.
+
+`Tasks-PC.exe`, 13791276 bytes; SHA-256 `795a88a75b127761c404d123e6dc791bb9890181403ae015c36d6afe36593dae`.
+
 # Windows 0.90.0 taskbar verification
 
 [Successful build and checks](https://github.com/swettgm/task-list-android/actions/runs/44224919888). Source `26dbcd8cbc699bb861887f3ce9095fc5f7b5edbf`. Shared task dragging now matches Relationship Manager pickup and placement. All 41 unit, 35 browser/HTTP, nine native-window and eleven installer checks passed, including live upgrade and saved-data retention. Taskbar identity, window reuse and per-user installation paths are unchanged.
