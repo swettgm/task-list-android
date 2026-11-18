@@ -1,3 +1,11 @@
+# Meditation 1.0.16 verification
+
+Source: `26dbcd8cbc699bb861887f3ce9095fc5f7b5edbf`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44224919813). **47 Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**
+
+Brown noise is now lossless 16-bit FLAC, with a steady low-mid profile and no gain envelope. Decoded half-second RMS spread is 0.31 dB and opening-versus-rest difference is -0.02 dB. Rain retains the CC0 garden recording by barkenov, removing isolated recording ticks with a nine-sample median and gentle smoothing before quieter level adjustment. Loop seams, levels, brightness and headroom pass checks. All eight exact audio hashes were found in the signed APK; the five bells and white noise are unchanged. The timer, UI, choices and saved settings are unchanged. The original rain recording and CC0 provenance remain in audio-source.
+
+APK: `Meditation-v1.0.16.apk`, 2798600 bytes; SHA-256 `ddbcb7056f3be42f24537ff22a7e325c4a1bd2c3d10b533e970dc4b662947450`. Package `com.personal.meditation`, version code 17. Artifact digests, ZIP integrity, packaged UI/audio, manifest, alignment, retained signer and non-signature equality to CI passed. Robolectric and Chromium were used; no physical phone listening test was performed. Install over the current app to retain settings.
+
 # Meditation 1.0.15 verification
 
 Source: `3bb7d1076c09769508836188147d9ae00c8ad52d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44223561863). **47 Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**

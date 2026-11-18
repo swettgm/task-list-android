@@ -1,3 +1,11 @@
+# RM 1.0.16 verification
+
+Source: `26dbcd8cbc699bb861887f3ce9095fc5f7b5edbf`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44224919820). **29 Android tests, 142 browser checks and zero lint errors passed.**
+
+The location-to-step arrow centers on the actual font's capital height, using H metrics rather than mixed-text descent. Letters such as g and p cannot lower it. The line baseline and inline wrapping are preserved. Geometry checks require less than half a pixel of capital-height center error. Smooth finger-following page swipes, saved card dragging and focused editing remain covered by the existing checks.
+
+APK: `Relationship-Manager-v1.0.16.apk`, 45727 bytes; SHA-256 `902fc2c34ad2f050786dd8a52a5d64b5581d777937587bbbc98143c3e02a7330`. Package `com.personal.crm`, version code 17. Artifact digests, ZIP integrity, packaged source, manifest, alignment, retained signer and non-signature equality to CI passed. Robolectric and Chromium were used; no physical phone was tested. Install over the current app to retain data.
+
 # RM 1.0.15 verification
 
 Source: `7fe3f68e8eee69a3089c83aee50a3dfc6f96b462`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44223111173). **29 native Android tests, 142 browser checks and zero lint errors passed.**

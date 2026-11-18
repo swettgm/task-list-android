@@ -1,3 +1,19 @@
+# RM 1.0.16 verification
+
+Source: `26dbcd8cbc699bb861887f3ce9095fc5f7b5edbf`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44224919820). **29 Android tests, 142 browser checks and zero lint errors passed.**
+
+The location-to-step arrow centers on the actual font's capital height, using H metrics rather than mixed-text descent. Letters such as g and p cannot lower it. The line baseline and inline wrapping are preserved. Geometry checks require less than half a pixel of capital-height center error. Smooth finger-following page swipes, saved card dragging and focused editing remain covered by the existing checks.
+
+APK: `Relationship-Manager-v1.0.16.apk`, 45727 bytes; SHA-256 `902fc2c34ad2f050786dd8a52a5d64b5581d777937587bbbc98143c3e02a7330`. Package `com.personal.crm`, version code 17. Artifact digests, ZIP integrity, packaged source, manifest, alignment, retained signer and non-signature equality to CI passed. Robolectric and Chromium were used; no physical phone was tested. Install over the current app to retain data.
+
+# Meditation 1.0.16 verification
+
+Source: `26dbcd8cbc699bb861887f3ce9095fc5f7b5edbf`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44224919813). **47 Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**
+
+Brown noise is now lossless 16-bit FLAC, with a steady low-mid profile and no gain envelope. Decoded half-second RMS spread is 0.31 dB and opening-versus-rest difference is -0.02 dB. Rain retains the CC0 garden recording by barkenov, removing isolated recording ticks with a nine-sample median and gentle smoothing before quieter level adjustment. Loop seams, levels, brightness and headroom pass checks. All eight exact audio hashes were found in the signed APK; the five bells and white noise are unchanged. The timer, UI, choices and saved settings are unchanged. The original rain recording and CC0 provenance remain in audio-source.
+
+APK: `Meditation-v1.0.16.apk`, 2798600 bytes; SHA-256 `ddbcb7056f3be42f24537ff22a7e325c4a1bd2c3d10b533e970dc4b662947450`. Package `com.personal.meditation`, version code 17. Artifact digests, ZIP integrity, packaged UI/audio, manifest, alignment, retained signer and non-signature equality to CI passed. Robolectric and Chromium were used; no physical phone listening test was performed. Install over the current app to retain settings.
+
 # Tasks 0.89.0 verification
 
 Source: `2cb4e7d9023c0b08d3cbfe2a920296df90c729fa`. [Android build](https://github.com/swettgm/task-list-android/actions/runs/44223397466) and [Windows build](https://github.com/swettgm/task-list-android/actions/runs/44223397443). **205 Android tests, 914 browser checks, 37 calendar checks and zero lint errors passed. Windows passed 41 unit tests, 35 browser/HTTP checks, nine native-window checks and eleven installer checks.**
