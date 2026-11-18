@@ -1,3 +1,11 @@
+# RM 1.0.13 verification
+
+Source: `d15d6db3262c136b22e9027a38bc84614d56a75d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44218583318). **27 native Android tests, 127 browser checks and zero lint errors passed.**
+
+Location and step details now sit alongside the label icons, vertically centered with them and inheriting the shared Friends/Family metadata size, line height and muted color. The location pin is removed. Details continue to wrap naturally, with an arrow only when both location and steps are present, and each field remains separately editable. Browser assertions verify the absence of the pin, shared typography/opacity and placement beside the icons.
+
+APK: `Relationship-Manager-v1.0.13.apk`, 41631 bytes, package `com.personal.crm`, version code 14. SHA-256 `1a4ef0d20d0ab633fcbf1adfe580916c27baabaaf17be5a0370ced96dbe7bfd5`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over the current app to retain data. Native checks use Robolectric/native graphics and browser checks use Chromium. No physical phone was tested.
+
 # RM 1.0.12 verification
 
 Source: `b6ae9e17e0ef6ec0a9d90416e316a6c85ef12b92`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44216299498). **27 native Android tests, 127 browser checks and zero lint errors passed.**
