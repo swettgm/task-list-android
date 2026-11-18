@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.92.0",
+    "date": "2026-11-18",
+    "changes": [
+      "Project rows are borderless, and the active-project count appears in the task summary only when nonzero."
+    ]
+  },
+  {
     "version": "0.91.0",
     "date": "2026-11-18",
     "changes": [
