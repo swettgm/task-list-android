@@ -43,3 +43,5 @@ The launcher label is RM; the in-app title remains Relationship Manager. Locatio
 Cards combine location and next steps on a single wrapping line above tags: location → steps. The arrow appears only when both are present; no Next step caption appears on cards. Each field remains separately editable.
 
 Location and step details sit beside the tag icons, vertically centered and using the same typography and muted color as Friends/Family metadata. Locations do not display a pin icon.
+
+Hold a card briefly, then drag it up or down to reorder Friends/Family or Interests. Cards move aside and an opaque lifted copy follows the finger. Each tab saves its own order; new entries appear after manually ordered cards. Short gestures still scroll or switch tabs.
