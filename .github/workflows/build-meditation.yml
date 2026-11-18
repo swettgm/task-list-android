@@ -45,8 +45,17 @@ jobs:
           if command -v ffmpeg >/dev/null 2>&1; then
             ffmpeg -version
           else
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends ffmpeg
+            python3 -m pip install --disable-pip-version-check imageio-ffmpeg==0.6.0
+            python3 - <<'PYTHON'
+          import imageio_ffmpeg, os, pathlib, shutil
+          folder = pathlib.Path(os.environ['RUNNER_TEMP']) / 'meditation-audio'
+          folder.mkdir(exist_ok=True)
+          binary = folder / 'ffmpeg'
+          shutil.copy2(imageio_ffmpeg.get_ffmpeg_exe(), binary)
+          binary.chmod(0o755)
+          with open(os.environ['GITHUB_PATH'], 'a') as output:
+              output.write(str(folder) + '\n')
+          PYTHON
           fi
       - name: Verify extended audio files
         run: |
