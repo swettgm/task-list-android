@@ -1,3 +1,11 @@
+# RM 1.0.14 verification
+
+Source: `4bf41c8c7abbb76cfc67db34ee7dbfe081035d3d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44220136519). **29 native Android tests, 138 browser checks and zero lint errors passed.**
+
+Hold a card for 380ms to pick it up, then drag up or down within Friends/Family or Interests. A nearly opaque lifted copy follows the finger while cards move aside and the source space is outlined. Edge scrolling supports longer lists. Each tab saves its own manual order. Unranked new entries follow ranked cards; ordinary short scrolling/swiping and focused editing are retained. Cancelled drags and failed writes restore saved ordering. Optional integer sortOrder is validated and preserved across reloads and reminder updates.
+
+APK: `Relationship-Manager-v1.0.14.apk`, 45727 bytes, package `com.personal.crm`, version code 15. SHA-256 `0827cc5fd11e32a43c0d10237885e4c21b5e3db62b539c994956dbb0653b385e`. Artifacts, packaged source, ZIP integrity, alignment, retained signing certificate and non-signature equality to CI passed. Install over the current app to retain data. Native checks use Robolectric and browser checks use real Chromium touch events. No physical phone was tested.
+
 # RM 1.0.13 verification
 
 Source: `d15d6db3262c136b22e9027a38bc84614d56a75d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44218583318). **27 native Android tests, 127 browser checks and zero lint errors passed.**

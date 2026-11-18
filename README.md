@@ -118,4 +118,4 @@ Download [Habits 1.0.7](https://github.com/swettgm/task-list-android/raw/refs/he
 
 ## Relationship Manager
 
-[Download RM 1.0.13](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Relationship-Manager-v1.0.13.apk), a separate Android app with linked phone contacts, Friends/Family and Interests pages, tags, notes and recurring reach-out reminders. [Project details](crm/README.md) and [validation](crm/VALIDATION.md).
+[Download RM 1.0.14](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Relationship-Manager-v1.0.14.apk), a separate Android app with linked phone contacts, Friends/Family and Interests pages, tags, notes and recurring reach-out reminders. [Project details](crm/README.md) and [validation](crm/VALIDATION.md).
