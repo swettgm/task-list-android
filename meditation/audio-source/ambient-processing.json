@@ -1,8 +1,8 @@
 [
   {
     "name": "brown_noise",
-    "file": "brown_noise.ogg",
-    "sha256": "5bf14bb615812f6106908e564cb19aef8c1d1518c8fcec41a32d7dc13de52d56",
+    "file": "brown_noise.flac",
+    "sha256": "acdc2e1952eb26124469c0877e2fd07a65a57703fc56149dca4b41743f2c42e8",
     "seconds": 24,
     "sampleRate": 24000,
     "channels": 1,
@@ -23,13 +23,14 @@
   {
     "name": "rain",
     "file": "rain.ogg",
-    "sha256": "03235f4b9a44388c82ab18abdd25073778710fce97394bd35d3cd277f680e2f8",
+    "sha256": "83dc5c0cd4fde76c8010fd47075455b1c1a63cd76526e10e1ac318236a91dc29",
     "seconds": 24,
     "sampleRate": 24000,
     "channels": 2,
     "seed": 2026111802,
     "source": "Soft rain falling in a garden by barkenov, CC0; natural recording with a seamless crossfade",
-    "targetRms": 0.075,
+    "targetRms": 0.055,
+    "transientMedianSamples": 9,
     "sourceFile": "soft-rain-barkenov.mp3",
     "sourceSha256": "f5e4d1958e192762dc35e535e79afd30755986e18e7edabade998d84d446e6b9",
     "sourcePage": "https://freesound.org/people/barkenov/sounds/640655/",

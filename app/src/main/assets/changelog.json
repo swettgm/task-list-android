@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.90.0",
+    "date": "2026-11-18",
+    "changes": [
+      "A successful swipe between Today and Upcoming now gives the same short haptic feedback as Relationship Manager. Cancelled swipes remain silent."
+    ]
+  },
+  {
     "version": "0.89.0",
     "date": "2026-11-18",
     "changes": [

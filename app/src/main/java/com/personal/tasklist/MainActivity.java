@@ -293,6 +293,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void setModalOpen(boolean open){runOnUiThread(()->{if(destroyed)return;modalOpen=open;updateModalBackdrop();});}
         @JavascriptInterface public void hideKeyboard() { runOnUiThread(()->{if(destroyed||web==null)return;android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);if(keyboard!=null)keyboard.hideSoftInputFromWindow(web.getWindowToken(),0);}); }
         @JavascriptInterface public void finishTaskEditor() { if(isWidgetEditor())runOnUiThread(()->{if(!destroyed)finish();}); }
+        @JavascriptInterface public void swipeHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);}); }
         @JavascriptInterface public void actionHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);}); }
         @JavascriptInterface public void priorityHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);}); }
         @JavascriptInterface public String getLastView(){return getSharedPreferences("task_ui",0).getString("lastView","today");}

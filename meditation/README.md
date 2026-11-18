@@ -48,3 +48,5 @@ Mindfulness bell, Tingsha bells and Temple gong are rebuilt from clean, inharmon
 Rain uses a warm stereo wash with soft water droplets. Brown noise is level-stabilized throughout its seamless loop, including the opening. Audio checks limit half-second level variation to 1 dB and opening-versus-rest difference to 0.5 dB. All five bell files and white noise are hash-protected against unintended changes. Rebuild only the two ambience files with `python tools/refine-ambience.py`.
 
 Rain now uses “Soft rain.WAV” by barkenov, a CC0 garden-rain field recording: https://freesound.org/people/barkenov/sounds/640655/. Its high-quality preview is retained in audio-source with license/provenance metadata. The processed loop preserves natural patter without the old heavy low-pass filter. Brown noise reduces inaudible sub-bass and retains a steady, more audible warm low-mid layer.
+
+Brown noise now uses lossless FLAC rather than Vorbis; its decoded opening and half-second levels remain tightly matched. Rain removes isolated ticks with a nine-sample median and gentle smoothing before level adjustment, retaining the field recording while reducing crackly transients.
