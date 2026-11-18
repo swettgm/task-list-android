@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.91.0",
+    "date": "2026-11-18",
+    "changes": [
+      "A subtle red badge beside the date shows the number of active projects. The badge updates after edits, completion, deletion, and synchronization and disappears at zero."
+    ]
+  },
+  {
     "version": "0.90.0",
     "date": "2026-11-18",
     "changes": [
