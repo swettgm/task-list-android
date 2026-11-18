@@ -1,3 +1,11 @@
+# RM 1.0.12 verification
+
+Source: `b6ae9e17e0ef6ec0a9d90416e316a6c85ef12b92`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44216299498). **27 native Android tests, 127 browser checks and zero lint errors passed.**
+
+Cards combine location and next steps into one naturally wrapping line above tag icons. The Next step caption is removed. A single filled arrow divides location from steps only when both are present; steps without location have no arrow, and location alone has no trailing arrow. Multiple saved steps remain visible, separated by semicolons. Location and step text retain matching compact typography and muted color. Separate accessible inline controls preserve focused editing and swipe navigation.
+
+APK: `Relationship-Manager-v1.0.12.apk`, 41631 bytes, package `com.personal.crm`, version code 13. SHA-256 `e127dffb5573a4f2581fa9b3d0940af25e0cdd91e291b4030c87cbe0a871288b`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signing certificate and exact non-signature contents compared to CI passed. Install over the current app to retain data. Native checks use Robolectric/native graphics and browser checks use Chromium. No physical phone was tested.
+
 # RM 1.0.11 verification
 
 Source: `c8453a11c8bde0014a2f087c0b8ba10c2966f9e5`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44200979195). **27 native Android tests, 127 browser checks and zero lint errors passed.**
