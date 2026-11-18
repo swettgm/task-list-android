@@ -1,6 +1,6 @@
 # Relationship Manager
 
-[Download RM 1.0.16](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Relationship-Manager-v1.0.16.apk). Android 8 or later.
+[Download RM 1.0.17](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Relationship-Manager-v1.0.17.apk). Android 8 or later.
 
 A separate Android app for staying in touch, with Friends/Family and Interests pages. Link selected phone contacts (including contacts synced to the phone by Google), add notes, choose a repeat interval and reminder date/time, and record when you last contacted someone. Interests entries have In progress, Hiatus and DTF labels.
 

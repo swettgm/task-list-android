@@ -1,3 +1,11 @@
+# RM 1.0.17 verification
+
+Source: `525e1ef7d2f87aa515beb56c5167b30fb12a3c2d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44291483976). **32 native Android tests, 155 browser checks and zero lint errors passed.**
+
+Holding the Relationship Manager title for 450ms opens Personal notes. A normal tap does nothing; movement cancels the hold, and keyboard Enter/Space opens the same pane. Entries have a name, Past partner or Shown interest category, and freeform notes. Add/edit/delete, confirmation, cancellation, failed writes and reopening are covered by tests. Editors return to the list when closed, and outside tap closes the list. Entries remain separate from both main contact tabs and reminder/contact data. Optional personalNotes records are validated for type, limits, IDs, category and timestamp; old records remain compatible. Native tests verify persistence and preservation during reminder changes. Manual settled-animation checks confirm the pane and editor footer fit 390x844 and 320x480 viewports.
+
+APK: `Relationship-Manager-v1.0.17.apk`, 45727 bytes; SHA-256 `a8e0396135140a6bdef8d34262412e5090fa290893d4e962042ce2407cad9ba2`. Package `com.personal.crm`, version code 18. Artifact digests, ZIP integrity, packaged UI, manifest, alignment, retained signer and non-signature equality to CI passed. Install over the current app to retain data. Robolectric and Chromium were used; no physical phone was tested.
+
 # RM 1.0.16 verification
 
 Source: `26dbcd8cbc699bb861887f3ce9095fc5f7b5edbf`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44224919820). **29 Android tests, 142 browser checks and zero lint errors passed.**
