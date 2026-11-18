@@ -2,11 +2,14 @@
   {
     "name": "brown_noise",
     "file": "brown_noise.ogg",
-    "sha256": "e88d132a7f741fd585817a00108b66da419224efa5d492632b97365653ce2138",
+    "sha256": "022827ec8e94841fb2b2bd28b3d2ebc86f2e9bc54a10a76ef18b15f206ebd790",
     "seconds": 24,
     "sampleRate": 24000,
-    "seed": 20261115,
-    "source": "Original synthesized periodic noise and procedural rain"
+    "channels": 1,
+    "seed": 20261118,
+    "source": "Original periodic brown noise with smooth circular level stabilization",
+    "targetRms": 0.14,
+    "levelWindowSeconds": 0.1
   },
   {
     "name": "white_noise",
@@ -20,14 +23,15 @@
   {
     "name": "rain",
     "file": "rain.ogg",
-    "sha256": "4df8f37dc82586eb1f8b4c8918c136080aea6fc7725336bab8adb0a78390ccd6",
+    "sha256": "3f87ff5a3f0b9a5da71174876efe101c2b7165227fff882f2a965803c0015133",
     "seconds": 24,
     "sampleRate": 24000,
     "channels": 2,
-    "seed": 20261117,
-    "source": "Original warm diffuse stereo rain with rounded filtered droplets",
-    "highFrequencyRolloffHz": 2700,
+    "seed": 20261118,
+    "source": "Original soft stereo rainfall with rounded water droplets and diffuse warm wash",
     "targetRms": 0.075,
-    "peakCeiling": 0.32
+    "peakCeiling": 0.32,
+    "highFrequencyRolloffHz": 2700,
+    "droplets": 420
   }
 ]
