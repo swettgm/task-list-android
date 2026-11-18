@@ -1,7 +1,7 @@
-Tasks for Windows 0.88.0
+Tasks for Windows 0.89.0
 
 Install over the existing version. Tasks, theme, pairing and taskbar identity are
-retained. Open your current phone with Android Tasks 0.88.0 first and wait for
+retained. Open your current phone with Android Tasks 0.89.0 first and wait for
 Settings > Google sync to say Synced with Google. That phone initializes the cloud
 list; other clients restore it instead of importing their old task lists.
 

@@ -2,13 +2,13 @@
   {
     "name": "brown_noise",
     "file": "brown_noise.ogg",
-    "sha256": "022827ec8e94841fb2b2bd28b3d2ebc86f2e9bc54a10a76ef18b15f206ebd790",
+    "sha256": "5bf14bb615812f6106908e564cb19aef8c1d1518c8fcec41a32d7dc13de52d56",
     "seconds": 24,
     "sampleRate": 24000,
     "channels": 1,
-    "seed": 20261118,
-    "source": "Original periodic brown noise with smooth circular level stabilization",
-    "targetRms": 0.14,
+    "seed": 2026111802,
+    "source": "Original steady brown noise with audible warm low-mid energy and reduced sub-bass",
+    "targetRms": 0.16,
     "levelWindowSeconds": 0.1
   },
   {
@@ -23,15 +23,17 @@
   {
     "name": "rain",
     "file": "rain.ogg",
-    "sha256": "3f87ff5a3f0b9a5da71174876efe101c2b7165227fff882f2a965803c0015133",
+    "sha256": "03235f4b9a44388c82ab18abdd25073778710fce97394bd35d3cd277f680e2f8",
     "seconds": 24,
     "sampleRate": 24000,
     "channels": 2,
-    "seed": 20261118,
-    "source": "Original soft stereo rainfall with rounded water droplets and diffuse warm wash",
+    "seed": 2026111802,
+    "source": "Soft rain falling in a garden by barkenov, CC0; natural recording with a seamless crossfade",
     "targetRms": 0.075,
-    "peakCeiling": 0.32,
-    "highFrequencyRolloffHz": 2700,
-    "droplets": 420
+    "sourceFile": "soft-rain-barkenov.mp3",
+    "sourceSha256": "f5e4d1958e192762dc35e535e79afd30755986e18e7edabade998d84d446e6b9",
+    "sourcePage": "https://freesound.org/people/barkenov/sounds/640655/",
+    "license": "CC0-1.0",
+    "crossfadeSeconds": 2
   }
 ]

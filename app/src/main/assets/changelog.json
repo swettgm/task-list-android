@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.89.0",
+    "date": "2026-11-18",
+    "changes": [
+      "Hold and drag now matches Relationship Manager: 380ms pickup, a full lifted card, fixed horizontal position, and cards moving aside around the drop space. Existing priority, urgent ordering, saved order and cancellation behavior are retained."
+    ]
+  },
+  {
     "version": "0.88.0",
     "date": "2026-11-15",
     "changes": [

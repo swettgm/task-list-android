@@ -45,3 +45,5 @@ Cards combine location and next steps on a single wrapping line above tags: loca
 Location and step details sit beside the tag icons, vertically centered and using the same typography and muted color as Friends/Family metadata. Locations do not display a pin icon.
 
 Hold a card briefly, then drag it up or down to reorder Friends/Family or Interests. Cards move aside and an opaque lifted copy follows the finger. Each tab saves its own order; new entries appear after manually ordered cards. Short gestures still scroll or switch tabs.
+
+Friends/Family and Interests follow the finger during horizontal swipes and finish with the Tasks app easing and timing. Short or cancelled swipes return to the original page. Arrow placement follows the rendered text ink metrics rather than a fixed baseline offset.

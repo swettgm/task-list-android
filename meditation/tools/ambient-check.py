@@ -27,7 +27,9 @@ for item in json.loads((root/'audio-source/ambient-processing.json').read_text()
   raw_high=subprocess.check_output(['ffmpeg','-v','error','-i',str(path),'-af','highpass=f=4000,highpass=f=4000','-ar','24000','-ac','1','-f','f32le','-']);high=array('f');high.frombytes(raw_high)
   if sys.byteorder!='little':high.byteswap()
   brightness=math.sqrt(sum(v*v for v in high)/len(high))/rms
-  assert brightness<.05 and peak<.55 and rms<.12,('Rain is too bright or peaky',brightness,peak,rms)
+  assert .04<brightness<.7 and peak<.8 and rms<.12,('Natural rain loses patter or clips',brightness,peak,rms)
+  source=root/'audio-source'/item['sourceFile'];assert hashlib.sha256(source.read_bytes()).hexdigest()==item['sourceSha256']
+  assert item['license']=='CC0-1.0'
  report.append({'name':item['name'],'seconds':len(samples)/24000,'rms':rms,'peak':peak,'loopSeamStep':seam,'typicalStep':steps[int(len(steps)*.95)],**level_metrics})
 assert len(report)==3
 out=root/'build/audio-qa';out.mkdir(exist_ok=True,parents=True);(out/'ambient-report.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({'passed':len(report),'ambientChecks':report},indent=2))
