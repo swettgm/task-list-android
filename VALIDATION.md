@@ -1,3 +1,11 @@
+# Meditation 1.0.14 verification
+
+Source: `2f1647e8a1916a84f953521ac21108bebab6219f`. [Build and full checks](https://github.com/swettgm/task-list-android/actions/runs/44220576688). **47 native Android tests, 159 browser checks, eight audio checks and zero release lint errors passed.**
+
+Rain adds rounded water droplets to a soft stereo wash while retaining bounded brightness and peaks. Brown noise uses circular, smooth local-energy stabilization, with no fade envelope or volume automation. Decoded half-second RMS spread is 0.55 dB and opening-versus-rest difference is -0.03 dB; regression limits are 1 dB and 0.5 dB respectively. Seam continuity, headroom and audible level checks pass. All five bells and white noise are protected by their existing SHA-256 hashes and byte-for-byte unchanged. Packaged APK verification finds the exact encoded hashes for all eight sounds, including optimized resource names. UI, timer, cues and playback gain behavior are unchanged. CI now reuses installed FFmpeg rather than always updating packages.
+
+APK: `Meditation-v1.0.14.apk`, 2143239 bytes, package `com.personal.meditation`, version code 15. SHA-256 `154933b3a2940dcf7b999a0b72019b088f203670f7938e6d1cbe05cb11e5ef1a`. Artifact hashes, ZIP integrity, manifest metadata, alignment, retained signer and exact non-signature equality to CI passed. Install over the current app to retain settings. Native checks use Robolectric and browser checks use Chromium. No physical phone listening test was performed.
+
 # RM 1.0.14 verification
 
 Source: `4bf41c8c7abbb76cfc67db34ee7dbfe081035d3d`. [Build and checks](https://github.com/swettgm/task-list-android/actions/runs/44220136519). **29 native Android tests, 138 browser checks and zero lint errors passed.**
