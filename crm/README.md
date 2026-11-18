@@ -49,3 +49,5 @@ Hold a card briefly, then drag it up or down to reorder Friends/Family or Intere
 Friends/Family and Interests follow the finger during horizontal swipes and finish with the Tasks app easing and timing. Short or cancelled swipes return to the original page. Arrow placement follows the rendered text ink metrics rather than a fixed baseline offset.
 
 Arrow centering uses capital-letter height, so descenders in names or step text cannot pull the arrow downward.
+
+Hold the Relationship Manager title to open Personal notes, separate from Friends/Family and Interests. Add a name, choose Past partner or Shown interest, and write notes. Entries can be edited or deleted with confirmation and are kept in app-private storage. Keyboard Enter/Space on the title opens the same pane.
