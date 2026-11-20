@@ -26,6 +26,7 @@ try {
  await page.reload();await page.waitForFunction(()=>!!window.RouteManager);
  assert.equal(await panel.getByRole('checkbox',{name:'Keys',exact:true}).isChecked(),true);
  await panel.locator('summary').click();
+ await page.waitForFunction(()=>RouteManager.debug().state.morningRoutine.collapsed===true);
  await page.reload();await page.waitForFunction(()=>!!window.RouteManager);
  assert.equal(await panel.locator('details').getAttribute('open'),null);
  await panel.locator('summary').click();
@@ -64,6 +65,22 @@ try {
  });
  await page.reload();await page.waitForFunction(()=>!!window.RouteManager);
  assert.deepEqual(await page.locator('.note-body').allTextContents(),['For me','Progress','Delegate']);
+ await page.evaluate(()=>{window.__now+=86400000;window.dispatchEvent(new Event('focus'));});
+ await panel.waitFor({state:'visible'});
+ for (const width of [320, 390]) {
+  await page.setViewportSize({width, height:844});
+  for (const size of [0.92, 1, 1.14]) {
+   await page.evaluate(size=>document.documentElement.style.setProperty('--size',size),size);
+   const alignment = await panel.locator('summary').evaluate(summary=>{
+    const arrow=summary.querySelector('svg').getBoundingClientRect();
+    const text=summary.querySelector('span').getBoundingClientRect();
+    return {offset:Math.abs((arrow.top+arrow.height/2)-(text.top+text.height/2)),
+     height:summary.getBoundingClientRect().height};
+   });
+   assert.ok(alignment.offset < 0.5);
+   assert.ok(alignment.height <= 33);
+  }
+ }
  assert.deepEqual(errors,[]);
  console.log('Passed daily reset, saved checks, collapse, editing, dismissal across routes/restarts, save failures and For me ordering');
 } finally {await browser.close();await fixture.close();}
