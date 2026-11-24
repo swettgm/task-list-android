@@ -21,6 +21,7 @@ public final class MainActivity extends Activity {
     private boolean ready,modal;
     private int top=Color.rgb(32,55,71),bottom=Color.rgb(90,92,97);
     private Object backCallback;
+    private final java.util.concurrent.atomic.AtomicInteger keyboardRequest=new java.util.concurrent.atomic.AtomicInteger();
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);
         store=new WorkoutStore(this);
@@ -31,9 +32,10 @@ public final class MainActivity extends Activity {
             return insets;
         });
         web=new WebView(this);web.setBackgroundColor(top);web.setAlpha(0);
+        web.setFocusable(true);web.setFocusableInTouchMode(true);
         web.setVerticalScrollBarEnabled(false);web.setHorizontalScrollBarEnabled(false);
         root.addView(web,new FrameLayout.LayoutParams(-1,-1));
-        setContentView(root);root.requestApplyInsets();bars();
+        setContentView(root);root.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);web.requestFocus();root.requestApplyInsets();bars();
         WebSettings settings=web.getSettings();
         settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(false);
         settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);
@@ -139,8 +141,23 @@ public final class MainActivity extends Activity {
             runOnUiThread(()->{top=Color.parseColor(first);bottom=Color.parseColor(last);bars();});
         }
         @JavascriptInterface public void setModalOpen(boolean open) { runOnUiThread(()->{modal=open;bars();}); }
+        @JavascriptInterface public void showKeyboard() {
+            final int request=keyboardRequest.incrementAndGet();
+            runOnUiThread(()->{
+                if(web==null||isFinishing()||request!=keyboardRequest.get())return;
+                web.requestFocus();
+                web.postDelayed(()->{
+                    if(web!=null&&!isFinishing()&&request==keyboardRequest.get())
+                        ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(web,InputMethodManager.SHOW_IMPLICIT);
+                },80);
+            });
+        }
         @JavascriptInterface public void hideKeyboard() {
-            runOnUiThread(()->{if(web!=null)((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(web.getWindowToken(),0);});
+            final int request=keyboardRequest.incrementAndGet();
+            runOnUiThread(()->{
+                if(web!=null&&request==keyboardRequest.get())
+                    ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(web.getWindowToken(),0);
+            });
         }
         @JavascriptInterface public String spotifyState() { return SpotifyAccess.state(MainActivity.this).toString(); }
         @JavascriptInterface public void spotifyAccess() {

@@ -15,7 +15,7 @@ try{
   window.WorkoutNative={
    readState:()=>JSON.stringify(state),
    writeState:raw=>{if(qa.fail)return null;const next=JSON.parse(raw);if((next.revision||0)!==(state.revision||0))return null;next.revision=(state.revision||0)+1;state=next;localStorage.setItem('native-workouts',JSON.stringify(state));return JSON.stringify(state);},
-   ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},haptic(){qa.haptics++;},
+   ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},
    spotifyState:()=>JSON.stringify(qa.music),spotifyCommand:command=>qa.commands.push(command),openSpotify:()=>qa.openedSpotify=true,spotifyAccess:()=>qa.connectedSpotify=true,preciseTimers:()=>true,restComplete(){qa.rest++;},previewVibration(){},requestNotifications(){}
   };
  });
@@ -144,7 +144,7 @@ try{
  check(await page.locator('#rest-ring').evaluate((e,start)=>Number(e.style.strokeDashoffset)>start,ringStart),'The timer ring shrinks as time passes');
  check(await page.locator('#spotify-art img').count()===1,'Album art is shown when Spotify provides it');
  check(await page.locator('#spotify-title').evaluate(e=>Number(getComputedStyle(e).fontWeight)>=700),'Spotify track text is bold');
- check(await page.locator('#spotify').evaluate(e=>e.getBoundingClientRect().height)===80,'Spotify bar has the requested taller layout');
+ check(await page.locator('#spotify').evaluate(e=>e.getBoundingClientRect().height)===60,'Spotify bar fits closely around the artwork');
  await page.setViewportSize({width:320,height:500});
  await page.getByRole('button',{name:'Edit sets and weight for Front/Lateral Raise'}).click();
  check(await dialog().evaluate(d=>d.scrollWidth<=d.clientWidth+1),'Exercise editor fits a narrow phone');
