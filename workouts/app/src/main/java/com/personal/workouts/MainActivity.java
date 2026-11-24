@@ -61,7 +61,7 @@ public final class MainActivity extends Activity {
             while((n=in.read(buffer))!=-1)bytes.write(buffer,0,n);
             web.loadDataWithBaseURL("https://workouts.local/",bytes.toString(StandardCharsets.UTF_8.name()),"text/html","UTF-8",null);
         } catch(IOException failed) {
-            Toast.makeText(this,"Could not open Workouts.",Toast.LENGTH_LONG).show();finish();
+            Toast.makeText(this,"Could not open Exercise.",Toast.LENGTH_LONG).show();finish();
         }
         if(Build.VERSION.SDK_INT>=33)backCallback=BackApi33.register(this,this::back);
     }
@@ -75,6 +75,10 @@ public final class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33&&backCallback!=null)BackApi33.unregister(this,backCallback);
         if(web!=null){web.removeJavascriptInterface("WorkoutNative");web.destroy();web=null;}
         super.onDestroy();
+    }
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results) {
+        super.onRequestPermissionsResult(request,permissions,results);
+        RestTimerService.sync(this);
     }
     @Override public void onBackPressed() { back(); }
     private void back() {
@@ -103,6 +107,13 @@ public final class MainActivity extends Activity {
         }
         @JavascriptInterface public void haptic() {
             runOnUiThread(()->{if(web!=null)web.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);});
+        }
+        @JavascriptInterface public String restState() {
+            try {
+                org.json.JSONObject value=store.read();
+                return new org.json.JSONObject().put("end",value.optLong("restEndAt"))
+                    .put("duration",value.optLong("restDurationMs")).put("started",value.optLong("restStartedAt")).toString();
+            }catch(RuntimeException|org.json.JSONException invalid){return null;}
         }
         @JavascriptInterface public void restComplete() { RestAlarm.complete(MainActivity.this); }
         @JavascriptInterface public void previewVibration(int ms) {

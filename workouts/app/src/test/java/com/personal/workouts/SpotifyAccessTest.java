@@ -31,6 +31,16 @@ public class SpotifyAccessTest {
         assertEquals("Track",value.getString("title"));assertEquals("Artist",value.getString("artist"));
         assertTrue(value.getBoolean("playing"));
     }
+    @Test public void availableAlbumArtworkIsReturnedAsALocalImage()throws Exception {
+        android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(200,200,android.graphics.Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(android.graphics.Color.BLUE);
+        shadowOf(spotify).setMetadata(new MediaMetadata.Builder().putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART,bitmap).build());
+        String art=SpotifyAccess.state(context).getString("art");
+        assertTrue(art.startsWith("data:image/png;base64,"));
+        assertTrue(art.length()>30);
+        shadowOf(spotify).setMetadata(new MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_TITLE,"No cover").build());
+        assertEquals("",SpotifyAccess.state(context).getString("art"));
+    }
     @Test public void controlsPauseResumeAndSkipTheSpotifySession() {
         shadowOf(spotify).setPlaybackState(new PlaybackState.Builder().setState(PlaybackState.STATE_PLAYING,0,1).build());
         SpotifyAccess.command(context,"play");assertEquals(PlaybackState.ACTION_PAUSE,shadowOf(spotify.getTransportControls()).getLastPerformedAction());

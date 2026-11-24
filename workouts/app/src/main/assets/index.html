@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
-<title>Workouts</title>
+<title>Exercise</title>
 <style>
 :root{--top:#203747;--bottom:#5a5c61;--text:#f4f7fa;--ink:#172631;--line:#ffffff44;--surface:#ffffff0b;--muted:#ffffffb3;color-scheme:dark;font:16px system-ui,sans-serif;color:var(--text);background:var(--top)}
 *{box-sizing:border-box}body{margin:0;min-height:100dvh;padding:16px 16px 110px;background:linear-gradient(var(--top),var(--bottom));background-attachment:fixed}body.flat{background:var(--top)}
@@ -21,39 +21,76 @@ dialog button{min-height:42px;border-width:2px}
 dialog .actions .trash{width:42px;min-width:42px}
 .spotify{gap:4px}
 .rest{height:58px}.rest-time{line-height:1.15}.rest-time strong{line-height:1.1}.spotify{height:58px;min-height:58px}
+
+.add-inline{width:100%;margin-top:14px}
+body{padding-bottom:30px}body.has-player{padding-bottom:130px}
+.spotify{height:80px;min-height:80px;padding:10px 8px;gap:4px}
+.spotify-track{font-size:14px;font-weight:750;min-height:44px;gap:3px}
+#spotify-artist{font-size:12px;font-weight:600;opacity:.8}
+.spotify-art{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:10px;overflow:hidden;background:var(--surface)}
+.spotify-art img{width:100%;height:100%;object-fit:cover}
+.spotify-art svg{width:27px;height:27px}
+.spotify .icon{width:36px;min-width:36px;min-height:42px;padding:6px}
+.spotify .icon svg{width:23px;height:23px;stroke-width:2.8}
+#spotify-connect{font-weight:750}
+body.has-player .rest{bottom:112px;left:16px;right:16px;max-width:700px}
+.settings-screen{max-width:700px;margin:auto}
+.settings-screen>header{justify-content:flex-start;gap:10px;margin-bottom:22px}
+.settings-screen .fields{display:flex;flex-direction:column;gap:18px}
+.settings-screen .actions{position:sticky;bottom:0;padding:14px 0;margin-top:12px;background:var(--bottom)}
+.settings-screen button{border-width:2px;min-height:42px}
+.settings-screen .bare{border:0}
+.settings-screen .error{margin-top:12px}
+body.settings-open{padding-bottom:16px}
+@media(max-width:350px){.spotify-art{width:40px;height:40px;flex-basis:40px}.spotify .icon{width:30px;min-width:30px;padding:4px}#spotify-connect{font-size:11px;padding:4px}}
+
+.rest-floater{position:fixed;width:76px;height:76px;z-index:8;touch-action:none}
+#rest-float{position:relative;display:grid;place-items:center;width:76px;height:76px;min-height:76px;padding:0;border:0;border-radius:50%;background:var(--top);box-shadow:0 5px 20px #0005;touch-action:none}
+#rest-float svg{position:absolute;inset:0;width:76px;height:76px;transform:rotate(-90deg)}
+#rest-float circle{fill:none;stroke-width:4}
+#rest-float .timer-track{stroke:var(--line)}
+#rest-float .timer-ring{stroke:var(--text);stroke-dasharray:100;stroke-dashoffset:0;transition:stroke-dashoffset .25s linear}
+#rest-time{font-size:16px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
+.rest-modal-time{font-size:36px;text-align:center;font-variant-numeric:tabular-nums}
+
+.settings-screen{height:calc(var(--height,100dvh) - 32px);display:flex;flex-direction:column;min-height:0}
+.settings-screen>header,.settings-screen>.actions,.settings-screen>.error{flex:none}
+.settings-screen>.fields{flex:1;min-height:0;overflow:auto;scrollbar-width:none;padding:1px 2px}
+.settings-screen>.fields>*{flex:none}
+.settings-screen>.actions{position:static;background:transparent;margin-top:0}
 </style>
 </head>
 <body>
 <div id="app">
-<header><h1>Workouts</h1><button id="settings" class="icon bare" aria-label="Settings"></button></header>
+<header><h1>Exercise</h1><button id="settings" class="icon bare" aria-label="Settings"></button></header>
 <nav class="tabs" role="tablist" aria-label="Workouts"><button id="today-tab" role="tab" aria-selected="true" aria-controls="today">Today</button><button id="history-tab" role="tab" aria-selected="false" aria-controls="history">History</button></nav>
 <div id="page-stack">
 <section id="today" role="tabpanel" aria-labelledby="today-tab">
 <p id="today-date" class="date"></p>
 <div class="routine-heading"><button id="routine-picker" class="routine-picker bare"></button><button id="routine-edit" class="icon bare" aria-label="Edit routine"></button></div>
 <div id="session-bar" class="session-bar" hidden><span id="elapsed" class="elapsed"></span><div class="row"><button id="discard" class="icon bare trash" aria-label="Discard workout"></button><button id="finish" class="primary">Finish</button></div></div>
-<div id="exercises"></div><button id="start" class="start primary">Start workout</button>
+<div id="exercises"></div><button id="add" class="add-inline">Add exercise</button><button id="start" class="start primary">Start workout</button>
 </section>
 <section id="history" role="tabpanel" aria-labelledby="history-tab" hidden><div id="progress"></div><div id="history-list"></div></section>
 </div></div>
-<button id="add" class="fab" aria-label="Add exercise"></button>
-<aside id="rest" class="rest" aria-label="Rest timer" hidden><div class="rest-time">Rest<strong id="rest-time"></strong></div><button id="rest-add">+30s</button><button id="rest-skip" class="icon bare" aria-label="Skip rest"></button></aside>
+
+<aside id="rest" class="rest-floater" aria-label="Rest timer" hidden><button id="rest-float" aria-label="Rest controls"><svg viewBox="0 0 84 84" aria-hidden="true"><circle class="timer-track" cx="42" cy="42" r="36"/><circle id="rest-ring" class="timer-ring" cx="42" cy="42" r="36" pathLength="100"/></svg><strong id="rest-time"></strong></button></aside>
 <aside id="spotify" class="spotify" aria-label="Spotify player">
-<button id="spotify-open" class="spotify-track bare" aria-label="Open Spotify"><span id="spotify-title">Spotify</span><span id="spotify-artist"></span></button>
+<span id="spotify-art" class="spotify-art" aria-hidden="true"></span><button id="spotify-open" class="spotify-track bare" aria-label="Open Spotify"><span id="spotify-title">Spotify</span><span id="spotify-artist"></span></button>
 <button id="spotify-connect">Connect</button>
 <button id="spotify-prev" class="icon bare" aria-label="Previous Spotify track"></button>
 <button id="spotify-play" class="icon bare" aria-label="Play Spotify"></button>
 <button id="spotify-next" class="icon bare" aria-label="Next Spotify track"></button>
 </aside>
 <div id="toast" class="toast" role="status" hidden></div>
-<div id="failure" hidden><h2>Workouts</h2><p class="empty">Couldn’t read your saved workouts. Your data has been kept.</p><button id="retry">Try again</button></div>
+<div id="failure" hidden><h2>Exercise</h2><p class="empty">Couldn’t read your saved workouts. Your data has been kept.</p><button id="retry">Try again</button></div>
 <script>
 'use strict';
 (() => {
 const native=window.WorkoutNative, KEY='workouts-v1', $=id=>document.getElementById(id);
 const clone=value=>JSON.parse(JSON.stringify(value));
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
-const paths={play:'M8 4l12 8-12 8Z',pause:'M8 5v14M16 5v14',prev:'M5 5v14M19 5 8 12l11 7Z',next:'M19 5v14M5 5l11 7-11 7Z',gear:'M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16',plus:'M12 5v14M5 12h14',pencil:'m15 4 5 5M4 20l4-1L21 6l-4-4L4 15Z',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',chevron:'m5 9 7 7 7-7',close:'m6 6 12 12M6 18 18 6'};
+const paths={back:'m15 5-7 7 7 7',music:'M9 18V5l11-2v13M9 8l11-2M9 18a3 3 0 1 1-3-3M20 16a3 3 0 1 1-3-3',play:'M8 4l12 8-12 8Z',pause:'M8 5v14M16 5v14',prev:'M5 5v14M19 5 8 12l11 7Z',next:'M19 5v14M5 5l11 7-11 7Z',gear:'M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16',plus:'M12 5v14M5 12h14',pencil:'m15 4 5 5M4 20l4-1L21 6l-4-4L4 15Z',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',chevron:'m5 9 7 7 7-7',close:'m6 6 12 12M6 18 18 6'};
 function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(svg.namespaceURI,'path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');path.setAttribute('d',paths[name]);svg.append(path);return svg;}
 function button(label,action,cls=''){const node=el('button',cls,label);node.type='button';node.onclick=action;return node;}
 function id(){return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);}
@@ -63,21 +100,33 @@ function dateText(value,options={month:'short',day:'numeric',weekday:'short'}){r
 function duration(ms){const seconds=Math.max(0,Math.floor(ms/1000));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}
 function completed(session){return session.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.reps!==null).length,0);}
 function total(session){return session.exercises.reduce((n,e)=>n+e.sets.length,0);}
-function settingsDefault(){return {top:'#203747',bottom:'#5a5c61',text:'#f4f7fa',gradient:true,unit:'lb',rest:90,vibrationMs:350,notifications:false,spotify:true};}
+function settingsDefault(){return {top:'#203747',bottom:'#5a5c61',text:'#f4f7fa',gradient:true,unit:'lb',rest:90,vibrationMs:350,notifications:false,spotify:true,floatingTimer:true};}
 function initialState(){
  const routine={id:id(),name:'Workout A',exercises:[]};
- return {version:1,revision:0,routines:[routine],selected:routine.id,active:null,history:[],restEndAt:0,settings:settingsDefault()};
+ return {version:1,revision:0,routines:[routine],selected:routine.id,active:null,history:[],restEndAt:0,restStartedAt:0,restDurationMs:0,settings:settingsDefault()};
 }
+let settingsOpen=false,closeSettings=null;
 let state=null,view='today',closeDialog=null,toastTimer,slide=null,gesture=null,drag=null,suppressUntil=0,announcedRest=0;
 function read(){const raw=native?native.readState():localStorage.getItem(KEY);if(raw===null&&native)throw Error('Unreadable data');const value=JSON.parse(raw||'{}');return Object.keys(value).length?value:null;}
 function load(){try{state=read();if(!state){state=initialState();if(!save(()=>{}))throw Error('Could not initialize');}if(state.version!==1||!Array.isArray(state.routines)||!Array.isArray(state.history)||!state.settings)throw Error('Invalid data');$('failure').hidden=true;$('app').hidden=false;theme();render();}catch(_){$('app').hidden=true;$('add').hidden=true;$('rest').hidden=true;$('failure').hidden=false;}finally{native?.ready();}}
-function save(change,errorNode){const next=clone(state);try{change(next);if(native){const saved=native.writeState(JSON.stringify(next));if(!saved)throw Error('Save failed');state=JSON.parse(saved);}else{next.revision=(next.revision||0)+1;localStorage.setItem(KEY,JSON.stringify(next));state=next;}return true;}catch(_){const message='Couldn’t save. Your changes are still here; try again.';if(errorNode)errorNode.textContent=message;else toast(message);return false;}}
+function save(change,errorNode){try{const next=clone(read()||state);change(next);if(native){const saved=native.writeState(JSON.stringify(next));if(!saved)throw Error('Save failed');state=JSON.parse(saved);}else{next.revision=(next.revision||0)+1;localStorage.setItem(KEY,JSON.stringify(next));state=next;}return true;}catch(_){const message='Couldn’t save. Your changes are still here; try again.';if(errorNode)errorNode.textContent=message;else toast(message);return false;}}
 function routine(){return state.routines.find(r=>r.id===state.selected)||state.routines[0];}
 function current(){return state.active||routine();}
 function theme(){const s=state.settings;for(const key of ['top','bottom','text'])document.documentElement.style.setProperty('--'+key,s[key]);document.documentElement.style.setProperty('--muted','color-mix(in srgb,'+s.text+' 70%,'+s.top+')');document.documentElement.style.setProperty('--line','color-mix(in srgb,'+s.text+' 27%,transparent)');const rgb=parseInt(s.text.slice(1),16);document.documentElement.style.setProperty('--ink',((rgb>>16)*.299+((rgb>>8)&255)*.587+(rgb&255)*.114)>160?'#172631':'#ffffff');document.body.classList.toggle('flat',!s.gradient);native?.setThemeColors(s.top,s.gradient?s.bottom:s.top);}
 function modal(title){if(closeDialog)closeDialog();const oldY=scrollY,dialog=el('dialog'),heading=el('h2','',title),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');error.setAttribute('role','alert');dialog.append(heading,fields,error,actions);document.body.append(dialog);document.documentElement.style.overflow='hidden';Object.assign(document.body.style,{position:'fixed',top:-oldY+'px',left:'0',right:'0'});native?.setModalOpen(true);native?.hideKeyboard();
 const close=()=>{if(!dialog.isConnected)return;dialog.close();dialog.remove();closeDialog=null;document.documentElement.style.overflow='';for(const key of ['position','top','left','right'])document.body.style[key]='';scrollTo(0,oldY);native?.setModalOpen(false);native?.hideKeyboard();};
 closeDialog=close;dialog.addEventListener('cancel',event=>{event.preventDefault();close();});let outside=false;const isOutside=event=>{const box=dialog.getBoundingClientRect();return event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom;};dialog.onpointerdown=event=>outside=event.target===dialog&&isOutside(event);dialog.onclick=event=>{if(outside&&event.target===dialog&&isOutside(event))close();outside=false;};dialog.showModal();dialog.focus({preventScroll:true});return {dialog,fields,error,actions,close};}
+function settingsScreen(){
+ if(closeDialog)closeDialog();
+ const oldY=scrollY,screen=el('section','settings-screen'),header=el('header'),back=button('',()=>close(),'icon bare'),heading=el('h1','','Settings'),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');
+ screen.id='settings-screen';screen.setAttribute('aria-label','Settings');
+ back.append(icon('back'));back.setAttribute('aria-label','Back to Exercise');
+ error.setAttribute('role','alert');header.append(back,heading);screen.append(header,fields,error,actions);
+ document.body.append(screen);$('app').hidden=true;$('spotify').hidden=true;$('rest').hidden=true;
+ settingsOpen=true;document.body.classList.add('settings-open');scrollTo(0,0);
+ const close=()=>{if(!screen.isConnected)return;screen.remove();settingsOpen=false;closeSettings=null;document.body.classList.remove('settings-open');$('app').hidden=false;render();scrollTo(0,oldY);native?.hideKeyboard();};
+ closeSettings=close;return {fields,error,actions,close,dialog:screen};
+}
 function field(parent,label,type,value=''){const wrap=el('label','field');wrap.append(el('span','',label));const input=el(type==='textarea'?'textarea':'input');if(type!=='textarea')input.type=type;input.value=value;input.setAttribute('aria-label',label);wrap.append(input);parent.append(wrap);return input;}
 function numberField(parent,label,value,min,max,step=1){const input=field(parent,label,'number',value);input.min=min;input.max=max;input.step=step;input.inputMode=step===1?'numeric':'decimal';return input;}
 function checkbox(parent,label,value){const wrap=el('label','check-label'),input=el('input');input.type='checkbox';input.checked=value;wrap.append(input,el('span','',label));parent.append(wrap);return input;}
@@ -101,7 +150,7 @@ const valueExercise={id:original?.id||id(),name:name.value.trim(),weight:value,u
 if(state.active&&original&&original.sets.some(s=>s.reps!==null)&&original.unit!==unit.value){m.error.textContent='Keep the unit for logged sets. Change it before the next workout.';return;}
 if(save(next=>{const r=next.routines.find(r=>r.id===(next.active?.routineId||next.selected));if(r){const index=r.exercises.findIndex(e=>e.id===valueExercise.id);if(index<0)r.exercises.push(clone(valueExercise));else r.exercises[index]=clone(valueExercise);}if(next.active){const index=next.active.exercises.findIndex(e=>e.id===valueExercise.id);const live=clone(valueExercise);if(index>=0)live.sets=live.sets.map((set,i)=>original.sets[i]?.reps!==null&&original.sets[i]?.reps!==undefined?clone(original.sets[i]):set);if(index<0)next.active.exercises.push(live);else next.active.exercises[index]=live;}},m.error)){m.close();render();}},original?'Save':'Add');}
 function start(){if(state.active||!routine()?.exercises.length)return;const source=routine();if(save(next=>{next.active={id:id(),routineId:source.id,name:source.name,startedAt:Date.now(),finishedAt:0,notes:'',exercises:clone(source.exercises).map(e=>({...e,sets:e.sets.map(s=>({...s,reps:null}))}))};next.restEndAt=0;})){haptic();render();}}
-function logSet(exerciseId,index){const ex=state.active?.exercises.find(e=>e.id===exerciseId),set=ex?.sets[index];if(!set)return;if(set.reps!==null){editSet(exerciseId,index);return;}if(save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId);live.sets[index].reps=live.sets[index].target;next.restEndAt=live.rest>0?Date.now()+live.rest*1000:0;})){haptic();render();}}
+function logSet(exerciseId,index){const ex=state.active?.exercises.find(e=>e.id===exerciseId),set=ex?.sets[index];if(!set)return;if(set.reps!==null){editSet(exerciseId,index);return;}if(save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId);live.sets[index].reps=live.sets[index].target;next.restStartedAt=Date.now();next.restDurationMs=live.rest*1000;next.restEndAt=live.rest>0?next.restStartedAt+next.restDurationMs:0;})){haptic();render();}}
 function editSet(exerciseId,index){const ex=state.active.exercises.find(e=>e.id===exerciseId),set=ex.sets[index],m=modal('Set '+(index+1));const pair=el('div','two');m.fields.append(pair);const reps=numberField(pair,'Reps',set.reps,0,100),weight=numberField(pair,'Weight ('+ex.unit+')',set.weight,0,5000,.25);m.fields.append(button('Clear set',()=>{if(save(next=>{next.active.exercises.find(e=>e.id===exerciseId).sets[index].reps=null;},m.error)){m.close();render();}}));cancelSave(m,()=>{const r=Number(reps.value),w=Number(weight.value);if(reps.value===''||weight.value===''||!Number.isInteger(r)||r<0||r>100||!Number.isFinite(w)||w<0||w>5000){m.error.textContent='Enter 0–100 reps and a valid weight.';return;}if(save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId).sets[index];live.reps=r;live.weight=w;},m.error)){m.close();render();}});}
 function appendSet(exerciseId){const ex=state.active.exercises.find(e=>e.id===exerciseId);if(ex.sets.length>=20){toast('Up to 20 sets per exercise.');return;}if(save(next=>{const e=next.active.exercises.find(e=>e.id===exerciseId);e.sets.push({target:e.sets.at(-1).target,weight:e.weight,reps:null});}))render();}
 function finish(){if(!state.active)return;if(!completed(state.active)){toast('Log a set first.');return;}const m=modal('Finish workout');m.fields.append(el('p','muted small',completed(state.active)+'/'+total(state.active)+' sets logged'));const note=field(m.fields,'Workout notes','textarea',state.active.notes);note.maxLength=20000;cancelSave(m,()=>{if(save(next=>{next.active.finishedAt=Date.now();next.active.notes=note.value;next.history.unshift(clone(next.active));next.active=null;next.restEndAt=0;},m.error)){m.close();haptic();render();}},'Save workout');}
@@ -109,38 +158,111 @@ function discard(){const m=modal('Discard workout');m.fields.append(el('p','smal
 function renderHistory(){const host=$('history-list');host.replaceChildren();if(!state.history.length)host.append(el('p','empty','No workouts yet.'));for(const session of [...state.history].sort((a,b)=>b.finishedAt-a.finishedAt)){const label=el('span'),control=button('',()=>historyDetail(session.id),'history-card');label.append(el('strong','',session.name),el('span','history-date',dateText(session.finishedAt)));control.append(label,el('span','history-count',completed(session)+' sets · '+Math.max(1,Math.round((session.finishedAt-session.startedAt)/60000))+' min'));host.append(control);}renderProgress();}
 function renderProgress(){const host=$('progress');host.replaceChildren();if(!state.history.length)return;const details=el('details','progress'),summary=el('summary','','Progress');details.append(summary);const records=new Map();for(const session of state.history)for(const ex of session.exercises)for(const set of ex.sets){if(set.reps===null||set.reps===0)continue;const key=ex.name+'|'+ex.unit,previous=records.get(key);if(!previous||set.weight>previous.weight||set.weight===previous.weight&&set.reps>previous.reps)records.set(key,{name:ex.name,unit:ex.unit,weight:set.weight,reps:set.reps});}for(const record of records.values()){const row=el('div','progress-row');row.append(el('span','',record.name),el('span','',record.weight+' '+record.unit+' × '+record.reps));details.append(row);}host.append(details);}
 function historyDetail(sessionId){const session=state.history.find(s=>s.id===sessionId),m=modal(session.name);m.fields.append(el('p','small muted',dateText(session.finishedAt)+' · '+Math.max(1,Math.round((session.finishedAt-session.startedAt)/60000))+' min'));for(const ex of session.exercises){const done=ex.sets.filter(s=>s.reps!==null);if(!done.length)continue;const block=el('div','history-exercise'),sets=el('div','history-sets');block.append(el('strong','',ex.name));for(const [i,set]of ex.sets.entries())if(set.reps!==null)sets.append(el('div','',(i+1)+'. '+set.reps+' reps · '+set.weight+' '+ex.unit));block.append(sets);m.fields.append(block);}const note=field(m.fields,'Workout notes','textarea',session.notes);note.maxLength=20000;m.actions.append(deleteButton('workout',()=>{if(save(next=>next.history=next.history.filter(s=>s.id!==sessionId),m.error)){m.close();render();}}));cancelSave(m,()=>{if(save(next=>next.history.find(s=>s.id===sessionId).notes=note.value,m.error)){m.close();render();}});}
-function settings(){const m=modal('Settings'),draft=clone(state.settings);const spotify=checkbox(m.fields,'Spotify player',draft.spotify!==false);if(native)m.fields.append(button('Connect Spotify controls',()=>native.spotifyAccess()));const unit=selectField(m.fields,'Default unit',['lb','kg'],draft.unit),rest=numberField(m.fields,'Default rest in seconds',draft.rest,0,1800),notify=checkbox(m.fields,'Rest notifications',draft.notifications);
+function settings(){const m=settingsScreen(),draft=clone(state.settings);const spotify=checkbox(m.fields,'Spotify player',draft.spotify!==false);const floating=checkbox(m.fields,'Floating rest timer',draft.floatingTimer!==false);if(native)m.fields.append(button('Connect Spotify controls',()=>native.spotifyAccess()));const unit=selectField(m.fields,'Default unit',['lb','kg'],draft.unit),rest=numberField(m.fields,'Default rest in seconds',draft.rest,0,1800),notify=checkbox(m.fields,'Rest notifications',draft.notifications);
 if(native&&!native.preciseTimers())m.fields.append(button('Allow precise rest alerts',()=>native.allowPreciseTimers()));
 const sliderWrap=el('label','field'),row=el('div','slider-row'),slider=el('input'),output=el('output');slider.type='range';slider.min=0;slider.max=2;slider.step=.05;slider.value=draft.vibrationMs/1000;slider.setAttribute('aria-label','Rest vibration length');output.textContent=Number(slider.value).toFixed(2)+' s';slider.oninput=()=>output.textContent=Number(slider.value).toFixed(2)+' s';slider.onchange=()=>native?.previewVibration(Math.round(Number(slider.value)*1000));row.append(slider,output);sliderWrap.append(el('span','','Rest vibration length'),row);m.fields.append(sliderWrap);
 m.fields.append(el('h3','','Appearance'));const colors={};for(const [key,label]of [['top','First background color'],['bottom','Second background color'],['text','Text & buttons']]){const wrap=el('label','row'),input=el('input');input.type='color';input.value=draft[key];input.setAttribute('aria-label',label);wrap.append(input,el('span','small',label));m.fields.append(wrap);colors[key]=input;}const gradient=checkbox(m.fields,'Gradient background',draft.gradient);
-cancelSave(m,()=>{const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,rest:seconds,notifications:notify.checked,spotify:spotify.checked,vibrationMs:Math.round(Number(slider.value)*1000),gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){if(notify.checked&&!draft.notifications)native?.requestNotifications();m.close();theme();render();}});}
-function tick(){if(!state)return;if(state.active)$('elapsed').textContent=duration(Date.now()-state.active.startedAt)+' · '+completed(state.active)+'/'+total(state.active)+' sets';const end=state.restEndAt,remaining=Math.max(0,Math.ceil((end-Date.now())/1000));$('rest').hidden=!end||!state.active||view!=='today';$('rest-time').textContent=remaining?Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0'):'Complete';if(end&&remaining===0&&announcedRest!==end){announcedRest=end;native?.restComplete();}}
+cancelSave(m,()=>{const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,vibrationMs:Math.round(Number(slider.value)*1000),gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){if(notify.checked&&!draft.notifications)native?.requestNotifications();m.close();theme();render();}});}
+let inferredTimer={end:0,length:1},timerDrag=null,suppressTimerClick=0;
+function remainingText(){
+ const seconds=Math.max(0,Math.ceil((state.restEndAt-Date.now())/1000));
+ return seconds?Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0'):'Done';
+}
+function placeTimer(position=state.settings.timerPosition){
+ const width=innerWidth,height=visualViewport?.height||innerHeight,size=76,margin=8;
+ const roomX=Math.max(0,width-size-margin*2),roomY=Math.max(0,height-size-margin*2);
+ const x=Number.isFinite(position?.x)?position.x:Math.max(0,(width-size-16-margin)/Math.max(1,roomX)),y=Number.isFinite(position?.y)?position.y:Math.max(0,(height-(state.settings.spotify!==false?190:100)-margin)/Math.max(1,roomY));
+ const left=margin+Math.max(0,Math.min(1,x))*roomX,top=margin+Math.max(0,Math.min(1,y))*roomY;
+ Object.assign($('rest').style,{left:left+'px',top:top+'px',right:'auto',bottom:'auto'});
+}
+function tick(){
+ if(!state)return;
+ if(state.active)$('elapsed').textContent=duration(Date.now()-state.active.startedAt)+' · '+completed(state.active)+'/'+total(state.active)+' sets';
+ const end=state.restEndAt,remaining=Math.max(0,end-Date.now());
+ $('rest').hidden=!end||!state.active||state.settings.floatingTimer===false||settingsOpen;
+ $('rest-time').textContent=remainingText();
+ const modalTime=document.getElementById('rest-modal-time');if(modalTime)modalTime.textContent=remainingText();
+ if(end!==inferredTimer.end)inferredTimer={end,length:Math.max(1000,remaining)};
+ const length=Math.max(1,state.restDurationMs||inferredTimer.length);
+ $('rest-ring').style.strokeDashoffset=String(100*(1-Math.max(0,Math.min(1,remaining/length))));
+ if(!timerDrag)placeTimer();
+ if(end&&remaining===0&&announcedRest!==end){announcedRest=end;native?.restComplete();}
+}
+function moreRest(errorNode=null){
+ if(save(next=>{
+  const now=Date.now();
+  if(next.restEndAt<=now){next.restStartedAt=now;next.restDurationMs=30000;}
+  else next.restDurationMs=(next.restDurationMs||Math.max(0,next.restEndAt-now))+30000;
+  next.restEndAt=Math.max(now,next.restEndAt)+30000;
+ },errorNode)){haptic();tick();}
+}
+function openRest(){
+ if(!state.restEndAt)return;
+ const m=modal('Rest timer'),time=el('strong','rest-modal-time',remainingText());time.id='rest-modal-time';
+ m.fields.append(time);
+ const floating=checkbox(m.fields,'Floating rest timer',state.settings.floatingTimer!==false);
+ floating.onchange=()=>{if(save(next=>next.settings.floatingTimer=floating.checked,m.error))tick();else floating.checked=state.settings.floatingTimer!==false;};
+ m.actions.append(button('+30s',()=>moreRest(m.error)),button('Skip rest',()=>{if(save(next=>next.restEndAt=0,m.error)){m.close();tick();}},'primary'),button('Close',m.close));
+}
+const floater=$('rest-float');
+floater.addEventListener('pointerdown',event=>{
+ if(event.button!==0||event.isPrimary===false)return;
+ const box=$('rest').getBoundingClientRect();
+ timerDrag={id:event.pointerId,startX:event.clientX,startY:event.clientY,left:box.left,top:box.top,moved:false};
+ floater.setPointerCapture(event.pointerId);event.stopPropagation();
+});
+floater.addEventListener('pointermove',event=>{
+ const d=timerDrag;if(!d||d.id!==event.pointerId)return;
+ const dx=event.clientX-d.startX,dy=event.clientY-d.startY;
+ if(Math.hypot(dx,dy)>5)d.moved=true;if(!d.moved)return;
+ if(event.cancelable)event.preventDefault();
+ const left=Math.max(8,Math.min(innerWidth-84,d.left+dx)),top=Math.max(8,Math.min((visualViewport?.height||innerHeight)-84,d.top+dy));
+ Object.assign($('rest').style,{left:left+'px',top:top+'px'});
+});
+function finishTimerDrag(commit){
+ const d=timerDrag;if(!d)return;timerDrag=null;
+ if(d.moved){suppressTimerClick=performance.now()+450;if(commit){
+  const box=$('rest').getBoundingClientRect(),x=Math.max(0,Math.min(1,(box.left-8)/Math.max(1,innerWidth-92))),y=Math.max(0,Math.min(1,(box.top-8)/Math.max(1,(visualViewport?.height||innerHeight)-92)));
+  if(save(next=>next.settings.timerPosition={x,y}))haptic();
+ }}
+ placeTimer();
+}
+floater.addEventListener('pointerup',()=>finishTimerDrag(true));
+floater.addEventListener('pointercancel',()=>finishTimerDrag(false));
+floater.onclick=()=>{if(performance.now()>=suppressTimerClick){haptic();openRest();}};
 function renderSpotify(){
  if(!state)return;
- const enabled=state.settings.spotify!==false;
+ const enabled=state.settings.spotify!==false&&!settingsOpen;
  $('spotify').hidden=!enabled;
  document.body.classList.toggle('has-player',enabled);
  if(!enabled)return;
  let music={connected:false,available:false,title:'Spotify',artist:'',playing:false};
  try{if(native?.spotifyState)music=JSON.parse(native.spotifyState());}catch(_){}
- $('spotify-title').textContent=music.title||'Open Spotify';
+ $('spotify-title').textContent=music.connected?(music.title||'Open Spotify'):'Spotify';
  $('spotify-open').title=[music.title,music.artist].filter(Boolean).join(' · ');
  $('spotify-artist').textContent=music.artist||'';
+ const art=$('spotify-art'),url=music.art||'';
+ if(art.dataset.url!==url){
+  art.dataset.url=url;art.replaceChildren();
+  if(url.startsWith('data:image/png;base64,')){const image=el('img');image.src=url;image.alt='';art.append(image);}
+  else art.append(icon('music'));
+ }
+
  $('spotify-connect').hidden=music.connected;
  for(const key of ['prev','play','next'])$('spotify-'+key).disabled=!music.available;
  $('spotify-play').replaceChildren(icon(music.playing?'pause':'play'));
  $('spotify-play').setAttribute('aria-label',(music.playing?'Pause':'Play')+' Spotify');
 }
-function stopRest(){if(save(next=>next.restEndAt=0))tick();}
-$('spotify-prev').append(icon('prev'));$('spotify-next').append(icon('next'));$('spotify-play').append(icon('play'));$('spotify-open').onclick=()=>native?.openSpotify();$('spotify-connect').onclick=()=>native?.spotifyAccess();for(const command of ['prev','play','next'])$('spotify-'+command).onclick=()=>{native?.spotifyCommand(command);setTimeout(renderSpotify,250);};
-$('settings').append(icon('gear'));$('routine-edit').append(icon('pencil'));$('discard').append(icon('trash'));$('add').append(icon('plus'));$('rest-skip').append(icon('close'));
-$('settings').onclick=settings;$('routine-picker').onclick=chooseRoutine;$('routine-edit').onclick=editRoutineName;$('add').onclick=()=>editExercise();$('start').onclick=start;$('finish').onclick=finish;$('discard').onclick=discard;$('rest-skip').onclick=stopRest;$('rest-add').onclick=()=>{if(save(next=>next.restEndAt=Math.max(Date.now(),next.restEndAt)+30000))tick();};$('retry').onclick=load;
+$('spotify-art').append(icon('music'));$('spotify').onclick=event=>{if(!event.target.closest('button')){haptic();native?.openSpotify();}};
+$('spotify-prev').append(icon('prev'));$('spotify-next').append(icon('next'));$('spotify-play').append(icon('play'));$('spotify-open').onclick=()=>{haptic();native?.openSpotify();};$('spotify-connect').onclick=()=>{haptic();native?.spotifyAccess();};for(const command of ['prev','play','next'])$('spotify-'+command).onclick=()=>{haptic();native?.spotifyCommand(command);setTimeout(renderSpotify,250);};
+$('settings').append(icon('gear'));$('routine-edit').append(icon('pencil'));$('discard').append(icon('trash'));
+$('settings').onclick=settings;$('routine-picker').onclick=chooseRoutine;$('routine-edit').onclick=editRoutineName;$('add').onclick=()=>editExercise();$('start').onclick=start;$('finish').onclick=finish;$('discard').onclick=discard;$('retry').onclick=load;
 function selectView(next){view=next;for(const v of ['today','history']){$(v+'-tab').setAttribute('aria-selected',String(v===view));$(v+'-tab').tabIndex=v===view?0:-1;}$(view).hidden=false;$(view==='today'?'history':'today').hidden=true;$('add').hidden=view!=='today';tick();}
 function finishSlide(commit,animate=true){const d=slide;if(!d)return;d.finishing=true;const complete=()=>{if(slide!==d)return;slide=null;d.animations?.forEach(a=>a.cancel());d.incoming.style.transform='';d.outgoing.style.transform='';d.outgoing.classList.remove('outgoing');d.incoming.inert=false;d.outgoing.inert=false;$('page-stack').style.minHeight='';selectView(commit?d.target:d.from);if(commit)haptic();};if(!animate||matchMedia('(prefers-reduced-motion: reduce)').matches){complete();return;}const options={duration:Math.max(160,240*(commit?1-d.ratio:d.ratio)),easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'};d.animations=[d.incoming.animate([{transform:'translateX('+(d.direction*(1-d.ratio)*100)+'%)'},{transform:'translateX('+(commit?0:d.direction*100)+'%)'}],options),d.outgoing.animate([{transform:'translateX('+(-d.direction*d.ratio*100)+'%)'},{transform:'translateX('+(commit?-d.direction*100:0)+'%)'}],options)];Promise.all(d.animations.map(a=>a.finished)).then(complete,complete);}
 function prepareSlide(target){const from=view,direction=from==='today'?1:-1,incoming=$(target),outgoing=$(from);incoming.hidden=false;outgoing.classList.add('outgoing');incoming.inert=true;outgoing.inert=true;$('page-stack').style.minHeight=Math.max(incoming.offsetHeight,outgoing.offsetHeight)+'px';slide={from,target,direction,incoming,outgoing,width:$('page-stack').offsetWidth,ratio:0};}
 function switchView(target){if(closeDialog)return;if(slide)finishSlide(true,false);if(view===target)return;prepareSlide(target);finishSlide(true);}
 for(const name of ['today','history']){$(name+'-tab').onclick=()=>switchView(name);$(name+'-tab').onkeydown=event=>{if(['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();const target=name==='today'?'history':'today';switchView(target);$(target+'-tab').focus();}};}
-document.addEventListener('pointerdown',event=>{if(slide)finishSlide(false,false);if(closeDialog||!state||event.isPrimary===false||event.button!==0||event.target.closest('input,select,textarea,a,summary,.sets,dialog,.rest,header,.tabs'))return;gesture={id:event.pointerId,x:event.clientX,y:event.clientY,from:view,horizontal:false};});
+document.addEventListener('pointerdown',event=>{if(slide)finishSlide(false,false);if(closeDialog||!state||event.isPrimary===false||event.button!==0||event.target.closest('input,select,textarea,a,summary,.sets,dialog,.rest-floater,header,.tabs'))return;gesture={id:event.pointerId,x:event.clientX,y:event.clientY,from:view,horizontal:false};});
 document.addEventListener('pointermove',event=>{if(!gesture||gesture.id!==event.pointerId||drag?.active)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;if(!gesture.horizontal&&Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx)){gesture=null;return;}if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy)*1.5)gesture.horizontal=true;if(!gesture.horizontal)return;if(event.cancelable)event.preventDefault();const direction=gesture.from==='today'?1:-1;if(!slide&&-direction*dx>0)prepareSlide(gesture.from==='today'?'history':'today');if(slide&&!slide.finishing){slide.ratio=Math.max(0,Math.min(1,-slide.direction*dx/slide.width));slide.incoming.style.transform='translateX('+(slide.direction*(1-slide.ratio)*100)+'%)';slide.outgoing.style.transform='translateX('+(-slide.direction*slide.ratio*100)+'%)';}},{passive:false});
 document.addEventListener('pointerup',event=>{if(!gesture||gesture.id!==event.pointerId)return;const g=gesture;gesture=null;if(g.horizontal)suppressUntil=performance.now()+450;if(slide)finishSlide(slide.ratio*slide.width>=Math.min(56,Math.max(32,slide.width*.16)));});
 document.addEventListener('pointercancel',()=>{gesture=null;finishSlide(false);});
@@ -149,11 +271,20 @@ $('exercises').addEventListener('pointerdown',event=>{if(closeDialog||drag||even
 function dragFrame(){const d=drag;if(!d?.active)return;d.ghost.style.top=(d.y-d.offsetY)+'px';const height=visualViewport?.height||innerHeight;const shift=d.y<65?-Math.min(12,(65-d.y)/5):d.y>height-65?Math.min(12,(d.y-height+65)/5):0;if(shift)scrollBy(0,shift);for(const card of [...$('exercises').children]){if(card===d.card||!card.dataset.exerciseId)continue;const rect=card.getBoundingClientRect();if(d.y>rect.top&&d.y<rect.bottom){const before=rect.top+rect.height/2>d.y,positions=new Map([...$('exercises').children].map(e=>[e,e.getBoundingClientRect().top]));$('exercises').insertBefore(d.card,before?card:card.nextSibling);for(const [node,top]of positions){const dy=top-node.getBoundingClientRect().top;if(dy&&node!==d.card&&!matchMedia('(prefers-reduced-motion: reduce)').matches)node.animate([{transform:'translateY('+dy+'px)'},{transform:'translateY(0)'}],{duration:180});}break;}}d.frame=requestAnimationFrame(dragFrame);}
 function finishDrag(commit){const d=drag;if(!d)return;drag=null;clearTimeout(d.timer);if(!d.active)return;cancelAnimationFrame(d.frame);d.ghost.remove();d.card.classList.remove('drag-source');document.body.classList.remove('dragging');gesture=null;suppressUntil=performance.now()+450;const order=[...$('exercises').children].map(e=>e.dataset.exerciseId),positions=new Map(order.map((id,index)=>[id,index]));if(commit&&order.join()!==d.original.join()){if(save(next=>{const r=next.routines.find(r=>r.id===(next.active?.routineId||next.selected));if(r)r.exercises.sort((a,b)=>(positions.get(a.id)??100)-(positions.get(b.id)??100));if(next.active)next.active.exercises.sort((a,b)=>positions.get(a.id)-positions.get(b.id));}))haptic();}renderToday();}
 document.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;drag.y=event.clientY;if(!drag.active&&Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)>12){clearTimeout(drag.timer);drag=null;return;}if(drag.active&&event.cancelable)event.preventDefault();},{passive:false});
-document.addEventListener('pointerup',event=>{if(drag?.id===event.pointerId)finishDrag(true);});document.addEventListener('pointercancel',()=>finishDrag(false));window.addEventListener('blur',()=>{gesture=null;finishSlide(false,false);finishDrag(false);});
-function viewport(){document.documentElement.style.setProperty('--height',(visualViewport?.height||innerHeight)+'px');}viewport();visualViewport?.addEventListener('resize',viewport);
-function refresh(){if(closeDialog||drag||slide)return;try{const saved=read();if(saved){state=saved;theme();render();}}catch(_){toast('Couldn’t reload saved workouts.');}}
-window.Workouts=Object.freeze({refresh,back(){if(closeDialog){closeDialog();return true;}if(slide){finishSlide(false,false);return true;}if(view==='history'){switchView('today');return true;}return false;},debug:()=>clone(state)});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();tick();}});setInterval(tick,250);setInterval(renderSpotify,1500);load();
+document.addEventListener('pointerup',event=>{if(drag?.id===event.pointerId)finishDrag(true);});document.addEventListener('pointercancel',()=>finishDrag(false));window.addEventListener('blur',()=>{finishTimerDrag(false);gesture=null;finishSlide(false,false);finishDrag(false);});
+function viewport(){document.documentElement.style.setProperty('--height',(visualViewport?.height||innerHeight)+'px');if(state&&!timerDrag)placeTimer();}viewport();window.addEventListener('resize',viewport);visualViewport?.addEventListener('resize',viewport);
+function refresh(){if(closeDialog||settingsOpen||drag||slide)return;try{const saved=read();if(saved){state=saved;theme();render();}}catch(_){toast('Couldn’t reload saved workouts.');}}
+window.Workouts=Object.freeze({refresh,back(){if(settingsOpen&&!closeDialog){closeSettings();return true;}if(closeDialog){closeDialog();return true;}if(slide){finishSlide(false,false);return true;}if(view==='history'){switchView('today');return true;}return false;},debug:()=>clone(state)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();tick();}});setInterval(tick,250);setInterval(renderSpotify,1500);
+setInterval(()=>{
+ if(!state||!native?.restState)return;
+ try{
+  const rest=JSON.parse(native.restState());
+  state.restEndAt=rest.end;state.restDurationMs=rest.duration;state.restStartedAt=rest.started;
+  tick();
+ }catch(_){}
+},1000);
+load();
 })();
 </script>
 </body></html>

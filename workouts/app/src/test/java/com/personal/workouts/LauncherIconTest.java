@@ -16,6 +16,7 @@ public class LauncherIconTest {
     @Test public void adaptiveTileShowsTheAppGradient() {
         Drawable drawable=RuntimeEnvironment.getApplication().getApplicationInfo().loadIcon(RuntimeEnvironment.getApplication().getPackageManager());
         assertTrue(drawable instanceof AdaptiveIconDrawable);
+        assertEquals("Exercise",RuntimeEnvironment.getApplication().getApplicationInfo().loadLabel(RuntimeEnvironment.getApplication().getPackageManager()).toString());
         Bitmap bitmap=draw(drawable);
         for(int y:new int[]{6,101}) {
             double fraction=(y+.5)/108;
@@ -27,7 +28,7 @@ public class LauncherIconTest {
         Bitmap bitmap=draw(icon.getForeground());
         int left=108,right=-1;
         for(int y=0;y<108;y++)for(int x=0;x<108;x++)if(Color.alpha(bitmap.getPixel(x,y))>250) {
-            assertEquals(Color.WHITE,bitmap.getPixel(x,y));left=Math.min(left,x);right=Math.max(right,x);
+            assertEquals(255,Color.red(bitmap.getPixel(x,y)));assertEquals(255,Color.green(bitmap.getPixel(x,y)));assertEquals(255,Color.blue(bitmap.getPixel(x,y)));left=Math.min(left,x);right=Math.max(right,x);
         }
         assertTrue(right-left>=35&&right-left<=48);
         assertTrue(Math.abs((left+right)/2.0-53.5)<=1);

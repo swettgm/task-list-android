@@ -3,6 +3,9 @@ package com.personal.workouts;
 import android.app.NotificationManager;
 import android.content.*;
 import android.media.MediaMetadata;
+import android.graphics.Bitmap;
+import android.util.Base64;
+import java.io.ByteArrayOutputStream;
 import android.media.session.*;
 import android.os.Build;
 import android.service.notification.NotificationListenerService;
@@ -10,6 +13,23 @@ import org.json.JSONObject;
 
 /** Uses Spotify's active media session. Notification contents are never read or stored. */
 public final class SpotifyAccess extends NotificationListenerService {
+    private static Bitmap lastArt;
+    private static String artData="";
+    private static synchronized String artwork(MediaMetadata metadata) {
+        Bitmap bitmap=metadata==null?null:metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
+        if(bitmap==null&&metadata!=null)bitmap=metadata.getBitmap(MediaMetadata.METADATA_KEY_ART);
+        if(bitmap==null&&metadata!=null)bitmap=metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON);
+        if(bitmap==null||bitmap.isRecycled()){lastArt=null;artData="";return "";}
+        if(bitmap==lastArt)return artData;
+        double scale=Math.min(96.0/bitmap.getWidth(),96.0/bitmap.getHeight());
+        Bitmap thumb=Bitmap.createScaledBitmap(bitmap,Math.max(1,(int)(bitmap.getWidth()*scale)),Math.max(1,(int)(bitmap.getHeight()*scale)),true);
+        ByteArrayOutputStream bytes=new ByteArrayOutputStream();
+        thumb.compress(Bitmap.CompressFormat.PNG,100,bytes);
+        artData="data:image/png;base64,"+Base64.encodeToString(bytes.toByteArray(),Base64.NO_WRAP);
+        lastArt=bitmap;
+        if(thumb!=bitmap)thumb.recycle();
+        return artData;
+    }
     static boolean allowed(Context context) {
         ComponentName component=new ComponentName(context,SpotifyAccess.class);
         if(Build.VERSION.SDK_INT>=27)return context.getSystemService(NotificationManager.class).isNotificationListenerAccessGranted(component);
@@ -31,10 +51,11 @@ public final class SpotifyAccess extends NotificationListenerService {
         JSONObject value=new JSONObject();
         try {
             MediaController controller=controller(context);
-            value.put("connected",allowed(context)).put("available",controller!=null).put("title","Open Spotify").put("artist","").put("playing",false);
+            value.put("connected",allowed(context)).put("available",controller!=null).put("title","Open Spotify").put("artist","").put("playing",false).put("art","");
             if(controller!=null) {
                 MediaMetadata metadata=controller.getMetadata();PlaybackState playback=controller.getPlaybackState();
                 if(metadata!=null) {
+                    value.put("art",artwork(metadata));
                     String title=metadata.getString(MediaMetadata.METADATA_KEY_TITLE),artist=metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
                     value.put("title",title==null?"Spotify":title).put("artist",artist==null?"":artist);
                 }
