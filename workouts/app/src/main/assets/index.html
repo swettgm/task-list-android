@@ -65,7 +65,9 @@ body,#page-stack{touch-action:pan-y}
 .spotify{height:60px;min-height:60px;padding:4px 8px}
 .spotify .icon svg{fill:currentColor;stroke:none}
 @media(max-width:350px){.spotify{height:56px;min-height:56px}.spotify .icon{min-height:40px}}
-.set.amrap{touch-action:none}.amrap-picker{width:100%;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text);padding:4px 0}.amrap-picker input{flex:1;min-width:0;min-height:28px;padding:0;accent-color:var(--text);pointer-events:none}.amrap-picker output{min-width:42px;text-align:right;font-variant-numeric:tabular-nums}
+.set[aria-pressed]{touch-action:none}
+.workout-edit-actions{display:flex;flex-wrap:wrap;gap:8px}.workout-edit-list{display:grid;gap:6px}.workout-edit-row{display:flex;gap:8px;touch-action:pan-y}.workout-edit-exercise{flex:1;justify-content:flex-start;text-align:left;overflow-wrap:anywhere;min-width:0}.exercise-plan{min-height:0}
+.progress-info{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.progress-graph{width:72px;height:24px;flex:none}
 </style>
 </head>
 <body>
@@ -75,9 +77,9 @@ body,#page-stack{touch-action:pan-y}
 <div id="page-stack">
 <section id="today" role="tabpanel" aria-labelledby="today-tab">
 <p id="today-date" class="date"></p>
-<div class="routine-heading"><button id="routine-picker" class="routine-picker bare"></button><button id="routine-edit" class="icon bare" aria-label="Edit routine"></button></div>
+<div class="routine-heading"><button id="routine-picker" class="routine-picker bare"></button><button id="routine-edit" class="icon bare" aria-label="Edit workout"></button></div>
 <div id="session-bar" class="session-bar" hidden><span id="elapsed" class="elapsed"></span><div class="row"><button id="discard" class="icon bare trash" aria-label="Discard workout"></button><button id="finish" class="primary">Finish</button></div></div>
-<div id="exercises"></div><button id="add" class="add-inline">Add exercise</button><button id="start" class="start primary">Start workout</button>
+<div id="exercises"></div><button id="start" class="start primary">Start workout</button>
 </section>
 <section id="history" role="tabpanel" aria-labelledby="history-tab" hidden><div id="progress"></div><div id="history-list"></div></section>
 </div></div>
@@ -106,7 +108,7 @@ function haptic(){try{native?.haptic();}catch(_){}}
 function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,2400);}
 function dateText(value,options={month:'short',day:'numeric',weekday:'short'}){return new Intl.DateTimeFormat(undefined,options).format(new Date(value));}
 function duration(ms){const seconds=Math.max(0,Math.floor(ms/1000));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}
-function completed(session){return session.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.reps!==null).length,0);}
+function completed(session){return session.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.reps>0).length,0);}
 function total(session){return session.exercises.reduce((n,e)=>n+e.sets.length,0);}
 function settingsDefault(){return {top:'#203747',bottom:'#5a5c61',text:'#f4f7fa',gradient:true,unit:'lb',rest:90,vibrationMs:350,notifications:false,spotify:true,floatingTimer:true};}
 function initialState(){
@@ -116,13 +118,13 @@ function initialState(){
 let settingsOpen=false,closeSettings=null;
 let state=null,view='today',closeDialog=null,toastTimer,slide=null,gesture=null,drag=null,suppressUntil=0,announcedRest=0;
 function read(){const raw=native?native.readState():localStorage.getItem(KEY);if(raw===null&&native)throw Error('Unreadable data');const value=JSON.parse(raw||'{}');return Object.keys(value).length?value:null;}
-function load(){try{state=read();if(!state){state=initialState();if(!save(()=>{}))throw Error('Could not initialize');}if(state.version!==1||!Array.isArray(state.routines)||!Array.isArray(state.history)||!state.settings)throw Error('Invalid data');$('failure').hidden=true;$('app').hidden=false;theme();render();}catch(_){$('app').hidden=true;$('add').hidden=true;$('rest').hidden=true;$('failure').hidden=false;}finally{native?.ready();}}
+function load(){try{state=read();if(!state){state=initialState();if(!save(()=>{}))throw Error('Could not initialize');}if(state.version!==1||!Array.isArray(state.routines)||!Array.isArray(state.history)||!state.settings)throw Error('Invalid data');$('failure').hidden=true;$('app').hidden=false;theme();render();}catch(_){$('app').hidden=true;$('rest').hidden=true;$('failure').hidden=false;}finally{native?.ready();}}
 function save(change,errorNode){try{const next=clone(read()||state);change(next);if(native){const saved=native.writeState(JSON.stringify(next));if(!saved)throw Error('Save failed');state=JSON.parse(saved);}else{next.revision=(next.revision||0)+1;localStorage.setItem(KEY,JSON.stringify(next));state=next;}return true;}catch(_){const message='Couldn’t save. Your changes are still here; try again.';if(errorNode)errorNode.textContent=message;else toast(message);return false;}}
 function routine(){return state.routines.find(r=>r.id===state.selected)||state.routines[0];}
 function current(){return state.active||routine();}
 function theme(){const s=state.settings;for(const key of ['top','bottom','text'])document.documentElement.style.setProperty('--'+key,s[key]);document.documentElement.style.setProperty('--muted','color-mix(in srgb,'+s.text+' 70%,'+s.top+')');document.documentElement.style.setProperty('--line','color-mix(in srgb,'+s.text+' 27%,transparent)');const rgb=parseInt(s.text.slice(1),16);document.documentElement.style.setProperty('--ink',((rgb>>16)*.299+((rgb>>8)&255)*.587+(rgb&255)*.114)>160?'#172631':'#ffffff');document.body.classList.toggle('flat',!s.gradient);native?.setThemeColors(s.top,s.gradient?s.bottom:s.top);}
 function modal(title){if(closeDialog)closeDialog();const oldY=scrollY,dialog=el('dialog'),heading=el('h2','',title),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');error.setAttribute('role','alert');dialog.append(heading,fields,error,actions);document.body.append(dialog);document.documentElement.style.overflow='hidden';Object.assign(document.body.style,{position:'fixed',top:-oldY+'px',left:'0',right:'0'});native?.setModalOpen(true);
-const close=()=>{if(!dialog.isConnected)return;dialog.close();dialog.remove();closeDialog=null;document.documentElement.style.overflow='';for(const key of ['position','top','left','right'])document.body.style[key]='';scrollTo(0,oldY);native?.setModalOpen(false);native?.hideKeyboard();};
+const close=()=>{if(!dialog.isConnected)return;if(drag?.modal.dialog===dialog)finishDrag(false);dialog.close();dialog.remove();closeDialog=null;document.documentElement.style.overflow='';for(const key of ['position','top','left','right'])document.body.style[key]='';scrollTo(0,oldY);native?.setModalOpen(false);native?.hideKeyboard();};
 closeDialog=close;dialog.addEventListener('cancel',event=>{event.preventDefault();close();});let outside=false;const isOutside=event=>{const box=dialog.getBoundingClientRect();return event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom;};dialog.onpointerdown=event=>outside=event.target===dialog&&isOutside(event);dialog.onclick=event=>{if(outside&&event.target===dialog&&isOutside(event))close();outside=false;};dialog.autofocus=true;
 requestAnimationFrame(()=>{
  if(!dialog.isConnected)return;
@@ -156,65 +158,157 @@ function cancelSave(m,action,label='Save'){m.actions.append(button('Cancel',m.cl
 function deleteButton(label,remove){let armed=false,timer;const control=button('',()=>{if(!armed){armed=true;control.classList.add('danger');control.setAttribute('aria-label','Confirm delete '+label);timer=setTimeout(()=>{armed=false;control.classList.remove('danger');control.setAttribute('aria-label','Delete '+label);},3000);return;}clearTimeout(timer);remove();},'icon trash');control.append(icon('trash'));control.setAttribute('aria-label','Delete '+label);return control;}
 function notes(parent,text){const fragment=el('div','exercise-notes');const pattern=/\[([^\]\n]+)\]\((https?:\/\/[^\s]+)\)|https?:\/\/[^\s<>]+/gi;let from=0;for(const match of String(text).matchAll(pattern)){fragment.append(document.createTextNode(text.slice(from,match.index)));const label=match[1]||match[0],url=(match[2]||match[0]).replace(/[.,;!?]+$/,'');let target;try{target=new URL(url);}catch(_){fragment.append(document.createTextNode(match[0]));from=match.index+match[0].length;continue;}const link=el('a','',label);link.href=target.href;link.rel='noopener noreferrer';link.onclick=event=>event.stopPropagation();fragment.append(link);from=match.index+match[0].length;}fragment.append(document.createTextNode(String(text).slice(from)));parent.append(fragment);}
 function plan(ex){const targets=ex.sets.map(s=>String(s.target)+(s.amrap?'+':'')),same=targets.every(n=>n===targets[0]);return (same?targets.length+' × '+targets[0]:targets.join('/'))+' · '+ex.weight+' '+ex.unit;}
-function lastSet(ex){for(const session of [...state.history].sort((a,b)=>b.finishedAt-a.finishedAt)){const match=session.exercises.find(e=>e.id===ex.id||e.name===ex.name&&e.unit===ex.unit);const done=match?.sets.filter(s=>s.reps!==null);if(done?.length){const best=done.reduce((a,b)=>a.weight>b.weight?a:b);return 'Last time '+best.weight+' '+ex.unit+' × '+best.reps;}}return '';}
-function render(){renderToday();renderHistory();$('add').hidden=view!=='today';tick();renderSpotify();}
-function renderToday(){const source=current();$('today-date').textContent=dateText(Date.now(),{weekday:'long',month:'short',day:'numeric'});$('routine-picker').replaceChildren(el('span','',source?.name||'Choose a routine'),icon('chevron'));$('routine-picker').disabled=!!state.active;$('routine-edit').hidden=!source;$('start').hidden=!!state.active;$('start').disabled=!source?.exercises.length;$('session-bar').hidden=!state.active;$('exercises').replaceChildren();
-if(!source?.exercises.length)$('exercises').append(el('p','empty','Add exercises to your routine.'));
-for(const ex of source?.exercises||[]){const card=el('article','exercise');card.dataset.exerciseId=ex.id;const head=el('div','exercise-head');const name=button(ex.name,()=>editExercise(ex.id),'exercise-name bare'),target=button(plan(ex),()=>editExercise(ex.id),'exercise-plan bare');target.setAttribute('aria-label','Edit sets and weight for '+ex.name);head.append(name,target);card.append(head);const last=lastSet(ex);if(last)card.append(el('p','last-set',last));if(state.active){const sets=el('div','sets');ex.sets.forEach((set,index)=>{const done=set.reps!==null,control=button(String(done?set.reps:set.target)+(set.amrap&&!done?'+':''),()=>logSet(ex.id,index),'set');control.setAttribute('aria-label',(done?'Edit':'Log')+' set '+(index+1)+' of '+ex.name);control.setAttribute('aria-pressed',String(done));if(set.amrap){control.classList.add('amrap');control.setAttribute('aria-description','Hold and drag upward to choose reps; release to save. Tap to count down.');amrapControl(control,sets,ex.id,index);}sets.append(control);});const add=button('',()=>appendSet(ex.id),'set set-add');add.append(icon('plus'));add.setAttribute('aria-label','Add set to '+ex.name);sets.append(add);card.append(sets);}if(ex.notes)notes(card,ex.notes);$('exercises').append(card);}}
+function lastSet(ex){for(const session of [...state.history].sort((a,b)=>b.finishedAt-a.finishedAt)){const match=session.exercises.find(e=>e.id===ex.id||e.name===ex.name&&e.unit===ex.unit);const done=match?.sets.filter(s=>s.reps>0);if(done?.length){const best=done.reduce((a,b)=>a.weight>b.weight?a:b);return 'Last time '+best.weight+' '+ex.unit+' × '+best.reps;}}return '';}
+function render(){renderToday();renderHistory();tick();renderSpotify();}
+function renderToday(){const source=current();$('today-date').textContent=dateText(Date.now(),{weekday:'long',month:'short',day:'numeric'});$('routine-picker').replaceChildren(el('span','',source?.name||'Choose a routine'),icon('chevron'));$('routine-picker').disabled=!!state.active;$('start').hidden=!!state.active;$('start').disabled=!source?.exercises.length;$('session-bar').hidden=!state.active;$('exercises').replaceChildren();
+if(!source?.exercises.length)$('exercises').append(el('p','empty','Tap the pencil to add exercises.'));
+for(const ex of source?.exercises||[]){const card=el('article','exercise');card.dataset.exerciseId=ex.id;const head=el('div','exercise-head');const name=el('h3','exercise-name',ex.name),target=el('span','exercise-plan',plan(ex));head.append(name,target);card.append(head);const last=lastSet(ex);if(last)card.append(el('p','last-set',last));if(state.active){const sets=el('div','sets');ex.sets.forEach((set,index)=>{const done=set.reps>0,control=button(String(done?set.reps:set.target)+(set.amrap&&!done?'+':''),()=>logSet(ex.id,index),'set');control.setAttribute('aria-label',(done?'Edit':'Log')+' set '+(index+1)+' of '+ex.name);control.setAttribute('aria-pressed',String(done));control.setAttribute('aria-description','Hold and drag to choose reps. Release to save. Tap to count down.');enableRepDrag(control,ex.id,index);sets.append(control);});card.append(sets);}if(ex.notes)notes(card,ex.notes);$('exercises').append(card);}}
+function editWorkout(){
+ const source=current();
+ if(!source){newRoutine();return;}
+ const m=modal('Edit workout');
+ const actions=el('div','workout-edit-actions');
+ actions.append(button('Rename workout',editRoutineName),button('Add exercise',()=>editExercise()));
+ if(!state.active)actions.append(button('Add routine',newRoutine));
+ const list=el('div','workout-edit-list');
+ for(const ex of source.exercises){
+  const row=el('div','workout-edit-row');
+  row.dataset.exerciseId=ex.id;
+  const edit=button(ex.name,()=>editExercise(ex.id),'workout-edit-exercise');
+  edit.setAttribute('aria-label','Edit '+ex.name);
+  row.append(edit);
+  if(state.active){
+   const add=button('',()=>appendSet(ex.id),'icon');
+   add.append(icon('plus'));
+   add.setAttribute('aria-label','Add set to '+ex.name);
+   row.append(add);
+  }
+  list.append(row);
+ }
+ list.addEventListener('pointerdown',event=>startExerciseDrag(event,list,m));
+ m.fields.append(actions,list);
+ m.actions.append(button('Done',m.close,'primary'));
+}
 function editRoutineName(){const source=routine();if(!source){chooseRoutine();return;}const m=modal('Edit routine'),input=field(m.fields,'Name','text',source.name);input.maxLength=160;m.actions.append(deleteButton('routine',()=>{if(state.active?.routineId===source.id){m.error.textContent='Finish or discard this workout first.';return;}if(save(next=>{next.routines=next.routines.filter(r=>r.id!==source.id);next.selected=next.routines[0]?.id||'';},m.error)){m.close();render();}}));cancelSave(m,()=>{if(!input.value.trim()){m.error.textContent='Enter a routine name.';return;}if(save(next=>{const routine=next.routines.find(r=>r.id===source.id);routine.name=input.value.trim();if(next.active?.routineId===source.id)next.active.name=routine.name;},m.error)){m.close();render();}});}
-function chooseRoutine(){const m=modal('Routines'),list=el('div','choice-list');for(const r of state.routines){const control=button(r.name,()=>{if(save(next=>next.selected=r.id,m.error)){m.close();render();}});control.setAttribute('aria-pressed',String(r.id===routine()?.id));list.append(control);}list.append(button('Add routine',()=>{m.close();newRoutine();}));m.fields.append(list);m.actions.append(button('Close',m.close));}
+function chooseRoutine(){const m=modal('Routines'),list=el('div','choice-list');for(const r of state.routines){const control=button(r.name,()=>{if(save(next=>next.selected=r.id,m.error)){m.close();render();}});control.setAttribute('aria-pressed',String(r.id===routine()?.id));list.append(control);}m.fields.append(list);m.actions.append(button('Close',m.close));}
 function newRoutine(){const m=modal('Add routine'),input=field(m.fields,'Name','text');input.maxLength=160;cancelSave(m,()=>{if(!input.value.trim()){m.error.textContent='Enter a routine name.';return;}if(save(next=>{const r={id:id(),name:input.value.trim(),exercises:[]};next.routines.push(r);next.selected=r.id;},m.error)){m.close();render();}},'Add');}
-function editExercise(exerciseId=null){if(!current()){newRoutine();return;}const original=current().exercises.find(e=>e.id===exerciseId),m=modal(original?'Edit exercise':'Add exercise');const name=field(m.fields,'Exercise','text',original?.name||'');name.maxLength=160;const pair=el('div','two');m.fields.append(pair);const weight=numberField(pair,'Weight',original?.weight??0,0,5000,.25),unit=selectField(pair,'Unit',['lb','kg'],original?.unit||state.settings.unit);const targets=field(m.fields,'Reps per set','text',original?.sets.map(s=>String(s.target)+(s.amrap?'+':'')).join(', ')||'8, 8, 8');targets.inputMode='text';targets.placeholder='8, 8, 5+';m.fields.append(el('p','small muted','Add + for AMRAP, for example 8, 8, 5+. Hold that circle and drag upward to choose reps.'));const rest=numberField(m.fields,'Rest in seconds',original?.rest??state.settings.rest,0,1800),note=field(m.fields,'Notes','textarea',original?.notes||'');note.maxLength=20000;
-if(original)m.actions.append(deleteButton('exercise',()=>{if(state.active?.exercises.find(e=>e.id===exerciseId)?.sets.some(s=>s.reps!==null)){m.error.textContent='This exercise has logged sets. Clear them before removing it.';return;}if(save(next=>{const r=next.routines.find(r=>r.id===(next.active?.routineId||next.selected));if(r)r.exercises=r.exercises.filter(e=>e.id!==exerciseId);if(next.active)next.active.exercises=next.active.exercises.filter(e=>e.id!==exerciseId);},m.error)){m.close();render();}}));
-cancelSave(m,()=>{const tokens=targets.value.trim().split(/[,/\s]+/).filter(Boolean),reps=tokens.map(token=>/^\d+\+?$/.test(token)?Number(token.replace('+','')):NaN),value=Number(weight.value),restValue=Number(rest.value);if(!name.value.trim()||!reps.length||reps.length>20||reps.some(n=>!Number.isInteger(n)||n<1||n>100)||weight.value===''||!Number.isFinite(value)||value<0||value>5000||!Number.isInteger(restValue)||restValue<0||restValue>1800){m.error.textContent='Enter a name, 1–20 sets of 1–100 reps, a valid weight and rest time.';return;}if(state.active&&original&&original.sets.some((s,i)=>i>=reps.length&&s.reps!==null)){m.error.textContent='Keep all logged sets, or clear them first.';return;}
+function editExercise(exerciseId=null){if(!current()){newRoutine();return;}const original=current().exercises.find(e=>e.id===exerciseId),m=modal(original?'Edit exercise':'Add exercise');const name=field(m.fields,'Exercise','text',original?.name||'');name.maxLength=160;const pair=el('div','two');m.fields.append(pair);const weight=numberField(pair,'Weight',original?.weight??0,0,5000,.25),unit=selectField(pair,'Unit',['lb','kg'],original?.unit||state.settings.unit);const targets=field(m.fields,'Reps per set','text',original?.sets.map(s=>String(s.target)+(s.amrap?'+':'')).join(', ')||'8, 8, 8');targets.inputMode='text';targets.placeholder='8, 8, 5+';m.fields.append(el('p','small muted','Add + for AMRAP, for example 8, 8, 5+. Hold and drag any rep circle to choose reps.'));const rest=numberField(m.fields,'Rest in seconds',original?.rest??state.settings.rest,0,1800),note=field(m.fields,'Notes','textarea',original?.notes||'');note.maxLength=20000;
+if(original)m.actions.append(deleteButton('exercise',()=>{if(state.active?.exercises.find(e=>e.id===exerciseId)?.sets.some(s=>s.reps>0)){m.error.textContent='This exercise has logged sets. Clear them before removing it.';return;}if(save(next=>{const r=next.routines.find(r=>r.id===(next.active?.routineId||next.selected));if(r)r.exercises=r.exercises.filter(e=>e.id!==exerciseId);if(next.active)next.active.exercises=next.active.exercises.filter(e=>e.id!==exerciseId);},m.error)){m.close();render();}}));
+cancelSave(m,()=>{const tokens=targets.value.trim().split(/[,/\s]+/).filter(Boolean),reps=tokens.map(token=>/^\d+\+?$/.test(token)?Number(token.replace('+','')):NaN),value=Number(weight.value),restValue=Number(rest.value);if(!name.value.trim()||!reps.length||reps.length>20||reps.some(n=>!Number.isInteger(n)||n<1||n>100)||weight.value===''||!Number.isFinite(value)||value<0||value>5000||!Number.isInteger(restValue)||restValue<0||restValue>1800){m.error.textContent='Enter a name, 1–20 sets of 1–100 reps, a valid weight and rest time.';return;}if(state.active&&original&&original.sets.some((s,i)=>i>=reps.length&&s.reps>0)){m.error.textContent='Keep all logged sets, or clear them first.';return;}
 const valueExercise={id:original?.id||id(),name:name.value.trim(),weight:value,unit:unit.value,rest:restValue,notes:note.value,sets:reps.map((target,i)=>({target,amrap:tokens[i].endsWith('+'),weight:value,reps:null}))};
-if(state.active&&original&&original.sets.some(s=>s.reps!==null)&&original.unit!==unit.value){m.error.textContent='Keep the unit for logged sets. Change it before the next workout.';return;}
-if(save(next=>{const r=next.routines.find(r=>r.id===(next.active?.routineId||next.selected));if(r){const index=r.exercises.findIndex(e=>e.id===valueExercise.id);if(index<0)r.exercises.push(clone(valueExercise));else r.exercises[index]=clone(valueExercise);}if(next.active){const index=next.active.exercises.findIndex(e=>e.id===valueExercise.id);const live=clone(valueExercise);if(index>=0)live.sets=live.sets.map((set,i)=>original.sets[i]?.reps!==null&&original.sets[i]?.reps!==undefined?{...set,reps:original.sets[i].reps,weight:original.sets[i].weight}:set);if(index<0)next.active.exercises.push(live);else next.active.exercises[index]=live;}},m.error)){m.close();render();}},original?'Save':'Add');}
+if(state.active&&original&&original.sets.some(s=>s.reps>0)&&original.unit!==unit.value){m.error.textContent='Keep the unit for logged sets. Change it before the next workout.';return;}
+if(save(next=>{const r=next.routines.find(r=>r.id===(next.active?.routineId||next.selected));if(r){const index=r.exercises.findIndex(e=>e.id===valueExercise.id);if(index<0)r.exercises.push(clone(valueExercise));else r.exercises[index]=clone(valueExercise);}if(next.active){const index=next.active.exercises.findIndex(e=>e.id===valueExercise.id);const live=clone(valueExercise);if(index>=0)live.sets=live.sets.map((set,i)=>original.sets[i]?.reps>0?{...set,reps:original.sets[i].reps,weight:original.sets[i].weight}:set);if(index<0)next.active.exercises.push(live);else next.active.exercises[index]=live;}},m.error)){m.close();render();}},original?'Save':'Add');}
 function start(){if(state.active||!routine()?.exercises.length)return;const source=routine();if(save(next=>{next.active={id:id(),routineId:source.id,name:source.name,startedAt:Date.now(),finishedAt:0,notes:'',exercises:clone(source.exercises).map(e=>({...e,sets:e.sets.map(s=>({...s,reps:null}))}))};next.restEndAt=0;})){haptic();render();}}
 function recordSet(exerciseId,index,reps){
  if(!state.active?.exercises.find(e=>e.id===exerciseId)?.sets[index])return false;
- if(!save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId);live.sets[index].reps=reps;next.restStartedAt=Date.now();next.restDurationMs=live.rest*1000;next.restEndAt=live.rest>0?next.restStartedAt+next.restDurationMs:0;}))return false;
+ if(!save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId);live.sets[index].reps=reps>0?reps:null;next.restStartedAt=Date.now();next.restDurationMs=live.rest*1000;next.restEndAt=live.rest>0?next.restStartedAt+next.restDurationMs:0;}))return false;
  haptic();render();return true;
 }
-function logSet(exerciseId,index){const set=state.active?.exercises.find(e=>e.id===exerciseId)?.sets[index];if(!set)return;recordSet(exerciseId,index,set.reps===null?set.target:set.reps>0?set.reps-1:null);}
-let amrapDrag=null;
-function amrapControl(control,sets,exerciseId,index){
+function logSet(exerciseId,index){const set=state.active?.exercises.find(e=>e.id===exerciseId)?.sets[index];if(!set)return;recordSet(exerciseId,index,set.reps>0?set.reps-1:set.target);}
+let repDrag=null;
+function enableRepDrag(control,exerciseId,index){
  control.addEventListener('contextmenu',event=>event.preventDefault());
  control.addEventListener('pointerdown',event=>{
-  if(event.button!==0||event.isPrimary===false||amrapDrag)return;
+  if(event.button!==0||event.isPrimary===false||repDrag)return;
   const set=state.active?.exercises.find(e=>e.id===exerciseId)?.sets[index];if(!set)return;
-  const d=amrapDrag={control,sets,exerciseId,index,id:event.pointerId,x:event.clientX,y:event.clientY,reps:set.reps??set.target,active:false};
-  const activate=()=>{if(amrapDrag!==d)return;d.active=true;gesture=null;haptic();control.setPointerCapture(d.id);
-   d.picker=el('div','amrap-picker');d.range=el('input');d.range.type='range';d.range.min=0;d.range.max=100;d.range.step=1;d.range.value=d.reps;d.range.tabIndex=-1;d.range.setAttribute('aria-label','AMRAP reps');d.output=el('output','',d.reps+' reps');d.picker.append(d.range,d.output);sets.append(d.picker);control.textContent=d.reps;};
+  const d=repDrag={control,exerciseId,index,id:event.pointerId,x:event.clientX,y:event.clientY,reps:set.reps>0?set.reps:set.target,active:false};
+  const activate=()=>{
+   if(repDrag!==d)return;
+   d.active=true;
+   gesture=null;
+   control.setPointerCapture(d.id);
+   control.textContent=d.reps;
+   haptic();
+  };
   d.activate=activate;d.timer=setTimeout(activate,280);
  });
  control.addEventListener('pointermove',event=>{
-  const d=amrapDrag;if(!d||d.id!==event.pointerId)return;
+  const d=repDrag;if(!d||d.id!==event.pointerId)return;
   const dx=event.clientX-d.x,dy=d.y-event.clientY;
-  if(!d.active&&Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)){finishAmrap(false);return;}
+  if(!d.active&&Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)){finishRepDrag(false);return;}
   if(!d.active&&Math.abs(dy)>9){clearTimeout(d.timer);d.activate();}
   if(!d.active)return;if(event.cancelable)event.preventDefault();
-  const set=state.active.exercises.find(e=>e.id===exerciseId).sets[index],reps=Math.max(0,Math.min(100,(set.reps??set.target)+Math.round(dy/12)));
-  if(reps!==d.reps){d.reps=reps;d.range.value=reps;d.output.textContent=reps+' reps';control.textContent=reps;haptic();}
+  const set=state.active.exercises.find(e=>e.id===exerciseId).sets[index],reps=Math.max(0,Math.min(100,(set.reps>0?set.reps:set.target)+Math.round(dy/12)));
+  if(reps!==d.reps){d.reps=reps;control.textContent=reps;haptic();}
  });
- control.addEventListener('pointerup',event=>{if(amrapDrag?.id===event.pointerId)finishAmrap(true);});
- control.addEventListener('pointercancel',()=>finishAmrap(false));
- control.addEventListener('lostpointercapture',()=>finishAmrap(false));
+ control.addEventListener('pointerup',event=>{if(repDrag?.id===event.pointerId)finishRepDrag(true);});
+ control.addEventListener('pointercancel',()=>finishRepDrag(false));
+ control.addEventListener('lostpointercapture',()=>finishRepDrag(false));
 }
-function finishAmrap(commit){
- const d=amrapDrag;if(!d)return;amrapDrag=null;clearTimeout(d.timer);
+function finishRepDrag(commit){
+ const d=repDrag;if(!d)return;repDrag=null;clearTimeout(d.timer);
  if(!d.active)return;
- gesture=null;suppressUntil=performance.now()+450;d.picker.remove();
+ gesture=null;suppressUntil=performance.now()+450;
  if(d.control.hasPointerCapture(d.id))d.control.releasePointerCapture(d.id);
  if(commit){if(!recordSet(d.exerciseId,d.index,d.reps))renderToday();}else renderToday();
 }
-function editSet(exerciseId,index){const ex=state.active.exercises.find(e=>e.id===exerciseId),set=ex.sets[index],m=modal('Set '+(index+1));const pair=el('div','two');m.fields.append(pair);const reps=numberField(pair,'Reps',set.reps,0,100),weight=numberField(pair,'Weight ('+ex.unit+')',set.weight,0,5000,.25);m.fields.append(button('Clear set',()=>{if(save(next=>{next.active.exercises.find(e=>e.id===exerciseId).sets[index].reps=null;},m.error)){m.close();render();}}));cancelSave(m,()=>{const r=Number(reps.value),w=Number(weight.value);if(reps.value===''||weight.value===''||!Number.isInteger(r)||r<0||r>100||!Number.isFinite(w)||w<0||w>5000){m.error.textContent='Enter 0–100 reps and a valid weight.';return;}if(save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId).sets[index];live.reps=r;live.weight=w;},m.error)){m.close();render();}});}
+function editSet(exerciseId,index){const ex=state.active.exercises.find(e=>e.id===exerciseId),set=ex.sets[index],m=modal('Set '+(index+1));const pair=el('div','two');m.fields.append(pair);const reps=numberField(pair,'Reps',set.reps,0,100),weight=numberField(pair,'Weight ('+ex.unit+')',set.weight,0,5000,.25);m.fields.append(button('Clear set',()=>{if(save(next=>{next.active.exercises.find(e=>e.id===exerciseId).sets[index].reps=null;},m.error)){m.close();render();}}));cancelSave(m,()=>{const r=Number(reps.value),w=Number(weight.value);if(reps.value===''||weight.value===''||!Number.isInteger(r)||r<0||r>100||!Number.isFinite(w)||w<0||w>5000){m.error.textContent='Enter 0–100 reps and a valid weight.';return;}if(save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId).sets[index];live.reps=r>0?r:null;live.weight=w;},m.error)){m.close();render();}});}
 function appendSet(exerciseId){const ex=state.active.exercises.find(e=>e.id===exerciseId);if(ex.sets.length>=20){toast('Up to 20 sets per exercise.');return;}if(save(next=>{const e=next.active.exercises.find(e=>e.id===exerciseId);e.sets.push({target:e.sets.at(-1).target,amrap:!!e.sets.at(-1).amrap,weight:e.weight,reps:null});}))render();}
 function finish(){if(!state.active)return;if(!completed(state.active)){toast('Log a set first.');return;}const m=modal('Finish workout');m.fields.append(el('p','muted small',completed(state.active)+'/'+total(state.active)+' sets logged'));const note=field(m.fields,'Workout notes','textarea',state.active.notes);note.maxLength=20000;cancelSave(m,()=>{if(save(next=>{next.active.finishedAt=Date.now();next.active.notes=note.value;next.history.unshift(clone(next.active));next.active=null;next.restEndAt=0;},m.error)){m.close();haptic();render();}},'Save workout');}
 function discard(){const m=modal('Discard workout');m.fields.append(el('p','small muted','Remove this unfinished workout?'));m.actions.append(button('Cancel',m.close),deleteButton('workout',()=>{if(save(next=>{next.active=null;next.restEndAt=0;},m.error)){m.close();render();}}));}
 function renderHistory(){const host=$('history-list');host.replaceChildren();if(!state.history.length)host.append(el('p','empty','No workouts yet.'));for(const session of [...state.history].sort((a,b)=>b.finishedAt-a.finishedAt)){const label=el('span'),control=button('',()=>historyDetail(session.id),'history-card');label.append(el('strong','',session.name),el('span','history-date',dateText(session.finishedAt)));control.append(label,el('span','history-count',completed(session)+' sets · '+Math.max(1,Math.round((session.finishedAt-session.startedAt)/60000))+' min'));host.append(control);}renderProgress();}
-function renderProgress(){const host=$('progress');host.replaceChildren();if(!state.history.length)return;const details=el('details','progress'),summary=el('summary','','Progress');details.append(summary);const records=new Map();for(const session of state.history)for(const ex of session.exercises)for(const set of ex.sets){if(set.reps===null||set.reps===0)continue;const key=ex.name+'|'+ex.unit,previous=records.get(key);if(!previous||set.weight>previous.weight||set.weight===previous.weight&&set.reps>previous.reps)records.set(key,{name:ex.name,unit:ex.unit,weight:set.weight,reps:set.reps});}for(const record of records.values()){const row=el('div','progress-row');row.append(el('span','',record.name),el('span','',record.weight+' '+record.unit+' × '+record.reps));details.append(row);}host.append(details);}
-function historyDetail(sessionId){const session=state.history.find(s=>s.id===sessionId),m=modal(session.name);m.fields.append(el('p','small muted',dateText(session.finishedAt)+' · '+Math.max(1,Math.round((session.finishedAt-session.startedAt)/60000))+' min'));for(const ex of session.exercises){const done=ex.sets.filter(s=>s.reps!==null);if(!done.length)continue;const block=el('div','history-exercise'),sets=el('div','history-sets');block.append(el('strong','',ex.name));for(const [i,set]of ex.sets.entries())if(set.reps!==null)sets.append(el('div','',(i+1)+'. '+set.reps+' reps · '+set.weight+' '+ex.unit));block.append(sets);m.fields.append(block);}const note=field(m.fields,'Workout notes','textarea',session.notes);note.maxLength=20000;m.actions.append(deleteButton('workout',()=>{if(save(next=>next.history=next.history.filter(s=>s.id!==sessionId),m.error)){m.close();render();}}));cancelSave(m,()=>{if(save(next=>next.history.find(s=>s.id===sessionId).notes=note.value,m.error)){m.close();render();}});}
+function progressGraph(weights,unit){
+ const graph=el('canvas','progress-graph');
+ graph.width=144;
+ graph.height=48;
+ graph.setAttribute('role','img');
+ graph.setAttribute('aria-label','Heaviest completed weight by workout: '+weights.join(', ')+' '+unit);
+ graph.title=graph.getAttribute('aria-label');
+ const ctx=graph.getContext('2d');
+ const min=Math.min(...weights),max=Math.max(...weights),padding=5;
+ const points=weights.map((weight,i)=>[
+  weights.length===1?graph.width/2:padding+i*(graph.width-2*padding)/(weights.length-1),
+  max===min?graph.height/2:graph.height-padding-(weight-min)*(graph.height-2*padding)/(max-min)
+ ]);
+ ctx.strokeStyle=ctx.fillStyle=state.settings.text;
+ ctx.lineWidth=3;
+ ctx.lineJoin=ctx.lineCap='round';
+ ctx.beginPath();
+ points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
+ ctx.stroke();
+ const [x,y]=points[points.length-1];
+ ctx.beginPath();
+ ctx.arc(x,y,4,0,2*Math.PI);
+ ctx.fill();
+ return graph;
+}
+function renderProgress(){
+ const host=$('progress'),wasOpen=host.querySelector('details')?.open;
+ host.replaceChildren();
+ if(!state.history.length)return;
+ const details=el('details','progress');
+ details.open=wasOpen??true;
+ details.append(el('summary','','Progress'));
+ const records=new Map();
+ const sessions=[...state.history].sort((a,b)=>a.finishedAt-b.finishedAt);
+ for(const session of sessions){
+  const workoutBest=new Map();
+  for(const ex of session.exercises){
+   const key=JSON.stringify([ex.name,ex.unit]);
+   for(const set of ex.sets){
+    if(!(set.reps>0))continue;
+    const previous=workoutBest.get(key);
+    if(!previous||set.weight>previous.weight||set.weight===previous.weight&&set.reps>previous.reps)
+     workoutBest.set(key,{name:ex.name,unit:ex.unit,weight:set.weight,reps:set.reps});
+   }
+  }
+  for(const [key,best]of workoutBest){
+   if(!records.has(key))records.set(key,{best,weights:[]});
+   const record=records.get(key);
+   record.weights.push(best.weight);
+   if(best.weight>record.best.weight||best.weight===record.best.weight&&best.reps>record.best.reps)record.best=best;
+  }
+ }
+ for(const {best,weights}of records.values()){
+  const row=el('div','progress-row');
+  const info=el('div','progress-info');
+  info.append(el('span','',best.name),el('span','small muted',best.weight+' '+best.unit+' × '+best.reps));
+  row.append(info,progressGraph(weights,best.unit));
+  details.append(row);
+ }
+ host.append(details);
+}
+function historyDetail(sessionId){const session=state.history.find(s=>s.id===sessionId),m=modal(session.name);m.fields.append(el('p','small muted',dateText(session.finishedAt)+' · '+Math.max(1,Math.round((session.finishedAt-session.startedAt)/60000))+' min'));for(const ex of session.exercises){const block=el('div','history-exercise'),sets=el('div','history-sets');block.append(el('strong','',ex.name));for(const [i,set]of ex.sets.entries())sets.append(el('div','',(i+1)+'. '+(set.reps||0)+' reps'+(set.reps>0?' · '+set.weight+' '+ex.unit:'')));block.append(sets);m.fields.append(block);}const note=field(m.fields,'Workout notes','textarea',session.notes);note.maxLength=20000;m.actions.append(deleteButton('workout',()=>{if(save(next=>next.history=next.history.filter(s=>s.id!==sessionId),m.error)){m.close();render();}}));cancelSave(m,()=>{if(save(next=>next.history.find(s=>s.id===sessionId).notes=note.value,m.error)){m.close();render();}});}
 function settings(){const m=settingsScreen(),draft=clone(state.settings);const spotify=checkbox(m.fields,'Spotify player',draft.spotify!==false);const floating=checkbox(m.fields,'Floating rest timer',draft.floatingTimer!==false);if(native)m.fields.append(button('Connect Spotify controls',()=>native.spotifyAccess()));const unit=selectField(m.fields,'Default unit',['lb','kg'],draft.unit),rest=numberField(m.fields,'Default rest in seconds',draft.rest,0,1800),notify=checkbox(m.fields,'Rest notifications',draft.notifications);
 if(native&&!native.preciseTimers())m.fields.append(button('Allow precise rest alerts',()=>native.allowPreciseTimers()));
 const sliderWrap=el('label','field'),row=el('div','slider-row'),slider=el('input'),output=el('output');slider.type='range';slider.min=0;slider.max=2;slider.step=.05;slider.value=draft.vibrationMs/1000;slider.setAttribute('aria-label','Rest vibration length');output.textContent=Number(slider.value).toFixed(2)+' s';slider.oninput=()=>output.textContent=Number(slider.value).toFixed(2)+' s';slider.onchange=()=>native?.previewVibration(Math.round(Number(slider.value)*1000));row.append(slider,output);sliderWrap.append(el('span','','Rest vibration length'),row);m.fields.append(sliderWrap);
@@ -313,14 +407,14 @@ function renderSpotify(){
 $('spotify-art').append(icon('music'));$('spotify').onclick=event=>{if(!event.target.closest('button')){haptic();native?.openSpotify();}};
 $('spotify-prev').append(icon('prev'));$('spotify-next').append(icon('next'));$('spotify-play').append(icon('play'));$('spotify-open').onclick=()=>{haptic();native?.openSpotify();};$('spotify-connect').onclick=()=>{haptic();native?.spotifyAccess();};for(const command of ['prev','play','next'])$('spotify-'+command).onclick=()=>{haptic();native?.spotifyCommand(command);setTimeout(renderSpotify,250);};
 $('settings').textContent='⚙';$('routine-edit').append(icon('pencil'));$('discard').append(icon('trash'));
-$('settings').onclick=settings;$('routine-picker').onclick=chooseRoutine;$('routine-edit').onclick=editRoutineName;$('add').onclick=()=>editExercise();$('start').onclick=start;$('finish').onclick=finish;$('discard').onclick=discard;$('retry').onclick=load;
-function selectView(next){view=next;for(const v of ['today','history']){$(v+'-tab').setAttribute('aria-selected',String(v===view));$(v+'-tab').tabIndex=v===view?0:-1;}$(view).hidden=false;$(view==='today'?'history':'today').hidden=true;$('add').hidden=view!=='today';tick();}
+$('settings').onclick=settings;$('routine-picker').onclick=chooseRoutine;$('routine-edit').onclick=editWorkout;$('start').onclick=start;$('finish').onclick=finish;$('discard').onclick=discard;$('retry').onclick=load;
+function selectView(next){view=next;for(const v of ['today','history']){$(v+'-tab').setAttribute('aria-selected',String(v===view));$(v+'-tab').tabIndex=v===view?0:-1;}$(view).hidden=false;$(view==='today'?'history':'today').hidden=true;tick();}
 function finishSlide(commit,animate=true){const d=slide;if(!d)return;d.finishing=true;const complete=()=>{if(slide!==d)return;slide=null;d.animations?.forEach(a=>a.cancel());d.incoming.style.transform='';d.outgoing.style.transform='';d.outgoing.classList.remove('outgoing');d.incoming.inert=false;d.outgoing.inert=false;$('page-stack').style.minHeight='';selectView(commit?d.target:d.from);if(commit)haptic();};if(!animate||matchMedia('(prefers-reduced-motion: reduce)').matches){complete();return;}const options={duration:Math.max(160,240*(commit?1-d.ratio:d.ratio)),easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'};d.animations=[d.incoming.animate([{transform:'translateX('+(d.direction*(1-d.ratio)*100)+'%)'},{transform:'translateX('+(commit?0:d.direction*100)+'%)'}],options),d.outgoing.animate([{transform:'translateX('+(-d.direction*d.ratio*100)+'%)'},{transform:'translateX('+(commit?-d.direction*100:0)+'%)'}],options)];Promise.all(d.animations.map(a=>a.finished)).then(complete,complete);}
 function prepareSlide(target){const from=view,direction=from==='today'?1:-1,incoming=$(target),outgoing=$(from);incoming.hidden=false;outgoing.classList.add('outgoing');$('page-stack').style.minHeight=Math.max(incoming.offsetHeight,outgoing.offsetHeight,innerHeight-220)+'px';slide={from,target,direction,incoming,outgoing,width:$('page-stack').offsetWidth,ratio:0};}
 function switchView(target){if(closeDialog)return;if(slide)finishSlide(true,false);if(view===target)return;prepareSlide(target);finishSlide(true);}
 for(const name of ['today','history']){$(name+'-tab').onclick=()=>switchView(name);$(name+'-tab').onkeydown=event=>{if(['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();const target=name==='today'?'history':'today';switchView(target);$(target+'-tab').focus();}};}
 document.addEventListener('pointerdown',event=>{if(event.pointerType==='touch')return;if(slide)finishSlide(false,false);if(closeDialog||settingsOpen||!state||event.isPrimary===false||event.button!==0||event.target.closest('input,select,textarea,a,summary,dialog,.rest-floater,header,.tabs'))return;gesture={id:event.pointerId,x:event.clientX,y:event.clientY,from:view,horizontal:false};});
-document.addEventListener('pointermove',event=>{if(event.pointerType==='touch')return;if(!gesture||gesture.id!==event.pointerId||drag?.active||amrapDrag?.active)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;if(!gesture.horizontal&&Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx)){gesture=null;return;}if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy)*1.5)gesture.horizontal=true;if(!gesture.horizontal)return;if(event.cancelable)event.preventDefault();const direction=gesture.from==='today'?1:-1;if(!slide&&-direction*dx>0)prepareSlide(gesture.from==='today'?'history':'today');if(slide&&!slide.finishing){slide.ratio=Math.max(0,Math.min(1,-slide.direction*dx/slide.width));slide.incoming.style.transform='translateX('+(slide.direction*(1-slide.ratio)*100)+'%)';slide.outgoing.style.transform='translateX('+(-slide.direction*slide.ratio*100)+'%)';}},{passive:false});
+document.addEventListener('pointermove',event=>{if(event.pointerType==='touch')return;if(!gesture||gesture.id!==event.pointerId||drag?.active||repDrag?.active)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;if(!gesture.horizontal&&Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx)){gesture=null;return;}if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy)*1.5)gesture.horizontal=true;if(!gesture.horizontal)return;if(event.cancelable)event.preventDefault();const direction=gesture.from==='today'?1:-1;if(!slide&&-direction*dx>0)prepareSlide(gesture.from==='today'?'history':'today');if(slide&&!slide.finishing){slide.ratio=Math.max(0,Math.min(1,-slide.direction*dx/slide.width));slide.incoming.style.transform='translateX('+(slide.direction*(1-slide.ratio)*100)+'%)';slide.outgoing.style.transform='translateX('+(-slide.direction*slide.ratio*100)+'%)';}},{passive:false});
 document.addEventListener('pointerup',event=>{if(event.pointerType==='touch')return;if(!gesture||gesture.id!==event.pointerId)return;const g=gesture;gesture=null;if(g.horizontal)suppressUntil=performance.now()+450;if(slide)finishSlide(slide.ratio*slide.width>=Math.min(56,Math.max(32,slide.width*.16)));});
 document.addEventListener('touchstart',event=>{
  if(slide)finishSlide(!!slide.finishing,false);
@@ -330,7 +424,7 @@ document.addEventListener('touchstart',event=>{
  gesture={x:point.clientX,y:point.clientY,from:view,horizontal:false,touch:true};
 },{passive:true});
 document.addEventListener('touchmove',event=>{
- if(amrapDrag?.active){gesture=null;if(event.cancelable)event.preventDefault();return;}
+ if(repDrag?.active){gesture=null;if(event.cancelable)event.preventDefault();return;}
  if(drag?.active){gesture=null;if(event.cancelable)event.preventDefault();return;}
  if(!gesture?.touch)return;
  if(event.touches.length!==1){gesture=null;finishSlide(false);return;}
@@ -355,13 +449,84 @@ document.addEventListener('touchend',()=>{
 document.addEventListener('touchcancel',()=>{gesture=null;finishSlide(false);},{passive:true});
 document.addEventListener('pointercancel',()=>{gesture=null;finishSlide(false);});
 document.addEventListener('click',event=>{if(performance.now()<suppressUntil&&event.target.closest('.exercise,.history-card')){event.preventDefault();event.stopImmediatePropagation();}},true);
-$('exercises').addEventListener('pointerdown',event=>{if(closeDialog||drag||event.button!==0||event.isPrimary===false||event.target.closest('.sets,a'))return;const card=event.target.closest('.exercise');if(!card)return;const rect=card.getBoundingClientRect();const d=drag={card,id:event.pointerId,startX:event.clientX,startY:event.clientY,y:event.clientY,offsetY:event.clientY-rect.top,active:false,original:[...$('exercises').children].map(e=>e.dataset.exerciseId)};d.timer=setTimeout(()=>{if(drag!==d||!card.isConnected||closeDialog)return;d.active=true;gesture=null;suppressUntil=performance.now()+60000;const box=card.getBoundingClientRect();d.ghost=card.cloneNode(true);d.ghost.classList.add('drag-ghost');d.ghost.setAttribute('aria-hidden','true');d.ghost.inert=true;Object.assign(d.ghost.style,{left:box.left+'px',width:box.width+'px',top:box.top+'px'});document.body.append(d.ghost);card.classList.add('drag-source');document.body.classList.add('dragging');haptic();d.frame=requestAnimationFrame(dragFrame);},380);});
-function dragFrame(){const d=drag;if(!d?.active)return;d.ghost.style.top=(d.y-d.offsetY)+'px';const height=visualViewport?.height||innerHeight;const shift=d.y<65?-Math.min(12,(65-d.y)/5):d.y>height-65?Math.min(12,(d.y-height+65)/5):0;if(shift)scrollBy(0,shift);for(const card of [...$('exercises').children]){if(card===d.card||!card.dataset.exerciseId)continue;const rect=card.getBoundingClientRect();if(d.y>rect.top&&d.y<rect.bottom){const before=rect.top+rect.height/2>d.y,positions=new Map([...$('exercises').children].map(e=>[e,e.getBoundingClientRect().top]));$('exercises').insertBefore(d.card,before?card:card.nextSibling);for(const [node,top]of positions){const dy=top-node.getBoundingClientRect().top;if(dy&&node!==d.card&&!matchMedia('(prefers-reduced-motion: reduce)').matches)node.animate([{transform:'translateY('+dy+'px)'},{transform:'translateY(0)'}],{duration:180});}break;}}d.frame=requestAnimationFrame(dragFrame);}
-function finishDrag(commit){const d=drag;if(!d)return;drag=null;clearTimeout(d.timer);if(!d.active)return;cancelAnimationFrame(d.frame);d.ghost.remove();d.card.classList.remove('drag-source');document.body.classList.remove('dragging');gesture=null;suppressUntil=performance.now()+450;const order=[...$('exercises').children].map(e=>e.dataset.exerciseId),positions=new Map(order.map((id,index)=>[id,index]));if(commit&&order.join()!==d.original.join()){if(save(next=>{const r=next.routines.find(r=>r.id===(next.active?.routineId||next.selected));if(r)r.exercises.sort((a,b)=>(positions.get(a.id)??100)-(positions.get(b.id)??100));if(next.active)next.active.exercises.sort((a,b)=>positions.get(a.id)-positions.get(b.id));}))haptic();}renderToday();}
+function startExerciseDrag(event,list,modal){
+ if(drag||event.button!==0||event.isPrimary===false||event.target.closest('.icon'))return;
+ const card=event.target.closest('.workout-edit-row');
+ if(!card)return;
+ const rect=card.getBoundingClientRect();
+ const d=drag={card,list,modal,id:event.pointerId,startX:event.clientX,startY:event.clientY,y:event.clientY,
+  offsetY:event.clientY-rect.top,active:false,original:[...list.children].map(row=>row.dataset.exerciseId)};
+ d.timer=setTimeout(()=>{
+  if(drag!==d||!card.isConnected)return;
+  d.active=true;
+  const box=card.getBoundingClientRect();
+  d.ghost=card.cloneNode(true);
+  d.ghost.classList.add('drag-ghost');
+  d.ghost.setAttribute('aria-hidden','true');
+  d.ghost.inert=true;
+  Object.assign(d.ghost.style,{left:box.left+'px',width:box.width+'px',top:box.top+'px'});
+  modal.dialog.append(d.ghost);
+  card.classList.add('drag-source');
+  haptic();
+  d.frame=requestAnimationFrame(dragFrame);
+ },380);
+}
+function dragFrame(){
+ const d=drag;
+ if(!d?.active)return;
+ d.ghost.style.top=(d.y-d.offsetY)+'px';
+ const bounds=d.modal.fields.getBoundingClientRect();
+ if(d.y<bounds.top+28)d.modal.fields.scrollBy(0,-6);
+ if(d.y>bounds.bottom-28)d.modal.fields.scrollBy(0,6);
+ for(const card of d.list.children){
+  if(card===d.card)continue;
+  const rect=card.getBoundingClientRect();
+  if(d.y<=rect.top||d.y>=rect.bottom)continue;
+  const before=d.y<rect.top+rect.height/2;
+  if(before?d.card.nextElementSibling===card:card.nextElementSibling===d.card)break;
+  const positions=new Map([...d.list.children].map(node=>[node,node.getBoundingClientRect().top]));
+  d.list.insertBefore(d.card,before?card:card.nextSibling);
+  for(const [node,top]of positions){
+   const dy=top-node.getBoundingClientRect().top;
+   if(dy&&node!==d.card&&!matchMedia('(prefers-reduced-motion: reduce)').matches)
+    node.animate([{transform:'translateY('+dy+'px)'},{transform:'translateY(0)'}],{duration:180});
+  }
+  break;
+ }
+ d.frame=requestAnimationFrame(dragFrame);
+}
+function finishDrag(commit){
+ const d=drag;
+ if(!d)return;
+ drag=null;
+ clearTimeout(d.timer);
+ if(!d.active)return;
+ cancelAnimationFrame(d.frame);
+ d.ghost.remove();
+ d.card.classList.remove('drag-source');
+ const cancelClick=event=>{event.preventDefault();event.stopImmediatePropagation();};
+ d.list.addEventListener('click',cancelClick,true);
+ setTimeout(()=>d.list.removeEventListener('click',cancelClick,true),450);
+ const order=[...d.list.children].map(row=>row.dataset.exerciseId);
+ if(order.join()===d.original.join())return;
+ const positions=new Map(order.map((id,index)=>[id,index]));
+ const sort=(a,b)=>(positions.get(a.id)??100)-(positions.get(b.id)??100);
+ if(commit&&save(next=>{
+  const routine=next.routines.find(r=>r.id===(next.active?.routineId||next.selected));
+  routine?.exercises.sort(sort);
+  next.active?.exercises.sort(sort);
+ },d.modal.error)){
+  haptic();
+  renderToday();
+  return;
+ }
+ const rows=new Map([...d.list.children].map(row=>[row.dataset.exerciseId,row]));
+ d.list.append(...d.original.map(id=>rows.get(id)));
+}
 document.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;drag.y=event.clientY;if(!drag.active&&Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)>12){clearTimeout(drag.timer);drag=null;return;}if(drag.active&&event.cancelable)event.preventDefault();},{passive:false});
-document.addEventListener('pointerup',event=>{if(drag?.id===event.pointerId)finishDrag(true);});document.addEventListener('pointercancel',()=>finishDrag(false));window.addEventListener('blur',()=>{finishAmrap(false);finishTimerDrag(false);gesture=null;finishSlide(false,false);finishDrag(false);});
+document.addEventListener('pointerup',event=>{if(drag?.id===event.pointerId)finishDrag(true);});document.addEventListener('pointercancel',()=>finishDrag(false));window.addEventListener('blur',()=>{finishRepDrag(false);finishTimerDrag(false);gesture=null;finishSlide(false,false);finishDrag(false);});
 function viewport(){document.documentElement.style.setProperty('--height',(visualViewport?.height||innerHeight)+'px');if(state&&!timerDrag)placeTimer();}viewport();window.addEventListener('resize',viewport);visualViewport?.addEventListener('resize',viewport);
-function refresh(){if(closeDialog||settingsOpen||drag||slide||amrapDrag)return;try{const saved=read();if(saved){state=saved;theme();render();}}catch(_){toast('Couldn’t reload saved workouts.');}}
+function refresh(){if(closeDialog||settingsOpen||drag||slide||repDrag)return;try{const saved=read();if(saved){state=saved;theme();render();}}catch(_){toast('Couldn’t reload saved workouts.');}}
 window.Workouts=Object.freeze({refresh,back(){if(settingsOpen&&!closeDialog){closeSettings();return true;}if(closeDialog){closeDialog();return true;}if(slide){finishSlide(false,false);return true;}if(view==='history'){switchView('today');return true;}return false;},debug:()=>clone(state)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();tick();}});setInterval(tick,250);setInterval(renderSpotify,1500);
 setInterval(()=>{

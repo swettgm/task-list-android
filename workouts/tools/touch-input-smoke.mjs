@@ -35,7 +35,7 @@ try{
  const haptics=await page.evaluate(()=>qa.haptics);
  await swipe(320,290,true);await page.waitForTimeout(260);
  check(await page.locator('#today-tab').getAttribute('aria-selected')==='true'&&await page.evaluate(()=>qa.haptics)===haptics,'Cancelled touch swipes keep the selected tab without a success haptic');
- await page.locator('#routine-picker').tap();
+ await page.getByRole('button',{name:'Edit workout',exact:true}).tap();
  await page.getByRole('button',{name:'Add routine',exact:true}).tap();
  const name=page.getByRole('textbox',{name:'Name',exact:true});
  await name.tap();await page.keyboard.type('Workout B',{delay:10});
@@ -43,6 +43,7 @@ try{
  check(await page.evaluate(()=>qa.keyboard)>0,'The routine editor requests the Android keyboard');
  await page.getByRole('button',{name:'Add',exact:true}).tap();
  check(await page.locator('#routine-picker').textContent().then(t=>t.includes('Workout B')),'The new routine saves and becomes selected');
+ await page.getByRole('button',{name:'Edit workout',exact:true}).tap();
  await page.getByRole('button',{name:'Add exercise',exact:true}).tap();
  const exercise=page.getByRole('textbox',{name:'Exercise',exact:true});
  await exercise.tap();await page.keyboard.type('Deadlift',{delay:10});
