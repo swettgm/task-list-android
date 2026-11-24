@@ -22,6 +22,7 @@ try{
  await dialog().getByRole('button',{name:'Add',exact:true}).tap();
  check((await data()).routines[0].exercises[0].sets[1].amrap,'A plus marks an AMRAP set in the routine editor');
  await page.getByRole('button',{name:'Start workout',exact:true}).tap();
+ check((await sets().first().boundingBox()).width===50,'Rep circles are 50 pixels wide on a standard phone');
  check(await sets().nth(1).textContent()==='5+','AMRAP has the same circle with a plus suffix');
  let deadline=0;
  for(const reps of [5,4,3,2,1,null,5]){
@@ -37,7 +38,7 @@ try{
   const box=await sets().nth(index).boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
   const before=await data(),initialSet=before.active.exercises[0].sets[index];
   const initialReps=initialSet.reps??initialSet.target;
-  const previewReps=initialReps+Math.round(delta/12);
+  const previewReps=Math.max(0,Math.min(initialSet.amrap?100:initialSet.target,initialReps+Math.round(delta/12)));
   const haptics=await page.evaluate(()=>qa.haptics);
   await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});await page.waitForTimeout(330);
   check(await page.locator('.sets input[type=range]').count()===0,'Holding a rep circle keeps the set row free of sliders');
@@ -63,10 +64,10 @@ try{
  await holdAndDrag(-24,false,0);
  check((await data()).active.exercises[0].sets[0].reps===3,'Dragging down on a regular set logs fewer reps');
  await holdAndDrag(48,false,0);
- check((await data()).active.exercises[0].sets[0].reps===7,'Dragging up on a regular set can exceed the target');
+ check((await data()).active.exercises[0].sets[0].reps===5,'Dragging up on a regular set stops at the target');
  await page.evaluate(()=>qa.fail=true);const snapshot=await data();await sets().first().tap();
  check(JSON.stringify(await data())===JSON.stringify(snapshot),'A failed save does not alter reps or restart rest');await page.evaluate(()=>qa.fail=false);
- await holdAndDrag(-84,false,0);
+ await holdAndDrag(-60,false,0);
  check((await data()).active.exercises[0].sets[0].reps===null,'Dragging a regular set to zero clears it');
  await page.reload();await page.waitForFunction(()=>!!window.Workouts);
  check((await data()).active.exercises[0].sets[1].amrap&&(await data()).active.exercises[0].sets[1].reps===5,'AMRAP and recorded reps survive reopening');
@@ -78,6 +79,18 @@ try{
  await page.locator('.history-card').tap();
  await dialog().waitFor({state:'visible'});
  check(await dialog().getByText('1. 0 reps',{exact:true}).isVisible(),'History displays cleared sets as zero reps');
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).tap();
+ await page.getByRole('tab',{name:'Today'}).tap();
+ await page.waitForFunction(()=>document.querySelector('#today-tab').getAttribute('aria-selected')==='true');
+ await page.getByRole('button',{name:'Start workout'}).tap();
+ const trash=page.locator('#discard');
+ await trash.tap();
+ check((await data()).active&&await dialog().count()===0&&await trash.evaluate(el=>el.classList.contains('danger')),'The first trash tap arms confirmation in place');
+ await page.waitForFunction(()=>!document.querySelector('#discard').classList.contains('danger'));
+ check((await data()).active,'The trash confirmation expires without discarding');
+ await trash.tap();
+ await trash.tap();
+ check((await data()).active===null&&(await data()).history.length===1,'A second trash tap discards only the unfinished workout');
  check(errors.length===0,'No errors during real touch rep editing');
  console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();await fixture.close();}
