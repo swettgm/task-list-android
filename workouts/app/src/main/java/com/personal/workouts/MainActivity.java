@@ -104,7 +104,7 @@ public final class MainActivity extends Activity {
         }
         @JavascriptInterface public String writeState(String raw) {
             String value=store.write(raw);
-            if(value!=null)RestAlarm.schedule(MainActivity.this);
+            if(value!=null)runOnUiThread(()->RestAlarm.schedule(MainActivity.this));
             return value;
         }
         @JavascriptInterface public void haptic() {

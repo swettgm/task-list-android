@@ -1,12 +1,13 @@
 # Exercise
 
-[Download Exercise 1.0.2](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.2.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
+[Download Exercise 1.0.3](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.3.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
 
 An offline workout logger in the blue-grey gradient and white-control theme shared with Tasks, RM and Meditation. New installations start with an empty routine and history.
 
 - Create and rename routines, add exercises, and hold an exercise to reorder it.
 - Set weight, lb/kg, rest time, and separate rep targets for each set.
-- Tap a circle to log target reps. Tap a logged set to correct reps or weight.
+- Tap a circle to log target reps; each further tap reduces reps down to 0, then clears the set, then returns to target reps. Each saved change restarts the full rest timer.
+- Use a + target such as 5+ for an AMRAP set. Hold its circle and drag up/down to select actual reps with haptics, then release to save and start rest. The temporary selector disappears on release; a cancelled gesture changes nothing. Taps reduce recorded AMRAP reps in the same cycle.
 - Working-weight edits preserve logged sets and update future sets. Extra sets can be added to the active workout.
 - Unfinished sessions survive reopening. Finish saves independent history with actual sets, weights, notes and duration.
 - Routine and exercise fields explicitly focus on touch and request the Android keyboard. Tap the workout name, then Add routine to create another workout.
@@ -23,7 +24,7 @@ The app stores workouts privately on the device. It has no cloud account or desk
 
 ## Validation
 
-The signed release passed 30 Android tests, Android lint and 72 browser/touch checks. These cover storage revisions, history, set logging, dragging, Spotify media commands/artwork, ongoing rest notifications/actions, floating timer position/ring, separate Settings screen, narrow-screen/editor geometry, actual touch typing in every editor field, and real touch swipes across exercise/history cards. No physical phone or live Spotify playback was tested.
+The signed release passed 33 Android tests, Android lint and 120 browser/touch checks. These cover AMRAP persistence, real touch rep cycling/selection/cancellation, rest restart deadlines, worker-thread native timer scheduling, storage revisions, history, set logging, dragging, Spotify media commands/artwork, ongoing rest notifications/actions, floating timer position/ring, separate Settings screen, narrow-screen/editor geometry, actual touch typing in every editor field, and real touch swipes across exercise/history cards. No physical phone or live Spotify playback was tested.
 
 ## Build
 
@@ -34,6 +35,7 @@ From the parent repository, run the Gradle wrapper with this directory as the pr
 cd workouts
 node tools/browser-smoke.mjs
 node tools/touch-input-smoke.mjs
+node tools/set-reps-smoke.mjs
 ```
 
 Set WORKOUT_DEBUG_KEYSTORE to the retained private signing key for updates. Never publish the key.

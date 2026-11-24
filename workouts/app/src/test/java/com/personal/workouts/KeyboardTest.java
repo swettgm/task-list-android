@@ -44,4 +44,15 @@ public class KeyboardTest {
         int state=activity.getWindow().getAttributes().softInputMode&WindowManager.LayoutParams.SOFT_INPUT_MASK_STATE;
         assertNotEquals(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN,state);
     }
+    @Test public void bridgeCommitsAndSchedulesRestFromAWorkerThread()throws Exception {
+        WorkoutStore store=new WorkoutStore(activity);store.prefs.edit().clear().commit();
+        org.json.JSONObject data=WorkoutStoreTest.fixture();data.put("active",WorkoutStoreTest.session(data));
+        long end=System.currentTimeMillis()+90000;data.put("restStartedAt",end-90000).put("restDurationMs",90000).put("restEndAt",end);
+        final String raw=data.toString();String[] saved={null};Thread worker=new Thread(()->saved[0]=bridge.writeState(raw));worker.start();worker.join();
+        assertNotNull(saved[0]);assertEquals(end,store.read().getLong("restEndAt"));
+        shadowOf(Looper.getMainLooper()).idle();assertEquals(end,store.prefs.getLong("alarmEnd",0));
+        data=store.read();end+=1000;data.put("restEndAt",end);assertNotNull(bridge.writeState(data.toString()));
+        shadowOf(Looper.getMainLooper()).idle();assertEquals(end,store.prefs.getLong("alarmEnd",0));
+    }
+
 }

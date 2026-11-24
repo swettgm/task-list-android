@@ -76,6 +76,7 @@ final class WorkoutStore {
             for(int j=0;j<sets.length();j++) {
                 JSONObject set=sets.getJSONObject(j);
                 number(set,"target",1,100);number(set,"weight",0,5000);
+                if(set.has("amrap")&&!(set.get("amrap") instanceof Boolean))throw new JSONException("Invalid AMRAP");
                 if(logged&&!set.isNull("reps"))number(set,"reps",0,100);
             }
         }

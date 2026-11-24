@@ -63,4 +63,17 @@ public class WorkoutStoreTest {
         JSONObject state=fixture();state.getJSONArray("routines").getJSONObject(0).put("exercises",new JSONArray());
         assertNotNull(store.write(state.toString()));
     }
+    @Test public void amrapTargetsAndZeroRepsSurviveSaving()throws Exception {
+        JSONObject data=fixture(),active=session(data);
+        JSONObject set=active.getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0);
+        set.put("target",5).put("amrap",true).put("reps",0);data.put("active",active);
+        assertNotNull(store.write(data.toString()));
+        set=store.read().getJSONObject("active").getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0);
+        assertTrue(set.getBoolean("amrap"));assertEquals(0,set.getInt("reps"));
+    }
+    @Test public void invalidAmrapDoesNotReplaceSavedData()throws Exception {
+        JSONObject data=fixture();data.getJSONArray("routines").getJSONObject(0).getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0).put("amrap","yes");
+        assertNull(store.write(data.toString()));
+    }
+
 }
