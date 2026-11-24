@@ -1,0 +1,147 @@
+import {chromium} from 'playwright';
+import {existsSync} from 'node:fs';
+import {mkdir} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import {serveFixture} from './browser-fixture-server.mjs';
+const fixture=await serveFixture('app/src/main/assets/index.html');
+const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+const checks=[],errors=[];const check=(value,label)=>{assert.ok(value,label);checks.push(label);};
+try{
+ const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{
+  let state=JSON.parse(localStorage.getItem('native-workouts')||'{}');
+  window.qa={fail:false,rest:0,haptics:0,music:{connected:false,available:false,title:'Spotify',artist:'',playing:false},commands:[]};
+  window.WorkoutNative={
+   readState:()=>JSON.stringify(state),
+   writeState:raw=>{if(qa.fail)return null;const next=JSON.parse(raw);if((next.revision||0)!==(state.revision||0))return null;next.revision=(state.revision||0)+1;state=next;localStorage.setItem('native-workouts',JSON.stringify(state));return JSON.stringify(state);},
+   ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},haptic(){qa.haptics++;},
+   spotifyState:()=>JSON.stringify(qa.music),spotifyCommand:command=>qa.commands.push(command),openSpotify:()=>qa.openedSpotify=true,spotifyAccess:()=>qa.connectedSpotify=true,preciseTimers:()=>true,restComplete(){qa.rest++;},previewVibration(){},requestNotifications(){}
+  };
+ });
+ await page.goto(fixture.url);await page.waitForFunction(()=>!!window.Workouts);
+ const state=()=>page.evaluate(()=>Workouts.debug()),dialog=()=>page.locator('dialog[open]');
+ check((await state()).routines[0].exercises.length===0&&(await state()).history.length===0,'Fresh install starts with an empty routine and no workout history');
+ check(await page.getByLabel('Spotify player').isVisible(),'Compact Spotify player uses the app layout');
+ await page.getByRole('button',{name:'Connect',exact:true}).click();
+ check(await page.evaluate(()=>qa.connectedSpotify),'Spotify Connect opens the one-time Android access setup');
+ await page.evaluate(()=>{qa.music={connected:true,available:true,title:'Training track',artist:'Example artist',playing:true};});
+ await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Training track');
+ await page.getByRole('button',{name:'Pause Spotify',exact:true}).click();
+ await page.getByRole('button',{name:'Next Spotify track',exact:true}).click();
+ check(await page.evaluate(()=>qa.commands.join()==='play,next'),'Player forwards pause and next without changing workout state');
+ for(const [name,reps,weight] of [['Barbell Curl','8, 8, 8',45],['Front/Lateral Raise','10, 10, 10',10],['Triceps Pushdown','8, 8, 8',50],['Cable Crunch','15, 15, 15',50],['Leg Extension','6, 8, 10',50],['Leg Curl','6, 8, 10',65]]){
+  await page.getByRole('button',{name:'Add exercise',exact:true}).click();
+  await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill(name);
+  await dialog().getByRole('textbox',{name:'Reps per set'}).fill(reps);
+  await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill(String(weight));
+  await dialog().getByRole('button',{name:'Add',exact:true}).click();
+ }
+ check((await state()).settings.notifications===false,'Notifications are disabled by default');
+ check(await page.locator('.exercise').count()===6,'All six exercises render without clipping names');
+ for(const width of [320,390,600]){
+  await page.setViewportSize({width,height:844});
+  check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Home fits at '+width+'px');
+ }
+ await page.setViewportSize({width:390,height:844});
+ await page.getByRole('button',{name:'Edit sets and weight for Leg Extension'}).click();
+ check(await dialog().getByRole('textbox',{name:'Reps per set'}).inputValue()==='6, 8, 10','Variable rep targets are editable');
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await page.getByRole('button',{name:'Start workout',exact:true}).click();
+ check((await state()).active?.exercises.length===6&&await page.locator('.set[aria-pressed=false]').count()===18,'Start creates a saved session with one circle per set');
+ await page.getByRole('button',{name:'Log set 1 of Barbell Curl',exact:true}).click();
+ check((await state()).active.exercises[0].sets[0].reps===8,'One tap records the target reps');
+ check((await state()).restEndAt>Date.now()&&await page.getByLabel('Rest timer').isVisible(),'A completed set starts the rest timer');
+ await page.getByRole('button',{name:'Edit set 1 of Barbell Curl',exact:true}).click();
+ await dialog().getByRole('spinbutton',{name:'Reps',exact:true}).fill('6');
+ await dialog().getByRole('spinbutton',{name:'Weight (lb)',exact:true}).fill('40');
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ check((await state()).active.exercises[0].sets[0].reps===6&&(await state()).active.exercises[0].sets[0].weight===40,'Logged reps and weight can be corrected');
+ await page.getByRole('button',{name:'Edit sets and weight for Barbell Curl'}).click();
+ await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill('50');
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ let saved=await state();
+ check(saved.active.exercises[0].sets[0].weight===40&&saved.active.exercises[0].sets[1].weight===50&&saved.routines[0].exercises[0].weight===50,'Changing working weight preserves logged sets and updates future sets and routine');
+ await page.reload();await page.waitForFunction(()=>!!window.Workouts);
+ check((await state()).active.exercises[0].sets[0].reps===6,'Unfinished workouts survive reopening');
+ await page.getByRole('button',{name:'Skip rest',exact:true}).click();
+ check((await state()).restEndAt===0,'Rest can be skipped');
+ await page.getByRole('button',{name:'Add set to Barbell Curl'}).click();
+ check((await state()).active.exercises[0].sets.length===4,'Extra sets can be added to the active workout');
+ await page.getByRole('button',{name:'Finish',exact:true}).click();
+ await dialog().getByRole('textbox',{name:'Workout notes'}).fill('First recorded session');
+ await dialog().getByRole('button',{name:'Save workout',exact:true}).click();
+ saved=await state();
+ check(saved.active===null&&saved.history.length===1&&saved.restEndAt===0,'Finish archives one session and cancels rest');
+ check(saved.history[0].exercises[0].sets[0].reps===6&&saved.history[0].notes==='First recorded session','Saved history keeps actual reps, weights and notes');
+ await page.getByRole('tab',{name:'History',exact:true}).click();
+ check(await page.getByRole('tab',{name:'Today'}).getAttribute('aria-selected')==='true','Tab highlight waits while the page slides');
+ await page.waitForFunction(()=>document.querySelector('#history-tab').getAttribute('aria-selected')==='true');
+ check(await page.locator('.history-card').count()===1,'History lists the completed workout');
+ await page.locator('.history-card').click();
+ check(await dialog().textContent().then(s=>s.includes('6 reps · 40 lb')),'Workout details display actual logged sets');
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await page.locator('#progress summary').click();
+ check(await page.locator('.progress-row').textContent().then(s=>s.includes('40 lb × 6')),'Progress uses completed sets');
+ await page.getByRole('tab',{name:'Today'}).click();
+ await page.waitForFunction(()=>document.querySelector('#today-tab').getAttribute('aria-selected')==='true');
+ await page.getByRole('button',{name:'Edit sets and weight for Barbell Curl'}).click();
+ await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill('55');
+ await page.evaluate(()=>qa.fail=true);
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ check(await dialog().isVisible()&&await dialog().locator('.error').textContent().then(s=>s.includes('Couldn’t save')),'Save failures keep the editor and draft');
+ check((await state()).routines[0].exercises[0].weight===50,'Save failures leave saved data intact');
+ await page.evaluate(()=>qa.fail=false);
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ check(await dialog().getByRole('checkbox',{name:'Rest notifications'}).isChecked()===false,'Notification controls reflect opt-in defaults');
+ await dialog().getByRole('combobox',{name:'Default unit'}).selectOption('kg');
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ check((await state()).settings.unit==='kg'&&(await state()).history[0].exercises[0].unit==='lb','Changing default units preserves historical units');
+ await page.getByRole('button',{name:'Add exercise',exact:true}).click();
+ await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill('New exercise');
+ await dialog().getByRole('textbox',{name:'Reps per set'}).fill('0, 8');
+ await dialog().getByRole('button',{name:'Add',exact:true}).click();
+ check(await dialog().locator('.error').textContent().then(s=>s.includes('1–100')),'Invalid rep targets are rejected');
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ const old=await state();
+ await page.locator('#routine-picker').click();await dialog().getByRole('button',{name:'Add routine'}).click();
+ await dialog().getByRole('textbox',{name:'Name',exact:true}).fill('Workout B');
+ await dialog().getByRole('button',{name:'Add',exact:true}).click();
+ check((await state()).routines.length===old.routines.length+1&&await page.locator('.exercise').count()===0,'Multiple routines can be created independently');
+ await page.locator('#routine-picker').click();await dialog().getByRole('button',{name:'Workout A',exact:true}).click();
+ const cards=page.locator('.exercise');
+ const a=await cards.nth(0).boundingBox(),b=await cards.nth(1).boundingBox();
+ await page.mouse.move(a.x+20,a.y+a.height/2);await page.mouse.down();await page.waitForTimeout(430);await page.mouse.move(b.x+20,b.y+b.height-2,{steps:12});await page.waitForTimeout(220);await page.mouse.up();await page.waitForTimeout(480);
+ check((await state()).routines[0].exercises[0].name==='Front/Lateral Raise','Hold and drag reorders exercises');
+ await page.reload();await page.waitForFunction(()=>!!window.Workouts);
+ check((await state()).routines[0].exercises[0].name==='Front/Lateral Raise','Exercise order persists after reopening');
+ check((await state()).history[0].exercises[0].name==='Barbell Curl','Reordering routines preserves workout history');
+ await mkdir('build/browser-qa',{recursive:true});
+ await page.screenshot({path:'build/browser-qa/workouts-home.png',fullPage:true});
+ await page.getByRole('button',{name:'Start workout',exact:true}).click();
+ await page.getByRole('button',{name:'Log set 1 of Front/Lateral Raise'}).click();
+ await page.screenshot({path:'build/browser-qa/workouts-active.png',fullPage:true});
+ const aligned=await page.locator('#spotify').evaluate(player=>{
+  const centers=[...player.querySelectorAll('button')].filter(e=>!e.hidden).map(e=>{const r=e.getBoundingClientRect();return r.top+r.height/2;});
+  return Math.max(...centers)-Math.min(...centers)<.6;
+ });
+ check(aligned,'Spotify controls and track text share a centered row');
+ const floating=await page.locator('#rest').evaluate(rest=>{
+  const a=rest.getBoundingClientRect(),b=document.querySelector('#add').getBoundingClientRect();
+  return Math.abs(a.height-b.height)<.6&&Math.abs(a.bottom-b.bottom)<.6;
+ });
+ check(floating,'Rest timer and floating action button have matching heights and bottoms');
+ await page.setViewportSize({width:320,height:500});
+ await page.getByRole('button',{name:'Edit sets and weight for Front/Lateral Raise'}).click();
+ check(await dialog().evaluate(d=>d.scrollWidth<=d.clientWidth+1),'Exercise editor fits a narrow phone');
+ check(await dialog().getByRole('button',{name:'Save',exact:true}).evaluate(b=>{const r=b.getBoundingClientRect();return r.bottom<=innerHeight&&r.top>=0;}),'Editor actions remain visible with limited keyboard space');
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ check(await dialog().evaluate(d=>d.scrollWidth<=d.clientWidth+1),'Settings fit a narrow phone');
+ check(await dialog().getByRole('button',{name:'Save',exact:true}).evaluate(b=>b.getBoundingClientRect().bottom<=innerHeight),'Settings actions remain visible while fields scroll');
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await page.setViewportSize({width:390,height:844});
+ check(errors.length===0,'No browser errors');
+ console.log(JSON.stringify({passed:checks.length,checks},null,2));
+}finally{await browser.close();await fixture.close();}

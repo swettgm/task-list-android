@@ -1,0 +1,7 @@
+<vector xmlns:aapt="http://schemas.android.com/aapt" xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M54,6C94,6 102,14 102,54C102,94 94,102 54,102C14,102 6,94 6,54C6,14 14,6 54,6Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:startX="0" android:startY="0" android:endX="0" android:endY="108" android:type="linear" android:startColor="#203747" android:endColor="#5A5C61" />
+        </aapt:attr>
+    </path>
+<group android:pivotX="54" android:pivotY="54" android:scaleX="0.67" android:scaleY="0.67"><path android:pathData="M24,44V64M34,35V73M74,35V73M84,44V64M34,54H74" android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="7" android:strokeLineCap="round" android:strokeLineJoin="round"/></group></vector>
