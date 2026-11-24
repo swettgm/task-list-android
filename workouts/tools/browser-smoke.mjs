@@ -156,7 +156,10 @@ try{
  check(await page.locator('#rest-ring').evaluate((e,start)=>Number(e.style.strokeDashoffset)>start,ringStart),'The timer ring shrinks as time passes');
  check(await page.locator('#spotify-art img').count()===1,'Album art is shown when Spotify provides it');
  check(await page.locator('#spotify-title').evaluate(e=>Number(getComputedStyle(e).fontWeight)>=700),'Spotify track text is bold');
- check(await page.locator('#spotify').evaluate(e=>e.getBoundingClientRect().height)===60,'Spotify bar fits closely around the artwork');
+ check(await page.locator('#spotify').evaluate(player=>{
+  const bar=player.getBoundingClientRect(),art=player.querySelector('#spotify-art').getBoundingClientRect();
+  return Math.abs(art.top-bar.top-(art.left-bar.left))<.6&&Math.abs(bar.bottom-art.bottom-(art.left-bar.left))<.6;
+ }),'Spotify artwork has equal left, top and bottom padding');
  await page.setViewportSize({width:320,height:500});
  await page.getByRole('button',{name:'Edit workout',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Front/Lateral Raise',exact:true}).click();

@@ -84,8 +84,14 @@ try{
  check(await page.locator('dialog').count()===0,'Swiping across a history card returns to Today without opening it');
  check(await page.locator('#settings').textContent()==='⚙','The settings glyph matches Tasks');
  check(await page.locator('#spotify-play svg').evaluate(e=>getComputedStyle(e).stroke==='none'&&getComputedStyle(e).fill!=='none'),'Spotify transport icons use solid shapes');
- const sizes=await page.locator('#spotify').evaluate(e=>({bar:e.getBoundingClientRect().height,art:document.querySelector('#spotify-art').getBoundingClientRect().height}));
- check(sizes.bar-sizes.art<=12&&sizes.bar>sizes.art,'The Spotify bar fits closely around the artwork');
+ for(const width of [390,320]){
+  await page.setViewportSize({width,height:844});
+  const gaps=await page.locator('#spotify').evaluate(e=>{
+   const bar=e.getBoundingClientRect(),art=e.querySelector('#spotify-art').getBoundingClientRect();
+   return [art.left-bar.left,art.top-bar.top,bar.bottom-art.bottom];
+  });
+  check(Math.max(...gaps)-Math.min(...gaps)<.6,'Spotify artwork padding is even at '+width+'px');
+ }
  check(errors.length===0,'No browser errors during touch editing and swipes');
  console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();await fixture.close();}
