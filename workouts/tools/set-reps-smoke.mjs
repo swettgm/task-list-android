@@ -34,6 +34,18 @@ try{
  await page.waitForTimeout(1100);
  check((await data()).restEndAt===deadline,'Native timer polling keeps the saved rest deadline');
  const touch=await page.context().newCDPSession(page);
+ check(await sets().nth(1).evaluate(circle=>{
+  const box=circle.getBoundingClientRect();
+  return document.elementFromPoint(box.x+box.width/2,box.y+box.height/2)===circle;
+ }),'A touch on the centered label hits the rep button itself');
+ await page.evaluate(()=>document.addEventListener('pointerdown',event=>{
+  const circle=event.target.closest('.set');
+  if(!circle)return;
+  // An event bubbling from the label must never cancel the button's capture.
+  setTimeout(()=>circle.querySelector('.set-reps').dispatchEvent(new PointerEvent('lostpointercapture',{
+   bubbles:true,pointerId:event.pointerId,pointerType:'touch'
+  })),300);
+ },{once:true}));
  async function holdAndDrag(delta,cancel=false,index=1){
   const box=await sets().nth(index).boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
   const before=await data(),initialSet=before.active.exercises[0].sets[index];

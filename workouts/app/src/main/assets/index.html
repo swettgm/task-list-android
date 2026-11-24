@@ -64,7 +64,7 @@ body,#page-stack{touch-action:pan-y}
 @media(max-width:350px){.spotify-track,.spotify .icon{min-height:40px}}
 #discard.danger{background:#a52335;color:#fff}
 .set[aria-pressed]{display:grid;place-items:center;touch-action:none}
-.set-reps{line-height:1;text-box:trim-both cap alphabetic}
+.set-reps{line-height:1;text-box:trim-both cap alphabetic;pointer-events:none}
 .workout-edit-actions{display:flex;flex-wrap:wrap;gap:8px}.workout-edit-list{display:grid;gap:6px}.workout-edit-row{display:flex;gap:8px;touch-action:pan-y}.workout-edit-exercise{flex:1;justify-content:flex-start;text-align:left;overflow-wrap:anywhere;min-width:0}.exercise-plan{min-height:0}
 .progress-info{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.progress-graph{width:72px;height:24px;flex:none}
 </style>
@@ -256,8 +256,12 @@ function enableRepDrag(control,label,exerciseId,index){
   if(reps!==d.reps){d.reps=reps;label.textContent=reps;haptic();}
  });
  control.addEventListener('pointerup',event=>{if(repDrag?.id===event.pointerId)finishRepDrag(true);});
- control.addEventListener('pointercancel',()=>finishRepDrag(false));
- control.addEventListener('lostpointercapture',()=>finishRepDrag(false));
+ const cancelDrag=event=>{
+  if(event.target===control&&repDrag?.control===control&&repDrag.id===event.pointerId)
+   finishRepDrag(false);
+ };
+ control.addEventListener('pointercancel',cancelDrag);
+ control.addEventListener('lostpointercapture',cancelDrag);
 }
 function finishRepDrag(commit){
  const d=repDrag;if(!d)return;repDrag=null;clearTimeout(d.timer);
