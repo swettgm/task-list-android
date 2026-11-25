@@ -55,6 +55,11 @@ try{
   await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  }
  check(await page.evaluate(()=>qa.commands.join()==='play,next,next,prev'&&!qa.openedSpotify),'Swiping the Spotify bar skips tracks without opening Spotify');
+ await page.evaluate(()=>{qa.music.title='Previous track';qa.music.artist='Another artist';qa.music.art='';});
+ await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Previous track');
+ check(await page.locator('#spotify-copy').evaluate(el=>el.getAnimations().length>0)&&
+       await page.locator('#spotify-art').evaluate(el=>el.getAnimations().length===0),
+       'Track text slides independently of the artwork');
  for(const [name,reps,weight] of [['Barbell Curl','8, 8, 8',45],['Front/Lateral Raise','10, 10, 10',10],['Triceps Pushdown','8, 8, 8',50],['Cable Crunch','15, 15, 15',50],['Leg Extension','6, 8, 10',50],['Leg Curl','6, 8, 10',65]]){
   await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();

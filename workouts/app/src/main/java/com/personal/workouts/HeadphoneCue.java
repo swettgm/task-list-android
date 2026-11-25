@@ -15,13 +15,13 @@ final class HeadphoneCue {
         .setUsage(AudioAttributes.USAGE_MEDIA)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build();
-    private static final short[] BEEP=synthesizeBeep();
-    private static final short[] BELL=synthesizeBell();
+    private static final short[] BEEP=synthesizeBeep(698,160);
+    private static final short[] FINISH_BEEP=synthesizeBeep(932,460);
     private static Handler worker;
 
-    static void play(Context context, long deadline, boolean bell) {
+    static void play(Context context, long deadline, boolean finishing) {
         Context app=context.getApplicationContext();
-        enqueue(app,bell?BELL:BEEP,false,()->new WorkoutStore(app).read().optLong("restEndAt")==deadline,()->true);
+        enqueue(app,finishing?FINISH_BEEP:BEEP,false,()->new WorkoutStore(app).read().optLong("restEndAt")==deadline,()->true);
     }
 
     static void preview(Context context, int seconds, BooleanSupplier active) {
@@ -29,10 +29,10 @@ final class HeadphoneCue {
     }
 
     static short[] previewSamples(int seconds) {
-        short[] sequence=new short[seconds*RATE+BELL.length];
+        short[] sequence=new short[seconds*RATE+FINISH_BEEP.length];
         for(int second=0;second<seconds;second++)
             System.arraycopy(BEEP,0,sequence,second*RATE,BEEP.length);
-        System.arraycopy(BELL,0,sequence,seconds*RATE,BELL.length);
+        System.arraycopy(FINISH_BEEP,0,sequence,seconds*RATE,FINISH_BEEP.length);
         return sequence;
     }
 
@@ -173,37 +173,16 @@ final class HeadphoneCue {
         }
     }
 
-    private static short[] synthesizeBeep() {
-        double length=.18;
-        short[] samples=new short[(int)(RATE*length)];
+    private static short[] synthesizeBeep(int pitch,int durationMs) {
+        short[] samples=new short[RATE*durationMs/1000];
+        double duration=durationMs/1000.0;
         for(int i=0;i<samples.length;i++){
             double t=(double)i/RATE;
-            double phase=2*Math.PI*660*t;
-            double edge=Math.min(1,Math.min(t/.007,(length-t)/.022));
-            samples[i]=(short)(8600*edge*(Math.sin(phase)+.19*Math.sin(phase*3)));
+            double phase=2*Math.PI*pitch*t;
+            double edge=Math.min(1,Math.min(t/.005,(duration-t)/.024));
+            double tone=Math.sin(phase)+.27*Math.sin(3*phase)+.08*Math.sin(5*phase);
+            samples[i]=(short)(8600*edge*tone);
         }
         return samples;
-    }
-
-    private static short[] synthesizeBell() {
-        double length=.80;
-        short[] samples=new short[(int)(RATE*length)];
-        for(int i=0;i<samples.length;i++){
-            double t=(double)i/RATE;
-            double taper=Math.min(1,(length-t)/.065);
-            double strike=metalStrike(t)+.61*metalStrike(t-.076);
-            samples[i]=(short)(9800*taper*strike);
-        }
-        return samples;
-    }
-
-    private static double metalStrike(double t) {
-        if(t<0)return 0;
-        double phase=2*Math.PI*t;
-        return Math.min(1,t/.002)*(
-            .77*Math.sin(phase*2060)*Math.exp(-t*8)
-            +.42*Math.sin(phase*2830)*Math.exp(-t*14)
-            +.27*Math.sin(phase*4170)*Math.exp(-t*25)
-            +.19*Math.sin(phase*5510)*Math.exp(-t*45));
     }
 }

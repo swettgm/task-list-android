@@ -24,7 +24,7 @@ dialog .actions .trash{width:42px;min-width:42px}
 
 body{padding-bottom:30px}body.has-player{padding-bottom:130px}
 .spotify-track{font-size:14px;font-weight:750;height:var(--art-size);min-height:0;justify-content:center;line-height:1.2;gap:2px;overflow:hidden}
-#spotify-artist{font-size:12px;font-weight:600;opacity:.8}#spotify-artist:empty{display:none}.spotify,.spotify button{touch-action:pan-y}
+#spotify-artist{font-size:12px;font-weight:600;opacity:.8}#spotify-artist:empty{display:none}#spotify-copy{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px}.spotify,.spotify button{touch-action:pan-y}
 .spotify-art{display:grid;place-items:center;flex:0 0 var(--art-size);width:var(--art-size);height:var(--art-size);border-radius:10px;overflow:hidden;background:var(--surface)}
 .spotify-art img{width:100%;height:100%;object-fit:cover}
 .spotify-art svg{width:27px;height:27px}
@@ -86,7 +86,7 @@ body,#page-stack{touch-action:pan-y}
 
 <aside id="rest" class="rest-floater" aria-label="Rest timer" hidden><button id="rest-float" aria-label="Rest controls"><svg viewBox="0 0 84 84" aria-hidden="true"><circle class="timer-track" cx="42" cy="42" r="36"/><circle id="rest-ring" class="timer-ring" cx="42" cy="42" r="36" pathLength="100"/></svg><strong id="rest-time"></strong></button></aside>
 <aside id="spotify" class="spotify" aria-label="Spotify player">
-<span id="spotify-art" class="spotify-art" aria-hidden="true"></span><button id="spotify-open" class="spotify-track bare" aria-label="Open Spotify"><span id="spotify-title">Spotify</span><span id="spotify-artist"></span></button>
+<span id="spotify-art" class="spotify-art" aria-hidden="true"></span><button id="spotify-open" class="spotify-track bare" aria-label="Open Spotify"><span id="spotify-copy"><span id="spotify-title">Spotify</span><span id="spotify-artist"></span></span></button>
 <button id="spotify-connect">Connect</button>
 <button id="spotify-prev" class="icon bare" aria-label="Previous Spotify track"></button>
 <button id="spotify-play" class="icon bare" aria-label="Play Spotify"></button>
@@ -513,7 +513,7 @@ if(overlaySupported)m.fields.append(overlayNote);
 else overlay.closest('label').hidden=true;
 const countdownOptions=['Off','Last 3 seconds','Last 5 seconds'];
 const countdown=selectField(m.fields,'Rest countdown',countdownOptions,draft.countdownSeconds===5?countdownOptions[2]:draft.countdownSeconds===0?countdownOptions[0]:countdownOptions[1]);
-const headphones=checkbox(m.fields,'Headphone beeps and bell',draft.headphoneCues!==false);
+const headphones=checkbox(m.fields,'Headphone countdown and finish beeps',draft.headphoneCues!==false);
 const pulses=restVibrationSlider(m.fields,'Countdown pulse length',draft.countdownVibrationMs??80,500,.01);
 const slider=restVibrationSlider(m.fields,'Finish vibration length',draft.vibrationMs,2000,.05);
 pulses.closest('label').hidden=countdown.selectedIndex===0;
@@ -650,6 +650,50 @@ function finishTimerDrag(commit){
 floater.addEventListener('pointerup',()=>finishTimerDrag(true));
 floater.addEventListener('pointercancel',()=>finishTimerDrag(false));
 floater.onclick=()=>{if(performance.now()>=suppressTimerClick){haptic();openRest();}};
+let spotifyTextSlide=null,spotifyTextAnimation=null;
+function resetSpotifyText(){
+ if(spotifyTextSlide){
+  clearTimeout(spotifyTextSlide.timeout);
+  clearInterval(spotifyTextSlide.poll);
+ }
+ spotifyTextSlide=null;
+ spotifyTextAnimation?.cancel();
+ spotifyTextAnimation=null;
+}
+function slideSpotifyText(direction){
+ resetSpotifyText();
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const copy=$('spotify-copy');
+ const slide=spotifyTextSlide={direction,title:$('spotify-title').textContent,artist:$('spotify-artist').textContent,ready:false};
+ spotifyTextAnimation=copy.animate([
+  {transform:'translateX(0)',opacity:1},
+  {transform:'translateX('+(direction*100)+'%)',opacity:0}
+ ],{duration:140,easing:'ease-in',fill:'forwards'});
+ spotifyTextAnimation.onfinish=()=>{
+  if(spotifyTextSlide!==slide)return;
+  slide.ready=true;
+  renderSpotify();
+ };
+ slide.poll=setInterval(renderSpotify,100);
+ slide.timeout=setTimeout(()=>{
+  if(spotifyTextSlide!==slide)return;
+  resetSpotifyText();
+  renderSpotify();
+ },850);
+}
+function renderSpotifyText(title,artist){
+ const slide=spotifyTextSlide;
+ if(slide&&(!slide.ready||(title===slide.title&&artist===slide.artist)))return;
+ $('spotify-title').textContent=title;
+ $('spotify-artist').textContent=artist;
+ if(slide){
+  resetSpotifyText();
+  spotifyTextAnimation=$('spotify-copy').animate([
+   {transform:'translateX('+(-slide.direction*100)+'%)',opacity:0},
+   {transform:'translateX(0)',opacity:1}
+  ],{duration:180,easing:'ease-out'});
+ }
+}
 function renderSpotify(){
  if(!state)return;
  const enabled=state.settings.spotify!==false&&!settingsOpen;
@@ -658,9 +702,8 @@ function renderSpotify(){
  if(!enabled)return;
  let music={connected:false,available:false,title:'Spotify',artist:'',playing:false};
  try{if(native?.spotifyState)music=JSON.parse(native.spotifyState());}catch(_){}
- $('spotify-title').textContent=music.connected?(music.title||'Open Spotify'):'Spotify';
+ renderSpotifyText(music.connected?(music.title||'Open Spotify'):'Spotify',music.artist||'');
  $('spotify-open').title=[music.title,music.artist].filter(Boolean).join(' · ');
- $('spotify-artist').textContent=music.artist||'';
  const art=$('spotify-art'),url=music.art||'';
  if(art.dataset.url!==url){
   art.dataset.url=url;art.replaceChildren();
@@ -708,7 +751,13 @@ player.addEventListener('pointerup',event=>{
  if(!swipe?.horizontal||event.pointerId!==swipe.id)return;
  const dx=event.clientX-swipe.x;
  suppressSpotifyClick=performance.now()+350;
- if(Math.abs(dx)>=36)spotifyTransport(dx<0?'next':'prev');
+ if(Math.abs(dx)>=36){
+  const command=dx<0?'next':'prev';
+  if(!$('spotify-'+command).disabled){
+   slideSpotifyText(Math.sign(dx));
+   spotifyTransport(command);
+  }
+ }
 });
 player.addEventListener('pointercancel',()=>spotifySwipe=null);
 player.addEventListener('lostpointercapture',event=>{if(event.target===player)spotifySwipe=null;});

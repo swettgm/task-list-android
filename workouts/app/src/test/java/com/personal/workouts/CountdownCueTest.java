@@ -18,7 +18,7 @@ public class CountdownCueTest {
         assertEquals(end,RestAlarm.nextCountdownCue(90_000L,end,0));
     }
 
-    @Test public void previewContainsEveryBeepAndTheFinalBell() {
+    @Test public void previewContainsEveryBeepAndALongerHigherFinish() {
         int rate=24000;
         for(int seconds:new int[]{3,5}){
             short[] sequence=HeadphoneCue.previewSamples(seconds);
@@ -26,8 +26,19 @@ public class CountdownCueTest {
                 assertTrue(peak(sequence,second*rate,second*rate+rate/8)>4000);
                 assertEquals(0,peak(sequence,second*rate+rate/4,(second+1)*rate));
             }
-            assertTrue(peak(sequence,seconds*rate,sequence.length)>4000);
+            int finish=seconds*rate;
+            assertTrue(peak(sequence,finish+rate/4,sequence.length)>4000);
+            assertTrue(risingCrossings(sequence,finish+rate/100,rate/10)
+                >risingCrossings(sequence,rate/100,rate/10));
         }
+    }
+
+    private static int risingCrossings(short[] samples,int start,int length){
+        int count=0;
+        for(int i=start+1;i<start+length;i++){
+            if(samples[i-1]<=0&&samples[i]>0)count++;
+        }
+        return count;
     }
 
     private static int peak(short[] samples,int start,int end){

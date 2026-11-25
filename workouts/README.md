@@ -1,6 +1,6 @@
 # Exercise
 
-[Download Exercise 1.0.16](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.16.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
+[Download Exercise 1.0.17](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.17.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
 
 An offline workout logger in the blue-grey gradient and white-control theme shared with Tasks, RM and Meditation. New installations start with an empty routine and history.
 
@@ -13,11 +13,11 @@ An offline workout logger in the blue-grey gradient and white-control theme shar
 - Routine and exercise fields explicitly focus on touch and request the Android keyboard. Today lists every routine as a card. Tap a card to see its exercises and Start workout, and only the active routine shows rep circles. The plus beside Settings adds routines. Use each pencil to rename its routine or add, edit and reorder its exercises.
 - Settings is a full screen with a borderless gear and visible Save/Cancel actions.
 - Rotate routines by selected weekdays or a recurring interval in Settings. The weekday schedule previews at least one full week of selected training days, repeating routines as needed.
-- Rest counts into negative time in red after the deadline. Countdown pulses can run for the last three or five seconds with an adjustable pulse length. Workout cues require a verified headphone route and Android audio focus. The explicit Settings sound test may use the phone speaker. Bluetooth outputs with ambiguous names are skipped. Physical headphone routing is unverified.
+- Rest counts into negative time in red after the deadline. Countdown pulses can run for the last three or five seconds with an adjustable pulse length. Workout cues require a verified headphone route and Android audio focus. The countdown uses short arcade beeps and a longer, higher finish beep. The explicit Settings sound test may use the phone speaker. Bluetooth outputs with ambiguous names are skipped. Physical headphone routing is unverified.
 - A draggable in-app rest timer has a shrinking progress ring, saved position, +30 seconds and Skip controls. Turn it off with Floating rest timer in Settings.
 - Enable Show rest timer over other apps in Settings and grant Android overlay permission. One timer window stays in place inside and outside Exercise and remembers its position.
 - Enable Rest notifications in Settings for a one-line countdown notification with progress. The timer popup has +30 seconds and Skip controls. Android notification permission is required. Precise-alarm access improves completion timing while the device sleeps.
-- The compact Spotify bar fits around the album art and has solid controls, bold text and haptics. Tap Connect and enable Exercise under Android notification access, then start Spotify. Tapping the track opens Spotify. Swipe left or right on the bar to skip forward or back. Full Spotify playlist browsing is omitted.
+- The compact Spotify bar fits around the album art and has solid controls, bold text and haptics. Tap Connect and enable Exercise under Android notification access, then start Spotify. Tapping the track opens Spotify. Swipe left or right on the bar to skip forward or back. The title and artist slide while artwork updates in place. Full Spotify playlist browsing is omitted.
 - Only Spotify media sessions are used. Notification contents are never read or stored. No Spotify OAuth credentials are required.
 - Appearance, default units/rest and stepped vibration-length controls are available in Settings.
 - Today and History support swiping with delayed tab selection and haptics. Dialogs dismiss on outside tap and Android Back.
