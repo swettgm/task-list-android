@@ -66,7 +66,7 @@ body,#page-stack{touch-action:pan-y}
 #discard.danger{background:#a52335;color:#fff}
 .set[aria-pressed]{display:grid;place-items:center;touch-action:none}
 .training-days{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
-.routine{--routine-inset:12px;padding-block:10px;padding-inline:var(--routine-inset);border-radius:16px;background:color-mix(in srgb,var(--text) 8%,transparent)}.routine+.routine{margin-top:12px}.toolbar-actions{display:flex;align-items:center;gap:2px;flex:none}#app>header .toolbar-actions{gap:8px}#add-routine{padding:0}#add-routine svg{width:32px;height:32px;stroke-width:2.2}.routine-toggle{display:flex;align-items:center;min-height:40px;line-height:1.25;justify-content:space-between;text-align:left;min-width:0;padding:0}.routine-heading .icon{height:40px;min-height:40px;padding:0}.routine-chevron,#discard:not(.danger){justify-content:flex-end}.routine-chevron svg{width:17.333px;height:26px;opacity:.8}#discard svg{width:16.5px}.routine-chevron[aria-expanded=true]>svg{transform:rotate(180deg)}.routine-name{display:block;font-size:21px;line-height:1.2;font-weight:700}.routine-start-row{display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:4px}.routine-start{font-size:14px}.routine-body .empty{padding:8px 0}.routine-title{flex:1;min-width:0;overflow-wrap:anywhere}.routine-date{display:block;margin-top:4px}
+.routine{--routine-inset:12px;padding-block:10px;padding-inline:var(--routine-inset);border-radius:16px;background:color-mix(in srgb,var(--text) 8%,transparent)}.routine+.routine{margin-top:12px}.toolbar-actions{display:flex;align-items:center;gap:2px;flex:none}#app>header .toolbar-actions{gap:8px}#add-routine{padding:0}#add-routine svg{width:32px;height:32px;stroke-width:2.2}.routine-toggle{display:flex;align-items:center;min-height:40px;line-height:1.25;justify-content:space-between;text-align:left;min-width:0;padding:0}.routine-heading .icon{height:40px;min-height:40px;padding:0}.routine-chevron svg{width:26px;height:26px;opacity:.8}.routine-chevron[aria-expanded=true]>svg{transform:rotate(180deg)}.routine-name{display:block;font-size:21px;line-height:1.2;font-weight:700}.routine-start-row{display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:4px}.routine-start{font-size:14px}.routine-body .empty{padding:8px 0}.routine-title{flex:1;min-width:0;overflow-wrap:anywhere}.routine-date{display:block;margin-top:4px}.routine.has-date .routine-body>.exercise:first-child{padding-top:10px}
 .set-reps{line-height:1;text-box:trim-both cap alphabetic;pointer-events:none}
 .workout-edit-actions{display:flex;flex-wrap:wrap;gap:8px}.workout-edit-list{display:grid;gap:6px}.workout-edit-row{display:flex;gap:8px;touch-action:pan-y}.workout-edit-exercise{flex:1;justify-content:flex-start;text-align:left;overflow-wrap:anywhere;min-width:0}.exercise-plan{min-height:0}
 .progress-info{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.progress-graph{width:72px;height:24px;flex:none}
@@ -229,6 +229,7 @@ function renderToday(){
   const heading=el('div','routine-heading'),title=el('span','routine-title');
   title.append(el('span','routine-name',source.name));
   if(day!==null){
+   section.classList.add('has-date');
    const label=day===localDay(date)?'Scheduled today':dateText(day*dayMs,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
    title.append(el('span','routine-date small muted',label));
   }
@@ -251,9 +252,7 @@ function renderToday(){
    };
    const toggle=button('',toggleOpen,'bare routine-toggle');
    const chevron=button('',toggleOpen,'icon bare routine-chevron');
-   const arrow=icon('chevron');
-   arrow.setAttribute('viewBox','4 0 16 24');
-   chevron.append(arrow);
+   chevron.append(icon('chevron'));
    const updateDisclosure=()=>{
     const open=expandedRoutines.has(cardKey);
     panel.hidden=!open;
@@ -422,7 +421,6 @@ function updateDiscardButton(sessionId){
  control.dataset.sessionId=sessionId;
  control.classList.remove('trash');
  control.classList.add('bare');
- control.querySelector('svg').setAttribute('viewBox','3 0 18 24');
  previous.replaceWith(control);
 }
 function renderHistory(){const host=$('history-list');host.replaceChildren();if(!state.history.length)host.append(el('p','empty','No workouts yet.'));for(const session of [...state.history].sort((a,b)=>b.finishedAt-a.finishedAt)){const label=el('span'),control=button('',()=>historyDetail(session.id),'history-card');label.append(el('strong','',session.name),el('span','history-date',dateText(session.finishedAt)));control.append(label,el('span','history-count',completed(session)+' sets · '+Math.max(1,Math.round((session.finishedAt-session.startedAt)/60000))+' min'));host.append(control);}renderProgress();}

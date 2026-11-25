@@ -83,7 +83,7 @@ try{
   const left=card.querySelector('.routine-name').getBoundingClientRect().left;
   const elements=card.querySelectorAll('.exercise-name');
   const matchingLeft=[...elements].every(item=>Math.abs(item.getBoundingClientRect().left-left)<.25);
-  const matchingRight=[...card.querySelectorAll('.routine-chevron svg,.exercise-plan,.routine-start')]
+  const matchingRight=[...card.querySelectorAll('.routine-chevron,.exercise-plan,.routine-start')]
     .every(item=>Math.abs(outer.right-item.getBoundingClientRect().right-(left-outer.left))<.25);
   return matchingLeft&&matchingRight;
  }),'Routine text and trailing actions share matching card insets');
