@@ -3,12 +3,11 @@ package com.personal.workouts;
 import android.content.Context;
 import android.media.*;
 import android.os.*;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
-/** Sends short cues only to a verified headphone output. */
+/** Workout cues require headphones. The explicit Settings preview can use the speaker. */
 final class HeadphoneCue {
     private static final int RATE = 24000;
     private static final int CHUNK = RATE / 100;
@@ -16,18 +15,28 @@ final class HeadphoneCue {
         .setUsage(AudioAttributes.USAGE_MEDIA)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build();
+    private static final short[] BEEP=synthesizeBeep();
+    private static final short[] BELL=synthesizeBell();
     private static Handler worker;
 
     static void play(Context context, long deadline, boolean bell) {
         Context app=context.getApplicationContext();
-        enqueue(app,bell,false,()->new WorkoutStore(app).read().optLong("restEndAt")==deadline,()->true);
+        enqueue(app,bell?BELL:BEEP,false,()->new WorkoutStore(app).read().optLong("restEndAt")==deadline,()->true);
     }
 
-    static void preview(Context context, boolean bell, BooleanSupplier active) {
-        enqueue(context.getApplicationContext(),bell,true,active,active);
+    static void preview(Context context, int seconds, BooleanSupplier active) {
+        enqueue(context.getApplicationContext(),previewSamples(seconds),true,active,active);
     }
 
-    private static synchronized void enqueue(Context app,boolean bell,boolean allowSpeaker,
+    static short[] previewSamples(int seconds) {
+        short[] sequence=new short[seconds*RATE+BELL.length];
+        for(int second=0;second<seconds;second++)
+            System.arraycopy(BEEP,0,sequence,second*RATE,BEEP.length);
+        System.arraycopy(BELL,0,sequence,seconds*RATE,BELL.length);
+        return sequence;
+    }
+
+    private static synchronized void enqueue(Context app,short[] samples,boolean allowSpeaker,
             BooleanSupplier validAtStart,BooleanSupplier active) {
         AudioManager audio=app.getSystemService(AudioManager.class);
         if(output(audio,allowSpeaker)==null)return;
@@ -39,7 +48,7 @@ final class HeadphoneCue {
         long latestStart=SystemClock.elapsedRealtime()+250;
         worker.post(()->{
             if(SystemClock.elapsedRealtime()<=latestStart&&validAtStart.getAsBoolean())
-                playOnRoute(audio,bell,allowSpeaker,active);
+                playOnRoute(audio,samples,allowSpeaker,active);
         });
     }
 
@@ -80,7 +89,7 @@ final class HeadphoneCue {
         return route != null && route.getId() == preferred.getId() && route.getType() == preferred.getType();
     }
 
-    private static void playOnRoute(AudioManager audio,boolean bell,boolean allowSpeaker,BooleanSupplier active) {
+    private static void playOnRoute(AudioManager audio,short[] samples,boolean allowSpeaker,BooleanSupplier active) {
         AudioDeviceInfo preferred=output(audio,allowSpeaker);
         if(preferred==null||!active.getAsBoolean())return;
         Handler main = new Handler(Looper.getMainLooper());
@@ -98,17 +107,23 @@ final class HeadphoneCue {
             track = new AudioTrack.Builder().setAudioAttributes(ATTRIBUTES)
                 .setAudioFormat(new AudioFormat.Builder().setSampleRate(RATE)
                     .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
-                .setBufferSizeInBytes(Math.max(minBytes, CHUNK * 4))
+                .setBufferSizeInBytes(Math.max(minBytes, CHUNK * 12))
                 .setTransferMode(AudioTrack.MODE_STREAM).build();
             if (track.getState() != AudioTrack.STATE_INITIALIZED || !track.setPreferredDevice(preferred)) return;
             track.setVolume(0f);
             track.play();
-            short[] silence = new short[CHUNK];
-            // Prime only with silence, then require the actual route to match before unmuting.
-            if (track.write(silence, 0, silence.length, AudioTrack.WRITE_NON_BLOCKING) < 0) return;
-            long routeTimeout = SystemClock.elapsedRealtime() + 100;
-            while (!onPreferredOutput(track, preferred) && SystemClock.elapsedRealtime() < routeTimeout) SystemClock.sleep(5);
-            if (!onPreferredOutput(track, preferred)) return;
+            // Keep the track fed with silence until Android reports the selected route.
+            short[] silence=new short[CHUNK];
+            int primed=0;
+            long routeTimeout=SystemClock.elapsedRealtime()+240;
+            do {
+                int written=track.write(silence,0,silence.length,AudioTrack.WRITE_NON_BLOCKING);
+                if(written<0||!active.getAsBoolean())return;
+                primed+=written;
+                if(onPreferredOutput(track,preferred))break;
+                SystemClock.sleep(8);
+            }while(SystemClock.elapsedRealtime()<routeTimeout);
+            if(!onPreferredOutput(track,preferred))return;
             focused = audio.requestAudioFocus(focus) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
             if (!focused) return;
             AudioTrack playing = track;
@@ -121,7 +136,7 @@ final class HeadphoneCue {
             track.addOnRoutingChangedListener(routeListener, main);
             if (!active.getAsBoolean()||!onPreferredOutput(track, preferred)) return;
             track.setVolume(1f);
-            streamTone(track, preferred, bell, interrupted, active);
+            streamSamples(track,preferred,samples,primed,interrupted,active);
         } catch (RuntimeException ignored) {
             // An unavailable route or focus grant suppresses audio.
         } finally {
@@ -134,41 +149,61 @@ final class HeadphoneCue {
         }
     }
 
-    private static void streamTone(AudioTrack track, AudioDeviceInfo preferred, boolean bell, AtomicBoolean interrupted, BooleanSupplier active) {
-        short[] block = new short[CHUNK];
-        int chunks = bell ? 32 : 7;
-        long start = SystemClock.elapsedRealtime();
-        for (int index = 0; index <= chunks; index++) {
-            if (!active.getAsBoolean() || interrupted.get() || !onPreferredOutput(track, preferred)) return;
-            Arrays.fill(block, (short)0);
-            if (index < chunks) {
-                for (int sample = 0; sample < CHUNK; sample++) {
-                    double time = (index * CHUNK + sample) / (double)RATE;
-                    double attack = Math.min(1, time / .008);
-                    double phase = 2 * Math.PI * time;
-                    double wave = bell
-                        ? Math.sin(phase * 740) + .32 * Math.sin(phase * 1480) + .18 * Math.sin(phase * 2110)
-                        : Math.sin(phase * 1040);
-                    double fade = bell ? Math.exp(-time * 14) : Math.min(1, (.07 - time) / .02);
-                    block[sample] = (short)(3600 * wave * attack * fade);
-                }
+    private static void streamSamples(AudioTrack track,AudioDeviceInfo preferred,short[] samples,
+            int primed,AtomicBoolean interrupted,BooleanSupplier active) {
+        int offset=0;
+        long start=SystemClock.elapsedRealtime();
+        while(offset<samples.length){
+            int end=Math.min(offset+CHUNK,samples.length);
+            long writeDeadline=SystemClock.elapsedRealtime()+150;
+            while(offset<end){
+                if(!active.getAsBoolean()||interrupted.get()||!onPreferredOutput(track,preferred))return;
+                int result=track.write(samples,offset,end-offset,AudioTrack.WRITE_NON_BLOCKING);
+                if(result<0||SystemClock.elapsedRealtime()>=writeDeadline)return;
+                offset+=result;
+                if(offset<end)SystemClock.sleep(2);
             }
-            int written = 0;
-            long writeDeadline = SystemClock.elapsedRealtime() + 30;
-            while (written < block.length) {
-                if (!active.getAsBoolean() || interrupted.get() || !onPreferredOutput(track, preferred)) return;
-                int result = track.write(block, written, block.length - written, AudioTrack.WRITE_NON_BLOCKING);
-                if (result < 0 || SystemClock.elapsedRealtime() >= writeDeadline) return;
-                written += result;
-                if (written < block.length) SystemClock.sleep(2);
-            }
-            SystemClock.sleep(Math.max(0, start + (index + 1) * 10 - SystemClock.elapsedRealtime()));
+            SystemClock.sleep(Math.max(0,start+1000L*offset/RATE-SystemClock.elapsedRealtime()));
         }
-        long drainDeadline = SystemClock.elapsedRealtime() + 100;
-        while (track.getPlaybackHeadPosition() < (chunks + 2) * CHUNK
-            && active.getAsBoolean() && !interrupted.get() && onPreferredOutput(track, preferred)
-            && SystemClock.elapsedRealtime() < drainDeadline) {
+        long drainDeadline=SystemClock.elapsedRealtime()+180;
+        while(track.getPlaybackHeadPosition()<primed+samples.length&&active.getAsBoolean()
+                &&!interrupted.get()&&onPreferredOutput(track,preferred)
+                &&SystemClock.elapsedRealtime()<drainDeadline){
             SystemClock.sleep(5);
         }
+    }
+
+    private static short[] synthesizeBeep() {
+        double length=.18;
+        short[] samples=new short[(int)(RATE*length)];
+        for(int i=0;i<samples.length;i++){
+            double t=(double)i/RATE;
+            double phase=2*Math.PI*660*t;
+            double edge=Math.min(1,Math.min(t/.007,(length-t)/.022));
+            samples[i]=(short)(8600*edge*(Math.sin(phase)+.19*Math.sin(phase*3)));
+        }
+        return samples;
+    }
+
+    private static short[] synthesizeBell() {
+        double length=.80;
+        short[] samples=new short[(int)(RATE*length)];
+        for(int i=0;i<samples.length;i++){
+            double t=(double)i/RATE;
+            double taper=Math.min(1,(length-t)/.065);
+            double strike=metalStrike(t)+.61*metalStrike(t-.076);
+            samples[i]=(short)(9800*taper*strike);
+        }
+        return samples;
+    }
+
+    private static double metalStrike(double t) {
+        if(t<0)return 0;
+        double phase=2*Math.PI*t;
+        return Math.min(1,t/.002)*(
+            .77*Math.sin(phase*2060)*Math.exp(-t*8)
+            +.42*Math.sin(phase*2830)*Math.exp(-t*14)
+            +.27*Math.sin(phase*4170)*Math.exp(-t*25)
+            +.19*Math.sin(phase*5510)*Math.exp(-t*45));
     }
 }

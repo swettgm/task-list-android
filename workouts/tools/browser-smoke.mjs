@@ -27,12 +27,34 @@ try{
  check(await page.getByLabel('Spotify player').isVisible(),'Compact Spotify player uses the app layout');
  await page.getByRole('button',{name:'Connect',exact:true}).click();
  check(await page.evaluate(()=>qa.connectedSpotify),'Spotify Connect opens the one-time Android access setup');
+ await page.evaluate(()=>{qa.music={connected:true,available:false,title:'',artist:''};});
+ await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Open Spotify');
+ const playerGeometry=()=>page.locator('#spotify').evaluate(player=>{
+  const bar=player.getBoundingClientRect();
+  const art=player.querySelector('#spotify-art').getBoundingClientRect();
+  const title=player.querySelector('#spotify-title').getBoundingClientRect();
+  return {height:bar.height,gaps:[art.left-bar.left,art.top-bar.top,bar.bottom-art.bottom],
+          titleOffset:(title.top+title.bottom-bar.top-bar.bottom)/2};
+ });
+ const idle=await playerGeometry();
+ check(Math.abs(idle.titleOffset)<.6,'Open Spotify is centered vertically with no artist');
  await page.evaluate(()=>{qa.music={connected:true,available:true,title:'Training track',artist:'Example artist',playing:true,art:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII='};});
  await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Training track');
  await page.getByRole('button',{name:'Pause Spotify',exact:true}).click();
  await page.getByRole('button',{name:'Next Spotify track',exact:true}).click();
  check(await page.evaluate(()=>qa.haptics>=3),'Spotify buttons provide haptic feedback');
  check(await page.evaluate(()=>qa.commands.join()==='play,next'),'Player forwards pause and next without changing workout state');
+ const playing=await playerGeometry();
+ check(playing.height===idle.height&&playing.gaps.every(gap=>Math.abs(gap-playing.gaps[0])<.6),'Playback retains identical player height and even artwork padding');
+ const spotifyTouch=await page.context().newCDPSession(page);
+ const spotifyBox=await page.locator('#spotify-open').boundingBox();
+ const x=spotifyBox.x+spotifyBox.width/2,y=spotifyBox.y+spotifyBox.height/2;
+ for(const dx of [-64,64]){
+  await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+  for(const fraction of [.3,.6,1])await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*fraction,y}]});
+  await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ }
+ check(await page.evaluate(()=>qa.commands.join()==='play,next,next,prev'&&!qa.openedSpotify),'Swiping the Spotify bar skips tracks without opening Spotify');
  for(const [name,reps,weight] of [['Barbell Curl','8, 8, 8',45],['Front/Lateral Raise','10, 10, 10',10],['Triceps Pushdown','8, 8, 8',50],['Cable Crunch','15, 15, 15',50],['Leg Extension','6, 8, 10',50],['Leg Curl','6, 8, 10',65]]){
   await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
@@ -61,10 +83,11 @@ try{
  await dialog().getByRole('button',{name:'Edit Leg Extension',exact:true}).click();
  check(await dialog().getByRole('textbox',{name:'Reps per set'}).inputValue()==='6, 8, 10','Variable rep targets are editable');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
- const editX=(await pencil.boundingBox()).x;
- const chevronX=(await page.getByRole('button',{name:'Collapse Workout A',exact:true}).boundingBox()).x;
+ const beforePencil=await pencil.boundingBox();
+ const beforeChevron=await page.getByRole('button',{name:'Collapse Workout A',exact:true}).boundingBox();
  await page.getByRole('region',{name:'Workout A',exact:true}).getByRole('button',{name:'Start workout',exact:true}).click();
- check((await pencil.boundingBox()).x===editX&&(await page.locator('#discard').boundingBox()).x===chevronX,'During the workout the trash can takes the chevron position and the pencil stays put');
+ const afterPencil=await pencil.boundingBox(),afterTrash=await page.locator('#discard').boundingBox();
+ check(afterPencil.x===beforePencil.x&&afterPencil.y===beforePencil.y&&afterTrash.x===beforeChevron.x&&afterTrash.y===beforeChevron.y,'During the workout the trash can takes the chevron position and the pencil stays put');
  check((await state()).active?.exercises.length===6&&await page.locator('.set[aria-pressed=false]').count()===18,'Start creates a saved session with one circle per set');
  await page.getByRole('button',{name:'Log set 1 of Barbell Curl',exact:true}).click();
  check((await state()).active.exercises[0].sets[0].reps===8,'One tap records the target reps');
@@ -227,7 +250,7 @@ try{
  await settings.getByRole('checkbox',{name:'Friday',exact:true}).check();
  await settings.getByRole('button',{name:'Save',exact:true}).click();
  const labels=await page.locator('.routine-date').allTextContents();
- check(labels.length===3&&['Wednesday','Friday','Monday'].every((day,i)=>labels[i].startsWith(day)),'Three selected weekdays preview Wednesday, Friday and Monday');
+ check(labels.length===3&&['Wednesday','Friday','Monday'].every((day,i)=>labels[i].startsWith(day)&&labels[i].includes('January')),'Three selected weekdays preview Wednesday, Friday and Monday');
  const scheduledNames=await page.locator('.routine').evaluateAll(cards=>cards.map(card=>card.getAttribute('aria-label')));
  check(scheduledNames.join('|')==='Workout B renamed|Workout A|Workout B renamed','Two routines rotate across all three upcoming days');
 

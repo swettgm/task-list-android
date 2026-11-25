@@ -104,12 +104,12 @@ public final class MainActivity extends Activity {
         Object token=new Object();
         restPreview=token;
         long start=SystemClock.uptimeMillis();
+        if(sound)HeadphoneCue.preview(this,seconds,()->restPreview==token);
         for(int i=0;i<=seconds;i++){
             boolean finish=i==seconds;
             restPreviewHandler.postAtTime(()->{
                 if(restPreview!=token)return;
                 RestAlarm.vibrate(this,finish?finishMs:pulseMs);
-                if(sound)HeadphoneCue.preview(this,finish,()->restPreview==token);
             },token,start+i*1000L);
         }
     }
