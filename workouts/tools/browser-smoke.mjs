@@ -92,7 +92,23 @@ try{
   await page.setViewportSize({width,height:844});
   check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Home fits at '+width+'px');
  }
+ await page.setViewportSize({width:390,height:360});
+ const headerPosition=()=>page.evaluate(()=>[...document.querySelectorAll('#app>header,#app>.tabs')].map(e=>e.getBoundingClientRect().top));
+ const fixedHeader=await headerPosition();
+ const workoutPane=page.locator('#today');
+ await workoutPane.hover();
+ await page.mouse.wheel(0,450);
+ await page.waitForFunction(()=>document.querySelector('#today').scrollTop>0);
+ check(JSON.stringify(await headerPosition())===JSON.stringify(fixedHeader)&&await page.evaluate(()=>window.scrollY===0),
+       'Long workouts scroll within the pane while the header and tabs stay pinned');
+ await page.getByRole('tab',{name:'History',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelector('#history-tab').getAttribute('aria-selected')==='true');
+ check(await page.locator('#history').evaluate(pane=>pane.scrollHeight===pane.clientHeight&&pane.scrollTop===0),
+       'Empty History has no overflow even after scrolling Today');
+ await page.getByRole('tab',{name:'Today',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelector('#today-tab').getAttribute('aria-selected')==='true');
  await page.setViewportSize({width:390,height:844});
+ await workoutPane.evaluate(pane=>pane.scrollTop=0);
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Leg Extension',exact:true}).click();
  check(await dialog().getByRole('textbox',{name:'Reps per set'}).inputValue()==='6, 8, 10','Variable rep targets are editable');

@@ -29,6 +29,11 @@ try{
  await swipe(320,70);
  await page.waitForFunction(()=>document.querySelector('#history-tab').getAttribute('aria-selected')==='true');
  check(await page.locator('#history').isVisible(),'A real left touch swipe opens History');
+ await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:180,y:520}]});
+ for(const y of [480,420,350,280])await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:180,y}]});
+ await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ check(await page.locator('#history').evaluate(pane=>pane.scrollHeight===pane.clientHeight&&pane.scrollTop===0&&window.scrollY===0),
+       'A vertical drag on empty History does not scroll the page');
  await swipe(70,320);
  await page.waitForFunction(()=>document.querySelector('#today-tab').getAttribute('aria-selected')==='true');
  check(await page.locator('#today').isVisible(),'A real right touch swipe returns to Today');

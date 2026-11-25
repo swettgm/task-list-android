@@ -1,6 +1,6 @@
 # Exercise
 
-[Download Exercise 1.0.21](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.21.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
+[Download Exercise 1.0.22](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.22.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
 
 An offline workout logger in the blue-grey gradient and white-control theme shared with Tasks, RM and Meditation. New installations start with an empty routine and history.
 
@@ -10,7 +10,7 @@ An offline workout logger in the blue-grey gradient and white-control theme shar
 - Use a + target such as 5+ for an AMRAP set. Hold any rep circle and drag up or down to select actual reps with haptics, then release to save and start rest. The circle displays the rep count as you drag. Regular sets cap reps at their target. AMRAP can go higher. Taps reduce recorded AMRAP reps in the same cycle.
 - Working-weight edits preserve logged sets and update future sets. Extra sets can be added to the active workout.
 - Unfinished sessions survive reopening. Finish saves independent history with actual sets, weights, notes and duration. History displays blank sets as zero reps and charts the heaviest completed weight per exercise.
-- Routine and exercise fields explicitly focus on touch and request the Android keyboard. Today lists every routine as a card. Tap a card to see its exercises and Start workout, and only the active routine shows rep circles. The plus beside Settings adds routines. Use each pencil to rename its routine or add, edit and reorder its exercises.
+- Routine and exercise fields explicitly focus on touch and request the Android keyboard. The Exercise header and Today and History tabs stay visible while the content scrolls. Today lists every routine as a card. Tap a card to see its exercises and Start workout, and only the active routine shows rep circles. The plus beside Settings adds routines. Use each pencil to rename its routine or add, edit and reorder its exercises.
 - Settings is a full screen with a borderless gear and visible Save/Cancel actions.
 - Rotate routines by selected weekdays or a recurring interval in Settings. The weekday schedule previews at least one full week of selected training days, repeating routines as needed.
 - Rest counts into negative time in red after the deadline. Countdown pulses can run for the last three or five seconds with an adjustable pulse length. Workout cues require a verified headphone route and Android audio focus. The countdown uses short arcade beeps and a longer, higher finish beep. Adjust Rest beep volume independently from music, or set it to 0% to mute the cues. The explicit Settings sound test may use the phone speaker. Bluetooth outputs with ambiguous names are skipped. Physical headphone routing is unverified.
