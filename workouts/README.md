@@ -1,6 +1,6 @@
 # Exercise
 
-[Download Exercise 1.0.12](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.12.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
+[Download Exercise 1.0.13](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.13.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
 
 An offline workout logger in the blue-grey gradient and white-control theme shared with Tasks, RM and Meditation. New installations start with an empty routine and history.
 
@@ -15,7 +15,8 @@ An offline workout logger in the blue-grey gradient and white-control theme shar
 - Rotate routines by selected weekdays or a recurring interval in Settings. The weekday schedule previews at least one full week of selected training days, repeating routines as needed.
 - Rest displays Go! at the end. Countdown pulses can run for the last three or five seconds with an adjustable pulse length. Cues require a verified headphone route and Android audio focus. Bluetooth outputs with ambiguous names are skipped. Physical headphone routing is unverified.
 - A draggable in-app rest timer has a shrinking progress ring, saved position, +30 seconds and Skip controls. Turn it off with Floating rest timer in Settings.
-- Enable Rest notifications in Settings for an ongoing countdown notification with progress, +30 seconds and Skip actions. Android notification permission is required. Precise-alarm access improves completion timing while the device sleeps.
+- Enable Show rest timer over other apps in Settings and grant Android overlay permission. The timer starts near the top right and remembers its position.
+- Enable Rest notifications in Settings for a one-line countdown notification with progress, +30 seconds and Skip actions. Android notification permission is required. Precise-alarm access improves completion timing while the device sleeps.
 - The compact Spotify bar fits around the album art and has solid controls, bold text and haptics. Tap Connect and enable Exercise under Android notification access, then start Spotify. Tapping the track opens Spotify. Full Spotify playlist browsing is omitted.
 - Only Spotify media sessions are used. Notification contents are never read or stored. No Spotify OAuth credentials are required.
 - Appearance, default units/rest and stepped vibration-length controls are available in Settings.
@@ -26,7 +27,7 @@ The app stores workouts privately on the device. It has no cloud account or desk
 
 ## Validation
 
-The signed release passed 35 Android tests, Android lint and browser and touch checks. These cover AMRAP persistence, real touch rep cycling/selection/cancellation, rest restart deadlines, worker-thread native timer scheduling, storage revisions, history, set logging, dragging, Spotify media commands/artwork, ongoing rest notifications/actions, floating timer position/ring, separate Settings screen, narrow-screen/editor geometry, actual touch typing in every editor field, and real touch swipes across exercise/history cards. No physical phone or live Spotify playback was tested.
+The signed release passed 36 Android tests, Android lint and browser and touch checks. These cover AMRAP persistence, real touch rep cycling/selection/cancellation, rest restart deadlines, worker-thread native timer scheduling, storage revisions, history, set logging, dragging, Spotify media commands/artwork, ongoing rest notifications/actions, floating timer position/ring, separate Settings screen, narrow-screen/editor geometry, actual touch typing in every editor field, and real touch swipes across exercise/history cards. No physical phone or live Spotify playback was tested.
 
 ## Build
 

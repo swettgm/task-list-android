@@ -16,7 +16,7 @@ try{
    readState:()=>JSON.stringify(state),
    writeState:raw=>{if(qa.fail)return null;const next=JSON.parse(raw);if((next.revision||0)!==(state.revision||0))return null;next.revision=(state.revision||0)+1;state=next;localStorage.setItem('native-workouts',JSON.stringify(state));return JSON.stringify(state);},
    ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},
-   spotifyState:()=>JSON.stringify(qa.music),spotifyCommand:command=>qa.commands.push(command),openSpotify:()=>qa.openedSpotify=true,spotifyAccess:()=>qa.connectedSpotify=true,preciseTimers:()=>true,restComplete(){qa.rest++;},previewVibration(){},requestNotifications(){}
+   spotifyState:()=>JSON.stringify(qa.music),spotifyCommand:command=>qa.commands.push(command),openSpotify:()=>qa.openedSpotify=true,spotifyAccess:()=>qa.connectedSpotify=true,preciseTimers:()=>true,restComplete(){qa.rest++;},previewVibration(){},requestNotifications(){},overlayAllowed(){return qa.overlayGranted===true;},allowOverlay(){qa.overlayRequests=(qa.overlayRequests||0)+1;}
   };
  });
  await page.goto(fixture.url);await page.waitForFunction(()=>!!window.Workouts);
@@ -225,6 +225,15 @@ try{
  await settings.getByRole('spinbutton',{name:'Train every (days)'}).fill('3');
  await settings.getByRole('button',{name:'Save',exact:true}).click();
  check((await state()).settings.schedule.every===3&&await page.locator('.routine-date').count()===2,'An every-three-days schedule saves and dates each workout');
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ await settings.getByRole('checkbox',{name:'Show rest timer over other apps',exact:true}).check();
+ await settings.getByRole('button',{name:'Save',exact:true}).click();
+ check((await state()).settings.floatOverApps&&await page.evaluate(()=>qa.overlayRequests)===1,'Enabling the overlay opens Android permission settings');
+ await page.evaluate(()=>qa.overlayGranted=true);
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ check(await settings.getByRole('checkbox',{name:'Show rest timer over other apps',exact:true}).isChecked(),'The overlay choice persists');
+ await settings.getByRole('button',{name:'Save',exact:true}).click();
+ check(await page.evaluate(()=>qa.overlayRequests)===1,'Saving with permission already granted leaves Android settings closed');
  check(errors.length===0,'No browser errors');
  console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();await fixture.close();}

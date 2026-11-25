@@ -18,7 +18,7 @@ public final class MainActivity extends Activity {
     private WebView web;
     private FrameLayout root;
     private WorkoutStore store;
-    private boolean ready,modal;
+    private boolean ready,modal,requestNotificationsAfterOverlay;
     private int top=Color.rgb(32,55,71),bottom=Color.rgb(90,92,97);
     private Object backCallback;
     private final java.util.concurrent.atomic.AtomicInteger keyboardRequest=new java.util.concurrent.atomic.AtomicInteger();
@@ -70,6 +70,10 @@ public final class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();visible=true;
         if(ready)web.evaluateJavascript("window.Workouts&&Workouts.refresh()",null);
+        if(requestNotificationsAfterOverlay){
+            requestNotificationsAfterOverlay=false;
+            askForNotificationPermission();
+        }
         try { RestAlarm.schedule(this); } catch(RuntimeException invalid) { /* The UI shows the recoverable saved-data error. */ }
     }
     @Override protected void onPause() { visible=false;super.onPause(); }
@@ -77,6 +81,10 @@ public final class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33&&backCallback!=null)BackApi33.unregister(this,backCallback);
         if(web!=null){web.removeJavascriptInterface("WorkoutNative");web.destroy();web=null;}
         super.onDestroy();
+    }
+    private void askForNotificationPermission() {
+        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},10);
     }
     @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results) {
         super.onRequestPermissionsResult(request,permissions,results);
@@ -132,9 +140,24 @@ public final class MainActivity extends Activity {
                 catch(ActivityNotFoundException ignored) { }
             });
         }
+        @JavascriptInterface public boolean overlayAllowed() {
+            return android.provider.Settings.canDrawOverlays(MainActivity.this);
+        }
+        @JavascriptInterface public void allowOverlay(boolean requestNotificationsNext) {
+            runOnUiThread(()->{
+                try {
+                    requestNotificationsAfterOverlay=requestNotificationsNext;
+                    startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:"+getPackageName())));
+                }catch(ActivityNotFoundException unavailable){
+                    requestNotificationsAfterOverlay=false;
+                    if(requestNotificationsNext)askForNotificationPermission();
+                    Toast.makeText(MainActivity.this,"Allow Exercise under Display over other apps in Android Settings.",Toast.LENGTH_LONG).show();
+                }
+            });
+        }
         @JavascriptInterface public void requestNotifications() {
-            if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
-                runOnUiThread(()->requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},10));
+            runOnUiThread(MainActivity.this::askForNotificationPermission);
         }
         @JavascriptInterface public void setThemeColors(String first,String last) {
             if(first==null||last==null||!first.matches("#[a-fA-F0-9]{6}")||!last.matches("#[a-fA-F0-9]{6}"))return;

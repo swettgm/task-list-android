@@ -89,7 +89,6 @@ public final class RestAlarm extends BroadcastReceiver {
             JSONObject state=store.read(),settings=state.optJSONObject("settings");
             long end=state.optLong("restEndAt"),now=System.currentTimeMillis();
             if(end<=0||now<end||now-end>1800000||store.prefs.getLong("announcedRest",0)==end||settings==null)return;
-            context.stopService(new Intent(context,RestTimerService.class));
             store.prefs.edit().putLong("announcedRest",end).commit();
             vibrate(context,settings.optInt("vibrationMs",350));
             if (now-end<1000 && settings.optBoolean("headphoneCues",true)) HeadphoneCue.play(context,end,true);
@@ -100,7 +99,7 @@ public final class RestAlarm extends BroadcastReceiver {
             PendingIntent open=PendingIntent.getActivity(context,2,new Intent(context,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
             try {
                 manager.notify(1,new Notification.Builder(context,CHANNEL).setSmallIcon(R.drawable.ic_notification)
-                    .setContentTitle("Rest complete").setContentText("Ready for your next set")
+                    .setContentTitle(RestTimerService.title(0)).setShowWhen(false)
                     .setContentIntent(open).setAutoCancel(true).build());
             } catch(SecurityException denied) { /* The saved workout remains available without notification permission. */ }
         }

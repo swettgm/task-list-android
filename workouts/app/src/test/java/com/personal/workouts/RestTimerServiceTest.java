@@ -2,12 +2,18 @@ package com.personal.workouts;
 
 import android.app.*;
 import android.content.*;
+import android.os.Looper;
+import android.view.WindowManager;
+import java.time.Duration;
 import org.json.JSONObject;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.robolectric.*;
 import org.robolectric.android.controller.ServiceController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadow.api.Shadow;
+import org.robolectric.shadows.ShadowSettings;
+import org.robolectric.shadows.ShadowWindowManagerImpl;
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -22,20 +28,50 @@ public class RestTimerServiceTest {
         data.getJSONObject("settings").put("notifications",true);
         assertNotNull(store.write(data.toString()));return end;
     }
-    @Test public void foregroundNotificationHasCountdownProgressAndActions()throws Exception {
+    @Test public void foregroundNotificationHasOneLineCountdownProgressAndActions()throws Exception {
         runningTimer();
         ServiceController<RestTimerService> controller=Robolectric.buildService(RestTimerService.class).create();
         controller.startCommand(0,1);
         Notification notification=shadowOf(controller.get()).getLastForegroundNotification();
         assertNotNull(notification);
-        assertTrue(notification.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER));
-        assertTrue(notification.extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN));
+        assertEquals("Rest · 1:30",notification.extras.getCharSequence(Notification.EXTRA_TITLE));
+        assertNull(notification.extras.getCharSequence(Notification.EXTRA_TEXT));
+        assertFalse(notification.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER));
         assertEquals(1000,notification.extras.getInt(Notification.EXTRA_PROGRESS_MAX));
         assertEquals(2,notification.actions.length);
         assertEquals("+30s",notification.actions[0].title.toString());
         assertEquals("Skip",notification.actions[1].title.toString());
         assertTrue((notification.flags&Notification.FLAG_ONGOING_EVENT)!=0);
         controller.destroy();
+    }
+    @Test public void overlayFollowsRestOnlyOutsideTheAppAndTearsDown()throws Exception {
+        runningTimer();
+        JSONObject inProgress=store.read();
+        inProgress.getJSONObject("settings").put("notifications",false).put("floatOverApps",true);
+        assertNotNull(store.write(inProgress.toString()));
+        ShadowSettings.setCanDrawOverlays(true);
+        MainActivity.visible=true;
+        ServiceController<RestTimerService> controller=Robolectric.buildService(RestTimerService.class).create();
+        try {
+            controller.startCommand(0,1);
+            ShadowWindowManagerImpl windows=Shadow.extract(controller.get().getSystemService(WindowManager.class));
+            assertTrue(windows.getViews().isEmpty());
+            MainActivity.visible=false;
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
+            assertEquals(1,windows.getViews().size());
+            assertTrue(windows.getViews().get(0).getContentDescription().toString().startsWith("Rest · "));
+            MainActivity.visible=true;
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
+            assertTrue(windows.getViews().isEmpty());
+            MainActivity.visible=false;
+            ShadowSettings.setCanDrawOverlays(false);
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
+            assertTrue(windows.getViews().isEmpty());
+        }finally{
+            controller.destroy();
+            MainActivity.visible=false;
+            ShadowSettings.setCanDrawOverlays(false);
+        }
     }
     @Test public void notificationMoreAddsTimeWithoutChangingWorkoutSets()throws Exception {
         long end=runningTimer();String active=store.read().getJSONObject("active").toString();

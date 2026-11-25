@@ -502,6 +502,11 @@ function restVibrationSlider(parent,label,value,max,step){
 function settings(){const m=settingsScreen(),draft=clone(state.settings);const spotify=checkbox(m.fields,'Spotify player',draft.spotify!==false);const floating=checkbox(m.fields,'Floating rest timer',draft.floatingTimer!==false);if(native)m.fields.append(button('Connect Spotify controls',()=>native.spotifyAccess()));const unit=selectField(m.fields,'Default unit',['lb','kg'],draft.unit),rest=numberField(m.fields,'Default rest in seconds',draft.rest,0,1800),notify=checkbox(m.fields,'Rest notifications',draft.notifications);
 if(native&&!native.preciseTimers())m.fields.append(button('Allow precise rest alerts',()=>native.allowPreciseTimers()));
 m.fields.append(el('h3','','Rest timer'));
+const overlay=checkbox(m.fields,'Show rest timer over other apps',draft.floatOverApps===true);
+const overlaySupported=typeof native?.overlayAllowed==='function';
+const overlayNote=el('p','small muted','Android requires display-over-other-apps permission and an ongoing notification for this timer.');
+if(overlaySupported)m.fields.append(overlayNote);
+else overlay.closest('label').hidden=true;
 const countdownOptions=['Off','Last 3 seconds','Last 5 seconds'];
 const countdown=selectField(m.fields,'Rest countdown',countdownOptions,draft.countdownSeconds===5?countdownOptions[2]:draft.countdownSeconds===0?countdownOptions[0]:countdownOptions[1]);
 const headphones=checkbox(m.fields,'Headphone beeps and bell',draft.headphoneCues!==false);
@@ -534,7 +539,7 @@ cancelSave(m,()=>{
  const schedule=mode.selectedIndex===1?{mode:'weekdays',days:selectedDays}:mode.selectedIndex===2
   ?{mode:'interval',every:interval,anchor:oldSchedule?.mode==='interval'&&oldSchedule.every===interval?oldSchedule.anchor:localDay(new Date())}
   :{mode:'off'};
- const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){if(notify.checked&&!draft.notifications)native?.requestNotifications();m.close();theme();render();}});}
+ const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){m.close();theme();render();if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);else if(notify.checked&&!draft.notifications)native?.requestNotifications();}});}
 let inferredTimer={end:0,length:1},timerDrag=null,suppressTimerClick=0;
 function remainingText(){
  const seconds=Math.max(0,Math.ceil((state.restEndAt-Date.now())/1000));
