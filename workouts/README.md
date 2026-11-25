@@ -1,6 +1,6 @@
 # Exercise
 
-[Download Exercise 1.0.11](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.11.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
+[Download Exercise 1.0.12](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.12.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
 
 An offline workout logger in the blue-grey gradient and white-control theme shared with Tasks, RM and Meditation. New installations start with an empty routine and history.
 
