@@ -65,7 +65,7 @@ body,#page-stack{touch-action:pan-y}
 #discard.danger{background:#a52335;color:#fff}
 .set[aria-pressed]{display:grid;place-items:center;touch-action:none}
 .training-days{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
-.routine{padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--text) 8%,transparent)}.routine+.routine{margin-top:12px}.toolbar-actions{display:flex;align-items:center;gap:2px;flex:none}#add-routine{padding:0}#add-routine svg{width:32px;height:32px;stroke-width:2.2}.routine-toggle{flex:1;justify-content:space-between;text-align:left;min-width:0;padding:0}.routine-toggle svg{width:16px;height:16px;opacity:.65}.routine-toggle[aria-expanded=true]>svg{transform:rotate(180deg)}.routine-name{display:block;font-size:21px;line-height:1.2;font-weight:700}.routine-start-row{display:flex;justify-content:flex-end;margin-top:8px}.routine-start{font-size:14px}.routine-body .empty{padding:8px 0}.routine-title{flex:1;min-width:0;overflow-wrap:anywhere}.routine-date{display:block;margin-top:4px}
+.routine{padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--text) 8%,transparent)}.routine+.routine{margin-top:12px}.toolbar-actions{display:flex;align-items:center;gap:2px;flex:none}#add-routine{padding:0}#add-routine svg{width:32px;height:32px;stroke-width:2.2}.routine-toggle{flex:1;justify-content:space-between;text-align:left;min-width:0;padding:0}.routine-chevron svg{width:26px;height:26px;opacity:.8}.routine-chevron[aria-expanded=true]>svg{transform:rotate(180deg)}.routine-name{display:block;font-size:21px;line-height:1.2;font-weight:700}.routine-start-row{display:flex;justify-content:flex-end;margin-top:8px}.routine-start{font-size:14px}.routine-body .empty{padding:8px 0}.routine-title{flex:1;min-width:0;overflow-wrap:anywhere}.routine-date{display:block;margin-top:4px}
 .set-reps{line-height:1;text-box:trim-both cap alphabetic;pointer-events:none}
 .workout-edit-actions{display:flex;flex-wrap:wrap;gap:8px}.workout-edit-list{display:grid;gap:6px}.workout-edit-row{display:flex;gap:8px;touch-action:pan-y}.workout-edit-exercise{flex:1;justify-content:flex-start;text-align:left;overflow-wrap:anywhere;min-width:0}.exercise-plan{min-height:0}
 .progress-info{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.progress-graph{width:72px;height:24px;flex:none}
@@ -77,7 +77,6 @@ body,#page-stack{touch-action:pan-y}
 <nav class="tabs" role="tablist" aria-label="Workouts"><button id="today-tab" role="tab" aria-selected="true" aria-controls="today">Today</button><button id="history-tab" role="tab" aria-selected="false" aria-controls="history">History</button></nav>
 <div id="page-stack">
 <section id="today" role="tabpanel" aria-labelledby="today-tab">
-<p id="today-date" class="date"></p>
 <div id="routine-list"></div>
 <template id="session-template"><div id="session-bar" class="session-bar"><span id="elapsed" class="elapsed"></span><div class="row"><button id="discard" class="icon bare" aria-label="Discard workout"></button><button id="finish" class="primary">Finish</button></div></div></template>
 </section>
@@ -187,9 +186,10 @@ const dayMs=86400000;
 function localDay(date){
  return Math.floor(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())/dayMs);
 }
-function routineDates(today){
- const dates=new Map(),schedule=state.settings.schedule;
- if(!schedule||schedule.mode==='off'||!state.routines.length)return dates;
+function routineSlots(today){
+ const schedule=state.settings.schedule,routines=state.routines;
+ const unscheduled=()=>routines.map(routine=>({routine,day:null}));
+ if(!schedule||schedule.mode==='off'||!routines.length)return unscheduled();
  const todayDay=localDay(today);
  let latest=null;
  for(const session of state.history){
@@ -200,31 +200,34 @@ function routineDates(today){
  const isScheduled=schedule.mode==='weekdays'
   ?candidate=>schedule.days.includes(new Date(candidate*dayMs).getUTCDay())
   :candidate=>(candidate-schedule.anchor)%schedule.every===0;
- for(let i=0;i<state.routines.length;i++){
+ const slots=[];
+ const count=Math.max(routines.length,schedule.mode==='weekdays'?schedule.days.length:0);
+ for(let i=0;i<count;i++){
   let attempts=0;
   while(!isScheduled(day)&&attempts++<30)day++;
-  if(!isScheduled(day))break;
-  const routine=state.routines[(startIndex+i)%state.routines.length];
-  dates.set(routine.id,day++);
+  if(!isScheduled(day))return unscheduled();
+  slots.push({routine:routines[(startIndex+i)%routines.length],day:day++});
  }
- return dates;
+ return slots;
 }
 const expandedRoutines=new Set();
 function renderToday(){
  const date=new Date();
- $('today-date').textContent=dateText(date,{weekday:'long',month:'short',day:'numeric'});
  const host=$('routine-list'),sessionBar=$('session-bar');
  host.replaceChildren();
- const dates=routineDates(date);
- const routines=[...state.routines].sort((a,b)=>(dates.get(a.id)??0)-(dates.get(b.id)??0));
- for(const routine of routines){
-  const active=liveRoutine(state,routine.id),source=active||routine;
+ const slots=routineSlots(date);
+ const activeRoutineId=state.active?.routineId;
+ const activeSlot=slots.find(slot=>slot.routine.id===activeRoutineId&&slot.day===state.active?.scheduledDay)
+   ||slots.find(slot=>slot.routine.id===activeRoutineId);
+ for(const slot of slots){
+  const {routine,day}=slot;
+  const active=slot===activeSlot?state.active:null,source=active||routine;
+  const cardKey=day===null?routine.id:routine.id+'-'+day;
   const section=el('section','routine');
   section.setAttribute('aria-label',routine.name);
-  const heading=el('div','routine-heading'),title=el('div','routine-title');
+  const heading=el('div','routine-heading'),title=el('span','routine-title');
   title.append(el('span','routine-name',source.name));
-  if(dates.has(routine.id)){
-   const day=dates.get(routine.id);
+  if(day!==null){
    const label=day===localDay(date)?'Scheduled today':dateText(day*dayMs,{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'});
    title.append(el('span','routine-date small muted',label));
   }
@@ -232,34 +235,39 @@ function renderToday(){
   edit.setAttribute('aria-label','Edit '+routine.name);
   edit.append(icon('pencil'));
   const panel=el('div','routine-body');
-  panel.id='routine-body-'+routine.id;
+  panel.id='routine-body-'+cardKey;
   if(active){
    heading.append(title,edit);
    panel.append(sessionBar||$('session-template').content.cloneNode(true));
   }else{
-   const toggle=button('',()=>{
-    if(expandedRoutines.has(routine.id))expandedRoutines.delete(routine.id);
-    else expandedRoutines.add(routine.id);
+   const toggleOpen=()=>{
+    if(expandedRoutines.has(cardKey))expandedRoutines.delete(cardKey);
+    else expandedRoutines.add(cardKey);
     updateDisclosure();
     haptic();
-   },'bare routine-toggle');
+   };
+   const toggle=button('',toggleOpen,'bare routine-toggle');
+   const chevron=button('',toggleOpen,'icon bare routine-chevron');
+   chevron.append(icon('chevron'));
    const updateDisclosure=()=>{
-    const open=expandedRoutines.has(routine.id);
+    const open=expandedRoutines.has(cardKey);
     panel.hidden=!open;
     toggle.setAttribute('aria-expanded',String(open));
+    chevron.setAttribute('aria-expanded',String(open));
+    chevron.setAttribute('aria-label',(open?'Collapse ':'Expand ')+routine.name);
    };
    toggle.setAttribute('aria-label',routine.name);
-   toggle.setAttribute('aria-controls',panel.id);
-   toggle.append(title,icon('chevron'));
+   for(const control of [toggle,chevron])control.setAttribute('aria-controls',panel.id);
+   toggle.append(title);
    updateDisclosure();
-   heading.append(toggle,edit);
+   heading.append(toggle,edit,chevron);
    section.addEventListener('click',event=>{if(event.target===section&&panel.hidden)toggle.click();});
   }
   if(!source.exercises.length)panel.append(el('p','empty','Tap the pencil to add exercises.'));
   for(const exercise of source.exercises)panel.append(renderExercise(exercise,active));
   if(!active&&source.exercises.length){
    const footer=el('div','routine-start-row');
-   const startButton=button('Start workout',()=>start(routine.id),'primary routine-start');
+   const startButton=button('Start workout',()=>start(routine.id,day),'primary routine-start');
    startButton.disabled=!!state.active;
    footer.append(startButton);
    panel.append(footer);
@@ -331,7 +339,7 @@ cancelSave(m,()=>{const tokens=targets.value.trim().split(/[,/\s]+/).filter(Bool
 const valueExercise={id:original?.id||id(),name:name.value.trim(),weight:value,unit:unit.value,rest:restValue,notes:note.value,sets:reps.map((target,i)=>({target,amrap:tokens[i].endsWith('+'),weight:value,reps:null}))};
 if(active&&original&&original.sets.some(hasLoggedReps)&&original.unit!==unit.value){m.error.textContent='Keep the unit for logged sets. Change it before the next workout.';return;}
 if(save(next=>{const r=next.routines.find(r=>r.id===routineId);if(r){const index=r.exercises.findIndex(e=>e.id===valueExercise.id);if(index<0)r.exercises.push(clone(valueExercise));else r.exercises[index]=clone(valueExercise);}const session=liveRoutine(next,routineId);if(session){const index=session.exercises.findIndex(e=>e.id===valueExercise.id);const live=clone(valueExercise);if(index>=0)live.sets=live.sets.map((set,i)=>hasLoggedReps(original.sets[i])?{...set,reps:original.sets[i].reps,weight:original.sets[i].weight}:set);if(index<0)session.exercises.push(live);else session.exercises[index]=live;}},m.error)){m.close();render();}},original?'Save':'Add');}
-function start(routineId){const source=state.routines.find(r=>r.id===routineId);if(state.active||!source?.exercises.length)return;if(save(next=>{if(next.active)throw Error('Workout already active');next.active={id:id(),routineId:source.id,name:source.name,startedAt:Date.now(),finishedAt:0,notes:'',exercises:clone(source.exercises).map(e=>({...e,sets:e.sets.map(s=>({...s,reps:null}))}))};next.restEndAt=0;})){haptic();render();}}
+function start(routineId,scheduledDay){const source=state.routines.find(r=>r.id===routineId);if(state.active||!source?.exercises.length)return;if(save(next=>{if(next.active)throw Error('Workout already active');next.active={id:id(),routineId:source.id,scheduledDay,name:source.name,startedAt:Date.now(),finishedAt:0,notes:'',exercises:clone(source.exercises).map(e=>({...e,sets:e.sets.map(s=>({...s,reps:null}))}))};next.restEndAt=0;})){haptic();render();}}
 function repLimit(set){return set.amrap?100:set.target;}
 function repLabel(set,reps){
  return reps==null?String(set.target)+(set.amrap?'+':''):String(reps);

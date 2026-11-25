@@ -44,7 +44,12 @@ try{
  check((await state()).settings.notifications===false,'Notifications are disabled by default');
  const workoutA=page.getByRole('button',{name:'Workout A',exact:true});
  check(await workoutA.getAttribute('aria-expanded')==='false','Routine cards begin collapsed');
- await workoutA.click();
+ const arrow=page.getByRole('button',{name:'Expand Workout A',exact:true});
+ const pencil=page.getByRole('button',{name:'Edit Workout A',exact:true});
+ check((await arrow.boundingBox()).x>(await pencil.boundingBox()).x&&await arrow.locator('svg').evaluate(svg=>svg.getBoundingClientRect().width===26),'The larger chevron sits to the right of the pencil');
+ check(await page.locator('#today-date').count()===0,'Today opens straight into the routine cards');
+ await arrow.click();
+ check(await workoutA.getAttribute('aria-expanded')==='true','The right chevron opens the card');
  check(await page.locator('.exercise:visible').count()===6&&(await state()).active===null,'Opening a card reveals exercise rows without starting a workout');
  check(await page.locator('.exercise').first().evaluate(row=>parseFloat(getComputedStyle(row).borderBottomWidth)===0),'The routine cards separate exercises without divider lines');
  for(const width of [320,390,600]){
@@ -204,6 +209,17 @@ try{
  check(preferences.countdownSeconds===5&&preferences.countdownVibrationMs===120,'Rest countdown duration and pulse length save independently');
  check(preferences.schedule.days.join() === '1,3'&&await page.locator('.routine-date').count()===2,'The weekday schedule labels both routines');
  check(await page.locator('.routine').first().getAttribute('aria-label')==='Workout B renamed','The next routine follows the latest completed workout');
+ const tuesday=new Date(2040,0,1,12);
+ tuesday.setDate(tuesday.getDate()+(2-tuesday.getDay()+7)%7);
+ await page.clock.setFixedTime(tuesday);
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ await settings.getByRole('checkbox',{name:'Friday',exact:true}).check();
+ await settings.getByRole('button',{name:'Save',exact:true}).click();
+ const labels=await page.locator('.routine-date').allTextContents();
+ check(labels.length===3&&['Wednesday','Friday','Monday'].every((day,i)=>labels[i].startsWith(day)),'Three selected weekdays preview Wednesday, Friday and Monday');
+ const scheduledNames=await page.locator('.routine').evaluateAll(cards=>cards.map(card=>card.getAttribute('aria-label')));
+ check(scheduledNames.join('|')==='Workout B renamed|Workout A|Workout B renamed','Two routines rotate across all three upcoming days');
+
  await page.getByRole('button',{name:'Settings',exact:true}).click();
  await settings.getByRole('combobox',{name:'Schedule',exact:true}).selectOption('Every few days');
  await settings.getByRole('spinbutton',{name:'Train every (days)'}).fill('3');
