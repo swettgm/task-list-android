@@ -11,8 +11,6 @@ import org.json.JSONObject;
 public final class RestTimerService extends Service {
     static final int NOTIFICATION=2;
     static final String CHANNEL="rest_countdown";
-    static final String MORE="com.personal.workouts.REST_MORE";
-    static final String SKIP="com.personal.workouts.REST_SKIP";
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final Runnable update=this::tick;
     static final String OPEN_CONTROLS="com.personal.workouts.OPEN_REST_CONTROLS";
@@ -44,9 +42,6 @@ public final class RestTimerService extends Service {
         try { context.startForegroundService(new Intent(context,RestTimerService.class)); }
         catch(RuntimeException unavailable) { /* The scheduled completion alarm remains available. */ }
     }
-    private PendingIntent action(String name,int code) {
-        return PendingIntent.getBroadcast(this,code,new Intent(this,RestAlarm.class).setAction(name),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-    }
     static String title(long remaining) {
         return remaining>0?"Rest · "+FloatingRestTimer.formatTime(remaining):COMPLETE_TITLE;
     }
@@ -59,9 +54,7 @@ public final class RestTimerService extends Service {
             .setOngoing(true).setOnlyAlertOnce(true).setContentIntent(open);
         if(remaining>0)builder.setProgress(1000,(int)Math.min(1000,remaining*1000/length),false);
         else builder.setContentText(COMPLETE_TEXT);
-        return builder.addAction(new Notification.Action.Builder(null,"+30s",action(MORE,3)).build())
-            .addAction(new Notification.Action.Builder(null,"Skip",action(SKIP,4)).build())
-            .build();
+        return builder.build();
     }
     @Override public void onCreate() {
         super.onCreate();

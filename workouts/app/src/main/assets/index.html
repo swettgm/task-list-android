@@ -47,9 +47,9 @@ body.settings-open{padding-bottom:16px}
 #rest-float svg{position:absolute;inset:0;width:76px;height:76px;transform:rotate(-90deg)}
 #rest-float circle{fill:none;stroke-width:4}
 #rest-float .timer-track{stroke:var(--line)}
-#rest-float .timer-ring{stroke:var(--text);stroke-dasharray:100;stroke-dashoffset:0;transition:stroke-dashoffset .25s linear}
+#rest-float .timer-ring{stroke:var(--text);stroke-width:4.6;stroke-dasharray:100;stroke-dashoffset:0;transition:stroke-dashoffset .25s linear}
 #rest-time.overdue,.rest-modal-time.overdue{color:#ff6b7c}
-#rest-time{font-size:16px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
+#rest-time{font-size:20px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
 .rest-modal-time{font-size:36px;text-align:center;font-variant-numeric:tabular-nums}
 
 .settings-screen{height:calc(var(--height,100dvh) - 32px);display:flex;flex-direction:column;min-height:0}
@@ -107,7 +107,7 @@ function id(){return Date.now().toString(36)+'-'+Math.random().toString(36).slic
 function haptic(){try{native?.haptic();}catch(_){}}
 function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,2400);}
 function dateText(value,options={month:'short',day:'numeric',weekday:'short'}){return new Intl.DateTimeFormat(undefined,options).format(new Date(value));}
-function duration(ms){const seconds=Math.max(0,Math.floor(ms/1000));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}
+function duration(ms){const seconds=Math.max(0,Math.floor(ms/1000));return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');}
 function hasLoggedReps(set){return Number.isInteger(set?.reps)&&set.reps>=0;}
 function completed(session){return session.exercises.reduce((n,e)=>n+e.sets.filter(hasLoggedReps).length,0);}
 function total(session){return session.exercises.reduce((n,e)=>n+e.sets.length,0);}
@@ -214,7 +214,7 @@ function routineSlots(today){
 const expandedRoutines=new Set();
 function renderToday(){
  const date=new Date();
- const host=$('routine-list'),sessionBar=$('session-bar');
+ const host=$('routine-list'),sessionBar=$('session-bar'),discard=$('discard');
  host.replaceChildren();
  const slots=routineSlots(date);
  const activeRoutineId=state.active?.routineId;
@@ -238,8 +238,8 @@ function renderToday(){
   const panel=el('div','routine-body');
   panel.id='routine-body-'+cardKey;
   if(active){
-   heading.append(title,edit);
    panel.append(sessionBar||$('session-template').content.cloneNode(true));
+   heading.append(title,edit,discard||panel.querySelector('#discard'));
   }else{
    const toggleOpen=()=>{
     if(expandedRoutines.has(cardKey))expandedRoutines.delete(cardKey);
@@ -585,7 +585,11 @@ function placeTimer(position=state.settings.timerPosition){
 }
 function tick(){
  if(!state)return;
- if(state.active&&$('elapsed'))$('elapsed').textContent=duration(Date.now()-state.active.startedAt)+' · '+completed(state.active)+'/'+total(state.active)+' sets';
+ if(state.active&&$('elapsed')){
+  const setCount=total(state.active);
+  const percent=setCount?Math.round(completed(state.active)*100/setCount):0;
+  $('elapsed').textContent=duration(Date.now()-state.active.startedAt)+' · '+percent+'%';
+ }
  const end=state.restEndAt,delta=end-Date.now(),remaining=Math.max(0,delta);
  $('rest').hidden=!end||!state.active||state.settings.floatingTimer===false||settingsOpen||native?.floatingRestVisible?.()===true;
  const label=remainingText(delta);

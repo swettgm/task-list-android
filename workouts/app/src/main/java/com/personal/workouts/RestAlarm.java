@@ -105,21 +105,6 @@ public final class RestAlarm extends BroadcastReceiver {
         }
     }
     @Override public void onReceive(Context context,Intent intent) {
-        if(RestTimerService.MORE.equals(intent.getAction())||RestTimerService.SKIP.equals(intent.getAction())){
-            synchronized(WorkoutStore.LOCK){
-                WorkoutStore store=new WorkoutStore(context);JSONObject state=store.read();
-                if(state.isNull("active"))return;
-                try {
-                    if(RestTimerService.SKIP.equals(intent.getAction()))state.put("restEndAt",0);
-                    else {
-                        long now=System.currentTimeMillis(),end=state.optLong("restEndAt");
-                        if(end<=now)state.put("restStartedAt",now).put("restDurationMs",30000);
-                        else state.put("restDurationMs",state.optLong("restDurationMs",end-now)+30000);
-                        state.put("restEndAt",Math.max(now,end)+30000);
-                    }
-                    if(store.write(state.toString())!=null)schedule(context);
-                }catch(org.json.JSONException ignored){ }
-            }
-        }else complete(context);
+        if(intent.getAction()==null)complete(context);
     }
 }

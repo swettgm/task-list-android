@@ -61,10 +61,15 @@ try{
  await dialog().getByRole('button',{name:'Edit Leg Extension',exact:true}).click();
  check(await dialog().getByRole('textbox',{name:'Reps per set'}).inputValue()==='6, 8, 10','Variable rep targets are editable');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ const editX=(await pencil.boundingBox()).x;
+ const chevronX=(await page.getByRole('button',{name:'Collapse Workout A',exact:true}).boundingBox()).x;
  await page.getByRole('region',{name:'Workout A',exact:true}).getByRole('button',{name:'Start workout',exact:true}).click();
+ check((await pencil.boundingBox()).x===editX&&(await page.locator('#discard').boundingBox()).x===chevronX,'During the workout the trash can takes the chevron position and the pencil stays put');
  check((await state()).active?.exercises.length===6&&await page.locator('.set[aria-pressed=false]').count()===18,'Start creates a saved session with one circle per set');
  await page.getByRole('button',{name:'Log set 1 of Barbell Curl',exact:true}).click();
  check((await state()).active.exercises[0].sets[0].reps===8,'One tap records the target reps');
+ await page.waitForFunction(()=>document.querySelector('#elapsed')?.textContent.endsWith(' · 6%'));
+ check(/^0:\d{2} · 6%$/.test(await page.locator('#elapsed').textContent()),'Elapsed workout time uses unpadded minutes and rounds completion to a whole percent');
  check((await state()).restEndAt>Date.now()&&await page.getByLabel('Rest timer').isVisible(),'A completed set starts the rest timer');
  await page.getByRole('button',{name:'Edit set 1 of Barbell Curl',exact:true}).click();
  await page.getByRole('button',{name:'Edit set 1 of Barbell Curl',exact:true}).click();

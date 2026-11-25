@@ -128,13 +128,18 @@ final class FloatingRestTimer extends View {
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setColor((foreground&0xffffff)|0x45000000);
         canvas.drawCircle(center,center,radius,paint);
+        paint.setStrokeWidth(getWidth()*(4.6f/84f));
         paint.setColor(foreground);
         if(progress>0)canvas.drawArc(center-radius,center-radius,center+radius,center+radius,-90,360*progress,false,paint);
         paint.setStyle(Paint.Style.FILL);
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setColor(overdue?OVERDUE:foreground);
         paint.setTypeface(timerFont);
-        paint.setTextSize(dp(16));
+        paint.setTextSize(dp(20));
+        float labelWidth=paint.measureText(label);
+        float maxLabelWidth=2*radius-dp(6);
+        if(labelWidth>maxLabelWidth&&maxLabelWidth>0)
+            paint.setTextSize(paint.getTextSize()*maxLabelWidth/labelWidth);
         canvas.drawText(label,center,center-(paint.ascent()+paint.descent())/2,paint);
     }
 

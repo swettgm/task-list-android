@@ -28,7 +28,7 @@ public class RestTimerServiceTest {
         data.getJSONObject("settings").put("notifications",true);
         assertNotNull(store.write(data.toString()));return end;
     }
-    @Test public void foregroundNotificationHasOneLineCountdownProgressAndActions()throws Exception {
+    @Test public void foregroundNotificationHasOneLineCountdownWithoutActions()throws Exception {
         runningTimer();
         ServiceController<RestTimerService> controller=Robolectric.buildService(RestTimerService.class).create();
         controller.startCommand(0,1);
@@ -38,9 +38,7 @@ public class RestTimerServiceTest {
         assertNull(notification.extras.getCharSequence(Notification.EXTRA_TEXT));
         assertFalse(notification.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER));
         assertEquals(1000,notification.extras.getInt(Notification.EXTRA_PROGRESS_MAX));
-        assertEquals(2,notification.actions.length);
-        assertEquals("+30s",notification.actions[0].title.toString());
-        assertEquals("Skip",notification.actions[1].title.toString());
+        assertTrue(notification.actions==null||notification.actions.length==0);
         assertTrue((notification.flags&Notification.FLAG_ONGOING_EVENT)!=0);
         controller.destroy();
     }
@@ -83,23 +81,5 @@ public class RestTimerServiceTest {
             MainActivity.visible=false;
             ShadowSettings.setCanDrawOverlays(false);
         }
-    }
-    @Test public void notificationMoreAddsTimeWithoutChangingWorkoutSets()throws Exception {
-        long end=runningTimer();String active=store.read().getJSONObject("active").toString();
-        new RestAlarm().onReceive(context,new Intent(context,RestAlarm.class).setAction(RestTimerService.MORE));
-        assertEquals(end+30000,store.read().getLong("restEndAt"));
-        assertEquals(120000,store.read().getLong("restDurationMs"));
-        assertEquals(active,store.read().getJSONObject("active").toString());
-    }
-    @Test public void notificationSkipClearsOnlyTheRestDeadline()throws Exception {
-        runningTimer();String active=store.read().getJSONObject("active").toString();
-        new RestAlarm().onReceive(context,new Intent(context,RestAlarm.class).setAction(RestTimerService.SKIP));
-        assertEquals(0,store.read().getLong("restEndAt"));
-        assertEquals(active,store.read().getJSONObject("active").toString());
-    }
-    @Test public void oldActionsCannotCreateATimerWithoutAWorkout()throws Exception {
-        store.write(WorkoutStoreTest.fixture().toString());
-        new RestAlarm().onReceive(context,new Intent(context,RestAlarm.class).setAction(RestTimerService.MORE));
-        assertEquals(0,store.read().getLong("restEndAt"));
     }
 }
