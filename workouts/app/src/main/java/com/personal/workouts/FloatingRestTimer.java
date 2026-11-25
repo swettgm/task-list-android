@@ -16,11 +16,15 @@ final class FloatingRestTimer extends View {
     private final WindowManager.LayoutParams layout;
     private final WorkoutStore store;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Typeface timerFont=Build.VERSION.SDK_INT>=28
+        ?Typeface.create(Typeface.create("sans-serif",Typeface.NORMAL),750,false)
+        :Typeface.create("sans-serif",Typeface.BOLD);
+    private static final int OVERDUE=0xffff6b7c;
     private final int margin, slop;
     private float positionX=1f,positionY=0f;
     private float startX,startY;
     private int startLeft,startTop;
-    private boolean dragging,attached;
+    private boolean dragging,attached,overdue;
     private int roomX,roomY,foreground,background;
     private float progress;
     private String label="";
@@ -38,8 +42,14 @@ final class FloatingRestTimer extends View {
         layout.gravity=Gravity.TOP|Gravity.LEFT;
         layout.setTitle("Exercise rest timer");
         setClickable(true);
+        setOutlineProvider(new ViewOutlineProvider(){
+            @Override public void getOutline(View view,Outline outline){
+                outline.setOval(0,0,view.getWidth(),view.getHeight());
+            }
+        });
+        setElevation(dp(6));
         setOnClickListener(v->{
-            Intent intent=new Intent(context,MainActivity.class)
+            Intent intent=new Intent(context,MainActivity.class).setAction(RestTimerService.OPEN_CONTROLS)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
             try {context.startActivity(intent);}catch(RuntimeException ignored){ /* Android may restrict launches. */ }
         });
@@ -56,17 +66,23 @@ final class FloatingRestTimer extends View {
 
     boolean show() {
         JSONObject settings=store.read().optJSONObject("settings");
-        JSONObject position=settings==null?null:settings.optJSONObject("overlayTimerPosition");
+        JSONObject position=settings==null?null:settings.optJSONObject("timerPosition");
+        if(position==null&&settings!=null)position=settings.optJSONObject("overlayTimerPosition");
+        updateRoom();
         if(position!=null){
             positionX=clampFraction(position.optDouble("x",1),1);
             positionY=clampFraction(position.optDouble("y",0),0);
+        }else if(settings!=null){
+            positionX=clampFraction((roomX-dp(8))/(double)Math.max(1,roomX),1);
+            positionY=clampFraction((roomY-dp(settings.optBoolean("spotify",true)?106:16))/(double)Math.max(1,roomY),0);
         }
-        updateRoom();
         layout.x=margin+Math.round(positionX*roomX);
         layout.y=margin+Math.round(positionY*roomY);
         try {windows.addView(this,layout);attached=true;return true;}
         catch(RuntimeException unavailable){return false;}
     }
+
+    boolean isShowing(){return attached;}
 
     void remove() {
         if(attached){
@@ -80,8 +96,9 @@ final class FloatingRestTimer extends View {
         foreground=Color.parseColor(settings.optString("text","#f4f7fa"));
         background=Color.parseColor(settings.optString("top","#203747"));
         long duration=Math.max(1,state.optLong("restDurationMs",Math.max(remaining,90000)));
-        progress=Math.min(1f,(float)remaining/duration);
-        String nextLabel=remaining>0?formatTime(remaining):"Go!";
+        progress=Math.max(0,Math.min(1f,(float)remaining/duration));
+        overdue=remaining<=0;
+        String nextLabel=formatTime(remaining);
         if(!label.equals(nextLabel)){
             label=nextLabel;
             setContentDescription("Rest · "+label+". Open Exercise");
@@ -96,27 +113,28 @@ final class FloatingRestTimer extends View {
     }
 
     static String formatTime(long milliseconds) {
-        long seconds=(Math.max(0,milliseconds)+999)/1000;
-        return String.format(Locale.getDefault(),"%d:%02d",seconds/60,seconds%60);
+        long seconds=milliseconds>0?(milliseconds+999)/1000:Math.abs(milliseconds)/1000;
+        return (milliseconds<=0?"-":"")+String.format(Locale.getDefault(),"%d:%02d",seconds/60,seconds%60);
     }
 
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        float center=getWidth()/2f,radius=center-dp(3);
+        float center=getWidth()/2f,radius=getWidth()*(36f/84f);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(background);
-        canvas.drawCircle(center,center,radius+dp(1),paint);
+        canvas.drawCircle(center,center,center,paint);
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(dp(3));
+        paint.setStrokeWidth(getWidth()*(4f/84f));
         paint.setStrokeCap(Paint.Cap.ROUND);
-        paint.setColor((foreground&0xffffff)|0x50000000);
+        paint.setColor((foreground&0xffffff)|0x45000000);
         canvas.drawCircle(center,center,radius,paint);
         paint.setColor(foreground);
         if(progress>0)canvas.drawArc(center-radius,center-radius,center+radius,center+radius,-90,360*progress,false,paint);
         paint.setStyle(Paint.Style.FILL);
         paint.setTextAlign(Paint.Align.CENTER);
-        paint.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
-        paint.setTextSize(dp(17));
+        paint.setColor(overdue?OVERDUE:foreground);
+        paint.setTypeface(timerFont);
+        paint.setTextSize(dp(16));
         canvas.drawText(label,center,center-(paint.ascent()+paint.descent())/2,paint);
     }
 
@@ -152,7 +170,7 @@ final class FloatingRestTimer extends View {
             JSONObject state=store.read(),settings=state.optJSONObject("settings");
             if(settings==null)return;
             try {
-                settings.put("overlayTimerPosition",new JSONObject().put("x",positionX).put("y",positionY));
+                settings.put("timerPosition",new JSONObject().put("x",positionX).put("y",positionY));
                 store.write(state.toString());
             }catch(org.json.JSONException ignored){ }
         }

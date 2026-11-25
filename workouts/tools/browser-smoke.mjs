@@ -16,7 +16,7 @@ try{
    readState:()=>JSON.stringify(state),
    writeState:raw=>{if(qa.fail)return null;const next=JSON.parse(raw);if((next.revision||0)!==(state.revision||0))return null;next.revision=(state.revision||0)+1;state=next;localStorage.setItem('native-workouts',JSON.stringify(state));return JSON.stringify(state);},
    ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},
-   spotifyState:()=>JSON.stringify(qa.music),spotifyCommand:command=>qa.commands.push(command),openSpotify:()=>qa.openedSpotify=true,spotifyAccess:()=>qa.connectedSpotify=true,preciseTimers:()=>true,restComplete(){qa.rest++;},previewVibration(){},requestNotifications(){},overlayAllowed(){return qa.overlayGranted===true;},allowOverlay(){qa.overlayRequests=(qa.overlayRequests||0)+1;}
+   spotifyState:()=>JSON.stringify(qa.music),spotifyCommand:command=>qa.commands.push(command),openSpotify:()=>qa.openedSpotify=true,spotifyAccess:()=>qa.connectedSpotify=true,preciseTimers:()=>true,restComplete(){qa.rest++;},previewVibration(){},requestNotifications(){},overlayAllowed(){return qa.overlayGranted===true;},allowOverlay(){qa.overlayRequests=(qa.overlayRequests||0)+1;},previewRestSequence(...args){qa.preview=args;},stopRestSequence(){qa.previewStopped=true;}
   };
  });
  await page.goto(fixture.url);await page.waitForFunction(()=>!!window.Workouts);
@@ -80,11 +80,11 @@ try{
  await page.evaluate(()=>{
   const realNow=Date.now;
   const end=Workouts.debug().restEndAt;
-  Date.now=()=>Math.max(realNow(),end+1);
+  Date.now=()=>Math.max(realNow(),end+3001);
   setTimeout(()=>Date.now=realNow,900);
  });
- await page.waitForFunction(()=>document.querySelector('#rest-time').textContent==='Go!');
- check(await page.locator('#rest-time').textContent()==='Go!','The rest circle says Go! after the deadline');
+ await page.waitForFunction(()=>document.querySelector('#rest-time').textContent==='-0:03');
+ check(await page.locator('#rest-time.overdue').textContent()==='-0:03','The rest circle counts negative time after the deadline');
  await page.getByRole('button',{name:'Rest controls',exact:true}).click();
  await dialog().getByRole('button',{name:'Skip rest',exact:true}).click();
  check((await state()).restEndAt===0,'Rest can be skipped');
@@ -202,6 +202,12 @@ try{
  const settings=page.locator('#settings-screen');
  await settings.getByRole('combobox',{name:'Rest countdown'}).selectOption('Last 5 seconds');
  await settings.getByRole('slider',{name:'Countdown pulse length'}).fill('0.12');
+ const deadlineBeforePreview=(await state()).restEndAt;
+ await settings.getByRole('button',{name:'Play test',exact:true}).click();
+ check(await page.evaluate(()=>qa.preview.join() === '5,120,350,true')&&(await state()).restEndAt===deadlineBeforePreview,'Play test uses the staged settings without changing the rest timer');
+ await settings.getByRole('button',{name:'Stop test',exact:true}).click();
+ check(await page.evaluate(()=>qa.previewStopped),'The settings preview can be stopped');
+
  await settings.getByRole('combobox',{name:'Schedule',exact:true}).selectOption('Selected weekdays');
  await settings.getByRole('checkbox',{name:'Friday',exact:true}).uncheck();
  await settings.getByRole('button',{name:'Save',exact:true}).click();

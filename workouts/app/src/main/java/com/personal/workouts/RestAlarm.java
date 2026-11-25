@@ -53,7 +53,7 @@ public final class RestAlarm extends BroadcastReceiver {
         return end - 1000 * Math.min(seconds, (remaining - 1) / 1000);
     }
 
-    private static void vibrate(Context context, int ms) {
+    static void vibrate(Context context, int ms) {
         if (ms <= 0) return;
         Vibrator vibrator = (Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);
         if (vibrator != null && vibrator.hasVibrator()) vibrator.vibrate(VibrationEffect.createOneShot(ms,VibrationEffect.DEFAULT_AMPLITUDE));
@@ -92,14 +92,14 @@ public final class RestAlarm extends BroadcastReceiver {
             store.prefs.edit().putLong("announcedRest",end).commit();
             vibrate(context,settings.optInt("vibrationMs",350));
             if (now-end<1000 && settings.optBoolean("headphoneCues",true)) HeadphoneCue.play(context,end,true);
-            if(!settings.optBoolean("notifications")||MainActivity.visible)return;
+            if(!settings.optBoolean("notifications")||MainActivity.visible||RestTimerService.isFloatingVisible())return;
             NotificationManager manager=context.getSystemService(NotificationManager.class);
             NotificationChannel channel=new NotificationChannel(CHANNEL,"Rest timer",NotificationManager.IMPORTANCE_LOW);
             channel.setSound(null,null);channel.enableVibration(false);manager.createNotificationChannel(channel);
             PendingIntent open=PendingIntent.getActivity(context,2,new Intent(context,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
             try {
                 manager.notify(1,new Notification.Builder(context,CHANNEL).setSmallIcon(R.drawable.ic_notification)
-                    .setContentTitle(RestTimerService.title(0)).setShowWhen(false)
+                    .setContentTitle("Rest complete").setContentText("Ready for your next set").setShowWhen(false)
                     .setContentIntent(open).setAutoCancel(true).build());
             } catch(SecurityException denied) { /* The saved workout remains available without notification permission. */ }
         }

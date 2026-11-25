@@ -21,10 +21,14 @@ public final class MainActivity extends Activity {
     private boolean ready,modal,requestNotificationsAfterOverlay;
     private int top=Color.rgb(32,55,71),bottom=Color.rgb(90,92,97);
     private Object backCallback;
+    private final Handler restPreviewHandler=new Handler(Looper.getMainLooper());
+    private volatile Object restPreview;
+    private boolean openRestOnReady;
     private final java.util.concurrent.atomic.AtomicInteger keyboardRequest=new java.util.concurrent.atomic.AtomicInteger();
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);
         store=new WorkoutStore(this);
+        openRestOnReady=RestTimerService.OPEN_CONTROLS.equals(getIntent().getAction());
         root=new FrameLayout(this);root.setBackgroundColor(top);
         root.setOnApplyWindowInsetsListener((view,insets)->{
             view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),
@@ -76,7 +80,39 @@ public final class MainActivity extends Activity {
         }
         try { RestAlarm.schedule(this); } catch(RuntimeException invalid) { /* The UI shows the recoverable saved-data error. */ }
     }
-    @Override protected void onPause() { visible=false;super.onPause(); }
+    @Override protected void onPause() {visible=false;stopRestPreview();super.onPause();}
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if(RestTimerService.OPEN_CONTROLS.equals(intent.getAction())){
+            openRestOnReady=true;
+            openRestControlsIfReady();
+        }
+    }
+    private void openRestControlsIfReady(){
+        if(ready&&openRestOnReady&&web!=null){
+            openRestOnReady=false;
+            web.evaluateJavascript("window.Workouts&&Workouts.openRestControls()",null);
+        }
+    }
+    private void stopRestPreview(){
+        Object token=restPreview;
+        restPreview=null;
+        if(token!=null)restPreviewHandler.removeCallbacksAndMessages(token);
+    }
+    private void playRestPreview(int seconds,int pulseMs,int finishMs,boolean sound){
+        stopRestPreview();
+        Object token=new Object();
+        restPreview=token;
+        long start=SystemClock.uptimeMillis();
+        for(int i=0;i<=seconds;i++){
+            boolean finish=i==seconds;
+            restPreviewHandler.postAtTime(()->{
+                if(restPreview!=token)return;
+                RestAlarm.vibrate(this,finish?finishMs:pulseMs);
+                if(sound)HeadphoneCue.preview(this,finish,()->restPreview==token);
+            },token,start+i*1000L);
+        }
+    }
     @Override protected void onDestroy() {
         if(Build.VERSION.SDK_INT>=33&&backCallback!=null)BackApi33.unregister(this,backCallback);
         if(web!=null){web.removeJavascriptInterface("WorkoutNative");web.destroy();web=null;}
@@ -124,6 +160,16 @@ public final class MainActivity extends Activity {
                 return new org.json.JSONObject().put("end",value.optLong("restEndAt"))
                     .put("duration",value.optLong("restDurationMs")).put("started",value.optLong("restStartedAt")).toString();
             }catch(RuntimeException|org.json.JSONException invalid){return null;}
+        }
+        @JavascriptInterface public boolean floatingRestVisible() {
+            return RestTimerService.isFloatingVisible();
+        }
+        @JavascriptInterface public void previewRestSequence(int seconds,int pulseMs,int finishMs,boolean sound) {
+            if((seconds!=0&&seconds!=3&&seconds!=5)||pulseMs<0||pulseMs>500||finishMs<0||finishMs>2000)return;
+            runOnUiThread(()->{if(visible&&!isFinishing())playRestPreview(seconds,pulseMs,finishMs,sound);});
+        }
+        @JavascriptInterface public void stopRestSequence() {
+            runOnUiThread(MainActivity.this::stopRestPreview);
         }
         @JavascriptInterface public void restComplete() { RestAlarm.complete(MainActivity.this); }
         @JavascriptInterface public void previewVibration(int ms) {
@@ -196,7 +242,7 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void spotifyCommand(String command) {
             runOnUiThread(()->SpotifyAccess.command(MainActivity.this,command));
         }
-        @JavascriptInterface public void ready() { runOnUiThread(()->{ready=true;if(web!=null)web.setAlpha(1);}); }
+        @JavascriptInterface public void ready() { runOnUiThread(()->{ready=true;if(web!=null)web.setAlpha(1);openRestControlsIfReady();}); }
     }
     @android.annotation.TargetApi(33) private static final class BackApi33 {
         static Object register(Activity activity,Runnable action) {

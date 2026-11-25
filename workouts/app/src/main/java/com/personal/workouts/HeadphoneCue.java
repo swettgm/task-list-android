@@ -6,6 +6,7 @@ import android.os.*;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 
 /** Sends short cues only to a verified headphone output. */
 final class HeadphoneCue {
@@ -17,18 +18,28 @@ final class HeadphoneCue {
         .build();
     private static Handler worker;
 
-    static synchronized void play(Context context, long deadline, boolean bell) {
-        Context app = context.getApplicationContext();
-        AudioManager audio = app.getSystemService(AudioManager.class);
-        if (headphones(audio) == null) return;
-        if (worker == null) {
-            HandlerThread thread = new HandlerThread("Workout cues", android.os.Process.THREAD_PRIORITY_AUDIO);
+    static void play(Context context, long deadline, boolean bell) {
+        Context app=context.getApplicationContext();
+        enqueue(app,bell,false,()->new WorkoutStore(app).read().optLong("restEndAt")==deadline,()->true);
+    }
+
+    static void preview(Context context, boolean bell, BooleanSupplier active) {
+        enqueue(context.getApplicationContext(),bell,true,active,active);
+    }
+
+    private static synchronized void enqueue(Context app,boolean bell,boolean allowSpeaker,
+            BooleanSupplier validAtStart,BooleanSupplier active) {
+        AudioManager audio=app.getSystemService(AudioManager.class);
+        if(output(audio,allowSpeaker)==null)return;
+        if(worker==null){
+            HandlerThread thread=new HandlerThread("Workout cues",android.os.Process.THREAD_PRIORITY_AUDIO);
             thread.start();
-            worker = new Handler(thread.getLooper());
+            worker=new Handler(thread.getLooper());
         }
-        long latestStart = SystemClock.elapsedRealtime() + 250;
-        worker.post(() -> {
-            if (SystemClock.elapsedRealtime() <= latestStart) playOnRoute(app, audio, deadline, bell);
+        long latestStart=SystemClock.elapsedRealtime()+250;
+        worker.post(()->{
+            if(SystemClock.elapsedRealtime()<=latestStart&&validAtStart.getAsBoolean())
+                playOnRoute(audio,bell,allowSpeaker,active);
         });
     }
 
@@ -55,21 +66,23 @@ final class HeadphoneCue {
             .matches(".*(headphone|headset|earbud|airpods?|buds|earphone|beats fit|wh-1000|wf-1000).*");
     }
 
-    private static AudioDeviceInfo headphones(AudioManager audio) {
+    private static AudioDeviceInfo output(AudioManager audio,boolean allowSpeaker) {
+        AudioDeviceInfo speaker=null;
         for (AudioDeviceInfo device : audio.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
-            if (isHeadphoneOutput(device.getType(), device.getProductName().toString())) return device;
+            if(isHeadphoneOutput(device.getType(),device.getProductName().toString()))return device;
+            if(allowSpeaker&&device.getType()==AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)speaker=device;
         }
-        return null;
+        return speaker;
     }
 
-    private static boolean onHeadphones(AudioTrack track, AudioDeviceInfo preferred) {
+    private static boolean onPreferredOutput(AudioTrack track, AudioDeviceInfo preferred) {
         AudioDeviceInfo route = track.getRoutedDevice();
-        return route != null && route.getId() == preferred.getId() && isHeadphoneType(route.getType());
+        return route != null && route.getId() == preferred.getId() && route.getType() == preferred.getType();
     }
 
-    private static void playOnRoute(Context context, AudioManager audio, long deadline, boolean bell) {
-        AudioDeviceInfo preferred = headphones(audio);
-        if (preferred == null || new WorkoutStore(context).read().optLong("restEndAt") != deadline) return;
+    private static void playOnRoute(AudioManager audio,boolean bell,boolean allowSpeaker,BooleanSupplier active) {
+        AudioDeviceInfo preferred=output(audio,allowSpeaker);
+        if(preferred==null||!active.getAsBoolean())return;
         Handler main = new Handler(Looper.getMainLooper());
         AtomicBoolean interrupted = new AtomicBoolean();
         AudioFocusRequest focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
@@ -94,21 +107,21 @@ final class HeadphoneCue {
             // Prime only with silence, then require the actual route to match before unmuting.
             if (track.write(silence, 0, silence.length, AudioTrack.WRITE_NON_BLOCKING) < 0) return;
             long routeTimeout = SystemClock.elapsedRealtime() + 100;
-            while (!onHeadphones(track, preferred) && SystemClock.elapsedRealtime() < routeTimeout) SystemClock.sleep(5);
-            if (!onHeadphones(track, preferred)) return;
+            while (!onPreferredOutput(track, preferred) && SystemClock.elapsedRealtime() < routeTimeout) SystemClock.sleep(5);
+            if (!onPreferredOutput(track, preferred)) return;
             focused = audio.requestAudioFocus(focus) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
             if (!focused) return;
             AudioTrack playing = track;
             routeListener = routing -> {
-                if (!onHeadphones(playing, preferred)) {
+                if (!onPreferredOutput(playing, preferred)) {
                     interrupted.set(true);
                     playing.setVolume(0f);
                 }
             };
             track.addOnRoutingChangedListener(routeListener, main);
-            if (!onHeadphones(track, preferred)) return;
+            if (!active.getAsBoolean()||!onPreferredOutput(track, preferred)) return;
             track.setVolume(1f);
-            streamTone(track, preferred, bell, interrupted);
+            streamTone(track, preferred, bell, interrupted, active);
         } catch (RuntimeException ignored) {
             // An unavailable route or focus grant suppresses audio.
         } finally {
@@ -121,12 +134,12 @@ final class HeadphoneCue {
         }
     }
 
-    private static void streamTone(AudioTrack track, AudioDeviceInfo preferred, boolean bell, AtomicBoolean interrupted) {
+    private static void streamTone(AudioTrack track, AudioDeviceInfo preferred, boolean bell, AtomicBoolean interrupted, BooleanSupplier active) {
         short[] block = new short[CHUNK];
         int chunks = bell ? 32 : 7;
         long start = SystemClock.elapsedRealtime();
         for (int index = 0; index <= chunks; index++) {
-            if (interrupted.get() || !onHeadphones(track, preferred)) return;
+            if (!active.getAsBoolean() || interrupted.get() || !onPreferredOutput(track, preferred)) return;
             Arrays.fill(block, (short)0);
             if (index < chunks) {
                 for (int sample = 0; sample < CHUNK; sample++) {
@@ -143,7 +156,7 @@ final class HeadphoneCue {
             int written = 0;
             long writeDeadline = SystemClock.elapsedRealtime() + 30;
             while (written < block.length) {
-                if (interrupted.get() || !onHeadphones(track, preferred)) return;
+                if (!active.getAsBoolean() || interrupted.get() || !onPreferredOutput(track, preferred)) return;
                 int result = track.write(block, written, block.length - written, AudioTrack.WRITE_NON_BLOCKING);
                 if (result < 0 || SystemClock.elapsedRealtime() >= writeDeadline) return;
                 written += result;
@@ -153,7 +166,7 @@ final class HeadphoneCue {
         }
         long drainDeadline = SystemClock.elapsedRealtime() + 100;
         while (track.getPlaybackHeadPosition() < (chunks + 2) * CHUNK
-            && !interrupted.get() && onHeadphones(track, preferred)
+            && active.getAsBoolean() && !interrupted.get() && onPreferredOutput(track, preferred)
             && SystemClock.elapsedRealtime() < drainDeadline) {
             SystemClock.sleep(5);
         }

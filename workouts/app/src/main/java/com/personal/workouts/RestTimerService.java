@@ -15,22 +15,29 @@ public final class RestTimerService extends Service {
     static final String SKIP="com.personal.workouts.REST_SKIP";
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final Runnable update=this::tick;
-    private static final long GO_DISPLAY_MS=4000;
+    static final String OPEN_CONTROLS="com.personal.workouts.OPEN_REST_CONTROLS";
+    private static volatile boolean floatingVisible;
+    private static final String COMPLETE_TITLE="Rest complete";
+    private static final String COMPLETE_TEXT="Ready for your next set";
+
+    static boolean isFloatingVisible(){return floatingVisible;}
     private FloatingRestTimer overlay;
     private String previousTitle;
 
     static boolean canFloat(Context context,JSONObject settings) {
-        return settings!=null&&settings.optBoolean("floatOverApps")&&Settings.canDrawOverlays(context);
+        return settings!=null&&settings.optBoolean("floatingTimer",true)&&settings.optBoolean("floatOverApps")&&Settings.canDrawOverlays(context);
     }
 
-    private static boolean isCounting(JSONObject state,long now) {
-        return !state.isNull("active")&&state.optLong("restEndAt")>now;
+    private static boolean shouldRun(Context context,JSONObject state,long now) {
+        JSONObject settings=state.optJSONObject("settings");
+        long end=state.optLong("restEndAt");
+        if(state.isNull("active")||settings==null||end==0)return false;
+        return canFloat(context,settings)||(end>now&&settings.optBoolean("notifications"));
     }
 
     static void sync(Context context) {
-        JSONObject state=new WorkoutStore(context).read(),settings=state.optJSONObject("settings");
-        if(!isCounting(state,System.currentTimeMillis())||settings==null
-            ||(!settings.optBoolean("notifications")&&!canFloat(context,settings))){
+        JSONObject state=new WorkoutStore(context).read();
+        if(!shouldRun(context,state,System.currentTimeMillis())){
             context.stopService(new Intent(context,RestTimerService.class));
             return;
         }
@@ -41,17 +48,18 @@ public final class RestTimerService extends Service {
         return PendingIntent.getBroadcast(this,code,new Intent(this,RestAlarm.class).setAction(name),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     }
     static String title(long remaining) {
-        return "Rest · "+(remaining>0?FloatingRestTimer.formatTime(remaining):"Go!");
+        return remaining>0?"Rest · "+FloatingRestTimer.formatTime(remaining):COMPLETE_TITLE;
     }
     Notification notification(JSONObject state) {
         long end=state.optLong("restEndAt"),now=System.currentTimeMillis();
         long remaining=Math.max(0,end-now),length=Math.max(1,state.optLong("restDurationMs",Math.max(remaining,90000)));
         PendingIntent open=PendingIntent.getActivity(this,5,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        return new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_notification)
+        Notification.Builder builder=new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title(remaining)).setShowWhen(false)
-            .setProgress(1000,(int)Math.min(1000,remaining*1000/length),false)
-            .setOngoing(true).setOnlyAlertOnce(true).setContentIntent(open)
-            .addAction(new Notification.Action.Builder(null,"+30s",action(MORE,3)).build())
+            .setOngoing(true).setOnlyAlertOnce(true).setContentIntent(open);
+        if(remaining>0)builder.setProgress(1000,(int)Math.min(1000,remaining*1000/length),false);
+        else builder.setContentText(COMPLETE_TEXT);
+        return builder.addAction(new Notification.Action.Builder(null,"+30s",action(MORE,3)).build())
             .addAction(new Notification.Action.Builder(null,"Skip",action(SKIP,4)).build())
             .build();
     }
@@ -64,7 +72,7 @@ public final class RestTimerService extends Service {
     @Override public int onStartCommand(Intent intent,int flags,int startId) {
         handler.removeCallbacks(update);
         JSONObject state=new WorkoutStore(this).read();
-        if(state.optLong("restEndAt")<=System.currentTimeMillis()||state.isNull("active")){
+        if(!shouldRun(this,state,System.currentTimeMillis())){
             stopSelf();return START_NOT_STICKY;
         }
         Notification notification=notification(state);
@@ -76,39 +84,40 @@ public final class RestTimerService extends Service {
     }
     private void tick() {
         JSONObject state=new WorkoutStore(this).read(),settings=state.optJSONObject("settings");
-        long now=System.currentTimeMillis(),end=state.optLong("restEndAt"),remaining=Math.max(0,end-now);
+        long now=System.currentTimeMillis(),end=state.optLong("restEndAt"),remaining=end-now;
         boolean allowed=canFloat(this,settings);
-        boolean showOverApps=allowed&&!MainActivity.visible;
-        boolean done=remaining==0;
-        boolean showGo=showOverApps&&end>0&&now-end<GO_DISPLAY_MS;
-        if(state.isNull("active")||settings==null||(!allowed&&!settings.optBoolean("notifications"))||(done&&!showGo)){
-            if(done&&end>0)RestAlarm.complete(this);
+        if(!shouldRun(this,state,now)){
+            if(remaining<=0&&end>0&&!state.isNull("active"))RestAlarm.complete(this);
             stopSelf();
             clearOverlay();
             return;
         }
 
-        if(done)RestAlarm.complete(this);
-        if(showOverApps){
+        if(allowed){
+            if(overlay!=null&&!overlay.isShowing())clearOverlay();
             if(overlay==null){
                 try {
                     FloatingRestTimer timer=new FloatingRestTimer(this);
-                    if(timer.show())overlay=timer;
-                }catch(RuntimeException unavailable){ /* The notification is still available. */ }
+                    if(timer.show()){
+                        overlay=timer;
+                        floatingVisible=true;
+                    }
+                }catch(RuntimeException unavailable){ /* The in-app timer and notification remain available. */ }
             }
             if(overlay!=null)overlay.update(state,remaining);
         }else clearOverlay();
 
+        if(remaining<=0)RestAlarm.complete(this);
         String title=title(remaining);
         if(!title.equals(previousTitle)){
             getSystemService(NotificationManager.class).notify(NOTIFICATION,notification(state));
             previousTitle=title;
         }
-        // Poll foreground changes and animate the ring separately from notification updates.
         handler.postDelayed(update,allowed?200:Math.max(50,Math.min(1000,(remaining-1)%1000+1)));
     }
 
     private void clearOverlay() {
+        floatingVisible=false;
         if(overlay!=null){
             overlay.remove();
             overlay=null;

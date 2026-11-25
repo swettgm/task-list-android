@@ -48,6 +48,7 @@ body.settings-open{padding-bottom:16px}
 #rest-float circle{fill:none;stroke-width:4}
 #rest-float .timer-track{stroke:var(--line)}
 #rest-float .timer-ring{stroke:var(--text);stroke-dasharray:100;stroke-dashoffset:0;transition:stroke-dashoffset .25s linear}
+#rest-time.overdue,.rest-modal-time.overdue{color:#ff6b7c}
 #rest-time{font-size:16px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
 .rest-modal-time{font-size:36px;text-align:center;font-variant-numeric:tabular-nums}
 
@@ -142,7 +143,7 @@ function settingsScreen(){
  error.setAttribute('role','alert');header.append(back,heading);screen.append(header,fields,error,actions);
  document.body.append(screen);$('app').hidden=true;$('spotify').hidden=true;$('rest').hidden=true;
  settingsOpen=true;document.body.classList.add('settings-open');scrollTo(0,0);
- const close=()=>{if(!screen.isConnected)return;screen.remove();settingsOpen=false;closeSettings=null;document.body.classList.remove('settings-open');$('app').hidden=false;render();scrollTo(0,oldY);native?.hideKeyboard();};
+ const close=()=>{if(!screen.isConnected)return;native?.stopRestSequence?.();screen.remove();settingsOpen=false;closeSettings=null;document.body.classList.remove('settings-open');$('app').hidden=false;render();scrollTo(0,oldY);native?.hideKeyboard();};
  closeSettings=close;return {fields,error,actions,close,dialog:screen};
 }
 function field(parent,label,type,value=''){const wrap=el('label','field');wrap.append(el('span','',label));const input=el(type==='textarea'?'textarea':'input');if(type!=='textarea')input.type=type;input.value=value;input.setAttribute('aria-label',label);
@@ -503,6 +504,7 @@ function settings(){const m=settingsScreen(),draft=clone(state.settings);const s
 if(native&&!native.preciseTimers())m.fields.append(button('Allow precise rest alerts',()=>native.allowPreciseTimers()));
 m.fields.append(el('h3','','Rest timer'));
 const overlay=checkbox(m.fields,'Show rest timer over other apps',draft.floatOverApps===true);
+overlay.addEventListener('change',()=>{if(overlay.checked)floating.checked=true;});
 const overlaySupported=typeof native?.overlayAllowed==='function';
 const overlayNote=el('p','small muted','Android requires display-over-other-apps permission and an ongoing notification for this timer.');
 if(overlaySupported)m.fields.append(overlayNote);
@@ -514,6 +516,35 @@ const pulses=restVibrationSlider(m.fields,'Countdown pulse length',draft.countdo
 const slider=restVibrationSlider(m.fields,'Finish vibration length',draft.vibrationMs,2000,.05);
 pulses.closest('label').hidden=countdown.selectedIndex===0;
 countdown.onchange=()=>{pulses.closest('label').hidden=countdown.selectedIndex===0;};
+if(typeof native?.previewRestSequence==='function'){
+ const preview=el('div','row');
+ const status=el('span','small muted');
+ status.setAttribute('role','status');
+ let playing=false,previewTimeout;
+ const control=button('Play test',()=>{
+  if(playing){
+   native.stopRestSequence();
+   clearTimeout(previewTimeout);
+   resetPreview();
+   return;
+  }
+  const seconds=[0,3,5][countdown.selectedIndex];
+  const pulseMs=Math.round(Number(pulses.value)*1000);
+  const finishMs=Math.round(Number(slider.value)*1000);
+  playing=true;
+  control.textContent='Stop test';
+  status.textContent='Playing rest cues';
+  native.previewRestSequence(seconds,pulseMs,finishMs,headphones.checked);
+  previewTimeout=setTimeout(resetPreview,seconds*1000+Math.max(450,finishMs));
+ });
+ function resetPreview(){
+  playing=false;
+  control.textContent='Play test';
+  status.textContent='';
+ }
+ preview.append(control,status);
+ m.fields.append(preview);
+}
 m.fields.append(el('h3','','Training schedule'));
 const modes=['Off','Selected weekdays','Every few days'];
 const oldSchedule=draft.schedule;
@@ -541,9 +572,9 @@ cancelSave(m,()=>{
   :{mode:'off'};
  const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){m.close();theme();render();if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);else if(notify.checked&&!draft.notifications)native?.requestNotifications();}});}
 let inferredTimer={end:0,length:1},timerDrag=null,suppressTimerClick=0;
-function remainingText(){
- const seconds=Math.max(0,Math.ceil((state.restEndAt-Date.now())/1000));
- return seconds?Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0'):'Go!';
+function remainingText(milliseconds=state.restEndAt-Date.now()){
+ const seconds=milliseconds>0?Math.ceil(milliseconds/1000):Math.floor(-milliseconds/1000);
+ return (milliseconds<=0?'-':'')+Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
 }
 function placeTimer(position=state.settings.timerPosition){
  const width=innerWidth,height=visualViewport?.height||innerHeight,size=76,margin=8;
@@ -555,10 +586,16 @@ function placeTimer(position=state.settings.timerPosition){
 function tick(){
  if(!state)return;
  if(state.active&&$('elapsed'))$('elapsed').textContent=duration(Date.now()-state.active.startedAt)+' · '+completed(state.active)+'/'+total(state.active)+' sets';
- const end=state.restEndAt,remaining=Math.max(0,end-Date.now());
- $('rest').hidden=!end||!state.active||state.settings.floatingTimer===false||settingsOpen;
- $('rest-time').textContent=remainingText();
- const modalTime=document.getElementById('rest-modal-time');if(modalTime)modalTime.textContent=remainingText();
+ const end=state.restEndAt,delta=end-Date.now(),remaining=Math.max(0,delta);
+ $('rest').hidden=!end||!state.active||state.settings.floatingTimer===false||settingsOpen||native?.floatingRestVisible?.()===true;
+ const label=remainingText(delta);
+ $('rest-time').textContent=label;
+ $('rest-time').classList.toggle('overdue',delta<=0);
+ const modalTime=$('rest-modal-time');
+ if(modalTime){
+  modalTime.textContent=label;
+  modalTime.classList.toggle('overdue',delta<=0);
+ }
  if(end!==inferredTimer.end)inferredTimer={end,length:Math.max(1000,remaining)};
  const length=Math.max(1,state.restDurationMs||inferredTimer.length);
  $('rest-ring').style.strokeDashoffset=String(100*(1-Math.max(0,Math.min(1,remaining/length))));
@@ -758,7 +795,7 @@ document.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointe
 document.addEventListener('pointerup',event=>{if(drag?.id===event.pointerId)finishDrag(true);});document.addEventListener('pointercancel',()=>finishDrag(false));window.addEventListener('blur',()=>{finishRepDrag(false);finishTimerDrag(false);gesture=null;finishSlide(false,false);finishDrag(false);});
 function viewport(){document.documentElement.style.setProperty('--height',(visualViewport?.height||innerHeight)+'px');if(state&&!timerDrag)placeTimer();}viewport();window.addEventListener('resize',viewport);visualViewport?.addEventListener('resize',viewport);
 function refresh(){if(closeDialog||settingsOpen||drag||slide||repDrag)return;try{const saved=read();if(saved){state=saved;theme();render();}}catch(_){toast('Couldn’t reload saved workouts.');}}
-window.Workouts=Object.freeze({refresh,back(){if(settingsOpen&&!closeDialog){closeSettings();return true;}if(closeDialog){closeDialog();return true;}if(slide){finishSlide(false,false);return true;}if(view==='history'){switchView('today');return true;}return false;},debug:()=>clone(state)});
+window.Workouts=Object.freeze({refresh,openRestControls(){refresh();if(state?.restEndAt&&!closeDialog)openRest();},back(){if(settingsOpen&&!closeDialog){closeSettings();return true;}if(closeDialog){closeDialog();return true;}if(slide){finishSlide(false,false);return true;}if(view==='history'){switchView('today');return true;}return false;},debug:()=>clone(state)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();tick();}});setInterval(tick,250);setInterval(renderSpotify,1500);
 setInterval(()=>{
  if(!state||!native?.restState)return;

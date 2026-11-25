@@ -44,7 +44,7 @@ public class RestTimerServiceTest {
         assertTrue((notification.flags&Notification.FLAG_ONGOING_EVENT)!=0);
         controller.destroy();
     }
-    @Test public void overlayFollowsRestOnlyOutsideTheAppAndTearsDown()throws Exception {
+    @Test public void oneOverlayStaysAttachedAcrossAppsAndOvertime()throws Exception {
         runningTimer();
         JSONObject inProgress=store.read();
         inProgress.getJSONObject("settings").put("notifications",false).put("floatOverApps",true);
@@ -55,18 +55,29 @@ public class RestTimerServiceTest {
         try {
             controller.startCommand(0,1);
             ShadowWindowManagerImpl windows=Shadow.extract(controller.get().getSystemService(WindowManager.class));
-            assertTrue(windows.getViews().isEmpty());
+            assertEquals(1,windows.getViews().size());
+            android.view.View timer=windows.getViews().get(0);
+            assertTrue(RestTimerService.isFloatingVisible());
             MainActivity.visible=false;
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
-            assertEquals(1,windows.getViews().size());
-            assertTrue(windows.getViews().get(0).getContentDescription().toString().startsWith("Rest · "));
+            assertSame(timer,windows.getViews().get(0));
             MainActivity.visible=true;
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
-            assertTrue(windows.getViews().isEmpty());
-            MainActivity.visible=false;
-            ShadowSettings.setCanDrawOverlays(false);
+            assertSame(timer,windows.getViews().get(0));
+
+            JSONObject overdue=store.read().put("restEndAt",System.currentTimeMillis()-3000);
+            assertNotNull(store.write(overdue.toString()));
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(6));
+            assertSame(timer,windows.getViews().get(0));
+            assertTrue(timer.getContentDescription().toString().startsWith("Rest · -0:"));
+            Notification notification=shadowOf(context.getSystemService(NotificationManager.class)).getNotification(RestTimerService.NOTIFICATION);
+            assertEquals("Rest complete",notification.extras.getCharSequence(Notification.EXTRA_TITLE));
+            assertEquals("Ready for your next set",notification.extras.getCharSequence(Notification.EXTRA_TEXT));
+
+            assertNotNull(store.write(store.read().put("restEndAt",0).toString()));
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
             assertTrue(windows.getViews().isEmpty());
+            assertFalse(RestTimerService.isFloatingVisible());
         }finally{
             controller.destroy();
             MainActivity.visible=false;
