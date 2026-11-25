@@ -17,15 +17,19 @@ final class HeadphoneCue {
         .build();
     private static final short[] BEEP=synthesizeBeep(698,160);
     private static final short[] FINISH_BEEP=synthesizeBeep(932,460);
+    private static final int DEFAULT_VOLUME=40;
     private static Handler worker;
 
     static void play(Context context, long deadline, boolean finishing) {
         Context app=context.getApplicationContext();
-        enqueue(app,finishing?FINISH_BEEP:BEEP,false,()->new WorkoutStore(app).read().optLong("restEndAt")==deadline,()->true);
+        WorkoutStore store=new WorkoutStore(app);
+        org.json.JSONObject settings=store.read().optJSONObject("settings");
+        int volume=settings==null?DEFAULT_VOLUME:settings.optInt("restCueVolume",DEFAULT_VOLUME);
+        enqueue(app,finishing?FINISH_BEEP:BEEP,false,volume,()->store.read().optLong("restEndAt")==deadline,()->true);
     }
 
-    static void preview(Context context, int seconds, BooleanSupplier active) {
-        enqueue(context.getApplicationContext(),previewSamples(seconds),true,active,active);
+    static void preview(Context context,int seconds,int volume,BooleanSupplier active) {
+        if(volume>0)enqueue(context.getApplicationContext(),previewSamples(seconds),true,volume,active,active);
     }
 
     static short[] previewSamples(int seconds) {
@@ -36,8 +40,9 @@ final class HeadphoneCue {
         return sequence;
     }
 
-    private static synchronized void enqueue(Context app,short[] samples,boolean allowSpeaker,
+    private static synchronized void enqueue(Context app,short[] samples,boolean allowSpeaker,int volume,
             BooleanSupplier validAtStart,BooleanSupplier active) {
+        if(volume<=0)return;
         AudioManager audio=app.getSystemService(AudioManager.class);
         if(output(audio,allowSpeaker)==null)return;
         if(worker==null){
@@ -48,7 +53,7 @@ final class HeadphoneCue {
         long latestStart=SystemClock.elapsedRealtime()+250;
         worker.post(()->{
             if(SystemClock.elapsedRealtime()<=latestStart&&validAtStart.getAsBoolean())
-                playOnRoute(audio,samples,allowSpeaker,active);
+                playOnRoute(audio,samples,allowSpeaker,Math.min(100,volume)/100f,active);
         });
     }
 
@@ -89,7 +94,7 @@ final class HeadphoneCue {
         return route != null && route.getId() == preferred.getId() && route.getType() == preferred.getType();
     }
 
-    private static void playOnRoute(AudioManager audio,short[] samples,boolean allowSpeaker,BooleanSupplier active) {
+    private static void playOnRoute(AudioManager audio,short[] samples,boolean allowSpeaker,float gain,BooleanSupplier active) {
         AudioDeviceInfo preferred=output(audio,allowSpeaker);
         if(preferred==null||!active.getAsBoolean())return;
         Handler main = new Handler(Looper.getMainLooper());
@@ -135,7 +140,7 @@ final class HeadphoneCue {
             };
             track.addOnRoutingChangedListener(routeListener, main);
             if (!active.getAsBoolean()||!onPreferredOutput(track, preferred)) return;
-            track.setVolume(1f);
+            track.setVolume(gain);
             streamSamples(track,preferred,samples,primed,interrupted,active);
         } catch (RuntimeException ignored) {
             // An unavailable route or focus grant suppresses audio.

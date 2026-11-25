@@ -56,6 +56,7 @@ final class WorkoutStore {
             if(countdown!=0&&countdown!=3&&countdown!=5)throw new JSONException("Invalid countdown");
             if(settings.has("countdownVibrationMs"))number(settings,"countdownVibrationMs",0,500);
             if(settings.has("headphoneCues"))settings.getBoolean("headphoneCues");
+            if(settings.has("restCueVolume"))number(settings,"restCueVolume",0,100);
             if(settings.has("schedule"))validateSchedule(settings.getJSONObject("schedule"));
             settings.getBoolean("notifications");settings.getBoolean("gradient");settings.getBoolean("spotify");
         } catch(JSONException invalid) { throw new IllegalArgumentException("Invalid workout data",invalid); }

@@ -99,12 +99,12 @@ public final class MainActivity extends Activity {
         restPreview=null;
         if(token!=null)restPreviewHandler.removeCallbacksAndMessages(token);
     }
-    private void playRestPreview(int seconds,int pulseMs,int finishMs,boolean sound){
+    private void playRestPreview(int seconds,int pulseMs,int finishMs,boolean sound,int volume){
         stopRestPreview();
         Object token=new Object();
         restPreview=token;
         long start=SystemClock.uptimeMillis();
-        if(sound)HeadphoneCue.preview(this,seconds,()->restPreview==token);
+        if(sound)HeadphoneCue.preview(this,seconds,volume,()->restPreview==token);
         for(int i=0;i<=seconds;i++){
             boolean finish=i==seconds;
             restPreviewHandler.postAtTime(()->{
@@ -164,9 +164,9 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public boolean floatingRestVisible() {
             return RestTimerService.isFloatingVisible();
         }
-        @JavascriptInterface public void previewRestSequence(int seconds,int pulseMs,int finishMs,boolean sound) {
-            if((seconds!=0&&seconds!=3&&seconds!=5)||pulseMs<0||pulseMs>500||finishMs<0||finishMs>2000)return;
-            runOnUiThread(()->{if(visible&&!isFinishing())playRestPreview(seconds,pulseMs,finishMs,sound);});
+        @JavascriptInterface public void previewRestSequence(int seconds,int pulseMs,int finishMs,boolean sound,int volume) {
+            if((seconds!=0&&seconds!=3&&seconds!=5)||pulseMs<0||pulseMs>500||finishMs<0||finishMs>2000||volume<0||volume>100)return;
+            runOnUiThread(()->{if(visible&&!isFinishing())playRestPreview(seconds,pulseMs,finishMs,sound,volume);});
         }
         @JavascriptInterface public void stopRestSequence() {
             runOnUiThread(MainActivity.this::stopRestPreview);

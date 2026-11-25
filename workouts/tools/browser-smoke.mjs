@@ -236,8 +236,11 @@ try{
  await settings.getByRole('combobox',{name:'Rest countdown'}).selectOption('Last 5 seconds');
  await settings.getByRole('slider',{name:'Countdown pulse length'}).fill('0.12');
  const deadlineBeforePreview=(await state()).restEndAt;
+ const beepVolume=settings.getByRole('slider',{name:/Rest beep volume/});
+ check(await beepVolume.inputValue()==='40','Rest beeps default to 40 percent gain');
+ await beepVolume.fill('24');
  await settings.getByRole('button',{name:'Play test',exact:true}).click();
- check(await page.evaluate(()=>qa.preview.join() === '5,120,350,true')&&(await state()).restEndAt===deadlineBeforePreview,'Play test uses the staged settings without changing the rest timer');
+ check(await page.evaluate(()=>qa.preview.join() === '5,120,350,true,24')&&(await state()).restEndAt===deadlineBeforePreview,'Play test uses the staged settings without changing the rest timer');
  await settings.getByRole('button',{name:'Stop test',exact:true}).click();
  check(await page.evaluate(()=>qa.previewStopped),'The settings preview can be stopped');
 
@@ -245,6 +248,7 @@ try{
  await settings.getByRole('checkbox',{name:'Friday',exact:true}).uncheck();
  await settings.getByRole('button',{name:'Save',exact:true}).click();
  const preferences=(await state()).settings;
+ check(preferences.restCueVolume===24,'Rest beep volume saves independently of the vibration settings');
  check(preferences.countdownSeconds===5&&preferences.countdownVibrationMs===120,'Rest countdown duration and pulse length save independently');
  check(preferences.schedule.days.join() === '1,3'&&await page.locator('.routine-date').count()===2,'The weekday schedule labels both routines');
  check(await page.locator('.routine').first().getAttribute('aria-label')==='Workout B renamed','The next routine follows the latest completed workout');

@@ -514,6 +514,23 @@ else overlay.closest('label').hidden=true;
 const countdownOptions=['Off','Last 3 seconds','Last 5 seconds'];
 const countdown=selectField(m.fields,'Rest countdown',countdownOptions,draft.countdownSeconds===5?countdownOptions[2]:draft.countdownSeconds===0?countdownOptions[0]:countdownOptions[1]);
 const headphones=checkbox(m.fields,'Headphone countdown and finish beeps',draft.headphoneCues!==false);
+const volumeField=el('label','field');
+const volumeLabel=el('span','','Rest beep volume');
+const volumeRow=el('div','slider-row');
+const cueVolume=el('input');
+cueVolume.type='range';
+cueVolume.setAttribute('aria-label','Rest beep volume');
+cueVolume.min=0;
+cueVolume.max=100;
+cueVolume.step=1;
+cueVolume.value=draft.restCueVolume??40;
+const volumeValue=el('output');
+const showVolume=()=>volumeValue.textContent=cueVolume.value+'%';
+cueVolume.addEventListener('input',showVolume);
+showVolume();
+volumeRow.append(cueVolume,volumeValue);
+volumeField.append(volumeLabel,volumeRow);
+m.fields.append(volumeField);
 const pulses=restVibrationSlider(m.fields,'Countdown pulse length',draft.countdownVibrationMs??80,500,.01);
 const slider=restVibrationSlider(m.fields,'Finish vibration length',draft.vibrationMs,2000,.05);
 pulses.closest('label').hidden=countdown.selectedIndex===0;
@@ -536,7 +553,7 @@ if(typeof native?.previewRestSequence==='function'){
   playing=true;
   control.textContent='Stop test';
   status.textContent='Playing rest cues';
-  native.previewRestSequence(seconds,pulseMs,finishMs,headphones.checked);
+  native.previewRestSequence(seconds,pulseMs,finishMs,headphones.checked,Number(cueVolume.value));
   previewTimeout=setTimeout(resetPreview,seconds*1000+Math.max(1000,finishMs));
  });
  function resetPreview(){
@@ -572,7 +589,7 @@ cancelSave(m,()=>{
  const schedule=mode.selectedIndex===1?{mode:'weekdays',days:selectedDays}:mode.selectedIndex===2
   ?{mode:'interval',every:interval,anchor:oldSchedule?.mode==='interval'&&oldSchedule.every===interval?oldSchedule.anchor:localDay(new Date())}
   :{mode:'off'};
- const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){m.close();theme();render();if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);else if(notify.checked&&!draft.notifications)native?.requestNotifications();}});}
+ const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,restCueVolume:Number(cueVolume.value),schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){m.close();theme();render();if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);else if(notify.checked&&!draft.notifications)native?.requestNotifications();}});}
 let inferredTimer={end:0,length:1},timerDrag=null,suppressTimerClick=0;
 function remainingText(milliseconds=state.restEndAt-Date.now()){
  const seconds=milliseconds>0?Math.ceil(milliseconds/1000):Math.floor(-milliseconds/1000);
