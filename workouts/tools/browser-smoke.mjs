@@ -73,11 +73,20 @@ try{
  check(await workoutA.getAttribute('aria-expanded')==='false','Routine cards begin collapsed');
  const arrow=page.getByRole('button',{name:'Expand Workout A',exact:true});
  const pencil=page.getByRole('button',{name:'Edit Workout A',exact:true});
- check((await arrow.boundingBox()).x>(await pencil.boundingBox()).x&&await arrow.locator('svg').evaluate(svg=>svg.getBoundingClientRect().width===26),'The larger chevron sits to the right of the pencil');
+ check((await arrow.boundingBox()).x>(await pencil.boundingBox()).x&&await arrow.locator('svg').evaluate(svg=>svg.getBoundingClientRect().height===26),'The larger chevron sits to the right of the pencil');
  check(await page.locator('#today-date').count()===0,'Today opens straight into the routine cards');
  await arrow.click();
  check(await workoutA.getAttribute('aria-expanded')==='true','The right chevron opens the card');
  check(await page.locator('.exercise:visible').count()===6&&(await state()).active===null,'Opening a card reveals exercise rows without starting a workout');
+ check(await page.getByRole('region',{name:'Workout A',exact:true}).evaluate(card=>{
+  const outer=card.getBoundingClientRect();
+  const left=card.querySelector('.routine-name').getBoundingClientRect().left;
+  const elements=card.querySelectorAll('.exercise-name');
+  const matchingLeft=[...elements].every(item=>Math.abs(item.getBoundingClientRect().left-left)<.25);
+  const matchingRight=[...card.querySelectorAll('.routine-chevron svg,.exercise-plan,.routine-start')]
+    .every(item=>Math.abs(outer.right-item.getBoundingClientRect().right-(left-outer.left))<.25);
+  return matchingLeft&&matchingRight;
+ }),'Routine text and trailing actions share matching card insets');
  check(await page.locator('.exercise').first().evaluate(row=>parseFloat(getComputedStyle(row).borderBottomWidth)===0),'The routine cards separate exercises without divider lines');
  for(const width of [320,390,600]){
   await page.setViewportSize({width,height:844});

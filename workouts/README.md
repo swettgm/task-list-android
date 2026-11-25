@@ -1,6 +1,6 @@
 # Exercise
 
-[Download Exercise 1.0.19](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.19.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
+[Download Exercise 1.0.20](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.20.apk) for Android 8 or later. This updates Workouts and keeps its saved routines and history.
 
 An offline workout logger in the blue-grey gradient and white-control theme shared with Tasks, RM and Meditation. New installations start with an empty routine and history.
 
@@ -41,4 +41,4 @@ node tools/touch-input-smoke.mjs
 node tools/set-reps-smoke.mjs
 ```
 
-Set WORKOUT_DEBUG_KEYSTORE to the retained private signing key for updates. Never publish the key.
+For an update signed with the existing certificate, set WORKOUT_DEBUG_KEYSTORE and supply WORKOUT_KEYSTORE_PASSWORD, WORKOUT_KEY_ALIAS and WORKOUT_KEY_PASSWORD locally.
