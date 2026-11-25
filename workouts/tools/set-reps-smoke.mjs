@@ -21,6 +21,7 @@ try{
  await page.getByRole('spinbutton',{name:'Rest in seconds'}).fill('90');
  await dialog().getByRole('button',{name:'Add',exact:true}).tap();
  check((await data()).routines[0].exercises[0].sets[1].amrap,'A plus marks an AMRAP set in the routine editor');
+ await page.getByRole('button',{name:'Workout A',exact:true}).tap();
  await page.getByRole('button',{name:'Start workout',exact:true}).tap();
  check((await sets().first().boundingBox()).width===54,'Rep circles are 54 pixels wide on a standard phone');
  check(await sets().nth(1).textContent()==='5+','AMRAP has the same circle with a plus suffix');
@@ -101,6 +102,7 @@ try{
  await dialog().getByRole('button',{name:'Cancel',exact:true}).tap();
  await page.getByRole('tab',{name:'Today'}).tap();
  await page.waitForFunction(()=>document.querySelector('#today-tab').getAttribute('aria-selected')==='true');
+ await page.getByRole('button',{name:'Workout A',exact:true}).tap();
  await page.getByRole('button',{name:'Start workout'}).tap();
  const trash=page.locator('#discard');
  await trash.tap();

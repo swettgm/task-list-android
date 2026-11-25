@@ -63,6 +63,7 @@ try{
  const saved=await page.evaluate(()=>Workouts.debug());
  const row=saved.routines.find(r=>r.name==='Workout B').exercises[0];
  check(row.name==='Deadlift'&&row.weight===135&&row.unit==='kg'&&row.sets.length===3&&row.notes==='Controlled reps','The completed exercise editor saves all typed fields');
+ await page.getByRole('button',{name:'Workout B',exact:true}).tap();
  await page.getByRole('region',{name:'Workout B',exact:true}).getByRole('button',{name:'Start workout',exact:true}).tap();
  await page.getByRole('button',{name:'Log set 1 of Deadlift',exact:true}).tap();
  const setRow=await page.locator('.sets').boundingBox();

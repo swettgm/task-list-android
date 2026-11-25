@@ -42,7 +42,11 @@ try{
   await dialog().getByRole('button',{name:'Add',exact:true}).click();
  }
  check((await state()).settings.notifications===false,'Notifications are disabled by default');
- check(await page.locator('.exercise').count()===6,'All six exercises render without clipping names');
+ const workoutA=page.getByRole('button',{name:'Workout A',exact:true});
+ check(await workoutA.getAttribute('aria-expanded')==='false','Routine cards begin collapsed');
+ await workoutA.click();
+ check(await page.locator('.exercise:visible').count()===6&&(await state()).active===null,'Opening a card reveals exercise rows without starting a workout');
+ check(await page.locator('.exercise').first().evaluate(row=>parseFloat(getComputedStyle(row).borderBottomWidth)===0),'The routine cards separate exercises without divider lines');
  for(const width of [320,390,600]){
   await page.setViewportSize({width,height:844});
   check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Home fits at '+width+'px');
@@ -125,7 +129,7 @@ try{
  await page.getByRole('button',{name:'Add routine',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Name',exact:true}).fill('Workout B');
  await dialog().getByRole('button',{name:'Add',exact:true}).click();
- check((await state()).routines.length===old.routines.length+1&&await page.getByRole('button',{name:'Start workout',exact:true}).count()===2,'Multiple routines are visible with their own Start buttons');
+ check((await state()).routines.length===old.routines.length+1&&await page.locator('.routine:visible').count()===2,'Multiple routines are visible as cards');
  await page.getByRole('button',{name:'Edit Workout B',exact:true}).click();
  await dialog().getByRole('button',{name:'Rename workout',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Name',exact:true}).fill('Workout B renamed');
@@ -147,8 +151,10 @@ try{
  check((await state()).history[0].exercises[0].name==='Barbell Curl','Reordering routines preserves workout history');
  await mkdir('build/browser-qa',{recursive:true});
  await page.screenshot({path:'build/browser-qa/workouts-home.png',fullPage:true});
+ await workoutA.click();
  await page.getByRole('region',{name:'Workout A',exact:true}).getByRole('button',{name:'Start workout',exact:true}).click();
  const other=page.getByRole('region',{name:'Workout B renamed',exact:true});
+ await other.getByRole('button',{name:'Workout B renamed',exact:true}).click();
  check(await other.getByText('B-only exercise',{exact:true}).isVisible()&&await other.locator('.set').count()===0&&await other.getByRole('button',{name:'Start workout'}).isDisabled(),'Inactive routines stay visible with their rep circles collapsed');
  await page.getByRole('button',{name:'Log set 1 of Front/Lateral Raise'}).click();
  await page.screenshot({path:'build/browser-qa/workouts-active.png',fullPage:true});
