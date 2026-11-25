@@ -52,8 +52,31 @@ final class WorkoutStore {
             if(!Arrays.asList("lb","kg").contains(settings.getString("unit")))throw new JSONException("Invalid unit");
             if(settings.getInt("rest")<0||settings.getInt("rest")>1800)throw new JSONException("Invalid rest");
             if(settings.getInt("vibrationMs")<0||settings.getInt("vibrationMs")>2000)throw new JSONException("Invalid vibration");
+            int countdown=settings.optInt("countdownSeconds");
+            if(countdown!=0&&countdown!=3&&countdown!=5)throw new JSONException("Invalid countdown");
+            if(settings.has("countdownVibrationMs"))number(settings,"countdownVibrationMs",0,500);
+            if(settings.has("headphoneCues"))settings.getBoolean("headphoneCues");
+            if(settings.has("schedule"))validateSchedule(settings.getJSONObject("schedule"));
             settings.getBoolean("notifications");settings.getBoolean("gradient");settings.getBoolean("spotify");
         } catch(JSONException invalid) { throw new IllegalArgumentException("Invalid workout data",invalid); }
+    }
+    private static void validateSchedule(JSONObject schedule)throws JSONException {
+        switch(schedule.getString("mode")) {
+            case "off": return;
+            case "interval":
+                number(schedule,"every",1,30);
+                number(schedule,"anchor",0,200000);
+                return;
+            case "weekdays":
+                JSONArray days=schedule.getJSONArray("days");
+                if(days.length()<1||days.length()>7)throw new JSONException("Invalid training days");
+                for(int i=0;i<days.length();i++){
+                    int day=days.getInt(i);
+                    if(day<0||day>6)throw new JSONException("Invalid training day");
+                }
+                return;
+            default: throw new JSONException("Invalid training schedule");
+        }
     }
     private static void session(JSONObject value)throws JSONException {
         text(value,"id",160);text(value,"name",160);

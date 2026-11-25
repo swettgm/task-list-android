@@ -34,7 +34,7 @@ try{
  check(await page.evaluate(()=>qa.haptics>=3),'Spotify buttons provide haptic feedback');
  check(await page.evaluate(()=>qa.commands.join()==='play,next'),'Player forwards pause and next without changing workout state');
  for(const [name,reps,weight] of [['Barbell Curl','8, 8, 8',45],['Front/Lateral Raise','10, 10, 10',10],['Triceps Pushdown','8, 8, 8',50],['Cable Crunch','15, 15, 15',50],['Leg Extension','6, 8, 10',50],['Leg Curl','6, 8, 10',65]]){
-  await page.getByRole('button',{name:'Edit workout',exact:true}).click();
+  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
   await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill(name);
   await dialog().getByRole('textbox',{name:'Reps per set'}).fill(reps);
@@ -48,11 +48,11 @@ try{
   check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Home fits at '+width+'px');
  }
  await page.setViewportSize({width:390,height:844});
- await page.getByRole('button',{name:'Edit workout',exact:true}).click();
+ await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Leg Extension',exact:true}).click();
  check(await dialog().getByRole('textbox',{name:'Reps per set'}).inputValue()==='6, 8, 10','Variable rep targets are editable');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
- await page.getByRole('button',{name:'Start workout',exact:true}).click();
+ await page.getByRole('region',{name:'Workout A',exact:true}).getByRole('button',{name:'Start workout',exact:true}).click();
  check((await state()).active?.exercises.length===6&&await page.locator('.set[aria-pressed=false]').count()===18,'Start creates a saved session with one circle per set');
  await page.getByRole('button',{name:'Log set 1 of Barbell Curl',exact:true}).click();
  check((await state()).active.exercises[0].sets[0].reps===8,'One tap records the target reps');
@@ -60,7 +60,7 @@ try{
  await page.getByRole('button',{name:'Edit set 1 of Barbell Curl',exact:true}).click();
  await page.getByRole('button',{name:'Edit set 1 of Barbell Curl',exact:true}).click();
  check((await state()).active.exercises[0].sets[0].reps===6,'Repeated taps reduce actual reps without opening an editor');
- await page.getByRole('button',{name:'Edit workout',exact:true}).click();
+ await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Barbell Curl',exact:true}).click();
  await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill('50');
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
@@ -68,10 +68,18 @@ try{
  check(saved.active.exercises[0].sets[0].weight===45&&saved.active.exercises[0].sets[1].weight===50&&saved.routines[0].exercises[0].weight===50,'Changing working weight preserves logged sets and updates future sets and routine');
  await page.reload();await page.waitForFunction(()=>!!window.Workouts);
  check((await state()).active.exercises[0].sets[0].reps===6,'Unfinished workouts survive reopening');
+ await page.evaluate(()=>{
+  const realNow=Date.now;
+  const end=Workouts.debug().restEndAt;
+  Date.now=()=>Math.max(realNow(),end+1);
+  setTimeout(()=>Date.now=realNow,900);
+ });
+ await page.waitForFunction(()=>document.querySelector('#rest-time').textContent==='Go!');
+ check(await page.locator('#rest-time').textContent()==='Go!','The rest circle says Go! after the deadline');
  await page.getByRole('button',{name:'Rest controls',exact:true}).click();
  await dialog().getByRole('button',{name:'Skip rest',exact:true}).click();
  check((await state()).restEndAt===0,'Rest can be skipped');
- await page.getByRole('button',{name:'Edit workout',exact:true}).click();
+ await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Add set to Barbell Curl'}).click();
  await dialog().getByRole('button',{name:'Done'}).click();
  check((await state()).active.exercises[0].sets.length===4,'Extra sets can be added to the active workout');
@@ -91,7 +99,7 @@ try{
  check(await page.locator('.progress-row').textContent().then(s=>s.includes('45 lb × 6')),'Progress uses completed sets');
  await page.getByRole('tab',{name:'Today'}).click();
  await page.waitForFunction(()=>document.querySelector('#today-tab').getAttribute('aria-selected')==='true');
- await page.getByRole('button',{name:'Edit workout',exact:true}).click();
+ await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Barbell Curl',exact:true}).click();
  await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill('55');
  await page.evaluate(()=>qa.fail=true);
@@ -106,7 +114,7 @@ try{
  await page.locator('#settings-screen').getByRole('combobox',{name:'Default unit'}).selectOption('kg');
  await page.locator('#settings-screen').getByRole('button',{name:'Save',exact:true}).click();
  check((await state()).settings.unit==='kg'&&(await state()).history[0].exercises[0].unit==='lb','Changing default units preserves historical units');
- await page.getByRole('button',{name:'Edit workout',exact:true}).click();
+ await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill('New exercise');
  await dialog().getByRole('textbox',{name:'Reps per set'}).fill('0, 8');
@@ -114,18 +122,21 @@ try{
  check(await dialog().locator('.error').textContent().then(s=>s.includes('1–100')),'Invalid rep targets are rejected');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
  const old=await state();
- await page.getByRole('button',{name:'Edit workout',exact:true}).click();await dialog().getByRole('button',{name:'Add routine'}).click();
+ await page.getByRole('button',{name:'Add routine',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Name',exact:true}).fill('Workout B');
  await dialog().getByRole('button',{name:'Add',exact:true}).click();
- check((await state()).routines.length===old.routines.length+1&&await page.locator('.exercise').count()===0,'Multiple routines can be created independently');
- await page.getByRole('button',{name:'Edit workout',exact:true}).click();
+ check((await state()).routines.length===old.routines.length+1&&await page.getByRole('button',{name:'Start workout',exact:true}).count()===2,'Multiple routines are visible with their own Start buttons');
+ await page.getByRole('button',{name:'Edit Workout B',exact:true}).click();
  await dialog().getByRole('button',{name:'Rename workout',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Name',exact:true}).fill('Workout B renamed');
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
- check((await state()).routines.find(r=>r.id===(old.routines[0].id))?.name==='Workout A'&&await page.locator('#routine-picker').textContent()==='Workout B renamed','The pencil renames the selected workout');
- await page.locator('#routine-picker').click();await dialog().getByRole('button',{name:'Workout A',exact:true}).click();
+ check((await state()).routines.find(r=>r.id===(old.routines[0].id))?.name==='Workout A'&&await page.getByRole('region',{name:'Workout B renamed',exact:true}).isVisible(),'The pencil renames the selected workout');
+ await page.getByRole('button',{name:'Edit Workout B renamed',exact:true}).click();
+ await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
+ await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill('B-only exercise');
+ await dialog().getByRole('button',{name:'Add',exact:true}).click();
  check(await page.getByRole('button',{name:'Add exercise',exact:true}).count()===0&&await page.locator('.exercise-head button').count()===0,'Today keeps workout editing behind the pencil');
- await page.getByRole('button',{name:'Edit workout',exact:true}).click();
+ await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  const cards=dialog().locator('.workout-edit-row');
  const a=await cards.nth(0).boundingBox(),b=await cards.nth(1).boundingBox();
  await page.mouse.move(a.x+20,a.y+a.height/2);await page.mouse.down();await page.waitForTimeout(430);await page.mouse.move(b.x+20,b.y+b.height-2,{steps:12});await page.waitForTimeout(220);await page.mouse.up();await page.waitForTimeout(480);
@@ -136,7 +147,9 @@ try{
  check((await state()).history[0].exercises[0].name==='Barbell Curl','Reordering routines preserves workout history');
  await mkdir('build/browser-qa',{recursive:true});
  await page.screenshot({path:'build/browser-qa/workouts-home.png',fullPage:true});
- await page.getByRole('button',{name:'Start workout',exact:true}).click();
+ await page.getByRole('region',{name:'Workout A',exact:true}).getByRole('button',{name:'Start workout',exact:true}).click();
+ const other=page.getByRole('region',{name:'Workout B renamed',exact:true});
+ check(await other.getByText('B-only exercise',{exact:true}).isVisible()&&await other.locator('.set').count()===0&&await other.getByRole('button',{name:'Start workout'}).isDisabled(),'Inactive routines stay visible with their rep circles collapsed');
  await page.getByRole('button',{name:'Log set 1 of Front/Lateral Raise'}).click();
  await page.screenshot({path:'build/browser-qa/workouts-active.png',fullPage:true});
  await page.evaluate(()=>{qa.music={connected:true,available:true,title:'Training track',artist:'Example artist',playing:true,art:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII='};});
@@ -161,7 +174,7 @@ try{
   return Math.abs(art.top-bar.top-(art.left-bar.left))<.6&&Math.abs(bar.bottom-art.bottom-(art.left-bar.left))<.6;
  }),'Spotify artwork has equal left, top and bottom padding');
  await page.setViewportSize({width:320,height:500});
- await page.getByRole('button',{name:'Edit workout',exact:true}).click();
+ await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Front/Lateral Raise',exact:true}).click();
  check(await dialog().evaluate(d=>d.scrollWidth<=d.clientWidth+1),'Exercise editor fits a narrow phone');
  check(await dialog().getByRole('button',{name:'Save',exact:true}).evaluate(b=>{const r=b.getBoundingClientRect();return r.bottom<=innerHeight&&r.top>=0;}),'Editor actions remain visible with limited keyboard space');
@@ -174,6 +187,22 @@ try{
  check(await page.getByLabel('Rest timer',{exact:true}).isVisible()===false,'The floating timer can be disabled');
  check(await page.locator('.fab').count()===0,'There is no floating action button');
  await page.setViewportSize({width:390,height:844});
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ const settings=page.locator('#settings-screen');
+ await settings.getByRole('combobox',{name:'Rest countdown'}).selectOption('Last 5 seconds');
+ await settings.getByRole('slider',{name:'Countdown pulse length'}).fill('0.12');
+ await settings.getByRole('combobox',{name:'Schedule',exact:true}).selectOption('Selected weekdays');
+ await settings.getByRole('checkbox',{name:'Friday',exact:true}).uncheck();
+ await settings.getByRole('button',{name:'Save',exact:true}).click();
+ const preferences=(await state()).settings;
+ check(preferences.countdownSeconds===5&&preferences.countdownVibrationMs===120,'Rest countdown duration and pulse length save independently');
+ check(preferences.schedule.days.join() === '1,3'&&await page.locator('.routine-date').count()===2,'The weekday schedule labels both routines');
+ check(await page.locator('.routine').first().getAttribute('aria-label')==='Workout B renamed','The next routine follows the latest completed workout');
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ await settings.getByRole('combobox',{name:'Schedule',exact:true}).selectOption('Every few days');
+ await settings.getByRole('spinbutton',{name:'Train every (days)'}).fill('3');
+ await settings.getByRole('button',{name:'Save',exact:true}).click();
+ check((await state()).settings.schedule.every===3&&await page.locator('.routine-date').count()===2,'An every-three-days schedule saves and dates each workout');
  check(errors.length===0,'No browser errors');
  console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();await fixture.close();}
