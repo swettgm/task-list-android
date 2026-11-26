@@ -189,7 +189,7 @@
     }
     if(Array.isArray(peers))state.manualLinks=manualLinksFor(state,task.id,peers);
     persist(Object.assign({}, scope.getState(), state));
-    if(confirmed){confirmed();setTimeout(rebuild,0);if(isNew)actionHaptic();return;}
+    if(confirmed)confirmed();
     if(fade||(!isNew&&previousPriority!==task.priority))fadeRows(task.id,undefined,typeof fade==='number'?fade:180);else rebuild();if(isNew)actionHaptic();
   }
   function applyDefinitions(state) {
@@ -937,7 +937,8 @@
         persist({projects,customTasks:[...(readCanonical().customTasks||[]),task]});
       }else{projects[record.id]=record;persist({projects});}
     }
-    if(confirmed){confirmed();setTimeout(rebuild,0);}else rebuild();
+    if(confirmed)confirmed();
+    rebuild();
     if(isNew||mode==='task')actionHaptic();
   }
   function projectTrashIcon(){
