@@ -10,7 +10,7 @@ try{
  await page.addInitScript(()=>{
   let state=JSON.parse(localStorage.getItem('qa-state')||'{}');window.qa={haptics:0,fail:false};
   window.WorkoutNative={readState:()=>JSON.stringify(state),writeState:raw=>{if(qa.fail)return null;state=JSON.parse(raw);state.revision=(state.revision||0)+1;localStorage.setItem('qa-state',JSON.stringify(state));return JSON.stringify(state);},
-   restState:()=>JSON.stringify({end:state.restEndAt,duration:state.restDurationMs,started:state.restStartedAt,dismissed:state.restDismissed}),ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},restComplete(){},spotifyState:()=>JSON.stringify({connected:false}),preciseTimers:()=>true};
+   restState:()=>JSON.stringify({end:state.restEndAt,duration:state.restDurationMs,started:state.restStartedAt,dismissed:state.restDismissed,position:state.restPosition}),ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},restComplete(){},spotifyState:()=>JSON.stringify({connected:false}),preciseTimers:()=>true};
  });
  await page.goto(fixture.url);await page.waitForFunction(()=>!!window.Workouts);
  const data=()=>page.evaluate(()=>Workouts.debug()),sets=()=>page.locator('.set:not(.set-add)'),dialog=()=>page.locator('dialog[open]');

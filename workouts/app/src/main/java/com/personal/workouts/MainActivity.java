@@ -158,7 +158,8 @@ public final class MainActivity extends Activity {
             try {
                 org.json.JSONObject value=store.read();
                 return new org.json.JSONObject().put("end",value.optLong("restEndAt"))
-                    .put("duration",value.optLong("restDurationMs")).put("started",value.optLong("restStartedAt")).put("dismissed",value.optBoolean("restDismissed")).toString();
+                    .put("duration",value.optLong("restDurationMs")).put("started",value.optLong("restStartedAt")).put("dismissed",value.optBoolean("restDismissed"))
+                    .put("position",value.optJSONObject("restPosition")).toString();
             }catch(RuntimeException|org.json.JSONException invalid){return null;}
         }
         @JavascriptInterface public boolean floatingRestVisible() {

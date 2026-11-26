@@ -82,6 +82,16 @@ public class RestTimerServiceTest {
             ShadowSettings.setCanDrawOverlays(false);
         }
     }
+    @Test public void savedDragPositionAppliesOnlyToItsOriginalRest()throws Exception{
+        JSONObject state=new JSONObject().put("restStartedAt",10)
+            .put("settings",new JSONObject().put("timerPosition",new JSONObject().put("x",.5).put("y",1)));
+        assertNull(FloatingRestTimer.positionForRest(state));
+        JSONObject position=new JSONObject().put("started",10).put("x",.5).put("y",1);
+        state.put("restPosition",position);
+        assertSame(position,FloatingRestTimer.positionForRest(state));
+        state.put("restStartedAt",11);
+        assertNull(FloatingRestTimer.positionForRest(state));
+    }
     @Test public void dismissZoneMustBeEnteredAndThenExpands(){
         FloatingRestTimer.DropHover hover=new FloatingRestTimer.DropHover();
         assertFalse(hover.update(8,16,38,50));

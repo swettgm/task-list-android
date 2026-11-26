@@ -606,11 +606,13 @@ function remainingText(milliseconds=state.restEndAt-Date.now()){
  const seconds=milliseconds>0?Math.ceil(milliseconds/1000):Math.floor(-milliseconds/1000);
  return (milliseconds<=0?'-':'')+Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
 }
-function placeTimer(position=state.settings.timerPosition){
+function placeTimer(){
  const width=innerWidth,height=visualViewport?.height||innerHeight,size=76,margin=8;
  const roomX=Math.max(0,width-size-margin*2),roomY=Math.max(0,height-size-margin*2);
- const x=Number.isFinite(position?.x)?position.x:Math.max(0,(width-size-16-margin)/Math.max(1,roomX)),y=Number.isFinite(position?.y)?position.y:Math.max(0,(height-(state.settings.spotify!==false?190:100)-margin)/Math.max(1,roomY));
- const left=margin+Math.max(0,Math.min(1,x))*roomX,top=margin+Math.max(0,Math.min(1,y))*roomY;
+ const saved=state.restPosition;
+ const position=saved?.started===state.restStartedAt?saved:null;
+ const left=margin+(Number.isFinite(position?.x)?Math.max(0,Math.min(1,position.x))*roomX:Math.max(0,roomX-margin));
+ const top=margin+(Number.isFinite(position?.y)?Math.max(0,Math.min(1,position.y))*roomY:Math.min(208,roomY*.5));
  Object.assign($('rest').style,{left:left+'px',top:top+'px',right:'auto',bottom:'auto'});
 }
 function tick(){
@@ -692,7 +694,7 @@ function finishTimerDrag(commit,event){
   tick();
  }else if(commit){
   const box=$('rest').getBoundingClientRect(),x=Math.max(0,Math.min(1,(box.left-8)/Math.max(1,innerWidth-92))),y=Math.max(0,Math.min(1,(box.top-8)/Math.max(1,(visualViewport?.height||innerHeight)-92)));
-  if(save(next=>next.settings.timerPosition={x,y}))haptic();
+  if(save(next=>{if(next.restEndAt&&next.restStartedAt===d.started)next.restPosition={started:d.started,x,y};}))haptic();
  }}
  placeTimer();
 }
@@ -959,7 +961,7 @@ setInterval(()=>{
  if(!state||!native?.restState)return;
  try{
   const rest=JSON.parse(native.restState());
-  state.restEndAt=rest.end;state.restDurationMs=rest.duration;state.restStartedAt=rest.started;state.restDismissed=!!rest.dismissed;
+  state.restEndAt=rest.end;state.restDurationMs=rest.duration;state.restStartedAt=rest.started;state.restDismissed=!!rest.dismissed;state.restPosition=rest.position;
   tick();
  }catch(_){}
 },1000);

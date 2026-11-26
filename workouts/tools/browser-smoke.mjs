@@ -237,13 +237,17 @@ try{
  });
  check(aligned,'Spotify controls and track text share a centered row');
  const before=await page.locator('#rest').boundingBox();
+ check(before.x>250&&before.y<300,'A new rest starts on the right, clear of the drop zone');
  await page.mouse.move(before.x+38,before.y+38);await page.mouse.down();await page.mouse.move(90,220,{steps:12});await page.mouse.up();
- check(await page.evaluate(()=>!!Workouts.debug().settings.timerPosition),'Dragging the timer saves its position');
+ check(await page.evaluate(()=>{const data=Workouts.debug();return data.restPosition?.started===data.restStartedAt;}),'Dragging saves the position for the current rest');
  const after=await page.locator('#rest').boundingBox();
  check(Math.abs(after.x-before.x)>10||Math.abs(after.y-before.y)>10,'The floating timer moves independently of the workout');
  const ringStart=await page.locator('#rest-ring').evaluate(e=>Number(e.style.strokeDashoffset));
  await page.waitForTimeout(500);
  check(await page.locator('#rest-ring').evaluate((e,start)=>Number(e.style.strokeDashoffset)>start,ringStart),'The timer ring shrinks as time passes');
+ await page.getByRole('button',{name:'Log set 2 of Front/Lateral Raise'}).click();
+ const nextRest=await page.locator('#rest').boundingBox();
+ check(Math.abs(nextRest.x-before.x)<1&&Math.abs(nextRest.y-before.y)<1,'The next rest returns to the right after the previous timer was dragged');
  check(await page.locator('#spotify-art img').count()===1,'Album art is shown when Spotify provides it');
  check(await page.locator('#spotify-title').evaluate(e=>Number(getComputedStyle(e).fontWeight)>=700),'Spotify track text is bold');
  check(await page.locator('#spotify').evaluate(player=>{

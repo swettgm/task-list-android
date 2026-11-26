@@ -21,7 +21,6 @@ final class FloatingRestTimer extends View {
         :Typeface.create("sans-serif",Typeface.BOLD);
     private static final int OVERDUE=0xffff6b7c;
     private final int margin, slop;
-    private float positionX=1f,positionY=0f;
     private float startX,startY;
     private long restStarted,dragStarted;
     private View dismissTarget;
@@ -68,19 +67,9 @@ final class FloatingRestTimer extends View {
     }
 
     boolean show() {
-        JSONObject settings=store.read().optJSONObject("settings");
-        JSONObject position=settings==null?null:settings.optJSONObject("timerPosition");
-        if(position==null&&settings!=null)position=settings.optJSONObject("overlayTimerPosition");
-        updateRoom();
-        if(position!=null){
-            positionX=clampFraction(position.optDouble("x",1),1);
-            positionY=clampFraction(position.optDouble("y",0),0);
-        }else if(settings!=null){
-            positionX=clampFraction((roomX-dp(8))/(double)Math.max(1,roomX),1);
-            positionY=clampFraction((roomY-dp(settings.optBoolean("spotify",true)?106:16))/(double)Math.max(1,roomY),0);
-        }
-        layout.x=margin+Math.round(positionX*roomX);
-        layout.y=margin+Math.round(positionY*roomY);
+        JSONObject state=store.read();
+        restStarted=state.optLong("restStartedAt");
+        placeTimer(state);
         try {windows.addView(this,layout);attached=true;return true;}
         catch(RuntimeException unavailable){return false;}
     }
@@ -108,13 +97,24 @@ final class FloatingRestTimer extends View {
             label=nextLabel;
             setContentDescription("Rest · "+label+". Open Exercise");
         }
-        if(!dragging){
-            int oldX=roomX,oldY=roomY;
-            updateRoom();
-            if(oldX!=roomX||oldY!=roomY)
-                move(margin+Math.round(positionX*roomX),margin+Math.round(positionY*roomY));
-        }
+        if(!dragging)placeTimer(state);
         invalidate();
+    }
+
+    static JSONObject positionForRest(JSONObject state){
+        JSONObject position=state.optJSONObject("restPosition");
+        return position!=null&&state.optLong("restStartedAt")>0&&
+            position.optLong("started",-1)==state.optLong("restStartedAt")?position:null;
+    }
+
+    private void placeTimer(JSONObject state){
+        updateRoom();
+        JSONObject position=positionForRest(state);
+        int rightSide=Math.max(0,roomX-margin);
+        int upperSide=Math.min(dp(208),Math.round(roomY*.5f));
+        int left=position==null?rightSide:Math.round(clampFraction(position.optDouble("x"),rightSide/(float)Math.max(1,roomX))*roomX);
+        int top=position==null?upperSide:Math.round(clampFraction(position.optDouble("y"),upperSide/(float)Math.max(1,roomY))*roomY);
+        if(layout.x!=margin+left||layout.y!=margin+top)move(margin+left,margin+top);
     }
 
     static String formatTime(long milliseconds) {
@@ -266,13 +266,13 @@ final class FloatingRestTimer extends View {
     }
 
     private void savePosition() {
-        positionX=(layout.x-margin)/(float)Math.max(1,roomX);
-        positionY=(layout.y-margin)/(float)Math.max(1,roomY);
+        float x=(layout.x-margin)/(float)Math.max(1,roomX);
+        float y=(layout.y-margin)/(float)Math.max(1,roomY);
         synchronized(WorkoutStore.LOCK){
-            JSONObject state=store.read(),settings=state.optJSONObject("settings");
-            if(settings==null)return;
+            JSONObject state=store.read();
+            if(state.optLong("restEndAt")==0||state.optLong("restStartedAt")!=dragStarted)return;
             try {
-                settings.put("timerPosition",new JSONObject().put("x",positionX).put("y",positionY));
+                state.put("restPosition",new JSONObject().put("started",dragStarted).put("x",x).put("y",y));
                 store.write(state.toString());
             }catch(org.json.JSONException ignored){ }
         }
