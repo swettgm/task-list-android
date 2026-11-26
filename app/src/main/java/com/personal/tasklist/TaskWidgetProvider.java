@@ -77,7 +77,7 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
                     }else if(ACTION_ITEM.equals(intent.getAction())&&"complete".equals(itemAction)){
                         WidgetCompletions.begin(context,taskId);refreshAll(context);
                         final Context app=context.getApplicationContext();final PendingResult pending=goAsync();
-                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(()->{try{WidgetCompletions.settleExpired(app);refreshAll(app);}finally{if(pending!=null)pending.finish();}},WidgetCompletions.DELAY_MS+50);
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(()->{try{WidgetCompletions.settleExpired(app);refreshAll(app);}catch(RuntimeException unavailable){android.util.Log.w("Tasks","Widget refresh failed",unavailable);}finally{if(pending!=null)pending.finish();}},WidgetCompletions.DELAY_MS+50);
                     }else if(ACTION_ITEM.equals(intent.getAction())&&("start".equals(itemAction)||"stop".equals(itemAction))){
                         if(!WidgetCompletions.token(context,taskId).isEmpty())return;
                         if(!new ReferenceStore(context).setTaskInProgress(taskId,"start".equals(itemAction)))store.setStatus(taskId,"start".equals(itemAction)?TaskStore.IN_PROGRESS:TaskStore.NEXT);
@@ -185,12 +185,18 @@ public final class TaskWidgetProvider extends AppWidgetProvider {
         views.setImageViewBitmap(R.id.widget_empty,WidgetEmptyMessage.render(context,empty,secondary,width));
         views.setContentDescription(R.id.widget_empty,empty);
         Intent service=new Intent(context,TaskWidgetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).setData(Uri.parse("tasklist-widget://rows/"+id));
-        views.setRemoteAdapter(R.id.widget_rows,service);views.setEmptyView(R.id.widget_rows,R.id.widget_empty);
+        boolean inline=false;
+        if(android.os.Build.VERSION.SDK_INT>=31){
+            RemoteViews.RemoteCollectionItems items=new TaskWidgetService.Factory(context,id).inlineItems();
+            if(items!=null){views.setRemoteAdapter(R.id.widget_rows,items);inline=true;}
+        }
+        if(!inline)views.setRemoteAdapter(R.id.widget_rows,service);
+        views.setEmptyView(R.id.widget_rows,R.id.widget_empty);
         Intent item=new Intent(context,TaskWidgetProvider.class).setAction(ACTION_ITEM).setData(Uri.parse("tasklist-widget://items/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id);
         int flags=PendingIntent.FLAG_UPDATE_CURRENT;if(android.os.Build.VERSION.SDK_INT>=31)flags|=PendingIntent.FLAG_MUTABLE;
         views.setPendingIntentTemplate(R.id.widget_rows,PendingIntent.getBroadcast(context,id,item,flags));
         views.setOnClickPendingIntent(R.id.widget_title,openApp(context,id,list,label,false));views.setOnClickPendingIntent(R.id.widget_add,openApp(context,id,list,label,true));
-        manager.updateAppWidget(id,views);manager.notifyAppWidgetViewDataChanged(id,R.id.widget_rows);
+        manager.updateAppWidget(id,views);if(!inline)manager.notifyAppWidgetViewDataChanged(id,R.id.widget_rows);
     }
 
     private static PendingIntent openApp(Context context, int widgetId, String listName, String label, boolean add) {

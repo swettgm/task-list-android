@@ -14,19 +14,21 @@ public final class GoogleSyncJob extends JobService {
     private static final int PERIODIC=28731, EDIT=28732;
     private final Map<Integer,GoogleSync> jobs=new HashMap<>();
 
-    static void schedulePeriodic(Context context) {
-        JobScheduler scheduler=context.getSystemService(JobScheduler.class);
-        if(scheduler==null||scheduler.getPendingJob(PERIODIC)!=null)return;
-        scheduler.schedule(new JobInfo.Builder(PERIODIC,new ComponentName(context,GoogleSyncJob.class))
-            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY).setPeriodic(15*60_000L).setPersisted(true).build());
-    }
+    static void schedulePeriodic(Context context) {schedule(context,PERIODIC);}
+    static void scheduleSoon(Context context) {schedule(context,EDIT);}
 
-    static void scheduleSoon(Context context) {
+    private static void schedule(Context context,int id) {
         if(context.getSharedPreferences("google_sync",Context.MODE_PRIVATE).getString("account","").isEmpty())return;
-        JobScheduler scheduler=context.getSystemService(JobScheduler.class);
-        if(scheduler==null||scheduler.getPendingJob(EDIT)!=null)return;
-        scheduler.schedule(new JobInfo.Builder(EDIT,new ComponentName(context,GoogleSyncJob.class))
-            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY).build());
+        try{
+            JobScheduler scheduler=context.getSystemService(JobScheduler.class);
+            if(scheduler==null||scheduler.getPendingJob(id)!=null)return;
+            JobInfo.Builder job=new JobInfo.Builder(id,new ComponentName(context,GoogleSyncJob.class))
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+            if(id==PERIODIC)job.setPeriodic(15*60_000L).setPersisted(true);
+            scheduler.schedule(job.build());
+        }catch(SecurityException|IllegalStateException|IllegalArgumentException unavailable){
+            android.util.Log.w("Tasks","Background Google sync could not be scheduled",unavailable);
+        }
     }
 
     @Override public boolean onStartJob(JobParameters parameters) {

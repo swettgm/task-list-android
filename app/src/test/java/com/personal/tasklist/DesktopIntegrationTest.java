@@ -34,4 +34,21 @@ public class DesktopIntegrationTest {
         try{controller.get().taskBridgeForTests().appReady();Shadows.shadowOf(Looper.getMainLooper()).idle();AlertDialog dialog=ShadowAlertDialog.getLatestAlertDialog();assertNotNull(dialog);assertEquals("Link this PC?",Shadows.shadowOf(dialog).getTitle());assertFalse(Shadows.shadowOf(dialog).getMessage().toString().contains(token));assertFalse(new JSONObject(controller.get().taskBridgeForTests().getSyncStatus()).getBoolean("paired"));dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();assertFalse(new JSONObject(controller.get().taskBridgeForTests().getSyncStatus()).getBoolean("paired"));}
         finally{controller.pause().stop().destroy();}
     }
+    @Test @Config(sdk=35) public void networkJobsHavePermissionAndUnsignedLaunchSchedulesNothing()throws Exception{
+        String permission=android.Manifest.permission.ACCESS_NETWORK_STATE;
+        android.content.pm.PackageInfo info=context.getPackageManager().getPackageInfo(context.getPackageName(),
+            android.content.pm.PackageManager.GET_PERMISSIONS);
+        assertTrue(java.util.Arrays.asList(info.requestedPermissions).contains(permission));
+        Shadows.shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(permission);
+        android.app.job.JobScheduler scheduler=context.getSystemService(android.app.job.JobScheduler.class);
+        context.getSharedPreferences("google_sync",0).edit().clear().commit();
+        GoogleSyncJob.schedulePeriodic(context);
+        assertTrue(scheduler.getAllPendingJobs().isEmpty());
+        context.getSharedPreferences("google_sync",0).edit().putString("account","fixture").commit();
+        try{
+            GoogleSyncJob.schedulePeriodic(context);
+            GoogleSyncJob.scheduleSoon(context);
+            assertEquals(2,scheduler.getAllPendingJobs().size());
+        }finally{scheduler.cancelAll();context.getSharedPreferences("google_sync",0).edit().clear().commit();}
+    }
 }

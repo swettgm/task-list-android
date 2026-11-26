@@ -16,7 +16,7 @@ public final class TaskWidgetService extends RemoteViewsService {
     @Override public RemoteViewsFactory onGetViewFactory(Intent intent){return new Factory(getApplicationContext(),intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,AppWidgetManager.INVALID_APPWIDGET_ID));}
     static final class Factory implements RemoteViewsFactory {
         private static final class Entry { final String priority;final TaskStore.Task task;Entry(String priority,TaskStore.Task task){this.priority=priority;this.task=task;} }
-        private final Context context;private final int widgetId;private volatile List<Entry> rows=new ArrayList<>();private volatile boolean dark=true;
+        private final Context context;private final int widgetId;private volatile List<Entry> rows=new ArrayList<>();private volatile boolean dark=true;private volatile org.json.JSONObject canonical=new org.json.JSONObject();
         Factory(Context context,int widgetId){this.context=context;this.widgetId=widgetId;}
         @Override public void onCreate(){onDataSetChanged();}
         @Override public void onDataSetChanged(){long token=Binder.clearCallingIdentity();try{
@@ -26,8 +26,9 @@ public final class TaskWidgetService extends RemoteViewsService {
             List<Entry> next=new ArrayList<>();
             for(TaskStore.Task task:tasks)if(TaskStore.IN_PROGRESS.equals(task.status))next.add(new Entry(task.priority,task));
             for(String priority:TaskStore.PRIORITIES){boolean heading=false;for(TaskStore.Task task:tasks)if(priority.equals(task.priority)&&!TaskStore.IN_PROGRESS.equals(task.status)){if(!heading){next.add(new Entry(priority,null));heading=true;}next.add(new Entry(priority,task));}}
+            canonical=new org.json.JSONObject(new ReferenceStore(context).readState());
             rows=next;
-        }catch(RuntimeException unavailable){rows=new ArrayList<>();}finally{Binder.restoreCallingIdentity(token);}}
+        }catch(org.json.JSONException|RuntimeException unavailable){rows=new ArrayList<>();}finally{Binder.restoreCallingIdentity(token);}}
         @Override public void onDestroy(){rows=new ArrayList<>();}
         @Override public int getCount(){return rows.size();}
         private String priorityLabel(String value){switch(value){case "HIGH":return "High";case "MEDIUM":return "Medium";case "LOW":return "Low";default:return "Low";}}
@@ -48,7 +49,7 @@ public final class TaskWidgetService extends RemoteViewsService {
             row.setTextColor(R.id.widget_check,Color.parseColor(dark?"#8FC6E7":"#195B7E"));
             row.setTextColor(R.id.widget_due,Color.parseColor(dark?"#BAC9D9":"#56677F"));
             boolean active=TaskStore.IN_PROGRESS.equals(task.status),urgent=task.sourceRecord().optBoolean("urgent");
-            boolean overdue;try{overdue=java.time.LocalDate.parse(ReminderPlanner.chosenDate(task.sourceRecord(),task.sourceRecord().optString("stateDate",task.dueDate),new org.json.JSONObject(new ReferenceStore(context).readState()))).isBefore(java.time.LocalDate.now(ReminderPlanner.ZONE));}catch(Exception invalid){overdue=false;}
+            boolean overdue;try{overdue=java.time.LocalDate.parse(ReminderPlanner.chosenDate(task.sourceRecord(),task.sourceRecord().optString("stateDate",task.dueDate),canonical)).isBefore(java.time.LocalDate.now(ReminderPlanner.ZONE));}catch(Exception invalid){overdue=false;}
             String status=(active?"🟢 IN PROGRESS":urgent?"🔴 URGENT":overdue?"Overdue":"Today")+(!active&&urgent&&overdue?" · Overdue":"");
             row.setTextViewText(R.id.widget_due,status);
             row.setTextColor(R.id.widget_due,active||urgent?Color.WHITE:Color.parseColor(dark?"#BAC9D9":"#56677F"));
@@ -60,6 +61,19 @@ public final class TaskWidgetService extends RemoteViewsService {
             row.setTextColor(R.id.widget_task_title,Color.parseColor(staged?(dark?"#A5AFBA":"#6B7684"):(dark?"#F3F7FC":"#1F2B40")));
             row.setOnClickFillInIntent(R.id.widget_check,new Intent().putExtra(TaskWidgetProvider.EXTRA_TASK_ID,task.id).putExtra(TaskWidgetProvider.ITEM_ACTION,staged?"undo":"complete").putExtra("completion_token",pending));
             return row;
+        }
+        @android.annotation.TargetApi(31)
+        RemoteViews.RemoteCollectionItems inlineItems(){
+            onDataSetChanged();
+            if(rows.size()>80)return null;
+            // Use the service for large collections to stay below Binder's transaction limit.
+            int textLength=0;
+            for(Entry row:rows)if(row.task!=null)textLength+=row.task.title.length()+row.task.id.length();
+            if(textLength>24000)return null;
+            RemoteViews.RemoteCollectionItems.Builder items=new RemoteViews.RemoteCollectionItems.Builder()
+                .setHasStableIds(true).setViewTypeCount(getViewTypeCount());
+            for(int i=0;i<rows.size();i++)items.addItem(getItemId(i),getViewAt(i));
+            return items.build();
         }
         @Override public RemoteViews getLoadingView(){return null;}
         @Override public int getViewTypeCount(){return 2;}

@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.100.1",
+    "date": "2026-11-26",
+    "changes": [
+      "Fix Android launch when scheduling Google sync and keep widget rows available while completing tasks."
+    ]
+  },
+  {
     "version": "0.100.0",
     "date": "2026-11-26",
     "changes": [

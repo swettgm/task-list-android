@@ -414,4 +414,21 @@ public class TaskWidgetTest {
         Intent tap=new Intent(context,TaskWidgetProvider.class).setAction(TaskWidgetProvider.ACTION_ITEM).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widget).putExtra(TaskWidgetProvider.EXTRA_TASK_ID,rowId).putExtra(TaskWidgetProvider.ITEM_ACTION,"start");new TaskWidgetProvider().onReceive(context,tap);factory.onDataSetChanged();assertEquals("🟢 IN PROGRESS",((android.widget.TextView)factory.getViewAt(0).apply(context,null).findViewById(R.id.widget_due)).getText().toString());assertEquals(id+":"+day,new org.json.JSONObject(reference.readState()).getString("inProgress"));
         tap.putExtra(TaskWidgetProvider.ITEM_ACTION,"stop");new TaskWidgetProvider().onReceive(context,tap);factory.onDataSetChanged();assertEquals("🔴 URGENT",((android.widget.TextView)factory.getViewAt(1).apply(context,null).findViewById(R.id.widget_due)).getText().toString());assertTrue(new org.json.JSONObject(reference.readState()).getJSONArray("customTasks").getJSONObject(0).getBoolean("urgent"));
     }
+    @Test @Config(sdk=35) public void inlineRowsRemainAvailableDuringAndAfterCompleting(){
+        String today=LocalDate.now(ReminderPlanner.ZONE).toString();
+        store.add("Keep this row","Work",today);
+        store.add("Finish this row","Work",today);
+        String id=store.all().stream().filter(t->t.title.equals("Finish this row")).findFirst().get().id;
+        TaskWidgetService.Factory factory=new TaskWidgetService.Factory(context,17);
+        assertEquals(3,factory.inlineItems().getItemCount());
+        WidgetCompletions.begin(context,id);
+        android.widget.RemoteViews.RemoteCollectionItems staged=factory.inlineItems();
+        assertEquals(3,staged.getItemCount());
+        assertEquals("Keep this row",store.all().stream().filter(t->!t.id.equals(id)).findFirst().get().title);
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(2100));
+        android.widget.RemoteViews.RemoteCollectionItems after=factory.inlineItems();
+        assertEquals(2,after.getItemCount());
+        android.view.View visible=after.getItemView(1).apply(context,null);
+        assertEquals("Keep this row",((android.widget.TextView)visible.findViewById(R.id.widget_task_title)).getText().toString());
+    }
 }
