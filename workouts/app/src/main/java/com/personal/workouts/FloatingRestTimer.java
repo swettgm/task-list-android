@@ -25,7 +25,7 @@ final class FloatingRestTimer extends View {
     private float startX,startY;
     private long restStarted,dragStarted;
     private View dismissTarget;
-    private boolean overDismiss;
+    private final DropHover dropHover=new DropHover();
     private int startLeft,startTop;
     private boolean dragging,attached,overdue;
     private int roomX,roomY,foreground,background;
@@ -152,21 +152,20 @@ final class FloatingRestTimer extends View {
         switch(event.getActionMasked()){
             case MotionEvent.ACTION_DOWN:
                 startX=event.getRawX();startY=event.getRawY();startLeft=layout.x;startTop=layout.y;
-                dragging=false;dragStarted=restStarted;
+                dragging=false;dragStarted=restStarted;dropHover.reset();
                 return true;
             case MotionEvent.ACTION_MOVE:
                 float dx=event.getRawX()-startX,dy=event.getRawY()-startY;
                 if(!dragging&&Math.hypot(dx,dy)>slop)dragging=true;
                 if(dragging){
                     showDismissTarget();
-                    overDismiss=hitsDismissTarget(event.getRawX(),event.getRawY());
-                    if(dismissTarget!=null)dismissTarget.invalidate();
+                    updateDismissHover(event.getRawX(),event.getRawY(),true);
                     move(startLeft+Math.round(dx),startTop+Math.round(dy));
                 }
                 return true;
             case MotionEvent.ACTION_UP:
                 if(dragging){
-                    if(hitsDismissTarget(event.getRawX(),event.getRawY()))dismissRest();
+                    if(updateDismissHover(event.getRawX(),event.getRawY(),false))dismissRest();
                     else savePosition();
                 }else performClick();
                 removeDismissTarget();
@@ -190,42 +189,66 @@ final class FloatingRestTimer extends View {
             @Override protected void onDraw(Canvas canvas){
                 float center=getWidth()/2f;
                 ink.setStyle(Paint.Style.FILL);
-                ink.setColor(overDismiss?foreground:background);
-                canvas.drawCircle(center,center,center,ink);
+                if(dropHover.over){
+                    ink.setColor((foreground&0xffffff)|0x22000000);
+                    canvas.drawCircle(center,center,center,ink);
+                    ink.setStyle(Paint.Style.STROKE);
+                    ink.setStrokeWidth(dp(1));
+                    ink.setColor((foreground&0xffffff)|0x44000000);
+                    canvas.drawCircle(center,center,center-dp(1),ink);
+                    ink.setStyle(Paint.Style.FILL);
+                }
+                ink.setColor(dropHover.over?foreground:background);
+                canvas.drawCircle(center,center,dp(26),ink);
                 ink.setStyle(Paint.Style.STROKE);
                 ink.setStrokeWidth(dp(2));
                 ink.setStrokeCap(Paint.Cap.ROUND);
-                ink.setColor(overDismiss?background:foreground);
-                canvas.drawCircle(center,center,center-dp(1),ink);
+                ink.setColor(dropHover.over?background:foreground);
+                canvas.drawCircle(center,center,dp(25),ink);
                 int arm=dp(7);
                 canvas.drawLine(center-arm,center-arm,center+arm,center+arm,ink);
                 canvas.drawLine(center-arm,center+arm,center+arm,center-arm,ink);
             }
         };
-        WindowManager.LayoutParams params=new WindowManager.LayoutParams(dp(52),dp(52),
+        WindowManager.LayoutParams params=new WindowManager.LayoutParams(dp(100),dp(100),
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             PixelFormat.TRANSLUCENT);
         params.gravity=Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL;
-        params.y=dp(16);
         params.setTitle("Dismiss Exercise rest timer");
         try {windows.addView(target,params);dismissTarget=target;}
         catch(RuntimeException unavailable){ /* Dragging to reposition remains available. */ }
     }
 
-    private boolean hitsDismissTarget(float x,float y) {
-        if(dismissTarget==null)return false;
+    static final class DropHover {
+        boolean initialized,needsExit,over;
+        void reset(){initialized=false;needsExit=false;over=false;}
+        boolean update(double origin,double distance,float entryRadius,float holdRadius){
+            if(!initialized){needsExit=origin<=entryRadius;initialized=true;}
+            if(needsExit){if(distance>entryRadius)needsExit=false;return false;}
+            over=distance<=(over?holdRadius:entryRadius);
+            return over;
+        }
+    }
+
+    private boolean updateDismissHover(float x,float y,boolean feedback) {
+        if(dismissTarget==null||dismissTarget.getWidth()==0)return false;
         int[] location=new int[2];
         dismissTarget.getLocationOnScreen(location);
-        float radius=dismissTarget.getWidth()/2f;
-        return radius>0&&Math.hypot(x-location[0]-radius,y-location[1]-radius)<=radius;
+        float centerX=location[0]+dismissTarget.getWidth()/2f,centerY=location[1]+dismissTarget.getHeight()/2f;
+        boolean previous=dropHover.over;
+        boolean over=dropHover.update(Math.hypot(startX-centerX,startY-centerY),
+            Math.hypot(x-centerX,y-centerY),dp(38),dp(50));
+        if(over&&!previous&&feedback)performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        if(over!=previous)dismissTarget.invalidate();
+        return over;
     }
 
     private void removeDismissTarget(){
         if(dismissTarget==null)return;
         try {windows.removeViewImmediate(dismissTarget);}catch(IllegalArgumentException ignored){ }
         dismissTarget=null;
-        overDismiss=false;
+        dropHover.reset();
     }
 
     private void dismissRest(){

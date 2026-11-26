@@ -26,9 +26,16 @@ try{
  check((await state()).routines[0].exercises.length===0&&(await state()).history.length===0,'Fresh install starts with an empty routine and no workout history');
  check(await page.getByLabel('Spotify player').isVisible(),'Compact Spotify player uses the app layout');
  await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Open Spotify');
- await page.locator('#spotify-art').click();
- check(await page.evaluate(()=>qa.openedSpotify)&&!(await page.locator('#spotify-play').isVisible()),'Tapping the idle artwork opens Spotify and inactive controls are hidden');
+ for(const id of ['spotify-art','spotify-prev','spotify-play','spotify-next']){
+  await page.evaluate(()=>qa.openedSpotify=false);
+  await page.locator('#'+id).click();
+  check(await page.evaluate(()=>qa.openedSpotify&&qa.commands.length===0),'The idle '+id+' remains visible and opens Spotify');
+ }
  await page.evaluate(()=>qa.openedSpotify=false);
+ check(await page.locator('#spotify').evaluate(bar=>{
+  const box=bar.getBoundingClientRect(),scale=new DOMMatrix(getComputedStyle(bar).transform).a;
+  return Math.abs(scale-1.1)<.001&&box.left>=8&&box.right<=innerWidth-8;
+ }),'The entire player is scaled 10% and stays inside the screen');
  const playerGeometry=()=>page.locator('#spotify').evaluate(player=>{
   const bar=player.getBoundingClientRect();
   const art=player.querySelector('#spotify-art').getBoundingClientRect();

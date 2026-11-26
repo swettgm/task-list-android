@@ -82,4 +82,16 @@ public class RestTimerServiceTest {
             ShadowSettings.setCanDrawOverlays(false);
         }
     }
+    @Test public void dismissZoneMustBeEnteredAndThenExpands(){
+        FloatingRestTimer.DropHover hover=new FloatingRestTimer.DropHover();
+        assertFalse(hover.update(8,16,38,50));
+        assertFalse(hover.update(8,44,38,50));
+        assertFalse(hover.update(8,44,38,50));
+        assertTrue(hover.update(8,35,38,50));
+        assertTrue(hover.update(8,48,38,50));
+        assertFalse(hover.update(8,51,38,50));
+        assertFalse(hover.update(8,48,38,50));
+        hover.reset();
+        assertTrue(hover.update(90,35,38,50));
+    }
 }

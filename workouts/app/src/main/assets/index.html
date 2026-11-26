@@ -15,7 +15,7 @@ h1,h2,h3,p{margin:0}h1{font-size:22px;line-height:1.2;white-space:nowrap;-webkit
 .history-card{width:100%;text-align:left;justify-content:space-between;gap:8px;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:15px 0;align-items:center}.history-card strong,.history-card span{display:block}.history-card .history-date{font-size:13px;opacity:.7;margin-top:4px}.history-card .history-count{font-size:13px;opacity:.75;white-space:nowrap}.history-sets{display:grid;gap:5px;margin-top:8px;font-size:14px;opacity:.8}.history-exercise{padding:12px 0;border-bottom:1px solid var(--line)}.history-exercise strong{font-size:16px}.progress{margin-bottom:8px}.progress summary{min-height:40px;padding:9px 0;cursor:pointer;font-size:14px}.progress-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:13px;border-bottom:1px solid var(--line)}
 dialog{width:calc(100% - 24px);max-width:520px;max-height:calc(var(--height,100dvh) - 24px);margin:auto;padding:20px;border:1px solid var(--line);border-radius:20px;color:var(--text);background:linear-gradient(var(--top),var(--bottom));box-shadow:0 12px 40px #0004;overflow:hidden;outline:none}dialog::backdrop{background:#0009}dialog[open]{display:flex;flex-direction:column;gap:16px}dialog>h2{flex:none}dialog .fields{display:flex;flex-direction:column;gap:14px;overflow:auto;min-height:0;scrollbar-width:none;padding:1px 2px}dialog .fields>*{flex:none}.actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;padding-top:2px}.actions button{white-space:nowrap;font-size:14px;padding:7px 11px}.actions .trash{margin-right:auto;width:38px;min-width:38px;padding:8px}.field{display:flex;flex-direction:column;gap:6px;min-width:0}.field>span{font-size:14px;opacity:.7}input,textarea,select{border:2px solid var(--line);border-radius:12px;background:var(--surface);min-height:42px;width:100%;min-width:0;padding:8px 10px;line-height:1.3}input:focus,textarea:focus,select:focus{outline:0}body.keyboard-navigation input:focus-visible,body.keyboard-navigation textarea:focus-visible,body.keyboard-navigation select:focus-visible{border-color:var(--text)}textarea{resize:vertical;min-height:80px;max-height:260px}input[type=checkbox]{appearance:none;width:19px;height:19px;min-height:19px;flex:0 0 19px;padding:0;margin:0;border-radius:5px;position:relative}input[type=checkbox]:checked{background:var(--text);border-color:var(--text)}input[type=checkbox]:checked::after{content:'';position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(43deg)}.check-label{display:flex;gap:8px;align-items:center;min-height:32px;font-size:14px}select{appearance:none;padding-right:36px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath d='m5 9 7 7 7-7' fill='none' stroke='%23f4f7fa' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px}input[type=color]{width:44px;min-width:44px;height:42px;padding:4px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.error{font-size:13px;color:#ffb9c4;white-space:pre-wrap;flex:none}.error:empty{display:none}.choice-list{display:grid;gap:6px}.choice-list button{justify-content:flex-start;text-align:left;overflow-wrap:anywhere}.choice-list button[aria-pressed=true]{border:2px solid var(--text)}.toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);padding:9px 13px;border:1px solid var(--line);border-radius:11px;background:var(--top);font-size:13px;z-index:100}.slider-row{display:flex;align-items:center;gap:12px}.slider-row input{flex:1;padding:0;border:0;min-height:32px;accent-color:var(--text)}.slider-row output{width:52px;flex:none;font-size:14px;text-align:right}.drag-source{opacity:.22;border-top:2px solid var(--text)}.drag-ghost{position:fixed;z-index:100;pointer-events:none;background:var(--top);border:1.5px solid var(--text);border-radius:12px;padding:12px;box-shadow:0 10px 26px #0006;margin:0;opacity:.96}.dragging,.dragging *{cursor:grabbing!important;-webkit-user-select:none!important;user-select:none!important}
 @media(max-width:350px){body{padding-left:12px;padding-right:12px}dialog{padding:16px}.exercise-name{font-size:16px}.exercise-plan{font-size:12px}.set{width:48px;min-width:48px;height:48px;min-height:48px}.actions button{padding:7px 9px;font-size:13px}}
-.spotify{--art-size:48px;position:fixed;bottom:18px;left:16px;right:16px;max-width:700px;margin:auto;display:flex;align-items:center;gap:4px;padding:8px;border:1.5px solid var(--line);border-radius:14px;background:var(--top);box-shadow:0 4px 20px #0003;z-index:6}.spotify-track{flex:1;min-width:0;display:flex;align-items:flex-start;flex-direction:column;gap:2px;padding:2px 4px;font-size:13px;text-align:left}.spotify-track span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}#spotify-artist{font-size:11px;opacity:.7}.spotify .icon{width:32px;min-width:32px;min-height:36px;padding:6px}.spotify .icon svg{width:19px;height:19px}#spotify-connect{font-size:12px;min-height:32px;padding:5px 7px}body.has-player .fab,body.has-player .rest{bottom:88px}
+.spotify{--art-size:48px;position:fixed;bottom:18px;left:0;right:0;width:min(700px,calc((100% - 18px)/1.1));margin:auto;transform:scale(1.1);transform-origin:bottom center;display:flex;align-items:center;gap:4px;padding:8px;border:1.5px solid var(--line);border-radius:14px;background:var(--top);box-shadow:0 4px 20px #0003;z-index:6}.spotify-track{flex:1;min-width:0;display:flex;align-items:flex-start;flex-direction:column;gap:2px;padding:2px 4px;font-size:13px;text-align:left}.spotify-track span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}#spotify-artist{font-size:11px;opacity:.7}.spotify .icon{width:32px;min-width:32px;min-height:36px;padding:6px}.spotify .icon svg{width:19px;height:19px}#spotify-connect{font-size:12px;min-height:32px;padding:5px 7px}body.has-player .fab,body.has-player .rest{bottom:88px}
 #settings svg{width:28px;height:28px}
 
 dialog button{min-height:42px;border-width:2px}
@@ -23,7 +23,7 @@ dialog .actions .trash{width:42px;min-width:42px}
 .rest{height:58px}.rest-time{line-height:1.15}.rest-time strong{line-height:1.1}
 
 
-body.has-player{padding-bottom:96px}
+body.has-player{padding-bottom:104px}
 .spotify-track{font-size:14px;font-weight:750;height:var(--art-size);min-height:0;justify-content:center;line-height:1.2;gap:2px;overflow:hidden}
 #spotify-artist{font-size:12px;font-weight:600;opacity:.8}#spotify-artist:empty{display:none}#spotify-copy{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px}.spotify,.spotify button{touch-action:pan-y}
 .spotify-art{display:grid;place-items:center;flex:0 0 var(--art-size);width:var(--art-size);height:var(--art-size);border-radius:10px;overflow:hidden;background:var(--surface)}
@@ -69,10 +69,11 @@ body,#page-stack{touch-action:pan-y}
 .set-reps{line-height:1;text-box:trim-both cap alphabetic;pointer-events:none}
 .workout-edit-actions{display:flex;flex-wrap:wrap;gap:8px}.workout-edit-list{display:grid;gap:6px}.workout-edit-row{display:flex;gap:8px;touch-action:pan-y}.workout-edit-exercise{flex:1;justify-content:flex-start;text-align:left;overflow-wrap:anywhere;min-width:0}.exercise-plan{min-height:0}
 .progress-info{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.progress-graph{width:72px;height:24px;flex:none}
-.timer-dismiss{position:fixed;z-index:15;left:50%;bottom:16px;translate:-50% 0;width:52px;height:52px;display:grid;place-items:center;border:2px solid var(--text);border-radius:50%;background:var(--top);color:var(--text);pointer-events:none}
+.timer-dismiss{position:fixed;z-index:15;left:50%;bottom:24px;translate:-50% 0;width:52px;height:52px;display:grid;place-items:center;border:2px solid var(--text);border-radius:50%;background:var(--top);color:var(--text);pointer-events:none}
 .timer-dismiss svg{width:24px;height:24px}
 .timer-dismiss.over{background:var(--text);color:var(--top)}
-.spotify{overflow:hidden}.spotify.empty{cursor:pointer}
+.timer-dismiss.over::before{content:'';position:absolute;inset:-24px;border:1px solid var(--line);border-radius:50%;background:color-mix(in srgb,var(--text) 12%,transparent);z-index:-1}
+.spotify{overflow:hidden}.spotify.empty{cursor:pointer}.spotify.empty .icon{opacity:.55}
 .spotify-progress{position:absolute;bottom:0;left:0;right:0;height:2px;pointer-events:none}
 .spotify-progress span{display:block;width:100%;height:100%;background:#fff;transform:scaleX(0);transform-origin:left center}
 </style>
@@ -653,9 +654,17 @@ function openRest(){
 }
 const floater=$('rest-float'),dismissTarget=$('timer-dismiss');
 dismissTarget.append(icon('close'));
-function timerOverTarget(x,y){
- const target=dismissTarget.getBoundingClientRect();
- return Math.hypot(x-target.left-target.width/2,y-target.top-target.height/2)<=target.width/2;
+function updateTimerHover(d,x,y,feedback){
+ const target=dismissTarget.getBoundingClientRect(),cx=target.left+target.width/2,cy=target.top+target.height/2;
+ const entryRadius=38,holdRadius=50;
+ d.needsExit??=Math.hypot(d.startX-cx,d.startY-cy)<=entryRadius;
+ const distance=Math.hypot(x-cx,y-cy);
+ if(d.needsExit){if(distance>entryRadius)d.needsExit=false;return false;}
+ const over=distance<=(d.over?holdRadius:entryRadius);
+ if(over&&!d.over&&feedback)haptic();
+ d.over=over;
+ dismissTarget.classList.toggle('over',over);
+ return over;
 }
 floater.addEventListener('pointerdown',event=>{
  if(event.button!==0||event.isPrimary===false)return;
@@ -668,15 +677,16 @@ floater.addEventListener('pointermove',event=>{
  const dx=event.clientX-d.startX,dy=event.clientY-d.startY;
  if(Math.hypot(dx,dy)>5)d.moved=true;if(!d.moved)return;
  dismissTarget.hidden=false;
- dismissTarget.classList.toggle('over',timerOverTarget(event.clientX,event.clientY));
+ updateTimerHover(d,event.clientX,event.clientY,true);
  if(event.cancelable)event.preventDefault();
  const left=Math.max(8,Math.min(innerWidth-84,d.left+dx)),top=Math.max(8,Math.min((visualViewport?.height||innerHeight)-84,d.top+dy));
  Object.assign($('rest').style,{left:left+'px',top:top+'px'});
 });
 function finishTimerDrag(commit,event){
  const d=timerDrag;if(!d)return;timerDrag=null;
- const dismissed=commit&&d.moved&&timerOverTarget(event.clientX,event.clientY);
+ const dismissed=commit&&d.moved&&updateTimerHover(d,event.clientX,event.clientY,false);
  dismissTarget.hidden=true;
+ dismissTarget.classList.remove('over');
  if(d.moved){suppressTimerClick=performance.now()+450;if(dismissed){
   if(save(next=>{if(next.restEndAt&&next.restStartedAt===d.started)next.restDismissed=true;}))haptic();
   tick();
@@ -763,17 +773,20 @@ function renderSpotify(){
   else art.append(icon('music'));
  }
 
- for(const key of ['prev','play','next'])$('spotify-'+key).hidden=empty;
- $('spotify-play').replaceChildren(icon(music.playing?'pause':'play'));
- $('spotify-play').setAttribute('aria-label',(music.playing?'Pause':'Play')+' Spotify');
+ const labels={prev:'Previous Spotify track',play:(music.playing?'Pause':'Play')+' Spotify',next:'Next Spotify track'};
+ const idleLabels={prev:'Open Spotify from previous track',play:'Open Spotify from play',next:'Open Spotify from next track'};
+ for(const key of ['prev','play','next'])$('spotify-'+key).setAttribute('aria-label',empty?idleLabels[key]:labels[key]);
+ $('spotify-play').replaceChildren(icon(!empty&&music.playing?'pause':'play'));
 }
-$('spotify-art').append(icon('music'));$('spotify').onclick=event=>{if(!event.target.closest('button')){haptic();native?.openSpotify();}};
+function openSpotify(){haptic();native?.openSpotify();}
+$('spotify-art').append(icon('music'));
+$('spotify').onclick=event=>{if(!event.target.closest('button'))openSpotify();};
 $('spotify-prev').append(icon('prev'));
 $('spotify-next').append(icon('next'));
 $('spotify-play').append(icon('play'));
-$('spotify-open').onclick=()=>{haptic();native?.openSpotify();};
+$('spotify-open').onclick=openSpotify;
 function spotifyTransport(command){
- if($('spotify-'+command).hidden)return;
+ if($('spotify').classList.contains('empty')){openSpotify();return;}
  haptic();
  native?.spotifyCommand(command);
  setTimeout(renderSpotify,250);
@@ -803,7 +816,7 @@ player.addEventListener('pointerup',event=>{
  suppressSpotifyClick=performance.now()+350;
  if(Math.abs(dx)>=36){
   const command=dx<0?'next':'prev';
-  if(!$('spotify-'+command).hidden){
+  if(!player.classList.contains('empty')){
    slideSpotifyText(Math.sign(dx));
    spotifyTransport(command);
   }

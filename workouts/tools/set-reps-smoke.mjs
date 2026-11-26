@@ -39,7 +39,15 @@ try{
  await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-12,y-12);
  const drop=await page.locator('#timer-dismiss').boundingBox();
  check(!!drop,'Dragging shows a dismiss target');
- await page.mouse.move(drop.x+drop.width/2,drop.y+drop.height/2,{steps:5});await page.mouse.up();
+ const cx=drop.x+drop.width/2,cy=drop.y+drop.height/2;
+ const beforeHover=await page.evaluate(()=>qa.haptics);
+ await page.mouse.move(cx,cy,{steps:5});
+ check(await page.locator('#timer-dismiss').evaluate(target=>target.classList.contains('over')&&getComputedStyle(target,'::before').content!=='none'),'Entering the X expands its drop zone');
+ check(await page.evaluate(()=>qa.haptics)===beforeHover+1,'The X gives one haptic on entry');
+ await page.mouse.move(cx+44,cy,{steps:4});
+ check(await page.locator('#timer-dismiss').evaluate(target=>target.classList.contains('over'))&&
+       await page.evaluate(()=>qa.haptics)===beforeHover+1,'The expanded zone retains hover without repeated haptics');
+ await page.mouse.up();
  check(!(await rest.isVisible())&&(await data()).restEndAt===deadline,'Dropping on the X hides only the current floating timer');
  await sets().nth(2).tap();
  check(await rest.isVisible()&&!(await data()).restDismissed,'Logging another set restores the floating timer');
