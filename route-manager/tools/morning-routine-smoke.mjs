@@ -79,7 +79,9 @@ try {
     const icons=[...header.querySelectorAll('button svg')];
     return icons.length===2&&icons.every(icon=>{
      const box=icon.getBoundingClientRect(),style=getComputedStyle(icon);
-     return box.width===20&&box.height===20&&Math.abs((title.top+title.bottom-box.top-box.bottom)/2)<.5&&
+     const path=icon.querySelector('path').getBBox(),button=icon.closest('button').getBoundingClientRect();
+     return box.width===28&&box.height===28&&button.width>=44&&button.height>=44&&
+       path.width===18&&path.height===18&&Math.abs((title.top+title.bottom-box.top-box.bottom)/2)<.5&&
        style.strokeLinecap==='round'&&parseFloat(style.strokeWidth)>2;
     });
    });

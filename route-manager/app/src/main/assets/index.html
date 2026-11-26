@@ -21,14 +21,14 @@ dialog[open]{gap:12px}dialog>h2{flex:none}dialog form{flex:0 1 auto}dialog .form
 .export-note-body{display:block}.export-note-status{display:inline-flex;align-items:center;margin-bottom:5px;font-size:.72rem;padding:4px 8px}
 .edit-export-note{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-height:30px;padding:5px;margin-left:6px;vertical-align:middle}.edit-export-note svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7}
 .morning-checklist{border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:14px}
-.morning-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:38px}
+.morning-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}
 .morning-header h2{margin:0;font-size:.9rem;line-height:1.25}
 .morning-items{display:grid;gap:2px;margin:2px 0 0;font-size:.9rem}
 .morning-items .check-label{align-items:center;min-height:28px;gap:8px}
 .morning-items .check-label span{min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
 .morning-actions{display:flex;align-items:center;gap:4px}
-.morning-actions button{display:grid;place-items:center;width:36px;height:36px;min-height:36px;padding:7px;border:0;background:transparent}
-.morning-actions svg{width:20px;height:20px;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.morning-actions button{display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:8px;border:0;background:transparent}
+.morning-actions svg{width:28px;height:28px;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 #edit-morning-routine{margin:0 8px 16px 0}
 </style></head><body>
 <div id="home"><header class="app-header"><div class="heading"><h1 id="route-title">Route Notes</h1><div class="row"><button id="export-notes" class="icon-button" aria-label="Export notes" title="Export this day’s notes"></button><button id="settings" class="icon-button" aria-label="Settings"></button></div></div><nav id="route-tabs" class="route-tabs" role="tablist" aria-label="Routes"></nav><div class="route-ahead"><label class="check-label"><input id="ahead-one" type="checkbox">1 day</label><label class="check-label"><input id="ahead-two" type="checkbox">2 day</label><span id="route-count" class="muted" aria-live="polite" aria-atomic="true"></span></div></header><main id="page" class="page" role="tabpanel" aria-labelledby="route-title"><section id="morning-routine" aria-label="Morning routine"></section><div id="notes" class="notes-list"></div></main><button id="add-note" class="add-note primary" aria-label="Add note"></button></div>
@@ -40,7 +40,7 @@ dialog[open]{gap:12px}dialog>h2{flex:none}dialog form{flex:0 1 auto}dialog .form
 (()=>{
  const ROUTES=[{id:'g2',code:'G200',day:'Monday'},{id:'g3',code:'G300',day:'Tuesday'},{id:'g4',code:'G400',day:'Wednesday'},{id:'g5',code:'G500',day:'Thursday'},{id:'g6',code:'G600',day:'Friday'}],KEY='route-manager-v1',native=window.RouteNative;
  const defaults={top:'#203747',bottom:'#5a5c61',text:'#f4f7fa',accent:'#ffffff',gradient:true,size:'normal'},$=id=>document.getElementById(id),clone=value=>JSON.parse(JSON.stringify(value)),clean=value=>String(value||'').trim().replace(/\s+/g,' '),fold=value=>clean(value).toLocaleLowerCase('en-US');
- const paths={pencil:'m16 3 5 5-12 12-6 1 1-6L16 3Zm-2 2 5 5',chevron:'M9 5l7 7-7 7',export:'M12 15V3M8 7l4-4 4 4M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8',plus:'M12 5v14M5 12h14',gear:'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1 1-3ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6',save:'M5 3h12l4 4v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 2-1ZM7 3v6h10V3M7 21v-8h10v8',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',check:'M5 12l4 4L19 6',close:'M6 6l12 12M6 18 18 6'};
+ const paths={morningCheck:'M3 13l6 8L21 3',pencil:'m16 3 5 5-12 12-6 1 1-6L16 3Zm-2 2 5 5',chevron:'M9 5l7 7-7 7',export:'M12 15V3M8 7l4-4 4 4M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8',plus:'M12 5v14M5 12h14',gear:'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1 1-3ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6',save:'M5 3h12l4 4v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 2-1ZM7 3v6h10V3M7 21v-8h10v8',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',check:'M5 12l4 4L19 6',close:'M6 6l12 12M6 18 18 6'};
  function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',paths[name]);svg.append(path);return svg;}
  function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
  function button(label,handler,cls=''){const n=el('button',cls,label);n.type='button';n.addEventListener('click',handler);return n;}
@@ -126,7 +126,7 @@ dialog[open]{gap:12px}dialog>h2{flex:none}dialog form{flex:0 1 auto}dialog .form
   edit.append(icon('pencil'));
   edit.setAttribute('aria-label','Edit morning routine items');
   edit.title='Edit items';
-  done.append(icon('check'));
+  done.append(icon('morningCheck'));
   done.setAttribute('aria-label','Done for today');
   done.title='Done for today';
   actions.append(edit,done);

@@ -1,3 +1,7 @@
+## 1.0.25
+
+- Enlarge the morning checklist pencil and checkmark and match their visible size.
+
 ## 1.0.24
 
 - Export notes individually, including notes at the same stop.
