@@ -1,12 +1,14 @@
 # Tasks — Android
 
-Download [Tasks 0.91.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.91.0.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.100.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.100.0.apk). Install over the existing app to retain your tasks and settings.
+
+Overdue tasks from the previous day show **Yesterday**. Completed and Trash show today’s counts when greater than zero. Task and project editors close on confirmation, with local saves and Google sync running in the background. Windows shows the time of its last successful Google sync.
 
 Task editors now use rounded square label tiles with icons and names. Selected labels and priority buttons have white outlined glows; the visible priority radio circles are removed. Widget Quick add has the same larger label choices.
 
 Successful swipes between Today and Upcoming give the same short haptic pulse as Relationship Manager. Short or cancelled swipes stay silent.
 
-A subtle red badge beside the date shows the active-project count and disappears at zero. Completed and deleted projects are excluded.
+The task summary shows the active-project count when it is greater than zero. Completed and deleted projects are excluded.
 
 Settings → Task ordering now offers Hold and drag alongside the existing arrows. Hold a task for 380ms to lift its full card, then drag vertically while the other cards move aside around its drop space, matching Relationship Manager. Priority changes, urgent ordering, saved positions, cancelled drags and failed-save recovery are preserved. The Weekend shortcut always chooses the next Friday strictly after today, including when used on Friday, Saturday or Sunday.
 
@@ -24,9 +26,9 @@ Upcoming and reminders follow the selected dates and weekdays. Today and the wid
 
 The persistent in-progress notification now has a Complete action. It completes a single active task directly, or lets you choose a task when several are active. The task list, history and widget share the completion.
 
-Upcoming uses actual occurrence dates: Sunday-only repeats stay on Sunday, and Saturday–Sunday repeats appear under those days rather than Friday. Future editors retain the selected date and weekdays. The app remembers your last Today/Upcoming tab. Upcoming includes tasks with a future reveal time; Today’s Hidden button temporarily reveals them with a white outline. The app’s empty-list messages are left-aligned. The widget centers the visible text and flower together using its current width, with a wider, shorter default size for new widgets. The launcher controls the outer grid placement; existing widgets can be resized with its handles.
+Upcoming uses actual occurrence dates: Sunday-only repeats stay on Sunday, and Saturday–Sunday repeats appear under those days rather than Friday. Future editors retain the selected date and weekdays. Minimizing preserves your tab. A fresh launch opens Today. Upcoming includes tasks with a future reveal time; Today’s Hidden button temporarily reveals them with a white outline. The app’s empty-list messages are left-aligned. The widget centers the visible text and flower together using its current width, with a wider, shorter default size for new widgets. The launcher controls the outer grid placement; existing widgets can be resized with its handles.
 
-Download the [Windows installer 0.91.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-Setup-v0.91.0.exe). Windows now supports adding and editing tasks, Today/Upcoming, projects, priorities, labels, repeat schedules, notes, checklists, completion/progress, rescheduling, ordering and theme settings. A new PC works offline immediately with an empty list and history; pairing preserves tasks already created on the PC. The main Add task plus button is now borderless, with its size and fill unchanged.
+Download the [Windows installer 0.100.0](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-Setup-v0.100.0.exe). Windows now supports adding and editing tasks, Today/Upcoming, projects, priorities, labels, repeat schedules, notes, checklists, completion/progress, rescheduling, ordering and theme settings. A new PC works offline immediately with an empty list and history; pairing preserves tasks already created on the PC. The main Add task plus button is now borderless, with its size and fill unchanged.
 
 For cloud sync, update and open your current phone first. An already connected phone uses its current task list as the initial corrected cloud list. If prompted, choose Use this phone’s tasks. Wait for Settings → Google sync to say Synced with Google. Other clients restore that cloud list on first sign-in instead of merging in an old local list; a private local backup is made before replacement. Later edits and deletions synchronize both ways.
 
@@ -34,7 +36,7 @@ Windows also needs its Google Desktop client configuration. In [Google Cloud →
 
 The home-screen Refresh button requests Google sync on Android and Windows, just like Sync now in Settings. It also refreshes local tasks. Windows saves pending window edits before requesting cloud sync; the home page reports the sync result or a connection/setup issue. Without a Google account, local refresh still works.
 
-Local QR pairing remains available under Settings → Local pairing. Keep both apps open on the same Wi-Fi for LAN sync. Google sync runs while the Android app is in the foreground and while the PC background process is running; local edits remain saved during outages. [Portable Windows executable](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-PC-v0.91.0.exe) · [Windows instructions](desktop/USING-TASKS-PC.txt).
+Local QR pairing remains available under Settings → Local pairing. Keep both apps open on the same Wi-Fi for LAN sync. Google sync runs after task edits and periodically in the background on Android and Windows; local edits remain saved during outages. [Portable Windows executable](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-PC-v0.91.0.exe) · [Windows instructions](desktop/USING-TASKS-PC.txt).
 
 The per-user installer, application identity and taskbar pinning remain stable. Updates and uninstall preserve personal task data and account/pairing files under `%LOCALAPPDATA%\Tasks`. [Installer verification](docs/WINDOWS-INSTALLER-VALIDATION.md) · [Taskbar verification](docs/WINDOWS-TASKBAR-VALIDATION.md).
 
