@@ -111,9 +111,9 @@ final class FloatingRestTimer extends View {
         updateRoom();
         JSONObject position=positionForRest(state);
         int rightSide=Math.max(0,roomX-margin);
-        int upperSide=Math.min(dp(208),Math.round(roomY*.5f));
+        int restingY=Math.min(dp(310),Math.round(roomY*.58f));
         int left=position==null?rightSide:Math.round(clampFraction(position.optDouble("x"),rightSide/(float)Math.max(1,roomX))*roomX);
-        int top=position==null?upperSide:Math.round(clampFraction(position.optDouble("y"),upperSide/(float)Math.max(1,roomY))*roomY);
+        int top=position==null?restingY:Math.round(clampFraction(position.optDouble("y"),restingY/(float)Math.max(1,roomY))*roomY);
         if(layout.x!=margin+left||layout.y!=margin+top)move(margin+left,margin+top);
     }
 
@@ -210,6 +210,7 @@ final class FloatingRestTimer extends View {
                 canvas.drawLine(center-arm,center+arm,center+arm,center-arm,ink);
             }
         };
+        target.setVisibility(View.INVISIBLE);
         WindowManager.LayoutParams params=new WindowManager.LayoutParams(dp(100),dp(100),
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
@@ -236,9 +237,10 @@ final class FloatingRestTimer extends View {
         int[] location=new int[2];
         dismissTarget.getLocationOnScreen(location);
         float centerX=location[0]+dismissTarget.getWidth()/2f,centerY=location[1]+dismissTarget.getHeight()/2f;
+        double distance=Math.hypot(x-centerX,y-centerY);
+        dismissTarget.setVisibility(distance<=dp(96)?View.VISIBLE:View.INVISIBLE);
         boolean previous=dropHover.over;
-        boolean over=dropHover.update(Math.hypot(startX-centerX,startY-centerY),
-            Math.hypot(x-centerX,y-centerY),dp(38),dp(50));
+        boolean over=dropHover.update(Math.hypot(startX-centerX,startY-centerY),distance,dp(38),dp(50));
         if(over&&!previous&&feedback)performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
         if(over!=previous)dismissTarget.invalidate();
         return over;

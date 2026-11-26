@@ -237,7 +237,7 @@ try{
  });
  check(aligned,'Spotify controls and track text share a centered row');
  const before=await page.locator('#rest').boundingBox();
- check(before.x>250&&before.y<300,'A new rest starts on the right, clear of the drop zone');
+ check(before.x>250&&before.y>240&&before.y<330,'A new rest starts lower on the right, clear of the drop zone');
  await page.mouse.move(before.x+38,before.y+38);await page.mouse.down();await page.mouse.move(90,220,{steps:12});await page.mouse.up();
  check(await page.evaluate(()=>{const data=Workouts.debug();return data.restPosition?.started===data.restStartedAt;}),'Dragging saves the position for the current rest');
  const after=await page.locator('#rest').boundingBox();

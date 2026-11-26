@@ -28,7 +28,7 @@ public class RestTimerServiceTest {
         data.getJSONObject("settings").put("notifications",true);
         assertNotNull(store.write(data.toString()));return end;
     }
-    @Test public void foregroundNotificationHasOneLineCountdownWithoutActions()throws Exception {
+    @Test public void foregroundNotificationHasOneLineCountdownAndEndTimer()throws Exception {
         runningTimer();
         ServiceController<RestTimerService> controller=Robolectric.buildService(RestTimerService.class).create();
         controller.startCommand(0,1);
@@ -38,9 +38,26 @@ public class RestTimerServiceTest {
         assertNull(notification.extras.getCharSequence(Notification.EXTRA_TEXT));
         assertFalse(notification.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER));
         assertEquals(1000,notification.extras.getInt(Notification.EXTRA_PROGRESS_MAX));
-        assertTrue(notification.actions==null||notification.actions.length==0);
+        assertEquals(1,notification.actions.length);
+        assertEquals("End timer",notification.actions[0].title.toString());
         assertTrue((notification.flags&Notification.FLAG_ONGOING_EVENT)!=0);
         controller.destroy();
+    }
+    @Test public void notificationActionEndsOnlyTheMatchingRestAndPreservesTheWorkout()throws Exception {
+        long firstEnd=runningTimer();
+        Intent stale=shadowOf(RestAlarm.endTimerAction(context,store.read()).actionIntent).getSavedIntent();
+        JSONObject next=store.read().put("restStartedAt",firstEnd-89000).put("restEndAt",firstEnd+1000);
+        assertNotNull(store.write(next.toString()));
+        RestAlarm receiver=new RestAlarm();
+        receiver.onReceive(context,stale);
+        JSONObject current=store.read();
+        assertEquals(firstEnd+1000,current.getLong("restEndAt"));
+        String workout=current.getJSONObject("active").toString();
+        Intent matching=shadowOf(RestAlarm.endTimerAction(context,current).actionIntent).getSavedIntent();
+        receiver.onReceive(context,matching);
+        JSONObject ended=store.read();
+        assertEquals(0,ended.getLong("restEndAt"));
+        assertEquals(workout,ended.getJSONObject("active").toString());
     }
     @Test public void oneOverlayStaysAttachedAcrossAppsAndOvertime()throws Exception {
         runningTimer();

@@ -21,6 +21,7 @@ public final class RestTimerService extends Service {
     static boolean isFloatingVisible(){return floatingVisible;}
     private FloatingRestTimer overlay;
     private String previousTitle;
+    private long previousRest;
 
     static boolean canFloat(Context context,JSONObject settings) {
         return settings!=null&&settings.optBoolean("floatingTimer",true)&&settings.optBoolean("floatOverApps")&&Settings.canDrawOverlays(context);
@@ -51,7 +52,8 @@ public final class RestTimerService extends Service {
         PendingIntent open=PendingIntent.getActivity(this,5,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         Notification.Builder builder=new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title(remaining)).setShowWhen(false)
-            .setOngoing(true).setOnlyAlertOnce(true).setContentIntent(open);
+            .setOngoing(true).setOnlyAlertOnce(true).setContentIntent(open)
+            .addAction(RestAlarm.endTimerAction(this,state));
         if(remaining>0)builder.setProgress(1000,(int)Math.min(1000,remaining*1000/length),false);
         else builder.setContentText(COMPLETE_TEXT);
         return builder.build();
@@ -102,9 +104,11 @@ public final class RestTimerService extends Service {
 
         if(remaining<=0)RestAlarm.complete(this);
         String title=title(remaining);
-        if(!title.equals(previousTitle)){
+        long rest=RestAlarm.restId(state);
+        if(!title.equals(previousTitle)||rest!=previousRest){
             getSystemService(NotificationManager.class).notify(NOTIFICATION,notification(state));
             previousTitle=title;
+            previousRest=rest;
         }
         handler.postDelayed(update,allowed?200:Math.max(50,Math.min(1000,(remaining-1)%1000+1)));
     }

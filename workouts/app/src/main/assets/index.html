@@ -69,7 +69,8 @@ body,#page-stack{touch-action:pan-y}
 .set-reps{line-height:1;text-box:trim-both cap alphabetic;pointer-events:none}
 .workout-edit-actions{display:flex;flex-wrap:wrap;gap:8px}.workout-edit-list{display:grid;gap:6px}.workout-edit-row{display:flex;gap:8px;touch-action:pan-y}.workout-edit-exercise{flex:1;justify-content:flex-start;text-align:left;overflow-wrap:anywhere;min-width:0}.exercise-plan{min-height:0}
 .progress-info{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.progress-graph{width:72px;height:24px;flex:none}
-.timer-dismiss{position:fixed;z-index:15;left:50%;bottom:24px;translate:-50% 0;width:52px;height:52px;display:grid;place-items:center;border:2px solid var(--text);border-radius:50%;background:var(--top);color:var(--text);pointer-events:none}
+.timer-dismiss{visibility:hidden;position:fixed;z-index:15;left:50%;bottom:24px;translate:-50% 0;width:52px;height:52px;display:grid;place-items:center;border:2px solid var(--text);border-radius:50%;background:var(--top);color:var(--text);pointer-events:none}
+.timer-dismiss.near{visibility:visible}
 .timer-dismiss svg{width:24px;height:24px}
 .timer-dismiss.over{background:var(--text);color:var(--top)}
 .timer-dismiss.over::before{content:'';position:absolute;inset:-24px;border:1px solid var(--line);border-radius:50%;background:color-mix(in srgb,var(--text) 12%,transparent);z-index:-1}
@@ -612,7 +613,7 @@ function placeTimer(){
  const saved=state.restPosition;
  const position=saved?.started===state.restStartedAt?saved:null;
  const left=margin+(Number.isFinite(position?.x)?Math.max(0,Math.min(1,position.x))*roomX:Math.max(0,roomX-margin));
- const top=margin+(Number.isFinite(position?.y)?Math.max(0,Math.min(1,position.y))*roomY:Math.min(208,roomY*.5));
+ const top=margin+(Number.isFinite(position?.y)?Math.max(0,Math.min(1,position.y))*roomY:Math.min(310,roomY*.58));
  Object.assign($('rest').style,{left:left+'px',top:top+'px',right:'auto',bottom:'auto'});
 }
 function tick(){
@@ -661,6 +662,7 @@ function updateTimerHover(d,x,y,feedback){
  const entryRadius=38,holdRadius=50;
  d.needsExit??=Math.hypot(d.startX-cx,d.startY-cy)<=entryRadius;
  const distance=Math.hypot(x-cx,y-cy);
+ dismissTarget.classList.toggle('near',distance<=96);
  if(d.needsExit){if(distance>entryRadius)d.needsExit=false;return false;}
  const over=distance<=(d.over?holdRadius:entryRadius);
  if(over&&!d.over&&feedback)haptic();
@@ -688,7 +690,7 @@ function finishTimerDrag(commit,event){
  const d=timerDrag;if(!d)return;timerDrag=null;
  const dismissed=commit&&d.moved&&updateTimerHover(d,event.clientX,event.clientY,false);
  dismissTarget.hidden=true;
- dismissTarget.classList.remove('over');
+ dismissTarget.classList.remove('near','over');
  if(d.moved){suppressTimerClick=performance.now()+450;if(dismissed){
   if(save(next=>{if(next.restEndAt&&next.restStartedAt===d.started)next.restDismissed=true;}))haptic();
   tick();

@@ -37,10 +37,17 @@ try{
  const rest=page.getByLabel('Rest timer',{exact:true});
  const box=await rest.boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
  await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-12,y-12);
- const drop=await page.locator('#timer-dismiss').boundingBox();
- check(!!drop,'Dragging shows a dismiss target');
- const cx=drop.x+drop.width/2,cy=drop.y+drop.height/2;
+ const target=page.locator('#timer-dismiss');
+ check(!(await target.isVisible()),'The X stays hidden while the timer is far away');
+ const {cx,cy}=await target.evaluate(element=>{
+  const box=element.getBoundingClientRect();
+  return {cx:box.x+box.width/2,cy:box.y+box.height/2};
+ });
  const beforeHover=await page.evaluate(()=>qa.haptics);
+ await page.mouse.move(cx,cy-72,{steps:5});
+ check(await target.isVisible()&&await page.evaluate(()=>qa.haptics)===beforeHover,'The X appears nearby before the haptic drop zone');
+ await page.mouse.move(cx,cy-135,{steps:4});
+ check(!(await target.isVisible()),'The X disappears when the timer moves away again');
  await page.mouse.move(cx,cy,{steps:5});
  check(await page.locator('#timer-dismiss').evaluate(target=>target.classList.contains('over')&&getComputedStyle(target,'::before').content!=='none'),'Entering the X expands its drop zone');
  check(await page.evaluate(()=>qa.haptics)===beforeHover+1,'The X gives one haptic on entry');
