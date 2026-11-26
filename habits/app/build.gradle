@@ -3,7 +3,7 @@ android {
  namespace 'com.personal.habits'
  compileSdk 35
  buildToolsVersion '35.0.0'
- defaultConfig { applicationId 'com.personal.habits'; minSdk 26; targetSdk 35; versionCode 9; versionName '1.0.8' }
+ defaultConfig { applicationId 'com.personal.habits'; minSdk 26; targetSdk 35; versionCode 10; versionName '1.0.9' }
  signingConfigs {
   debug {
    def configuredStore = System.getenv('HABITS_DEBUG_KEYSTORE')

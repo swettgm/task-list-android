@@ -1,6 +1,6 @@
 # Habits
 
-[Download Habits 1.0.8](https://raw.githubusercontent.com/swettgm/task-list-android/main/downloads/Habits-v1.0.8.apk).
+[Download Habits 1.0.9](https://raw.githubusercontent.com/swettgm/task-list-android/main/downloads/Habits-v1.0.9.apk).
 
 A small, offline Android app with a resizable home-screen habit widget. No account, network, tracking SDK, widget service dependency or notification is required.
 

@@ -84,26 +84,34 @@ public class HabitsTest {
 
 
  @Test public void reversingTheWidgetCycleKeepsHistoricalMarkMeanings(){String id=store.save(null,"Walk");LocalDate today=HabitStore.today();store.cycle(id,today);assertEquals(1,store.state(id,today));assertEquals(0,store.cycleWidget(id,today));assertEquals(2,store.cycleWidget(id,today));assertEquals(1,new HabitStore(c).cycleWidget(id,today));assertEquals(1,new HabitStore(c).state(id,today));}
- @Test public void titleFontPersistsAndSurvivesWidgetParceling(){
-  store.save(null,"Read");
+ @Test public void widgetTitleUsesSelectedNativeFontAfterParceling(){
+  store.save(null,"Winding trail");
   assertEquals(Appearance.TitleFont.DEFAULT,new Appearance(c).titleFont);
-  Appearance.save(c,"#FFFFFF","#203747","#5A5C61",0,16,true,true,Appearance.TitleFont.SERIF);
-  Appearance appearance=new Appearance(c);
-  assertEquals(Appearance.TitleFont.SERIF,appearance.titleFont);
-  for(boolean widget:new boolean[]{false,true}){
-   RemoteViews row=HabitRowsService.row(c,store.habits().get(0),HabitStore.window(HabitStore.today()),appearance,widget);
+  Set<Integer> layouts=new HashSet<>();
+  Set<Float> widths=new HashSet<>();
+  for(Appearance.TitleFont font:Appearance.TitleFont.values()){
+   Appearance.save(c,"#FFFFFF","#203747","#5A5C61",0,16,true,true,font);
+   Appearance appearance=new Appearance(c);
+   assertEquals(font,appearance.titleFont);
+   RemoteViews row=HabitRowsService.row(c,store.habits().get(0),HabitStore.window(HabitStore.today()),appearance);
+   assertTrue(layouts.add(row.getLayoutId()));
    android.os.Parcel parcel=android.os.Parcel.obtain();
    try{
     row.writeToParcel(parcel,0);
     parcel.setDataPosition(0);
     RemoteViews restored=RemoteViews.CREATOR.createFromParcel(parcel);
     TextView title=restored.apply(c,new FrameLayout(c)).findViewById(R.id.habit_title);
-    assertEquals("Read",title.getText().toString());
-    android.text.Spanned styled=(android.text.Spanned)title.getText();
-    android.text.style.TypefaceSpan[] spans=styled.getSpans(0,styled.length(),android.text.style.TypefaceSpan.class);
-    assertEquals(1,spans.length);
-    assertEquals("serif",spans[0].getFamily());
+    assertEquals("Winding trail",title.getText().toString());
+    Paint expected=new Paint(title.getPaint());
+    expected.setTypeface(font.typeface());
+    float measured=title.getPaint().measureText("WWWWiiii");
+    assertEquals(font.label,expected.measureText("WWWWiiii"),measured,.1f);
+    widths.add(measured);
    }finally{parcel.recycle();}
   }
+  assertTrue("Fonts have distinct rendered metrics",widths.size()>=3);
+  MainActivity app=Robolectric.buildActivity(MainActivity.class).setup().get();
+  TextView title=app.findViewById(R.id.habit_title);
+  assertEquals(title.getPaint().measureText("iiii"),title.getPaint().measureText("WWWW"),.1f);
  }
 }

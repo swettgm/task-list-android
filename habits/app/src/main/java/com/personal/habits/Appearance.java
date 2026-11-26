@@ -1,29 +1,24 @@
 package com.personal.habits;
 import android.content.*;
 import android.graphics.Color;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.style.TypefaceSpan;
+import android.graphics.Typeface;
 public final class Appearance {
  enum TitleFont {
-  DEFAULT("System default","sans-serif-medium"),
-  LIGHT("Light","sans-serif-light"),
-  CONDENSED("Condensed","sans-serif-condensed"),
-  SERIF("Serif","serif"),
-  MONOSPACE("Monospace","monospace");
+  DEFAULT("System default","sans-serif-medium",R.layout.widget_habit_row),
+  LIGHT("Light","sans-serif-light",R.layout.widget_habit_row_light),
+  CONDENSED("Condensed","sans-serif-condensed",R.layout.widget_habit_row_condensed),
+  SERIF("Serif","serif",R.layout.widget_habit_row_serif),
+  MONOSPACE("Monospace","monospace",R.layout.widget_habit_row_monospace);
 
   final String label,family;
-  TitleFont(String label,String family){this.label=label;this.family=family;}
+  final int widgetLayout;
+  TitleFont(String label,String family,int widgetLayout){this.label=label;this.family=family;this.widgetLayout=widgetLayout;}
+  Typeface typeface(){return Typeface.create(family,Typeface.NORMAL);}
   static TitleFont read(SharedPreferences preferences){
    try{return valueOf(preferences.getString("titleFont",DEFAULT.name()));}
    catch(IllegalArgumentException|ClassCastException invalid){return DEFAULT;}
   }
-  CharSequence style(String title){
-   if(this==DEFAULT||title.isEmpty())return title;
-   SpannableString styled=new SpannableString(title);
-   styled.setSpan(new TypefaceSpan(family),0,styled.length(),Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-   return styled;
-  }
+
  }
  final TitleFont titleFont;
  public final int text,background,bottom,opacity,size;public final boolean gradient,haptics;
