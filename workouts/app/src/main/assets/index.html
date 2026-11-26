@@ -662,9 +662,10 @@ function updateTimerHover(d,x,y,feedback){
  const entryRadius=38,holdRadius=50;
  d.needsExit??=Math.hypot(d.startX-cx,d.startY-cy)<=entryRadius;
  const distance=Math.hypot(x-cx,y-cy);
- dismissTarget.classList.toggle('near',distance<=96);
+ const inBottomThird=y>=innerHeight*2/3;
+ dismissTarget.classList.toggle('near',inBottomThird);
  if(d.needsExit){if(distance>entryRadius)d.needsExit=false;return false;}
- const over=distance<=(d.over?holdRadius:entryRadius);
+ const over=inBottomThird&&distance<=(d.over?holdRadius:entryRadius);
  if(over&&!d.over&&feedback)haptic();
  d.over=over;
  dismissTarget.classList.toggle('over',over);

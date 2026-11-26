@@ -27,7 +27,7 @@ final class FloatingRestTimer extends View {
     private final DropHover dropHover=new DropHover();
     private int startLeft,startTop;
     private boolean dragging,attached,overdue;
-    private int roomX,roomY,foreground,background;
+    private int roomX,roomY,availableHeight,foreground,background;
     private float progress;
     private String label="";
 
@@ -238,9 +238,12 @@ final class FloatingRestTimer extends View {
         dismissTarget.getLocationOnScreen(location);
         float centerX=location[0]+dismissTarget.getWidth()/2f,centerY=location[1]+dismissTarget.getHeight()/2f;
         double distance=Math.hypot(x-centerX,y-centerY);
-        dismissTarget.setVisibility(distance<=dp(96)?View.VISIBLE:View.INVISIBLE);
+        float screenBottom=location[1]+dismissTarget.getHeight();
+        boolean inBottomThird=y>=screenBottom-availableHeight/3f;
+        dismissTarget.setVisibility(inBottomThird?View.VISIBLE:View.INVISIBLE);
         boolean previous=dropHover.over;
-        boolean over=dropHover.update(Math.hypot(startX-centerX,startY-centerY),distance,dp(38),dp(50));
+        boolean over=dropHover.update(Math.hypot(startX-centerX,startY-centerY),
+            inBottomThird?distance:Double.POSITIVE_INFINITY,dp(38),dp(50));
         if(over&&!previous&&feedback)performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
         if(over!=previous)dismissTarget.invalidate();
         return over;
@@ -297,7 +300,8 @@ final class FloatingRestTimer extends View {
             available.set(metrics.getBounds().width()-insets.left-insets.right,metrics.getBounds().height()-insets.top-insets.bottom);
         }else windows.getDefaultDisplay().getSize(available);
         roomX=Math.max(0,available.x-layout.width-margin*2);
-        roomY=Math.max(0,available.y-layout.height-margin*2);
+        availableHeight=available.y;
+        roomY=Math.max(0,availableHeight-layout.height-margin*2);
     }
 
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}

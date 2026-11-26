@@ -44,10 +44,11 @@ try{
   return {cx:box.x+box.width/2,cy:box.y+box.height/2};
  });
  const beforeHover=await page.evaluate(()=>qa.haptics);
- await page.mouse.move(cx,cy-72,{steps:5});
- check(await target.isVisible()&&await page.evaluate(()=>qa.haptics)===beforeHover,'The X appears nearby before the haptic drop zone');
- await page.mouse.move(cx,cy-135,{steps:4});
- check(!(await target.isVisible()),'The X disappears when the timer moves away again');
+ const boundary=await page.evaluate(()=>innerHeight*2/3);
+ await page.mouse.move(x,boundary+2,{steps:5});
+ check(await target.isVisible()&&await page.evaluate(()=>qa.haptics)===beforeHover,'The X appears as soon as the drag enters the bottom third, even at the side of the screen');
+ await page.mouse.move(x,boundary-2,{steps:4});
+ check(!(await target.isVisible()),'The X disappears again above the bottom third');
  await page.mouse.move(cx,cy,{steps:5});
  check(await page.locator('#timer-dismiss').evaluate(target=>target.classList.contains('over')&&getComputedStyle(target,'::before').content!=='none'),'Entering the X expands its drop zone');
  check(await page.evaluate(()=>qa.haptics)===beforeHover+1,'The X gives one haptic on entry');
