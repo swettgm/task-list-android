@@ -1,6 +1,6 @@
 # Route Notes
 
-[Download Route Notes 1.0.26](https://raw.githubusercontent.com/swettgm/task-list-android/main/downloads/Route-Notes-v1.0.26.apk).
+[Download Route Notes 1.0.27](https://raw.githubusercontent.com/swettgm/task-list-android/main/downloads/Route-Notes-v1.0.27.apk).
 
 A separate, offline Android app for route notes. Installs alongside Tasks with its own data and no widget.
 

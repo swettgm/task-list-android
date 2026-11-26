@@ -88,6 +88,8 @@ try {
      return Math.abs(paintedWidth-textSize)<.5&&Math.abs(paintedHeight-textSize)<.5&&
        button.width>=44&&button.height>=44&&parseFloat(appearance.borderTopWidth)>0&&
        appearance.backgroundColor!=='rgba(0, 0, 0, 0)'&&
+       Math.abs((button.left+button.right-box.left-box.right)/2)<.5&&
+       Math.abs((button.top+button.bottom-box.top-box.bottom)/2)<.5&&
        Math.abs((title.top+title.bottom-box.top-box.bottom)/2)<.5&&
        style.strokeLinecap==='round'&&stroke>3;
     });

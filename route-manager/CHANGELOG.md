@@ -1,3 +1,7 @@
+## 1.0.27
+
+- Center the morning checklist pencil and checkmark horizontally and vertically in their buttons.
+
 ## 1.0.26
 
 - Match the morning checklist icons to the heading text and place the bolder icons in visible buttons.
