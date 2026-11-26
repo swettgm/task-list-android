@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.100.2",
+    "date": "2026-11-26",
+    "changes": [
+      "Use the same thin, rounded outline for tasks completed today and revealed hidden tasks.",
+      "Collapse Hidden, Completed, and Trash after a successful swipe to Upcoming."
+    ]
+  },
+  {
     "version": "0.100.1",
     "date": "2026-11-26",
     "changes": [

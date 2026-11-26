@@ -1,6 +1,6 @@
 # Tasks — Android
 
-Download [Tasks 0.100.1](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.100.1.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.100.2](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.100.2.apk). Install over the existing app to retain your tasks and settings.
 
 Overdue tasks from the previous day show **Yesterday**. Completed and Trash show today’s counts when greater than zero. Task and project editors close on confirmation, with local saves and Google sync running in the background. Windows shows the time of its last successful Google sync.
 
