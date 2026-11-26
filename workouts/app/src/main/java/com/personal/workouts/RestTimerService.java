@@ -30,7 +30,7 @@ public final class RestTimerService extends Service {
         JSONObject settings=state.optJSONObject("settings");
         long end=state.optLong("restEndAt");
         if(state.isNull("active")||settings==null||end==0)return false;
-        return canFloat(context,settings)||(end>now&&settings.optBoolean("notifications"));
+        return (canFloat(context,settings)&&!state.optBoolean("restDismissed"))||(end>now&&settings.optBoolean("notifications"));
     }
 
     static void sync(Context context) {
@@ -78,7 +78,7 @@ public final class RestTimerService extends Service {
     private void tick() {
         JSONObject state=new WorkoutStore(this).read(),settings=state.optJSONObject("settings");
         long now=System.currentTimeMillis(),end=state.optLong("restEndAt"),remaining=end-now;
-        boolean allowed=canFloat(this,settings);
+        boolean allowed=canFloat(this,settings)&&!state.optBoolean("restDismissed");
         if(!shouldRun(this,state,now)){
             if(remaining<=0&&end>0&&!state.isNull("active"))RestAlarm.complete(this);
             stopSelf();

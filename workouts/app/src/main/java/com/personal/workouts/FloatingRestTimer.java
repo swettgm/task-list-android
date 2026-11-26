@@ -23,6 +23,9 @@ final class FloatingRestTimer extends View {
     private final int margin, slop;
     private float positionX=1f,positionY=0f;
     private float startX,startY;
+    private long restStarted,dragStarted;
+    private View dismissTarget;
+    private boolean overDismiss;
     private int startLeft,startTop;
     private boolean dragging,attached,overdue;
     private int roomX,roomY,foreground,background;
@@ -85,6 +88,7 @@ final class FloatingRestTimer extends View {
     boolean isShowing(){return attached;}
 
     void remove() {
+        removeDismissTarget();
         if(attached){
             attached=false;
             try {windows.removeViewImmediate(this);}catch(IllegalArgumentException ignored){ }
@@ -92,6 +96,7 @@ final class FloatingRestTimer extends View {
     }
 
     void update(JSONObject state,long remaining) {
+        restStarted=state.optLong("restStartedAt");
         JSONObject settings=state.optJSONObject("settings");
         foreground=Color.parseColor(settings.optString("text","#f4f7fa"));
         background=Color.parseColor(settings.optString("top","#203747"));
@@ -147,19 +152,29 @@ final class FloatingRestTimer extends View {
         switch(event.getActionMasked()){
             case MotionEvent.ACTION_DOWN:
                 startX=event.getRawX();startY=event.getRawY();startLeft=layout.x;startTop=layout.y;
-                dragging=false;
+                dragging=false;dragStarted=restStarted;
                 return true;
             case MotionEvent.ACTION_MOVE:
                 float dx=event.getRawX()-startX,dy=event.getRawY()-startY;
                 if(!dragging&&Math.hypot(dx,dy)>slop)dragging=true;
-                if(dragging)move(startLeft+Math.round(dx),startTop+Math.round(dy));
+                if(dragging){
+                    showDismissTarget();
+                    overDismiss=hitsDismissTarget(event.getRawX(),event.getRawY());
+                    if(dismissTarget!=null)dismissTarget.invalidate();
+                    move(startLeft+Math.round(dx),startTop+Math.round(dy));
+                }
                 return true;
             case MotionEvent.ACTION_UP:
-                if(dragging)savePosition();else performClick();
+                if(dragging){
+                    if(hitsDismissTarget(event.getRawX(),event.getRawY()))dismissRest();
+                    else savePosition();
+                }else performClick();
+                removeDismissTarget();
                 dragging=false;
                 return true;
             case MotionEvent.ACTION_CANCEL:
                 if(dragging)move(startLeft,startTop);
+                removeDismissTarget();
                 dragging=false;
                 return true;
             default: return true;
@@ -167,6 +182,65 @@ final class FloatingRestTimer extends View {
     }
 
     @Override public boolean performClick(){return super.performClick();}
+
+    private void showDismissTarget() {
+        if(dismissTarget!=null)return;
+        View target=new View(getContext()){
+            final Paint ink=new Paint(Paint.ANTI_ALIAS_FLAG);
+            @Override protected void onDraw(Canvas canvas){
+                float center=getWidth()/2f;
+                ink.setStyle(Paint.Style.FILL);
+                ink.setColor(overDismiss?foreground:background);
+                canvas.drawCircle(center,center,center,ink);
+                ink.setStyle(Paint.Style.STROKE);
+                ink.setStrokeWidth(dp(2));
+                ink.setStrokeCap(Paint.Cap.ROUND);
+                ink.setColor(overDismiss?background:foreground);
+                canvas.drawCircle(center,center,center-dp(1),ink);
+                int arm=dp(7);
+                canvas.drawLine(center-arm,center-arm,center+arm,center+arm,ink);
+                canvas.drawLine(center-arm,center+arm,center+arm,center-arm,ink);
+            }
+        };
+        WindowManager.LayoutParams params=new WindowManager.LayoutParams(dp(52),dp(52),
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            PixelFormat.TRANSLUCENT);
+        params.gravity=Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL;
+        params.y=dp(16);
+        params.setTitle("Dismiss Exercise rest timer");
+        try {windows.addView(target,params);dismissTarget=target;}
+        catch(RuntimeException unavailable){ /* Dragging to reposition remains available. */ }
+    }
+
+    private boolean hitsDismissTarget(float x,float y) {
+        if(dismissTarget==null)return false;
+        int[] location=new int[2];
+        dismissTarget.getLocationOnScreen(location);
+        float radius=dismissTarget.getWidth()/2f;
+        return radius>0&&Math.hypot(x-location[0]-radius,y-location[1]-radius)<=radius;
+    }
+
+    private void removeDismissTarget(){
+        if(dismissTarget==null)return;
+        try {windows.removeViewImmediate(dismissTarget);}catch(IllegalArgumentException ignored){ }
+        dismissTarget=null;
+        overDismiss=false;
+    }
+
+    private void dismissRest(){
+        synchronized(WorkoutStore.LOCK){
+            JSONObject state=store.read();
+            if(state.optLong("restEndAt")==0||state.optLong("restStartedAt")!=dragStarted)return;
+            try {
+                state.put("restDismissed",true);
+                if(store.write(state.toString())!=null){
+                    performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                    remove();
+                }
+            }catch(org.json.JSONException ignored){ }
+        }
+    }
 
     private void savePosition() {
         positionX=(layout.x-margin)/(float)Math.max(1,roomX);

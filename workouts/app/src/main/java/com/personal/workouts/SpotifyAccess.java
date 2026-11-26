@@ -59,6 +59,16 @@ public final class SpotifyAccess extends NotificationListenerService {
                     String title=metadata.getString(MediaMetadata.METADATA_KEY_TITLE),artist=metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
                     value.put("title",title==null?"Spotify":title).put("artist",artist==null?"":artist);
                 }
+                if(metadata!=null&&playback!=null){
+                    long duration=metadata.getLong(MediaMetadata.METADATA_KEY_DURATION);
+                    float speed=playback.getState()==PlaybackState.STATE_PLAYING?playback.getPlaybackSpeed():0;
+                    long position=playback.getPosition();
+                    if(duration>0&&position>=0){
+                        long timestamp=playback.getLastPositionUpdateTime();
+                        if(timestamp>0)position+=(long)(Math.max(0,android.os.SystemClock.elapsedRealtime()-timestamp)*speed);
+                        value.put("duration",duration).put("position",Math.min(duration,Math.max(0,position))).put("speed",speed);
+                    }
+                }
                 value.put("playing",playback!=null&&(playback.getState()==PlaybackState.STATE_PLAYING||playback.getState()==PlaybackState.STATE_BUFFERING));
             }
         } catch(org.json.JSONException ignored) { }

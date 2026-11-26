@@ -25,10 +25,10 @@ try{
  const state=()=>page.evaluate(()=>Workouts.debug()),dialog=()=>page.locator('dialog[open]');
  check((await state()).routines[0].exercises.length===0&&(await state()).history.length===0,'Fresh install starts with an empty routine and no workout history');
  check(await page.getByLabel('Spotify player').isVisible(),'Compact Spotify player uses the app layout');
- await page.getByRole('button',{name:'Connect',exact:true}).click();
- check(await page.evaluate(()=>qa.connectedSpotify),'Spotify Connect opens the one-time Android access setup');
- await page.evaluate(()=>{qa.music={connected:true,available:false,title:'',artist:''};});
  await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Open Spotify');
+ await page.locator('#spotify-art').click();
+ check(await page.evaluate(()=>qa.openedSpotify)&&!(await page.locator('#spotify-play').isVisible()),'Tapping the idle artwork opens Spotify and inactive controls are hidden');
+ await page.evaluate(()=>qa.openedSpotify=false);
  const playerGeometry=()=>page.locator('#spotify').evaluate(player=>{
   const bar=player.getBoundingClientRect();
   const art=player.querySelector('#spotify-art').getBoundingClientRect();
@@ -38,8 +38,9 @@ try{
  });
  const idle=await playerGeometry();
  check(Math.abs(idle.titleOffset)<.6,'Open Spotify is centered vertically with no artist');
- await page.evaluate(()=>{qa.music={connected:true,available:true,title:'Training track',artist:'Example artist',playing:true,art:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII='};});
+ await page.evaluate(()=>{qa.music={connected:true,available:true,title:'Training track',artist:'Example artist',playing:true,duration:180000,position:45000,speed:1,art:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII='};});
  await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Training track');
+ check(await page.locator('#spotify-progress').isVisible()&&await page.locator('#spotify-progress span').evaluate(bar=>bar.style.transform.startsWith('scaleX(0.25')),'Playback shows the track progress on the bottom edge');
  await page.getByRole('button',{name:'Pause Spotify',exact:true}).click();
  await page.getByRole('button',{name:'Next Spotify track',exact:true}).click();
  check(await page.evaluate(()=>qa.haptics>=3),'Spotify buttons provide haptic feedback');
@@ -189,7 +190,7 @@ try{
  check(await dialog().locator('.error').textContent().then(s=>s.includes('1–100')),'Invalid rep targets are rejected');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
  const old=await state();
- await page.getByRole('button',{name:'Add routine',exact:true}).click();
+ await page.getByRole('button',{name:'Add workout',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Name',exact:true}).fill('Workout B');
  await dialog().getByRole('button',{name:'Add',exact:true}).click();
  check((await state()).routines.length===old.routines.length+1&&await page.locator('.routine:visible').count()===2,'Multiple routines are visible as cards');
@@ -221,7 +222,7 @@ try{
  check(await other.getByText('B-only exercise',{exact:true}).isVisible()&&await other.locator('.set').count()===0&&await other.getByRole('button',{name:'Start workout'}).isDisabled(),'Inactive routines stay visible with their rep circles collapsed');
  await page.getByRole('button',{name:'Log set 1 of Front/Lateral Raise'}).click();
  await page.screenshot({path:'build/browser-qa/workouts-active.png',fullPage:true});
- await page.evaluate(()=>{qa.music={connected:true,available:true,title:'Training track',artist:'Example artist',playing:true,art:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII='};});
+ await page.evaluate(()=>{qa.music={connected:true,available:true,title:'Training track',artist:'Example artist',playing:true,duration:180000,position:45000,speed:1,art:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII='};});
  await page.waitForFunction(()=>document.querySelector('#spotify-art img'));
  const aligned=await page.locator('#spotify').evaluate(player=>{
   const centers=[...player.querySelectorAll('button')].filter(e=>!e.hidden).map(e=>{const r=e.getBoundingClientRect();return r.top+r.height/2;});

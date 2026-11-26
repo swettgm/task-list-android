@@ -31,7 +31,6 @@ body.has-player{padding-bottom:96px}
 .spotify-art svg{width:27px;height:27px}
 .spotify .icon{width:36px;min-width:36px;min-height:42px;padding:6px}
 .spotify .icon svg{width:23px;height:23px;stroke-width:2.8}
-#spotify-connect{font-weight:750;white-space:nowrap}
 body.has-player .rest{bottom:112px;left:16px;right:16px;max-width:700px}
 .settings-screen{max-width:700px;margin:auto}
 .settings-screen>header{justify-content:flex-start;gap:10px;margin-bottom:22px}
@@ -41,7 +40,7 @@ body.has-player .rest{bottom:112px;left:16px;right:16px;max-width:700px}
 .settings-screen .bare{border:0}
 .settings-screen .error{margin-top:12px}
 body.settings-open{padding-bottom:16px}
-@media(max-width:350px){.spotify{--art-size:40px}.spotify .icon{width:30px;min-width:30px;padding:4px}#spotify-connect{font-size:11px;padding:4px}}
+@media(max-width:350px){.spotify{--art-size:40px}.spotify .icon{width:30px;min-width:30px;padding:4px}}
 
 .rest-floater{position:fixed;width:76px;height:76px;z-index:8;touch-action:none}
 #rest-float{position:relative;display:grid;place-items:center;width:76px;height:76px;min-height:76px;padding:0;border:0;border-radius:50%;background:var(--top);box-shadow:0 5px 20px #0005;touch-action:none}
@@ -70,11 +69,17 @@ body,#page-stack{touch-action:pan-y}
 .set-reps{line-height:1;text-box:trim-both cap alphabetic;pointer-events:none}
 .workout-edit-actions{display:flex;flex-wrap:wrap;gap:8px}.workout-edit-list{display:grid;gap:6px}.workout-edit-row{display:flex;gap:8px;touch-action:pan-y}.workout-edit-exercise{flex:1;justify-content:flex-start;text-align:left;overflow-wrap:anywhere;min-width:0}.exercise-plan{min-height:0}
 .progress-info{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.progress-graph{width:72px;height:24px;flex:none}
+.timer-dismiss{position:fixed;z-index:15;left:50%;bottom:16px;translate:-50% 0;width:52px;height:52px;display:grid;place-items:center;border:2px solid var(--text);border-radius:50%;background:var(--top);color:var(--text);pointer-events:none}
+.timer-dismiss svg{width:24px;height:24px}
+.timer-dismiss.over{background:var(--text);color:var(--top)}
+.spotify{overflow:hidden}.spotify.empty{cursor:pointer}
+.spotify-progress{position:absolute;bottom:0;left:0;right:0;height:2px;pointer-events:none}
+.spotify-progress span{display:block;width:100%;height:100%;background:#fff;transform:scaleX(0);transform-origin:left center}
 </style>
 </head>
 <body>
 <div id="app">
-<header><h1>Exercise</h1><div class="toolbar-actions"><button id="add-routine" class="icon bare" aria-label="Add routine"></button><button id="settings" class="icon bare" aria-label="Settings"></button></div></header>
+<header><h1>Exercise</h1><div class="toolbar-actions"><button id="add-routine" class="icon bare" aria-label="Add workout"></button><button id="settings" class="icon bare" aria-label="Settings"></button></div></header>
 <nav class="tabs" role="tablist" aria-label="Workouts"><button id="today-tab" role="tab" aria-selected="true" aria-controls="today">Today</button><button id="history-tab" role="tab" aria-selected="false" aria-controls="history">History</button></nav>
 <div id="page-stack">
 <section id="today" role="tabpanel" aria-labelledby="today-tab">
@@ -85,9 +90,10 @@ body,#page-stack{touch-action:pan-y}
 </div></div>
 
 <aside id="rest" class="rest-floater" aria-label="Rest timer" hidden><button id="rest-float" aria-label="Rest controls"><svg viewBox="0 0 84 84" aria-hidden="true"><circle class="timer-track" cx="42" cy="42" r="36"/><circle id="rest-ring" class="timer-ring" cx="42" cy="42" r="36" pathLength="100"/></svg><strong id="rest-time"></strong></button></aside>
+<div id="timer-dismiss" class="timer-dismiss" hidden aria-hidden="true"></div>
 <aside id="spotify" class="spotify" aria-label="Spotify player">
 <span id="spotify-art" class="spotify-art" aria-hidden="true"></span><button id="spotify-open" class="spotify-track bare" aria-label="Open Spotify"><span id="spotify-copy"><span id="spotify-title">Spotify</span><span id="spotify-artist"></span></span></button>
-<button id="spotify-connect">Connect</button>
+<div id="spotify-progress" class="spotify-progress" aria-hidden="true" hidden><span></span></div>
 <button id="spotify-prev" class="icon bare" aria-label="Previous Spotify track"></button>
 <button id="spotify-play" class="icon bare" aria-label="Play Spotify"></button>
 <button id="spotify-next" class="icon bare" aria-label="Next Spotify track"></button>
@@ -335,8 +341,8 @@ function editWorkout(routineId){
  m.fields.append(actions,list);
  m.actions.append(button('Done',m.close,'primary'));
 }
-function editRoutineName(routineId){const source=state.routines.find(r=>r.id===routineId);if(!source)return;const m=modal('Edit routine'),input=field(m.fields,'Name','text',source.name);input.maxLength=160;m.actions.append(deleteButton('routine',()=>{if(state.active?.routineId===source.id){m.error.textContent='Finish or discard this workout first.';return;}if(save(next=>{next.routines=next.routines.filter(r=>r.id!==source.id);next.selected=next.routines[0]?.id||'';},m.error)){m.close();render();}}));cancelSave(m,()=>{if(!input.value.trim()){m.error.textContent='Enter a routine name.';return;}if(save(next=>{const routine=next.routines.find(r=>r.id===source.id);routine.name=input.value.trim();if(next.active?.routineId===source.id)next.active.name=routine.name;},m.error)){m.close();render();}});}
-function newRoutine(){const m=modal('Add routine'),input=field(m.fields,'Name','text');input.maxLength=160;cancelSave(m,()=>{if(!input.value.trim()){m.error.textContent='Enter a routine name.';return;}if(save(next=>{const r={id:id(),name:input.value.trim(),exercises:[]};next.routines.push(r);next.selected=r.id;},m.error)){m.close();if(view!=='today')selectView('today');render();}},'Add');}
+function editRoutineName(routineId){const source=state.routines.find(r=>r.id===routineId);if(!source)return;const m=modal('Edit workout'),input=field(m.fields,'Name','text',source.name);input.maxLength=160;m.actions.append(deleteButton('workout',()=>{if(state.active?.routineId===source.id){m.error.textContent='Finish or discard this workout first.';return;}if(save(next=>{next.routines=next.routines.filter(r=>r.id!==source.id);next.selected=next.routines[0]?.id||'';},m.error)){m.close();render();}}));cancelSave(m,()=>{if(!input.value.trim()){m.error.textContent='Enter a workout name.';return;}if(save(next=>{const routine=next.routines.find(r=>r.id===source.id);routine.name=input.value.trim();if(next.active?.routineId===source.id)next.active.name=routine.name;},m.error)){m.close();render();}});}
+function newRoutine(){const m=modal('Add workout'),input=field(m.fields,'Name','text');input.maxLength=160;cancelSave(m,()=>{if(!input.value.trim()){m.error.textContent='Enter a workout name.';return;}if(save(next=>{const r={id:id(),name:input.value.trim(),exercises:[]};next.routines.push(r);next.selected=r.id;},m.error)){m.close();if(view!=='today')selectView('today');render();}},'Add');}
 function editExercise(routineId,exerciseId=null){const active=liveRoutine(state,routineId),source=active||state.routines.find(r=>r.id===routineId);if(!source)return;const original=source.exercises.find(e=>e.id===exerciseId),m=modal(original?'Edit exercise':'Add exercise');const name=field(m.fields,'Exercise','text',original?.name||'');name.maxLength=160;const pair=el('div','two');m.fields.append(pair);const weight=numberField(pair,'Weight',original?.weight??0,0,5000,.25),unit=selectField(pair,'Unit',['lb','kg'],original?.unit||state.settings.unit);const targets=field(m.fields,'Reps per set','text',original?.sets.map(s=>String(s.target)+(s.amrap?'+':'')).join(', ')||'8, 8, 8');targets.inputMode='text';targets.placeholder='8, 8, 5+';m.fields.append(el('p','small muted','Add + for AMRAP, for example 8, 8, 5+. Hold and drag any rep circle to choose reps.'));const rest=numberField(m.fields,'Rest in seconds',original?.rest??state.settings.rest,0,1800),note=field(m.fields,'Notes','textarea',original?.notes||'');note.maxLength=20000;
 if(original)m.actions.append(deleteButton('exercise',()=>{if(active?.exercises.find(e=>e.id===exerciseId)?.sets.some(hasLoggedReps)){m.error.textContent='This exercise has logged sets. Clear them before removing it.';return;}if(save(next=>{const r=next.routines.find(r=>r.id===routineId);if(r)r.exercises=r.exercises.filter(e=>e.id!==exerciseId);const live=liveRoutine(next,routineId);if(live)live.exercises=live.exercises.filter(e=>e.id!==exerciseId);},m.error)){m.close();render();}}));
 cancelSave(m,()=>{const tokens=targets.value.trim().split(/[,/\s]+/).filter(Boolean),reps=tokens.map(token=>/^\d+\+?$/.test(token)?Number(token.replace('+','')):NaN),value=Number(weight.value),restValue=Number(rest.value);if(!name.value.trim()||!reps.length||reps.length>20||reps.some(n=>!Number.isInteger(n)||n<1||n>100)||weight.value===''||!Number.isFinite(value)||value<0||value>5000||!Number.isInteger(restValue)||restValue<0||restValue>1800){m.error.textContent='Enter a name, 1–20 sets of 1–100 reps, a valid weight and rest time.';return;}if(active&&original&&original.sets.some((s,i)=>i>=reps.length&&hasLoggedReps(s))){m.error.textContent='Keep all logged sets, or clear them first.';return;}
@@ -350,7 +356,10 @@ function repLabel(set,reps){
 }
 function recordSet(exerciseId,index,reps){
  if(!state.active?.exercises.find(e=>e.id===exerciseId)?.sets[index])return false;
- if(!save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId);const set=live.sets[index];set.reps=reps==null?null:Math.min(reps,repLimit(set));next.restStartedAt=Date.now();next.restDurationMs=live.rest*1000;next.restEndAt=live.rest>0?next.restStartedAt+next.restDurationMs:0;}))return false;
+ if(!save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId);const set=live.sets[index];set.reps=reps==null?null:Math.min(reps,repLimit(set));next.restDismissed=false;
+  next.restStartedAt=reps==null?0:Date.now();
+  next.restDurationMs=reps==null?0:live.rest*1000;
+  next.restEndAt=next.restDurationMs>0?next.restStartedAt+next.restDurationMs:0;}))return false;
  haptic();render();return true;
 }
 function logSet(exerciseId,index){const set=state.active?.exercises.find(e=>e.id===exerciseId)?.sets[index];if(!set)return;recordSet(exerciseId,index,set.reps===0?null:hasLoggedReps(set)?set.reps-1:set.target);}
@@ -403,7 +412,7 @@ function finishRepDrag(commit){
  if(d.control.hasPointerCapture(d.id))d.control.releasePointerCapture(d.id);
  if(commit){if(!recordSet(d.exerciseId,d.index,d.reps))renderToday();}else renderToday();
 }
-function editSet(exerciseId,index){const ex=state.active.exercises.find(e=>e.id===exerciseId),set=ex.sets[index],m=modal('Set '+(index+1));const pair=el('div','two');m.fields.append(pair);const reps=numberField(pair,'Reps',set.reps,0,repLimit(set)),weight=numberField(pair,'Weight ('+ex.unit+')',set.weight,0,5000,.25);m.fields.append(button('Clear set',()=>{if(save(next=>{next.active.exercises.find(e=>e.id===exerciseId).sets[index].reps=null;},m.error)){m.close();render();}}));cancelSave(m,()=>{const r=Number(reps.value),w=Number(weight.value);if(reps.value===''||weight.value===''||!Number.isInteger(r)||r<0||r>repLimit(set)||!Number.isFinite(w)||w<0||w>5000){m.error.textContent='Enter 0–'+repLimit(set)+' reps and a valid weight.';return;}if(save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId).sets[index];live.reps=r;live.weight=w;},m.error)){m.close();render();}});}
+function editSet(exerciseId,index){const ex=state.active.exercises.find(e=>e.id===exerciseId),set=ex.sets[index],m=modal('Set '+(index+1));const pair=el('div','two');m.fields.append(pair);const reps=numberField(pair,'Reps',set.reps,0,repLimit(set)),weight=numberField(pair,'Weight ('+ex.unit+')',set.weight,0,5000,.25);m.fields.append(button('Clear set',()=>{if(save(next=>{next.active.exercises.find(e=>e.id===exerciseId).sets[index].reps=null;next.restEndAt=next.restStartedAt=next.restDurationMs=0;next.restDismissed=false;},m.error)){m.close();render();}}));cancelSave(m,()=>{const r=Number(reps.value),w=Number(weight.value);if(reps.value===''||weight.value===''||!Number.isInteger(r)||r<0||r>repLimit(set)||!Number.isFinite(w)||w<0||w>5000){m.error.textContent='Enter 0–'+repLimit(set)+' reps and a valid weight.';return;}if(save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId).sets[index];live.reps=r;live.weight=w;},m.error)){m.close();render();}});}
 function appendSet(exerciseId){const ex=state.active.exercises.find(e=>e.id===exerciseId);if(ex.sets.length>=20){toast('Up to 20 sets per exercise.');return;}if(save(next=>{const e=next.active.exercises.find(e=>e.id===exerciseId);e.sets.push({target:e.sets.at(-1).target,amrap:!!e.sets.at(-1).amrap,weight:e.weight,reps:null});}))render();}
 function finish(){if(!state.active)return;if(!completed(state.active)){toast('Log a set first.');return;}const m=modal('Finish workout');m.fields.append(el('p','muted small',completed(state.active)+'/'+total(state.active)+' sets logged'));const note=field(m.fields,'Workout notes','textarea',state.active.notes);note.maxLength=20000;cancelSave(m,()=>{if(save(next=>{next.active.finishedAt=Date.now();next.active.notes=note.value;next.history.unshift(clone(next.active));next.active=null;next.restEndAt=0;},m.error)){m.close();haptic();render();}},'Save workout');}
 function updateDiscardButton(sessionId){
@@ -611,7 +620,7 @@ function tick(){
   $('elapsed').textContent=duration(Date.now()-state.active.startedAt)+' · '+percent+'%';
  }
  const end=state.restEndAt,delta=end-Date.now(),remaining=Math.max(0,delta);
- $('rest').hidden=!end||!state.active||state.settings.floatingTimer===false||settingsOpen||native?.floatingRestVisible?.()===true;
+ $('rest').hidden=!end||state.restDismissed||!state.active||state.settings.floatingTimer===false||settingsOpen||native?.floatingRestVisible?.()===true;
  const label=remainingText(delta);
  $('rest-time').textContent=label;
  $('rest-time').classList.toggle('overdue',delta<=0);
@@ -642,33 +651,53 @@ function openRest(){
  floating.onchange=()=>{if(save(next=>next.settings.floatingTimer=floating.checked,m.error))tick();else floating.checked=state.settings.floatingTimer!==false;};
  m.actions.append(button('+30s',()=>moreRest(m.error)),button('Skip rest',()=>{if(save(next=>next.restEndAt=0,m.error)){m.close();tick();}},'primary'),button('Close',m.close));
 }
-const floater=$('rest-float');
+const floater=$('rest-float'),dismissTarget=$('timer-dismiss');
+dismissTarget.append(icon('close'));
+function timerOverTarget(x,y){
+ const target=dismissTarget.getBoundingClientRect();
+ return Math.hypot(x-target.left-target.width/2,y-target.top-target.height/2)<=target.width/2;
+}
 floater.addEventListener('pointerdown',event=>{
  if(event.button!==0||event.isPrimary===false)return;
  const box=$('rest').getBoundingClientRect();
- timerDrag={id:event.pointerId,startX:event.clientX,startY:event.clientY,left:box.left,top:box.top,moved:false};
+ timerDrag={id:event.pointerId,startX:event.clientX,startY:event.clientY,started:state.restStartedAt,left:box.left,top:box.top,moved:false};
  floater.setPointerCapture(event.pointerId);event.stopPropagation();
 });
 floater.addEventListener('pointermove',event=>{
  const d=timerDrag;if(!d||d.id!==event.pointerId)return;
  const dx=event.clientX-d.startX,dy=event.clientY-d.startY;
  if(Math.hypot(dx,dy)>5)d.moved=true;if(!d.moved)return;
+ dismissTarget.hidden=false;
+ dismissTarget.classList.toggle('over',timerOverTarget(event.clientX,event.clientY));
  if(event.cancelable)event.preventDefault();
  const left=Math.max(8,Math.min(innerWidth-84,d.left+dx)),top=Math.max(8,Math.min((visualViewport?.height||innerHeight)-84,d.top+dy));
  Object.assign($('rest').style,{left:left+'px',top:top+'px'});
 });
-function finishTimerDrag(commit){
+function finishTimerDrag(commit,event){
  const d=timerDrag;if(!d)return;timerDrag=null;
- if(d.moved){suppressTimerClick=performance.now()+450;if(commit){
+ const dismissed=commit&&d.moved&&timerOverTarget(event.clientX,event.clientY);
+ dismissTarget.hidden=true;
+ if(d.moved){suppressTimerClick=performance.now()+450;if(dismissed){
+  if(save(next=>{if(next.restEndAt&&next.restStartedAt===d.started)next.restDismissed=true;}))haptic();
+  tick();
+ }else if(commit){
   const box=$('rest').getBoundingClientRect(),x=Math.max(0,Math.min(1,(box.left-8)/Math.max(1,innerWidth-92))),y=Math.max(0,Math.min(1,(box.top-8)/Math.max(1,(visualViewport?.height||innerHeight)-92)));
   if(save(next=>next.settings.timerPosition={x,y}))haptic();
  }}
  placeTimer();
 }
-floater.addEventListener('pointerup',()=>finishTimerDrag(true));
+floater.addEventListener('pointerup',event=>finishTimerDrag(true,event));
+floater.addEventListener('lostpointercapture',()=>finishTimerDrag(false));
 floater.addEventListener('pointercancel',()=>finishTimerDrag(false));
 floater.onclick=()=>{if(performance.now()>=suppressTimerClick){haptic();openRest();}};
-let spotifyTextSlide=null,spotifyTextAnimation=null;
+let spotifyTextSlide=null,spotifyTextAnimation=null,spotifyPosition=null;
+function updateSongProgress(){
+ if(!spotifyPosition)return;
+ const {position,duration,speed,sampledAt}=spotifyPosition;
+ const fraction=Math.max(0,Math.min(1,(position+(performance.now()-sampledAt)*speed)/duration));
+ $('spotify-progress').firstElementChild.style.transform='scaleX('+fraction+')';
+}
+setInterval(updateSongProgress,100);
 function resetSpotifyText(){
  if(spotifyTextSlide){
   clearTimeout(spotifyTextSlide.timeout);
@@ -720,17 +749,21 @@ function renderSpotify(){
  if(!enabled)return;
  let music={connected:false,available:false,title:'Spotify',artist:'',playing:false};
  try{if(native?.spotifyState)music=JSON.parse(native.spotifyState());}catch(_){}
- renderSpotifyText(music.connected?(music.title||'Open Spotify'):'Spotify',music.artist||'');
+ const empty=!music.available;
+ $('spotify').classList.toggle('empty',empty);
+ renderSpotifyText(empty?'Open Spotify':(music.title||'Spotify'),empty?'':(music.artist||''));
+ spotifyPosition=!empty&&music.duration>0?{position:music.position||0,duration:music.duration,speed:music.playing?(music.speed??1):0,sampledAt:performance.now()}:null;
+ $('spotify-progress').hidden=!spotifyPosition;
+ updateSongProgress();
  $('spotify-open').title=[music.title,music.artist].filter(Boolean).join(' · ');
- const art=$('spotify-art'),url=music.art||'';
+ const art=$('spotify-art'),url=empty?'':(music.art||'');
  if(art.dataset.url!==url){
   art.dataset.url=url;art.replaceChildren();
   if(url.startsWith('data:image/png;base64,')){const image=el('img');image.src=url;image.alt='';art.append(image);}
   else art.append(icon('music'));
  }
 
- $('spotify-connect').hidden=music.connected;
- for(const key of ['prev','play','next'])$('spotify-'+key).disabled=!music.available;
+ for(const key of ['prev','play','next'])$('spotify-'+key).hidden=empty;
  $('spotify-play').replaceChildren(icon(music.playing?'pause':'play'));
  $('spotify-play').setAttribute('aria-label',(music.playing?'Pause':'Play')+' Spotify');
 }
@@ -739,9 +772,8 @@ $('spotify-prev').append(icon('prev'));
 $('spotify-next').append(icon('next'));
 $('spotify-play').append(icon('play'));
 $('spotify-open').onclick=()=>{haptic();native?.openSpotify();};
-$('spotify-connect').onclick=()=>{haptic();native?.spotifyAccess();};
 function spotifyTransport(command){
- if($('spotify-'+command).disabled)return;
+ if($('spotify-'+command).hidden)return;
  haptic();
  native?.spotifyCommand(command);
  setTimeout(renderSpotify,250);
@@ -771,7 +803,7 @@ player.addEventListener('pointerup',event=>{
  suppressSpotifyClick=performance.now()+350;
  if(Math.abs(dx)>=36){
   const command=dx<0?'next':'prev';
-  if(!$('spotify-'+command).disabled){
+  if(!$('spotify-'+command).hidden){
    slideSpotifyText(Math.sign(dx));
    spotifyTransport(command);
   }
@@ -914,7 +946,7 @@ setInterval(()=>{
  if(!state||!native?.restState)return;
  try{
   const rest=JSON.parse(native.restState());
-  state.restEndAt=rest.end;state.restDurationMs=rest.duration;state.restStartedAt=rest.started;
+  state.restEndAt=rest.end;state.restDurationMs=rest.duration;state.restStartedAt=rest.started;state.restDismissed=!!rest.dismissed;
   tick();
  }catch(_){}
 },1000);

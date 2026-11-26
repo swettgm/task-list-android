@@ -40,7 +40,7 @@ try{
  const haptics=await page.evaluate(()=>qa.haptics);
  await swipe(320,290,true);await page.waitForTimeout(260);
  check(await page.locator('#today-tab').getAttribute('aria-selected')==='true'&&await page.evaluate(()=>qa.haptics)===haptics,'Cancelled touch swipes keep the selected tab without a success haptic');
- await page.getByRole('button',{name:'Add routine',exact:true}).tap();
+ await page.getByRole('button',{name:'Add workout',exact:true}).tap();
  const name=page.getByRole('textbox',{name:'Name',exact:true});
  await name.tap();await page.keyboard.type('Workout B',{delay:10});
  check(await name.inputValue()==='Workout B','Routine names accept touch focus and keyboard typing');

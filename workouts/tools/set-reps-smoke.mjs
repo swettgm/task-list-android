@@ -10,7 +10,7 @@ try{
  await page.addInitScript(()=>{
   let state=JSON.parse(localStorage.getItem('qa-state')||'{}');window.qa={haptics:0,fail:false};
   window.WorkoutNative={readState:()=>JSON.stringify(state),writeState:raw=>{if(qa.fail)return null;state=JSON.parse(raw);state.revision=(state.revision||0)+1;localStorage.setItem('qa-state',JSON.stringify(state));return JSON.stringify(state);},
-   restState:()=>JSON.stringify({end:state.restEndAt,duration:state.restDurationMs,started:state.restStartedAt}),ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},restComplete(){},spotifyState:()=>JSON.stringify({connected:false}),preciseTimers:()=>true};
+   restState:()=>JSON.stringify({end:state.restEndAt,duration:state.restDurationMs,started:state.restStartedAt,dismissed:state.restDismissed}),ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},restComplete(){},spotifyState:()=>JSON.stringify({connected:false}),preciseTimers:()=>true};
  });
  await page.goto(fixture.url);await page.waitForFunction(()=>!!window.Workouts);
  const data=()=>page.evaluate(()=>Workouts.debug()),sets=()=>page.locator('.set:not(.set-add)'),dialog=()=>page.locator('dialog[open]');
@@ -29,11 +29,21 @@ try{
  for(const reps of [5,4,3,2,1,0,null,5]){
   await sets().first().tap();const d=await data();
   check(d.active.exercises[0].sets[0].reps===reps,'Tap cycle records '+reps);
-  check(d.restEndAt>deadline&&d.restDurationMs===90000,'Each final tap restarts the full rest duration');deadline=d.restEndAt;
+  check(reps===null?d.restEndAt===0&&d.restDurationMs===0:d.restEndAt>deadline&&d.restDurationMs===90000,'Logging reps restarts rest and clearing cancels it');deadline=d.restEndAt;
  }
  check(await dialog().count()===0&&await page.getByLabel('Rest timer', {exact:true}).isVisible(),'Rep taps keep the rest timer visible without an editor');
  await page.waitForTimeout(1100);
  check((await data()).restEndAt===deadline,'Native timer polling keeps the saved rest deadline');
+ const rest=page.getByLabel('Rest timer',{exact:true});
+ const box=await rest.boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
+ await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-12,y-12);
+ const drop=await page.locator('#timer-dismiss').boundingBox();
+ check(!!drop,'Dragging shows a dismiss target');
+ await page.mouse.move(drop.x+drop.width/2,drop.y+drop.height/2,{steps:5});await page.mouse.up();
+ check(!(await rest.isVisible())&&(await data()).restEndAt===deadline,'Dropping on the X hides only the current floating timer');
+ await sets().nth(2).tap();
+ check(await rest.isVisible()&&!(await data()).restDismissed,'Logging another set restores the floating timer');
+ deadline=(await data()).restEndAt;
  const touch=await page.context().newCDPSession(page);
  check(await sets().nth(1).evaluate(circle=>{
   const box=circle.getBoundingClientRect();
@@ -90,6 +100,7 @@ try{
  await page.reload();await page.waitForFunction(()=>!!window.Workouts);
  check(await sets().first().textContent()==='0','An explicit zero survives reopening');
  check((await data()).active.exercises[0].sets[1].amrap&&(await data()).active.exercises[0].sets[1].reps===5,'AMRAP and recorded reps survive reopening');
+ await holdAndDrag(-72,false,2);
  await page.getByRole('button',{name:'Finish',exact:true}).tap();await page.getByRole('button',{name:'Save workout',exact:true}).tap();
  check((await data()).history[0].exercises[0].sets[1].reps===5&&(await data()).restEndAt===0,'Finishing archives AMRAP reps and stops rest');
  await page.getByRole('tab',{name:'History'}).tap();
