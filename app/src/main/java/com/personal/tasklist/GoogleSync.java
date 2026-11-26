@@ -52,7 +52,10 @@ final class GoogleSync {
     void start(){synchronized(lock){if(closed||running)return;running=true;periodic=executor.scheduleWithFixedDelay(this::syncOnce,0,10,TimeUnit.SECONDS);}}
     void stop(){synchronized(lock){running=false;if(periodic!=null){periodic.cancel(false);periodic=null;}}}
     void close(){synchronized(lock){closed=true;running=false;generation++;if(periodic!=null)periodic.cancel(false);}executor.shutdownNow();ui.removeCallbacksAndMessages(null);}
-    void requestSync(){synchronized(lock){if(closed||!running||!signedIn()||queued)return;queued=true;}try{executor.execute(()->{synchronized(lock){queued=false;}syncOnce();});}catch(java.util.concurrent.RejectedExecutionException stopped){synchronized(lock){queued=false;}}}
+    void requestSync(){synchronized(lock){if(closed||!signedIn()||queued)return;queued=true;}try{executor.execute(()->{synchronized(lock){queued=false;}syncOnce();});}catch(java.util.concurrent.RejectedExecutionException stopped){synchronized(lock){queued=false;}}}
+    void runBackgroundOnce(Runnable finished) {
+        executor.execute(()->{try{syncOnce();}finally{ui.post(finished);}});
+    }
     String status(){synchronized(lock){try{return new JSONObject().put("signedIn",signedIn()).put("email",prefs.getString("email","")).put("signingIn",signingIn).put("message",message).put("lastSyncAt",prefs.getString("lastSyncAt","")).put("needsInitialization",needsInitialization).put("needsReauth",needsReauth).toString();}catch(Exception invalid){return "{}";}}}
     void signIn(Activity activity){
         synchronized(lock){if(closed||signingIn)return;}
@@ -92,6 +95,7 @@ final class GoogleSync {
                     if(!edit.commit())throw new Exception("Account save failed");
                     accessToken=token;signingIn=false;needsReauth=false;message="Signed in. Syncing…";
                 }
+                GoogleSyncJob.schedulePeriodic(app);
                 requestSync();
             }catch(Exception failure){authFailed(expected);}
         });
@@ -109,20 +113,20 @@ final class GoogleSync {
     private void syncNotebook(){
         final long expected;final String account,email;final JSONObject sent;
         synchronized(lock){
-            if(closed||!running||!signedIn()||signingIn)return;
+            if(closed||!signedIn()||signingIn)return;
             expected=generation;account=prefs.getString("account","");email=prefs.getString("email","");
             try{sent=sharedState(new JSONObject(reference.readState()));}catch(Exception invalid){message="Local tasks could not be read. Nothing was replaced.";return;}
         }
         String token=null;
         try{
             token=token(email);GoogleDrive drive=new GoogleDrive(token);
-            synchronized(lock){if(closed||expected!=generation)return;accessToken=token;}
+            synchronized(lock){if(closed||expected!=generation||!account.equals(prefs.getString("account","")))return;accessToken=token;}
             java.util.List<JSONObject> files=drive.files(),seeds=new java.util.ArrayList<>();for(JSONObject file:files)if(GoogleDrive.SEED.equals(file.optString("name")))seeds.add(file);
             if(seeds.isEmpty()){
                 boolean initialize;synchronized(lock){initialize=forceSeed||prefs.getBoolean("seedExistingPhone",false);needsInitialization=!initialize;}
                 if(!initialize){synchronized(lock){message="Use this phone’s tasks to start your cloud list.";}return;}
                 JSONObject initial=CloudState.copy(sent).put("cloudManaged",true);
-                synchronized(lock){if(closed||expected!=generation)return;}
+                synchronized(lock){if(closed||expected!=generation||!account.equals(prefs.getString("account","")))return;}
                 drive.createDocument(GoogleDrive.SEED,GoogleDrive.document("seed",java.util.UUID.randomUUID().toString()).put("state",initial));
                 files=drive.files();for(JSONObject file:files)if(GoogleDrive.SEED.equals(file.optString("name")))seeds.add(file);
                 if(seeds.isEmpty())throw new GoogleDrive.Failure(0,"Waiting for Google to save the initial cloud list.");
@@ -144,13 +148,13 @@ final class GoogleSync {
             }
             JSONObject ownDoc=GoogleDrive.document("device",epoch).put("owner",owner).put("registers",own);documents.add(ownDoc);
             CloudState.Result result=CloudState.resolve(seed.getJSONObject("state"),documents);
-            synchronized(lock){if(closed||expected!=generation)return;}
+            synchronized(lock){if(closed||expected!=generation||!account.equals(prefs.getString("account","")))return;}
             if(own.length()>0&&!fresh&&!StateMerge.same(own,canonicalOwn)){
                 if(ownId!=null)drive.writeDocument(ownId,ownDoc);else drive.createDocument(GoogleDrive.PREFIX+epoch+"-"+owner+".json",ownDoc);
             }
             boolean updated=false;
             synchronized(lock){
-                if(closed||expected!=generation)return;
+                if(closed||expected!=generation||!account.equals(prefs.getString("account","")))return;
                 if(restore){reference.restoreCloud(sent,result.state,account);updated=true;}
                 else{
                     boolean saved=false;for(int retry=0;retry<16;retry++){long revision=reference.revision();JSONObject current=new JSONObject(reference.readState()),latest=StateMerge.merge(sent,current,result.state);boolean differs=!StateMerge.same(latest,current);if(reference.compareAndWriteState(revision,latest.toString())){saved=true;updated=differs;break;}}
@@ -162,7 +166,7 @@ final class GoogleSync {
             }
             if(updated){reference.refreshSyncedMirror();TaskReminders.reschedule(app);TaskWidgetProvider.refreshAll(app);ui.post(changed);}
         }catch(Exception error){
-            synchronized(lock){if(closed||expected!=generation)return;message=error instanceof GoogleDrive.Failure?error.getMessage():"Google sync is unavailable. Your tasks are saved on this phone.";
+            synchronized(lock){if(closed||expected!=generation||!account.equals(prefs.getString("account","")))return;message=error instanceof GoogleDrive.Failure?error.getMessage():"Google sync is unavailable. Your tasks are saved on this phone.";
                 if(error instanceof GoogleDrive.Failure&&((GoogleDrive.Failure)error).status==401){needsReauth=true;accessToken=null;if(token!=null)try{Identity.getAuthorizationClient(app).clearToken(ClearTokenRequest.builder().setToken(token).build());}catch(Exception ignored){}}
             }
         }

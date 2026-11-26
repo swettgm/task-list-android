@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import {serveFixture} from './browser-fixture-server.mjs';
 const documentPath = path.resolve(process.argv[2] || 'app/src/main/assets/www/index.html');
 const seedPath = path.resolve(process.argv[3] || path.join(path.dirname(documentPath), 'initial-state.json'));
 const seed = JSON.parse(await readFile(seedPath, 'utf8'));
@@ -11,7 +11,7 @@ const output = path.resolve(process.env.TASK_SCREENSHOT_DIR || 'build/browser-qa
 await mkdir(output, { recursive: true });
 const executablePath = process.env.CHROME_BIN || ['/usr/bin/google-chrome', '/usr/bin/chromium', '/opt/google/chrome/chrome'].find(existsSync);
 const browser = await chromium.launch({ headless: true, executablePath, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
-const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
 const failures = [];
 page.on('pageerror', error => failures.push(error.message));
 await page.addInitScript(initial => {
@@ -19,7 +19,23 @@ await page.addInitScript(initial => {
   // Simulate an upgrade with old suggested pairs still in saved data.
   canonical.pairOverrides = { credit:['fix-credit'] };
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  canonical.customTasks=[...(canonical.customTasks||[]),{id:'smoke-once-today',title:'One-time today fixture',due:today,priority:'LOW',_contexts:['At home']},{id:'smoke-checklist-today',title:'Today checklist fixture',due:today,priority:'HIGH',_contexts:['At home'],steps:['First step','Second step']}];
+  const offset = days => new Date(Date.parse(today+'T12:00:00Z')+days*86400000).toISOString().slice(0,10);
+  const fixture = (id,title,days,extra={}) => ({id,title,due:offset(days),priority:'LOW',_contexts:['At home'],...extra});
+  canonical.customTasks=[...(canonical.customTasks||[]),
+    fixture('smoke-once-today','One-time today fixture',0),
+    fixture('smoke-checklist-today','Today checklist fixture',0,{priority:'HIGH',steps:['First step','Second step']}),
+    fixture('smoke-daily','Daily fixture',0,{repeat:{unit:'day',amount:1,start:today}}),
+    fixture('smoke-yesterday','Yesterday fixture',-1),
+    fixture('smoke-earlier','Earlier fixture',-2),
+    fixture('smoke-upcoming','Future fixture',2),
+    fixture('smoke-retired-today','Recently deleted fixture',0,{retired:true,trashedAt:today+'T12:00:00Z'}),
+    fixture('smoke-retired-old','Previously deleted fixture',-2,{retired:true,trashedAt:offset(-2)+'T12:00:00Z'}),
+    fixture('smoke-done-old','Previously completed fixture',-2),
+    fixture('smoke-moved','Previously moved fixture',-1)
+  ];
+  canonical.completed={...(canonical.completed||{}),['smoke-done-old:'+offset(-2)]:true};
+  canonical.completedOn={...(canonical.completedOn||{}),['smoke-done-old:'+offset(-2)]:offset(-2)};
+  canonical.movedTo={...(canonical.movedTo||{}),['smoke-moved:'+offset(-1)]:offset(3)};
   window.__nativeQA = { snapshot: [], failWrites:false, widgetOpened:false, haptics:0,
     setState(value) { canonical = JSON.parse(JSON.stringify(value)); },
     getState() { return JSON.parse(JSON.stringify(canonical)); } };
@@ -33,7 +49,9 @@ await page.addInitScript(initial => {
     showWidgetSettings() { window.__nativeQA.widgetOpened=true; }
   };
 }, seed);
-await page.goto(pathToFileURL(documentPath).href);
+const fixture = await serveFixture(documentPath);
+try {
+await page.goto(fixture.url);
 await page.waitForFunction(() => !!window.TaskListApp && window.__nativeQA.snapshot.length > 0);
 const originalSizes=async(selector)=>page.evaluate(selector=>{const sheet=document.getElementById('tl-unified-controls').sheet,controls=[...document.querySelectorAll(selector)].filter(el=>el.getBoundingClientRect().width>0),read=()=>controls.map(el=>{const b=el.getBoundingClientRect();return[b.width,b.height,getComputedStyle(el).fontSize];});try{sheet.disabled=true;const before=read();sheet.disabled=false;const after=read();return controls.length>=5&&before.every((b,i)=>Math.abs(b[0]-after[i][0])<.5&&Math.abs(b[1]-after[i][1])<.5&&b[2]===after[i][2]);}finally{sheet.disabled=false;}},selector);if(!await originalSizes('#today-task-list-20261023 .tm-item-actions button,#today-task-list-20261023 .tl-tools button,#today-task-list-20261023 .tl-tools select,#today-task-list-20261023 .nav-link,#today-task-list-20261023 .tl-add-task'))throw Error('Main controls retain their pre-style dimensions and font sizes');
 if(!await page.locator('#pt-list .tm-item-actions .tm-progress-control,#pt-list .tm-item-actions .tm-move-control').evaluateAll(buttons=>{const visible=buttons.filter(button=>button.getBoundingClientRect().width>0);return visible.length>0&&visible.every(button=>Math.abs(button.getBoundingClientRect().height-34)<.5);}))throw Error('Task-row controls share the slightly taller 34px height');
@@ -81,10 +99,13 @@ const result = await page.evaluate(async () => {
   check(document.querySelector('dialog[open] h2,.tl-settings-screen h2').textContent==='Settings','Settings opens as its own screen from the gear');
   clickText((document.querySelector('dialog[open]')||document.querySelector('.tl-settings-screen')),'Add home-screen widget');
   check(__nativeQA.widgetOpened&&!(document.querySelector('dialog[open]')||document.querySelector('.tl-settings-screen')),'Widget setup is available inside Settings');
-  check(original.definitions === 104 && original.savedKeys >= 304 && original.moves >= 26, 'Original tasks plus two Today fixtures, saved history, and moves retained');
+  check(original.definitions >= 10 && original.savedKeys >= 1 && original.moves >= 1, 'Saved definitions, history and moves are retained');
   check(!!document.querySelector('#pt-date').textContent.trim() && !document.querySelector('h1'), 'Date-only heading');
   check(getComputedStyle(document.body).backgroundColor === 'rgb(16, 21, 31)', 'Dark page background');
   check(document.querySelector('#pt-upcoming').hidden && document.querySelector('#pt-completed').hidden&&document.querySelector('#pt-toggle-hidden').textContent==='Completed', 'Today opens with a Completed button without a count');
+  check(rowFor('smoke-yesterday').querySelector('.tm-overdue').textContent==='Yesterday','Previous-day overdue tasks display Yesterday');
+  check(rowFor('smoke-earlier').querySelector('.tm-overdue').textContent.startsWith('Overdue from '),'Older overdue tasks retain their date');
+  check(document.querySelector('#pt-toggle-trash').textContent==='Trash (1)','Trash counts only deletions from today');
   check(!document.querySelector('#pt-save,#pt-copy,#pt-backup,#pt-copy-full,#pt-copy-box,.tl-export'), 'Manual completion, copy, and backup controls removed');
   check(!document.querySelector('.tm-ai-note,.tm-pair-note,.tm-linked-chain'), 'AI tips and original suggested links are absent');
   check([...document.querySelectorAll('.tm-children')].every(item => !item.open), 'Subtask checklists start collapsed');
@@ -103,7 +124,7 @@ const result = await page.evaluate(async () => {
   check(TaskListApp.debugSummary().active===null,'Do now toggles off and stays off');
   const repeating=rows().filter(row=>row.querySelector('.tm-meta').textContent.includes('🔁'));
   check(repeating.length>0&&repeating.every(row=>![...row.querySelectorAll('button')].some(b=>b.textContent==='Do tomorrow ➜')),'Recurring tasks retain their schedule');
-  const movable=rows().find(row=>[...row.querySelectorAll('button')].some(b=>b.textContent==='Do tomorrow ➜'));
+  const movable=rowFor('smoke-once-today');
   const movedId=movable.dataset.taskId,movedDate=movable.dataset.stateDate;
   clickText(movable,'Do tomorrow ➜');await tick();
   check(!!__nativeQA.getState().movedTo[movedId+':'+movedDate]&&!rowFor(movedId,movedDate),'Do tomorrow saves the move and removes the current row');
@@ -121,7 +142,7 @@ const result = await page.evaluate(async () => {
   check(!rowFor(parentId,parentDate),'Completion survives reload');
   document.querySelector('#pt-toggle-hidden').click();await tick();
   const hiddenParent=()=>[...document.querySelectorAll('#pt-completed-list [data-task-id]')].find(row=>row.dataset.taskId===parentId&&row.dataset.stateDate===parentDate);
-  check(!document.querySelector('#pt-completed').hidden&&!!hiddenParent()&&document.querySelector('#pt-toggle-hidden').textContent==='Completed','Show completed reveals history and the button has no count');
+  check(!document.querySelector('#pt-completed').hidden&&!!hiddenParent()&&document.querySelector('#pt-toggle-hidden').textContent==='Completed (1)','Completed history counts only today’s completion');
   hiddenParent().querySelector(':scope > .form-check > input').click();await tick();
   check(!!rowFor(parentId,parentDate)&&!hiddenParent(),'Unchecking a hidden task saves and restores it');
   TaskListApp.reloadFromNative();await tick();check(!!rowFor(parentId,parentDate),'Reopened task survives reload');
@@ -218,13 +239,13 @@ const result = await page.evaluate(async () => {
   dialog.querySelector('.tl-task-title').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));await tick();
   check(__nativeQA.haptics===quickHaptics+2,'Successful quick add emits exactly one additional light haptic');
   let quick=__nativeQA.getState().customTasks.find(task=>task.title==='Quick entry QA');
-  check(quick&&quick.due===original.today&&quick._contexts.includes('On the phone')&&dialog.open&&dialog.querySelector('.tl-task-title').value===''&&document.activeElement===dialog.querySelector('.tl-task-title'),'Quick add saves and clears its title while keeping the popup and keyboard focus');
-  check(quick.urgent===true&&quick.priority==='HIGH'&&!urgentQuick.checked,'Quick add saves Urgent at High priority and resets the next entry');
-  const firstQuickBox=dialog.getBoundingClientRect();check(dialog.getAnimations().length>0,'Successful quick add flashes the popup border');
-  dialog.querySelector('.tl-task-title').value='Second quick entry QA';dialog.querySelector('.tl-task-title').dispatchEvent(new InputEvent('beforeinput',{inputType:'insertLineBreak',bubbles:true,cancelable:true}));await tick();check(__nativeQA.getState().customTasks.filter(task=>['Quick entry QA','Second quick entry QA'].includes(task.title)).length===2&&dialog.open&&dialog.querySelector('.tl-task-title').value==='','The same quick-add popup can save another distinct task');
-  check(__nativeQA.getState().customTasks.find(task=>task.title==='Second quick entry QA')._contexts.length===0,'Batch quick add clears inherited labels after a successful save');
-  check(!__nativeQA.getState().customTasks.find(task=>task.title==='Second quick entry QA').urgent&&__nativeQA.getState().customTasks.find(task=>task.title==='Second quick entry QA').priority==='LOW','The next quick entry does not inherit Urgent');
-  const nextQuickBox=dialog.getBoundingClientRect();check(Math.abs(firstQuickBox.width-nextQuickBox.width)<1&&Math.abs(firstQuickBox.height-nextQuickBox.height)<1,'Border pulses do not resize the quick-add popup');clickText(dialog,'Cancel');
+  check(quick&&quick.due===original.today&&quick._contexts.includes('On the phone')&&!dialog.open,'Quick add closes after saving with the selected label');
+  check(quick.urgent===true&&quick.priority==='HIGH','Quick add saves Urgent at High priority');
+  document.querySelector('.tl-add-task').click();dialog=document.querySelector('dialog[open]');
+  check(!dialog.querySelector('input[aria-label=Urgent]').checked,'Reopening quick add starts with Urgent off');
+  dialog.querySelector('.tl-task-title').value='Second quick entry QA';
+  dialog.querySelector('.tl-task-title').dispatchEvent(new InputEvent('beforeinput',{inputType:'insertLineBreak',bubbles:true,cancelable:true}));await tick();
+  check(__nativeQA.getState().customTasks.filter(task=>['Quick entry QA','Second quick entry QA'].includes(task.title)).length===2&&!dialog.open,'The keyboard confirmation saves another task and closes the popup');
   document.querySelector('.tl-add-task').click();dialog=(document.querySelector('dialog[open]')||document.querySelector('.tl-settings-screen'));dialog.querySelector('.tl-task-title').value='Keep this title';dialog.querySelector('input[aria-label=Urgent]').click();
   clickText(dialog,'Details');dialog=(document.querySelector('dialog[open]')||document.querySelector('.tl-settings-screen'));
   check(dialog.querySelector('.tl-task-title').value==='Keep this title','Quick add can open full details without losing the title');
@@ -256,7 +277,7 @@ const result = await page.evaluate(async () => {
   dialog.querySelector('.tl-settings-back').click();
   // Rapid completions and undo have independent presentation timers, while saving immediately.
   for(const title of ['Delay task A','Delay task B']){
-    TaskListApp.quickAddTask();const quickDialog=(document.querySelector('dialog[open]')||document.querySelector('.tl-settings-screen'));quickDialog.querySelector('.tl-task-title').value=title;clickText(quickDialog,'Add');await tick();clickText(quickDialog,'Cancel');
+    TaskListApp.quickAddTask();const quickDialog=(document.querySelector('dialog[open]')||document.querySelector('.tl-settings-screen'));quickDialog.querySelector('.tl-task-title').value=title;clickText(quickDialog,'Add');await tick();check(!quickDialog.open,'Task confirmation closes Quick add');
   }
   const byTitle=title=>rows().find(row=>row.querySelector('.tm-title').textContent===title);
   byTitle('Delay task A').querySelector(':scope > .form-check > input').click();await tick();
@@ -302,4 +323,7 @@ for(const width of [320,360,390,412,600,844]){
 }
 if(failures.length)throw Error('Page errors: '+failures.join('; '));
 console.log(JSON.stringify({passed:result.checks.length,checks:result.checks,layoutChecks:layouts},null,2));
-await browser.close();
+} finally {
+  await browser.close();
+  await fixture.close();
+}

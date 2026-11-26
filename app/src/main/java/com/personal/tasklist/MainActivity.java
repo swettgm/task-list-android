@@ -45,7 +45,8 @@ public class MainActivity extends Activity {
     private FrameLayout root;
     private Object backCallback;
     private final TaskBridge bridge = new TaskBridge();
-    private boolean pageReady, destroyed, addRequested;
+    private boolean pageReady,addRequested;
+    private volatile boolean destroyed;
     private String contextFilter;
     private String editRequested;
     private boolean modalOpen;
@@ -54,6 +55,13 @@ public class MainActivity extends Activity {
     private int themeColor=Color.rgb(16,21,31);
     protected boolean isWidgetEditor() { return false; }
     private volatile long loadedRevision;
+    private volatile String lastView="today";
+    private final java.util.concurrent.atomic.AtomicInteger pendingWrites=new java.util.concurrent.atomic.AtomicInteger();
+    private static final java.util.concurrent.ExecutorService LOCAL_IO=java.util.concurrent.Executors.newSingleThreadExecutor(r->{
+        Thread thread=new Thread(r,"Tasks local save");thread.setDaemon(true);return thread;
+    });
+    private String failedWriteBase;
+    private String reminderDefinitions;
     private String loadedDay = "";
 
     @Override public void onCreate(Bundle state) {
@@ -88,6 +96,15 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 android.net.Uri uri=request.getUrl();String scheme=uri.getScheme();
+                Intent meditation = meditationIntent(uri);
+                if (request.isForMainFrame() && request.hasGesture() && meditation != null) {
+                    try {
+                        startActivity(meditation);
+                    } catch (android.content.ActivityNotFoundException | SecurityException unavailable) {
+                        Toast.makeText(MainActivity.this, "Install Meditation to open this link.", Toast.LENGTH_SHORT).show();
+                    }
+                    return true;
+                }
                 if(request.isForMainFrame()&&request.hasGesture()&&("https".equalsIgnoreCase(scheme)||"http".equalsIgnoreCase(scheme))&&uri.getHost()!=null&&!"tasklist.local".equalsIgnoreCase(uri.getHost())){
                     try{startActivity(new Intent(Intent.ACTION_VIEW,uri).addCategory(Intent.CATEGORY_BROWSABLE));}catch(android.content.ActivityNotFoundException|SecurityException unavailable){Toast.makeText(MainActivity.this,"No browser is available to open this link.",Toast.LENGTH_SHORT).show();}
                 }
@@ -182,10 +199,16 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onResume() {
-        super.onResume();if(desktopSync!=null)desktopSync.start();if(googleSync!=null)googleSync.start();WidgetCompletions.settleExpired(this);TaskReminders.reschedule(this);
+        super.onResume();if(!isWidgetEditor())GoogleSyncJob.schedulePeriodic(this);if(desktopSync!=null)desktopSync.start();if(googleSync!=null)googleSync.start();LOCAL_IO.execute(()->{
+            try{
+                WidgetCompletions.settleExpired(this);
+                TaskReminders.reschedule(this);
+                if(reference.revision()!=loadedRevision)runOnUiThread(this::queueSyncedReload);
+            }catch(RuntimeException failure){android.util.Log.w("Tasks","Reminders could not be refreshed",failure);}
+        });
         if (web != null) {
             web.onResume();
-            if (pageReady && (reference.revision() != loadedRevision || !loadedDay.equals(LocalDate.now(ZoneId.of("America/New_York")).toString()))) loadTaskList();
+            if(pageReady&&(reference.revision()!=loadedRevision||!loadedDay.equals(LocalDate.now(ZoneId.of("America/New_York")).toString())))queueSyncedReload();
             else if(pageReady&&!isWidgetEditor())web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.restoreLastView()",null);
         }
     }
@@ -205,11 +228,11 @@ public class MainActivity extends Activity {
     }
     private void applySyncedReload(){
         if(destroyed){syncReloadPending=false;return;}
-        if(web==null||!pageReady||modalOpen){syncUi.postDelayed(this::applySyncedReload,250);return;}
+        if(web==null||!pageReady||modalOpen||pendingWrites.get()>0){syncUi.postDelayed(this::applySyncedReload,250);return;}
         String selector=cloudReloadPending?"dialog[open],.tm-completing,.tm-view-animating":"dialog[open],.tm-completing,.tl-settings-screen,.tm-view-animating";
         web.evaluateJavascript("Boolean(document.querySelector('"+selector+"'))",blocked->{
-            if(destroyed)return;if("true".equals(blocked)){syncUi.postDelayed(this::applySyncedReload,250);return;}
-            syncReloadPending=false;cloudReloadPending=false;web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.reloadFromNative()",null);loadedRevision=reference.revision();
+            if(destroyed)return;if(pendingWrites.get()>0||"true".equals(blocked)){syncUi.postDelayed(this::applySyncedReload,250);return;}
+            syncReloadPending=false;cloudReloadPending=false;web.evaluateJavascript("window.TaskListApp&&window.TaskListApp.reloadFromNative()",null);loadedRevision=reference.revision();loadedDay=LocalDate.now(ZoneId.of("America/New_York")).toString();
         });
     }
     private void confirmPC(String url,String token){
@@ -227,6 +250,16 @@ public class MainActivity extends Activity {
             else {url=new java.net.URI(uri.getScheme(),null,uri.getHost(),uri.getPort(),null,null,null).toString();token=uri.getFragment();if(!"/pair".equals(uri.getPath()))throw new IllegalArgumentException();}
             url=SyncEngine.validateEndpoint(url);token=SyncEngine.validateToken(token);dialog.dismiss();confirmPC(url,token);
         }catch(Exception invalid){input.setError("Paste the full pairing link shown on your PC.");}}));dialog.show();ControlAlignment.dialog(dialog);
+    }
+
+    static Intent meditationIntent(android.net.Uri uri) {
+        if (!"meditation".equalsIgnoreCase(uri.getScheme()) || !"open".equalsIgnoreCase(uri.getHost())
+                || (uri.getPath() != null && !uri.getPath().isEmpty() && !"/".equals(uri.getPath()))
+                || uri.getUserInfo() != null || uri.getPort() != -1 || uri.getQuery() != null || uri.getFragment() != null) {
+            return null;
+        }
+        return new Intent(Intent.ACTION_VIEW, uri).setPackage("com.personal.meditation")
+                .addCategory(Intent.CATEGORY_BROWSABLE);
     }
 
     private String asset(String name) throws Exception {
@@ -296,13 +329,43 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void swipeHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);}); }
         @JavascriptInterface public void actionHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);}); }
         @JavascriptInterface public void priorityHaptic() { runOnUiThread(()->{if(!destroyed&&web!=null)web.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);}); }
-        @JavascriptInterface public String getLastView(){return getSharedPreferences("task_ui",0).getString("lastView","today");}
-        @JavascriptInterface public void setLastView(String view){if("today".equals(view)||"upcoming".equals(view))getSharedPreferences("task_ui",0).edit().putString("lastView",view).apply();}
+        @JavascriptInterface public String getLastView(){return lastView;}
+        @JavascriptInterface public void setLastView(String view){if("today".equals(view)||"upcoming".equals(view))lastView=view;}
         @JavascriptInterface public String readState() { String value=reference.readState();bridgeBase=value;return value; }
         @JavascriptInterface public void writeState(String json) {
-            try{JSONObject desired=new JSONObject(json),base=new JSONObject(bridgeBase==null?reference.readState():bridgeBase);boolean saved=false;
-                for(int retry=0;retry<16;retry++){long revision=reference.revision();JSONObject current=new JSONObject(reference.readState()),merged=StateMerge.merge(base,desired,current);if(reference.compareAndWriteState(revision,merged.toString())){saved=true;break;}}
-                if(!saved)throw new IllegalStateException("Tasks changed while saving. Please try again.");bridgeBase=json;loadedRevision=reference.revision();TaskReminders.reschedule(MainActivity.this);if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();
+            saveState(bridgeBase==null?reference.readState():bridgeBase,json);
+            bridgeBase=json;
+        }
+        @JavascriptInterface public void queueStateWrite(String base,String desired) {
+            if(isWidgetEditor()){saveState(base,desired);return;}
+            if(base.length()>2*1024*1024||desired.length()>2*1024*1024)throw new IllegalArgumentException("Task state is too large");
+            pendingWrites.incrementAndGet();
+            LOCAL_IO.execute(()->{
+                String effectiveBase=failedWriteBase==null?base:failedWriteBase;
+                try{
+                    saveState(effectiveBase,desired);
+                    failedWriteBase=null;
+                }catch(RuntimeException failure){
+                    failedWriteBase=effectiveBase;
+                    message("Couldn’t save your task changes. Try again. Your pending changes are still on screen.");
+                }finally{pendingWrites.decrementAndGet();}
+            });
+        }
+        private void saveState(String previous,String json) {
+            try{
+                JSONObject desired=new JSONObject(json),base=new JSONObject(previous);
+                for(int retry=0;retry<16;retry++){
+                    long revision=reference.revision();
+                    JSONObject current=new JSONObject(reference.readState()),merged=StateMerge.merge(base,desired,current);
+                    if(!reference.compareAndWriteState(revision,merged.toString()))continue;
+                    loadedRevision=reference.revision();
+                    try{TaskReminders.reschedule(MainActivity.this);}catch(RuntimeException failure){android.util.Log.w("Tasks","Reminders could not be rescheduled",failure);}
+                    if(desktopSync!=null)desktopSync.requestSync();
+                    if(googleSync!=null&&!destroyed)googleSync.requestSync();
+                    else GoogleSyncJob.scheduleSoon(MainActivity.this);
+                    return;
+                }
+                throw new IllegalStateException("Tasks changed while saving. Please try again.");
             }catch(JSONException invalid){throw new IllegalArgumentException("The task update could not be read.",invalid);}
         }
         @JavascriptInterface public void connectPC(){runOnUiThread(()->{if(desktopSync!=null)enterPCLink();});}
@@ -310,7 +373,21 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void refreshTasks(){TaskReminders.reschedule(MainActivity.this);TaskWidgetProvider.refreshAll(MainActivity.this);if(desktopSync!=null)desktopSync.requestSync();}
         @JavascriptInterface public void syncNow(){if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();}
         @JavascriptInterface public void disconnectPC(){if(desktopSync!=null)desktopSync.unpair();}
-        @JavascriptInterface public void updateReminders(String json) { TaskReminders.definitions(MainActivity.this,json);if(reference.updateSharedDefinitions(json)){loadedRevision=reference.revision();if(desktopSync!=null)desktopSync.requestSync();if(googleSync!=null)googleSync.requestSync();} }
+        @JavascriptInterface public void updateReminders(String json) {
+            Runnable update=()->{
+                if(json.equals(reminderDefinitions))return;
+                try{
+                    TaskReminders.definitions(MainActivity.this,json);
+                    if(reference.updateSharedDefinitions(json)){
+                        loadedRevision=reference.revision();
+                        if(desktopSync!=null)desktopSync.requestSync();
+                        if(googleSync!=null)googleSync.requestSync();
+                    }
+                    reminderDefinitions=json;
+                }catch(RuntimeException failure){android.util.Log.w("Tasks","Reminder definitions could not be refreshed",failure);}
+            };
+            if(isWidgetEditor())update.run();else LOCAL_IO.execute(update);
+        }
         @JavascriptInterface public void connectGoogle(){runOnUiThread(()->{if(googleSync!=null)googleSync.signIn(MainActivity.this);});}
         @JavascriptInterface public String getGoogleStatus(){return googleSync==null?"{}":googleSync.status();}
         @JavascriptInterface public void disconnectGoogle(){if(googleSync!=null)googleSync.signOut();}
@@ -322,7 +399,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean exactAlarmsNeedPermission() { return !TaskReminders.precise(MainActivity.this); }
         @JavascriptInterface public void openExactAlarmSettings() { if(android.os.Build.VERSION.SDK_INT>=31)runOnUiThread(()->{try{startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,android.net.Uri.parse("package:"+getPackageName())));}catch(android.content.ActivityNotFoundException unavailable){startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName())));}}); }
         @JavascriptInterface public void openNotificationSettings() { runOnUiThread(()->startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()))); }
-        @JavascriptInterface public void updateSnapshot(String json) { reference.updateSnapshot(json); }
+        @JavascriptInterface public void updateSnapshot(String json) { if(isWidgetEditor())reference.updateSnapshot(json);else LOCAL_IO.execute(()->{try{reference.updateSnapshot(json);}catch(RuntimeException failure){android.util.Log.w("Tasks","Widget refresh failed",failure);}}); }
         @JavascriptInterface public void setThemeColors(String background) {
             if (background == null || !background.matches("#[0-9a-fA-F]{6}")) return;
             final int color = Color.parseColor(background);

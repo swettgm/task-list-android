@@ -110,6 +110,8 @@
   canonical.uiContext = localContext;
   let uiState = clone(canonical);
   let revision = Number.isSafeInteger(boot.revision) ? boot.revision : 0;
+  let cacheTimer=null;
+  let windowView='today';
   let inFlight = false, timer = null, reloadTimer = null, needsReload = false, pointers = 0;
   let status = cacheBlocked ? 'Storage unavailable' : 'Ready', lastSyncedAt = null, error = cacheBlocked ? 'A saved pending update could not be read.' : '';
   let connected = !cacheBlocked, stopped = false;
@@ -117,6 +119,18 @@
   function persistCache() {
     if (cacheBlocked) throw new Error('A saved pending update could not be read.');
     global.localStorage.setItem(cacheKey, JSON.stringify({base, state:shared(canonical), context:localContext, userEdited:userEditedPending,cloudSession}));
+  }
+  function queueCacheWrite() {
+    if (cacheTimer !== null) return;
+    cacheTimer = setTimeout(() => {
+      cacheTimer = null;
+      try { persistCache(); }
+      catch (failure) {
+        status = 'Couldn’t save changes';
+        error = failure instanceof Error ? failure.message : 'PC storage is unavailable.';
+        updateDesktop();
+      }
+    }, 0);
   }
   function notifyUI() {
     needsReload = true;
@@ -140,7 +154,9 @@
   document.addEventListener('pointercancel', release, true);
   global.addEventListener('blur', () => { pointers = 0; });
   function schedule(delay) {
-    if (timer || stopped || cacheBlocked) return;
+    if (stopped || cacheBlocked) return;
+    if(timer&&delay>=1000)return;
+    if(timer)clearTimeout(timer);
     timer = setTimeout(() => { timer = null; synchronize(); }, delay);
   }
   async function request(endpoint, options) {
@@ -199,7 +215,7 @@
     .tl-pc-welcome{padding:48px 18px;max-width:500px}.tl-pc-welcome h1{color:var(--tl-text,#eef3fb);font-size:30px;margin:0 0 12px}
     html.tl-desktop body{padding-bottom:30px!important}
   `;document.head.append(style);
-  let bar,connectionLabel;
+  let bar,connectionLabel,lastGoogleSync;
   let googleStatus={signedIn:false,message:'Not signed in'};
   async function googleRequest(path){
     const response=await fetch(new URL('/api/google/'+path,origin),{method:path==='status'?'GET':'POST',credentials:'omit',cache:'no-store',redirect:'error',headers:{Authorization:'Bearer '+boot.token}});
@@ -209,8 +225,15 @@
   function updateDesktop(){
     if(!document.body)return;
     document.documentElement.classList.toggle('tl-phone-linked',phoneLinked);
-    if(!bar){bar=document.createElement('div');bar.className='tl-pc-bar';connectionLabel=document.createElement('span');connectionLabel.setAttribute('role','status');const link=document.createElement('button');link.textContent='Connect';link.onclick=()=>global.TaskListApp?.showConnections();bar.append(connectionLabel,link);document.body.prepend(bar);}
+    if(!bar){bar=document.createElement('div');bar.className='tl-pc-bar';connectionLabel=document.createElement('span');connectionLabel.setAttribute('role','status');const link=document.createElement('button');link.textContent='Connect';link.onclick=()=>global.TaskListApp?.showConnections();lastGoogleSync=document.createElement('time');lastGoogleSync.hidden=true;bar.append(connectionLabel,lastGoogleSync,link);document.body.prepend(bar);}
     connectionLabel.textContent=!connected?'PC connection unavailable — changes kept locally':googleStatus.signedIn?googleStatus.email+' · '+googleStatus.message:Date.now()/1000-phoneLastSeenAt<20?'Phone connected':'Saved on this PC';
+    const synced=Number(googleStatus.lastSyncAt);
+    lastGoogleSync.hidden=!googleStatus.signedIn||!Number.isFinite(synced)||synced<=0;
+    if(!lastGoogleSync.hidden){
+      const stamp=new Date(synced*1000);
+      lastGoogleSync.dateTime=stamp.toISOString();
+      lastGoogleSync.textContent='Last synced at '+stamp.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+    }
   }
   document.addEventListener('DOMContentLoaded',()=>{updateDesktop();googleRequest('status').catch(()=>{});setInterval(()=>{updateDesktop();googleRequest('status').catch(()=>{});},5000);});
   const facade = {
@@ -222,18 +245,17 @@
       const incoming = validate(JSON.parse(text));
       const nextContext = typeof incoming.uiContext === 'string' ? incoming.uiContext : localContext;
       const next = merge(shared(uiState), shared(incoming), shared(canonical), '');
-      const before = canonical, beforeContext = localContext;
       canonical = Object.assign(next, {uiContext:nextContext}); localContext = nextContext;
-      try { persistCache(); }
-      catch (failure) { canonical = before; localContext = beforeContext; throw failure; }
+      queueCacheWrite();
       uiState = clone(incoming);
       if (dirty()) schedule(200);
     },
+    queueStateWrite(_base, text) { facade.writeState(text); },
     updateReminders(text) {
       const tasks=JSON.parse(text),definitions={};
       if(!Array.isArray(tasks))throw Error('Invalid task definitions');
       for(const task of tasks)if(object(task)&&typeof task.id==='string'&&typeof task.title==='string'&&!FORBIDDEN_KEYS.has(task.id))definitions[task.id]=clone(task);
-      if(!equal(canonical.sharedDefinitions,definitions)){canonical.sharedDefinitions=definitions;persistCache();schedule(250);}
+      if(!equal(canonical.sharedDefinitions,definitions)){canonical.sharedDefinitions=definitions;queueCacheWrite();schedule(250);}
     },
     updateSnapshot() {},
     getGoogleStatus(){return JSON.stringify(googleStatus);},
@@ -249,8 +271,8 @@
         await googleRequest('sync');
       }catch(error){googleStatus.message=error.message;updateDesktop();}
     },
-    getLastView(){return global.localStorage.getItem(contextKey+':view')||'today';},
-    setLastView(value){if(['today','upcoming'].includes(value))global.localStorage.setItem(contextKey+':view',value);},
+    getLastView(){return windowView;},
+    setLastView(value){if(['today','upcoming'].includes(value))windowView=value;},
     setThemeColors(background) { document.documentElement.style.backgroundColor = background; },
     showPairing() { global.open(boot.pairingUrl, '_blank', 'noopener'); },
     connectPC() { facade.showPairing(); },
@@ -261,7 +283,7 @@
   global.TaskListNative = facade;
   document.addEventListener('visibilitychange', () => { if (!document.hidden) facade.syncNow(); });
   global.addEventListener('pagehide', () => {
-    stopped = true; if (timer) clearTimeout(timer); if (reloadTimer) clearTimeout(reloadTimer);
+    stopped = true; if (cacheTimer !== null) clearTimeout(cacheTimer); if (timer) clearTimeout(timer); if (reloadTimer) clearTimeout(reloadTimer);
     try { persistCache(); } catch (_) { /* The existing cached copy remains available. */ }
   });
   schedule(dirty() ? 50 : 1000);

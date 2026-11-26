@@ -148,7 +148,7 @@ public final class ReferenceStore {
                 throw new IllegalStateException("Your new task could not be saved.", invalid);
             }
         }
-        replaceLatestMirror();TaskReminders.reschedule(appContext);
+        replaceLatestMirror();TaskReminders.reschedule(appContext);GoogleSyncJob.scheduleSoon(appContext);
         return id;
     }
 
@@ -254,6 +254,7 @@ public final class ReferenceStore {
         replaceLatestMirror();
         synchronized (MIRROR_LOCK) { taskStore.complete(taskId); }
         TaskReminders.reschedule(appContext);
+        GoogleSyncJob.scheduleSoon(appContext);
         return true;
     }
 
@@ -277,7 +278,7 @@ public final class ReferenceStore {
                 applyPersistedProgress(records,current);String serialized=current.toString(),snapshotJson=records.toString();checkSize(serialized);checkSize(snapshotJson);TaskStore.validateReferenceTasks(snapshotJson);
                 if(changed||!beforeSnapshot.equals(snapshotJson)){SharedPreferences.Editor editor=prefs.edit().putString("snapshot",snapshotJson);if(changed)editor.putString("state",serialized).putLong("revision",nextRevision());commit(editor);}
             }catch(JSONException invalid){throw new IllegalStateException("The saved widget task could not be read.",invalid);}
-        }replaceLatestMirror();TaskReminders.reschedule(appContext);return true;
+        }replaceLatestMirror();TaskReminders.reschedule(appContext);GoogleSyncJob.scheduleSoon(appContext);return true;
     }
     private static void stopLinked(JSONObject state,String progress,java.util.List<String> active){
         String id=progress.split(":",2)[0];JSONObject links=state.optJSONObject("manualLinks");java.util.Set<String> ids=new java.util.HashSet<>();java.util.ArrayDeque<String> queue=new java.util.ArrayDeque<>();queue.add(id);

@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.100.0",
+    "date": "2026-11-26",
+    "changes": [
+      "Yesterday labels for overdue tasks and daily counts for Completed and Trash.",
+      "Task dialogs close on confirmation while saves and Google sync run in the background.",
+      "The Windows app displays the last successful Google sync time."
+    ]
+  },
+  {
     "version": "0.92.0",
     "date": "2026-11-18",
     "changes": [

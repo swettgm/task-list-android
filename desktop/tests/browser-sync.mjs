@@ -10,7 +10,7 @@ try{
  check(await page.locator('body>main').isVisible()&&await page.evaluate(()=>TaskListApp.debugSummary().definitions===0),'First launch is usable offline and has no old bundled tasks');
  check(await page.locator('.tl-add-task').isVisible(),'Standalone PC exposes Add task');
  const freshState=await page.evaluate(()=>JSON.parse(TaskListNative.readState()));check(Object.keys(freshState.completed||{}).length===0&&Object.keys(freshState.movedTo||{}).length===0,'New PC has no historical phone completions or moves');check(!freshState.inProgress&&!(freshState.inProgressTasks||[]).length,'New PC has no historical in-progress task');
- await page.locator('.tl-add-task').click();await page.locator('dialog[open] textarea').first().fill('Created on PC');await page.locator('dialog[open]').getByRole('button',{name:'Add',exact:true}).click();await page.locator('dialog[open]').getByRole('button',{name:'Cancel',exact:true}).click();
+ await page.locator('.tl-add-task').click();await page.locator('dialog[open] textarea').first().fill('Created on PC');await page.locator('dialog[open]').getByRole('button',{name:'Add',exact:true}).click();check(await page.locator('dialog[open]').count()===0,'Confirming a new task closes the dialog immediately');
  await page.waitForFunction(()=>!JSON.parse(TaskListNative.getSyncStatus()).pending);
  check((await request('/api/state')).state.customTasks.some(t=>t.title==='Created on PC'),'A task can be created and saved before linking a phone');
  check((await request('/api/state')).desktopEdited===true,'Manual PC edits protect standalone data during first pairing');
