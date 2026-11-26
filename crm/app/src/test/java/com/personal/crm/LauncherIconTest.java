@@ -1,23 +1,71 @@
 package com.personal.crm;
+
 import android.content.Context;
-import android.graphics.*;
-import android.graphics.drawable.*;
-import android.util.Xml;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.AdaptiveIconDrawable;
+import android.graphics.drawable.Drawable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.*;
-import org.robolectric.annotation.*;
-import org.xmlpull.v1.XmlPullParser;
-import java.io.*;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
+import org.robolectric.annotation.GraphicsMode;
 import static org.junit.Assert.*;
-/** Verify the same launcher format and visible alpha boundary as the companion apps. */
-@RunWith(RobolectricTestRunner.class) @Config(sdk=35) @GraphicsMode(GraphicsMode.Mode.NATIVE)
+
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk=35)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class LauncherIconTest {
- private Context context(){return RuntimeEnvironment.getApplication();}
- private Drawable icon(){return context().getApplicationInfo().loadIcon(context().getPackageManager());}
- private Bitmap draw(Drawable d){Bitmap b=Bitmap.createBitmap(108,108,Bitmap.Config.ARGB_8888);d.setBounds(0,0,108,108);d.draw(new Canvas(b));return b;}
- private File companion(String app){for(File dir=new File(System.getProperty("user.dir"));dir!=null;dir=dir.getParentFile()){File file=new File(dir,app+"/app/src/main/res/drawable/ic_app.xml");if(file.exists())return file;}throw new AssertionError("Companion icon source not found");}
- @Test public void manifestUsesSameVectorLauncherMethod()throws Exception{assertTrue(icon() instanceof VectorDrawable);assertEquals("RM",context().getApplicationInfo().loadLabel(context().getPackageManager()).toString());assertEquals(R.drawable.ic_app,context().getApplicationInfo().icon);android.content.pm.ApplicationInfo info=context().getPackageManager().getApplicationInfo(context().getPackageName(),android.content.pm.PackageManager.GET_META_DATA);assertTrue(info.metaData==null||!info.metaData.containsKey("com.samsung.android.icon_container.has_icon_container"));}
- @Test public void renderedAlphaBoundaryMatchesCompanionBackgroundPaths()throws Exception{Bitmap actual=draw(icon());for(String app:new String[]{"route-manager","meditation"}){javax.xml.parsers.DocumentBuilderFactory factory=javax.xml.parsers.DocumentBuilderFactory.newInstance();factory.setNamespaceAware(true);org.w3c.dom.Element vector=factory.newDocumentBuilder().parse(companion(app)).getDocumentElement();String ns="http://schemas.android.com/apk/res/android";assertEquals("108",vector.getAttributeNS(ns,"viewportWidth"));assertEquals("108",vector.getAttributeNS(ns,"viewportHeight"));org.w3c.dom.Element background=(org.w3c.dom.Element)vector.getElementsByTagName("path").item(0);String data=background.getAttributeNS(ns,"pathData");Path path=(Path)Class.forName("android.util.PathParser").getMethod("createPathFromPathData",String.class).invoke(null,data);Bitmap reference=Bitmap.createBitmap(108,108,Bitmap.Config.ARGB_8888);Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);paint.setColor(Color.WHITE);new Canvas(reference).drawPath(path,paint);for(int y=0;y<108;y++)for(int x=0;x<108;x++)assertTrue("Launcher boundary differs from "+app+" at "+x+","+y,Math.abs(Color.alpha(reference.getPixel(x,y))-Color.alpha(actual.getPixel(x,y)))<=1);}System.out.println("CRM alpha silhouette matches the actual Route Notes and Meditation background paths within antialiasing tolerance at 108x108");}
- @Test public void gradientTileKeepsWhitePersonCentered()throws Exception{Bitmap b=draw(icon());assertEquals(0,Color.alpha(b.getPixel(0,0)));assertEquals(0,Color.alpha(b.getPixel(107,107)));assertTrue(Color.red(b.getPixel(54,9))<Color.red(b.getPixel(54,98)));assertTrue(Color.blue(b.getPixel(54,9))<Color.blue(b.getPixel(54,98)));int left=108,top=108,right=-1,bottom=-1;for(int y=0;y<108;y++)for(int x=0;x<108;x++){int color=b.getPixel(x,y);if(Color.alpha(color)>250&&Color.red(color)>240&&Color.green(color)>240&&Color.blue(color)>240){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}}int width=right-left+1,height=bottom-top+1;System.out.println("Bold single-person foreground: "+width+"x"+height);assertTrue(width>=52&&width<=66&&height>=54&&height<=68);assertTrue(Math.abs((left+right)/2.0-53.5)<=2&&Math.abs((top+bottom)/2.0-53.5)<=2);File out=new File("../build/browser-qa/crm-launcher-render.png");out.getParentFile().mkdirs();try(OutputStream stream=new FileOutputStream(out)){assertTrue(b.compress(Bitmap.CompressFormat.PNG,100,stream));}}
+    private Context context() { return RuntimeEnvironment.getApplication(); }
+    private Bitmap draw(Drawable drawable) {
+        Bitmap bitmap = Bitmap.createBitmap(108, 108, Bitmap.Config.ARGB_8888);
+        drawable.setBounds(0, 0, 108, 108);
+        drawable.draw(new Canvas(bitmap));
+        return bitmap;
+    }
+    @Test public void launcherUsesAdaptiveLayersWithoutAnExtraTile() {
+        Drawable drawable = context().getApplicationInfo().loadIcon(context().getPackageManager());
+        assertTrue(drawable instanceof AdaptiveIconDrawable);
+        assertEquals(R.mipmap.ic_launcher, context().getApplicationInfo().icon);
+        AdaptiveIconDrawable icon = (AdaptiveIconDrawable) drawable;
+        Bitmap foreground = draw(icon.getForeground());
+        assertEquals(0, Color.alpha(foreground.getPixel(0, 0)));
+        assertEquals(0, Color.alpha(foreground.getPixel(54, 9)));
+        Bitmap background = draw(icon.getBackground());
+        assertEquals(255, Color.alpha(background.getPixel(0, 0)));
+        assertTrue(Color.red(background.getPixel(54, 9)) < Color.red(background.getPixel(54, 98)));
+    }
+    @Test public void renderedIconShowsTheAppGradientAcrossTheVisibleTile() {
+        Bitmap bitmap=draw(context().getApplicationInfo().loadIcon(context().getPackageManager()));
+        for (int y : new int[]{6,101}) {
+            double fraction=(y+0.5)/108.0;
+            int actual=bitmap.getPixel(54,y);
+            int expectedRed=(int)Math.round(32+58*fraction);
+            int expectedGreen=(int)Math.round(55+37*fraction);
+            int expectedBlue=(int)Math.round(71+26*fraction);
+            assertTrue("Red gradient endpoint at "+y+" was "+Color.red(actual),
+                    Math.abs(Color.red(actual)-expectedRed)<=3);
+            assertTrue(Math.abs(Color.green(actual)-expectedGreen)<=3);
+            assertTrue(Math.abs(Color.blue(actual)-expectedBlue)<=3);
+        }
+    }
+    @Test public void whiteArtworkFitsTheAdaptiveSafeArea() {
+        AdaptiveIconDrawable icon = (AdaptiveIconDrawable) context().getApplicationInfo().loadIcon(context().getPackageManager());
+        Bitmap bitmap = draw(icon.getForeground());
+        int left=108, top=108, right=-1, bottom=-1;
+        for (int y=0; y<108; y++) for (int x=0; x<108; x++) {
+            int color=bitmap.getPixel(x,y);
+            if (Color.alpha(color)>250) {
+                assertTrue(Color.red(color)>240 && Color.green(color)>240 && Color.blue(color)>240);
+                left=Math.min(left,x); right=Math.max(right,x);
+                top=Math.min(top,y); bottom=Math.max(bottom,y);
+            }
+        }
+        assertTrue(right-left>=36 && right-left<=45);
+        assertTrue(bottom-top>=38 && bottom-top<=46);
+        assertTrue(Math.abs((left+right)/2.0-53.5)<=2);
+        assertTrue(Math.abs((top+bottom)/2.0-53.5)<=2);
+    }
 }

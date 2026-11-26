@@ -40,4 +40,34 @@ public class CrmTest {
  @Test public void personalNotesPersistAndSurviveReminderUpdates()throws Exception{save(person("one"));JSONObject d=store.read();d.put("personalNotes",new JSONArray().put(personalNote("note-one")));store.write(d);assertTrue(Reminders.contacted(context,"one"));JSONObject saved=new CrmStore(context).read().getJSONArray("personalNotes").getJSONObject(0);assertEquals("Private local notes",saved.getString("notes"));assertEquals("partner",saved.getString("kind"));assertEquals(1,store.read().getJSONArray("people").length());}
  @Test public void invalidPersonalNotesDoNotReplaceStoredData()throws Exception{save(person("one"));for(Object invalid:new Object[]{"broken",new JSONArray().put(personalNote("one").put("kind","invalid")),new JSONArray().put(personalNote("one").put("name","")),new JSONArray().put(personalNote("one").put("createdAt",-1)),new JSONArray().put(personalNote("one").put("notes","x".repeat(20001)))}){JSONObject d=store.read();d.put("personalNotes",invalid);assertThrows(IllegalArgumentException.class,()->store.write(d));}assertFalse(store.read().has("personalNotes"));}
  @Test public void duplicatePersonalNoteIdsAreRejected()throws Exception{JSONObject d=store.read();d.put("personalNotes",new JSONArray().put(personalNote("same")).put(personalNote("same")));assertThrows(IllegalArgumentException.class,()->store.write(d));assertEquals(0,store.read().getJSONArray("people").length());}
+ @Test public void notificationOpensAppAndProvidesDirectTextAndDialActions()throws Exception{
+  save(person("one").put("phone","+1 555 0100").put("nextAt",System.currentTimeMillis()-1000));
+  Reminders.deliver(context);
+  Notification note=shadowOf(context.getSystemService(NotificationManager.class)).getAllNotifications().get(0);
+  Intent launch=shadowOf(note.contentIntent).getSavedIntent();
+  assertEquals(MainActivity.class.getName(),launch.getComponent().getClassName());
+  assertNull(launch.getStringExtra("personId"));
+  assertEquals(2,note.actions.length);
+  assertEquals("Text",note.actions[0].title.toString());
+  Intent text=shadowOf(note.actions[0].actionIntent).getSavedIntent();
+  assertEquals(Intent.ACTION_SENDTO,text.getAction());
+  assertEquals("smsto",text.getData().getScheme());
+  assertEquals("+1 555 0100",text.getData().getSchemeSpecificPart());
+  assertEquals("Call",note.actions[1].title.toString());
+  Intent call=shadowOf(note.actions[1].actionIntent).getSavedIntent();
+  assertEquals(Intent.ACTION_DIAL,call.getAction());
+  assertEquals("tel",call.getData().getScheme());
+  assertEquals(0,store.read().getJSONArray("people").getJSONObject(0).getLong("lastAt"));
+ }
+
+ @Test public void customRelationshipTypesAndNamesSurviveReminderUpdates()throws Exception{
+  save(person("one").put("relationship","Climbing partner"));
+  JSONObject state=store.read();
+  state.put("relationshipTypes",new JSONArray().put("Climbing partner"));
+  store.write(state);
+  assertTrue(Reminders.contacted(context,"one"));
+  JSONObject updated=store.read();
+  assertEquals("Climbing partner",updated.getJSONArray("people").getJSONObject(0).getString("relationship"));
+  assertEquals("Climbing partner",updated.getJSONArray("relationshipTypes").getString(0));
+ }
 }
