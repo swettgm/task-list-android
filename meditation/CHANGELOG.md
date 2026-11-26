@@ -1,5 +1,10 @@
 ## 1.0.13
 
+## 1.0.22
+
+- Keep custom images on the timer screen and retain the selected colors in Settings.
+- Provide steady noise, natural garden rainfall, and a 55 Hz bass hum with sample-accurate loops.
+
 - Rebuilt Mindfulness bell, Tingsha bells and Temple gong with clean bell strikes, smooth long decays and lossless audio. Approved Zen tone and Singing bowl remain byte-for-byte unchanged.
 - Replaced the tinny rain with a softer, warmer stereo rain loop. Brown and white noise are unchanged.
 

@@ -1,5 +1,7 @@
 # Meditation
 
+Custom background images appear on the timer screen. Settings uses the saved color or gradient. The built-in brown noise, white noise, garden rainfall, and 55 Hz bass hum loop at exact PCM frame boundaries.
+
 A separate lightweight Android app matching the navy-to-gray theme of Tasks and Route Manager.
 
 - The main screen has only a centered timer and Start button, plus a small Settings icon. A small Settings button opens duration, interval bells, sounds and vibration controls on a separate screen.

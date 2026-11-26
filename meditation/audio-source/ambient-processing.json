@@ -1,40 +1,45 @@
 [
   {
     "name": "brown_noise",
-    "file": "brown_noise.flac",
-    "sha256": "acdc2e1952eb26124469c0877e2fd07a65a57703fc56149dca4b41743f2c42e8",
+    "file": "brown_noise.wav",
+    "sha256": "5d2b844f9674f8ab107ec8c6824c2036b1b1d2a8997da489c52087ded96bb96d",
     "seconds": 24,
     "sampleRate": 24000,
     "channels": 1,
-    "seed": 2026111802,
-    "source": "Original steady brown noise with audible warm low-mid energy and reduced sub-bass",
-    "targetRms": 0.16,
-    "levelWindowSeconds": 0.1
+    "source": "Original circular, level-corrected brown noise",
+    "seed": 2026112605
   },
   {
     "name": "white_noise",
-    "file": "white_noise.ogg",
-    "sha256": "0c0af08f96fa1b8bfbce58d7b8e7e71d3db41b738e47121ca1122d56ed7f5941",
+    "file": "white_noise.wav",
+    "sha256": "02d3945d2b806f4a2ba848ecd3f579f564f2d39c5d9698677b2f7d0b30084117",
     "seconds": 24,
     "sampleRate": 24000,
-    "seed": 20261115,
-    "source": "Original synthesized periodic noise and procedural rain"
+    "channels": 1,
+    "source": "Original circular, level-corrected white noise",
+    "seed": 2026112605
   },
   {
     "name": "rain",
-    "file": "rain.ogg",
-    "sha256": "83dc5c0cd4fde76c8010fd47075455b1c1a63cd76526e10e1ac318236a91dc29",
+    "file": "rain.wav",
+    "sha256": "95a60fb127f4ae51470e3746e08bf30f47dda348f2d1a68b2509829c2647fc6a",
     "seconds": 24,
     "sampleRate": 24000,
     "channels": 2,
-    "seed": 2026111802,
-    "source": "Soft rain falling in a garden by barkenov, CC0; natural recording with a seamless crossfade",
-    "targetRms": 0.055,
-    "transientMedianSamples": 9,
+    "source": "Natural garden rainfall by barkenov, CC0",
     "sourceFile": "soft-rain-barkenov.mp3",
     "sourceSha256": "f5e4d1958e192762dc35e535e79afd30755986e18e7edabade998d84d446e6b9",
     "sourcePage": "https://freesound.org/people/barkenov/sounds/640655/",
     "license": "CC0-1.0",
-    "crossfadeSeconds": 2
+    "crossfadeSeconds": 3
+  },
+  {
+    "name": "bass_hum",
+    "file": "bass_hum.wav",
+    "sha256": "64ca4fbd4f987049d7c91c1240d83d4b62550b426e9841aad915e4e08cc2fb10",
+    "seconds": 24,
+    "sampleRate": 24000,
+    "channels": 1,
+    "source": "Original continuous 55 Hz hum with soft harmonics"
   }
 ]
