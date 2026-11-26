@@ -1,3 +1,7 @@
+## 1.0.26
+
+- Match the morning checklist icons to the heading text and place the bolder icons in visible buttons.
+
 ## 1.0.25
 
 - Enlarge the morning checklist pencil and checkmark and match their visible size.

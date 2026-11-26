@@ -21,14 +21,14 @@ dialog[open]{gap:12px}dialog>h2{flex:none}dialog form{flex:0 1 auto}dialog .form
 .export-note-body{display:block}.export-note-status{display:inline-flex;align-items:center;margin-bottom:5px;font-size:.72rem;padding:4px 8px}
 .edit-export-note{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-height:30px;padding:5px;margin-left:6px;vertical-align:middle}.edit-export-note svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7}
 .morning-checklist{border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:14px}
-.morning-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}
-.morning-header h2{margin:0;font-size:.9rem;line-height:1.25}
+.morning-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:.9rem}
+.morning-header h2{margin:0;font-size:inherit;line-height:1.25}
 .morning-items{display:grid;gap:2px;margin:2px 0 0;font-size:.9rem}
 .morning-items .check-label{align-items:center;min-height:28px;gap:8px}
 .morning-items .check-label span{min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
 .morning-actions{display:flex;align-items:center;gap:4px}
-.morning-actions button{display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:8px;border:0;background:transparent}
-.morning-actions svg{width:28px;height:28px;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.morning-actions button{display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;background:var(--surface)}
+.morning-actions svg{width:1.125em;height:1.125em;stroke-width:3.25;stroke-linecap:round;stroke-linejoin:round}
 #edit-morning-routine{margin:0 8px 16px 0}
 </style></head><body>
 <div id="home"><header class="app-header"><div class="heading"><h1 id="route-title">Route Notes</h1><div class="row"><button id="export-notes" class="icon-button" aria-label="Export notes" title="Export this day’s notes"></button><button id="settings" class="icon-button" aria-label="Settings"></button></div></div><nav id="route-tabs" class="route-tabs" role="tablist" aria-label="Routes"></nav><div class="route-ahead"><label class="check-label"><input id="ahead-one" type="checkbox">1 day</label><label class="check-label"><input id="ahead-two" type="checkbox">2 day</label><span id="route-count" class="muted" aria-live="polite" aria-atomic="true"></span></div></header><main id="page" class="page" role="tabpanel" aria-labelledby="route-title"><section id="morning-routine" aria-label="Morning routine"></section><div id="notes" class="notes-list"></div></main><button id="add-note" class="add-note primary" aria-label="Add note"></button></div>

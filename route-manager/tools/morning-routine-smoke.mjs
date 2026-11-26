@@ -75,14 +75,21 @@ try {
   for (const size of [0.92, 1, 1.14]) {
    await page.evaluate(size=>document.documentElement.style.setProperty('--size',size),size);
    const aligned=await panel.locator('.morning-header').evaluate(header=>{
-    const title=header.querySelector('h2').getBoundingClientRect();
+    const heading=header.querySelector('h2'),title=heading.getBoundingClientRect();
+    const textSize=parseFloat(getComputedStyle(heading).fontSize);
     const icons=[...header.querySelectorAll('button svg')];
     return icons.length===2&&icons.every(icon=>{
      const box=icon.getBoundingClientRect(),style=getComputedStyle(icon);
-     const path=icon.querySelector('path').getBBox(),button=icon.closest('button').getBoundingClientRect();
-     return box.width===28&&box.height===28&&button.width>=44&&button.height>=44&&
-       path.width===18&&path.height===18&&Math.abs((title.top+title.bottom-box.top-box.bottom)/2)<.5&&
-       style.strokeLinecap==='round'&&parseFloat(style.strokeWidth)>2;
+     const path=icon.querySelector('path').getBBox(),control=icon.closest('button');
+     const button=control.getBoundingClientRect(),appearance=getComputedStyle(control);
+     const stroke=parseFloat(style.strokeWidth);
+     const paintedWidth=(path.width+stroke)*box.width/24;
+     const paintedHeight=(path.height+stroke)*box.height/24;
+     return Math.abs(paintedWidth-textSize)<.5&&Math.abs(paintedHeight-textSize)<.5&&
+       button.width>=44&&button.height>=44&&parseFloat(appearance.borderTopWidth)>0&&
+       appearance.backgroundColor!=='rgba(0, 0, 0, 0)'&&
+       Math.abs((title.top+title.bottom-box.top-box.bottom)/2)<.5&&
+       style.strokeLinecap==='round'&&stroke>3;
     });
    });
    assert.ok(aligned);
