@@ -1,5 +1,7 @@
 # Route Notes
 
+[Download Route Notes 1.0.24](https://raw.githubusercontent.com/swettgm/task-list-android/main/downloads/Route-Notes-v1.0.24.apk).
+
 A separate, offline Android app for route notes. Installs alongside Tasks with its own data and no widget.
 
 - Persistent 1-day/2-day-ahead checkboxes shift the route opened for the weekday, wrapping Friday to Monday. Turn them off to restore the current day.
@@ -7,7 +9,9 @@ A separate, offline Android app for route notes. Installs alongside Tasks with i
 - Manage stops → Export list previews a clean numbered list for all routes or one route. Copy or Share it into a text message.
 - Route tabs highlight and show a dot when they contain saved notes.
 - Stop saves capitalize word starts while preserving existing internal capitalization, such as UPS or UniFirst.
-- Each route header shows the total number of notes across all five pages. A note with several stops counts once.
+- The title shows the current weekday and the displayed route, such as Monday, G400. The total across all five routes appears beside the day-ahead checkboxes.
+- Export notes lists each note separately with its stops and keeps status pills in the selection screen.
+- The morning checklist stays expanded when visible. The pencil edits items and the checkmark dismisses it for the day.
 - G200 Monday, G300 Tuesday, G400 Wednesday, G500 Thursday, G600 Friday.
 - Opens the current weekday's page; weekends open Monday. Swipe between routes; both ends loop around.
 - Save stop names with the disk button, or save a typed new stop when adding a note. Autocomplete saved names and select multiple stops per note.

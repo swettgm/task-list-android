@@ -1,3 +1,9 @@
+## 1.0.24
+
+- Export notes individually, including notes at the same stop.
+- Keep the morning checklist expanded and use pencil and checkmark actions.
+- Show the current weekday with the displayed route and align the total with the day-ahead options.
+
 ## 1.0.20
 
 - Show each note’s existing status in the export selection screen, including grouped notes under the same stop. Status pills are omitted from Preview, Copy and Share.
