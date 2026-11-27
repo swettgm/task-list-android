@@ -142,7 +142,7 @@ const result = await page.evaluate(async () => {
   check(!rowFor(parentId,parentDate),'Completion survives reload');
   document.querySelector('#pt-toggle-hidden').click();await tick();
   const hiddenParent=()=>[...document.querySelectorAll('#pt-completed-list [data-task-id]')].find(row=>row.dataset.taskId===parentId&&row.dataset.stateDate===parentDate);
-  check(!document.querySelector('#pt-completed').hidden&&!!hiddenParent()&&document.querySelector('#pt-toggle-hidden').textContent==='Completed (1)','Completed history counts only today’s completion');
+  check(!document.querySelector('#pt-completed').hidden&&!!hiddenParent()&&document.querySelector('#pt-toggle-hidden').textContent==='Done (1)','Completed history counts only today’s completion');
   hiddenParent().querySelector(':scope > .form-check > input').click();await tick();
   check(!!rowFor(parentId,parentDate)&&!hiddenParent(),'Unchecking a hidden task saves and restores it');
   TaskListApp.reloadFromNative();await tick();check(!!rowFor(parentId,parentDate),'Reopened task survives reload');

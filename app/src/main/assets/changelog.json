@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.100.5",
+    "date": "2026-11-27",
+    "changes": [
+      "Keep Done, Trash, Hidden, and Moved on one line.",
+      "Show only tasks rescheduled today in Moved."
+    ]
+  },
+  {
     "version": "0.100.4",
     "date": "2026-11-27",
     "changes": [

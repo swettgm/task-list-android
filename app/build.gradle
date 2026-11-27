@@ -26,8 +26,8 @@ android {
         applicationIdSuffix '.preview'
         minSdk 26
         targetSdk 35
-        versionCode 104
-        versionName '0.100.4'
+        versionCode 105
+        versionName '0.100.5'
     }
 
     compileOptions {

@@ -12,7 +12,9 @@ try {
   const errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(()=>{
-    const now=Date.parse('2026-11-27T15:00:00Z'),RealDate=Date;
+    let now=Date.parse('2026-11-27T15:00:00Z');
+    const RealDate=Date;
+    window.advanceMovedFixture=()=>{now+=86400000;window.dispatchEvent(new Event('focus'));};
     window.Date=class extends RealDate {
       constructor(...args){super(...(args.length?args:[now]));}
       static now(){return now;}
@@ -22,9 +24,11 @@ try {
       customTasks:[
         {id:'today',title:'Today task',due:'2026-11-27',priority:'HIGH'},
         {id:'future',title:'Future task',due:'2026-11-28',priority:'LOW'},
-        {id:'prev',title:'Already moved task',due:'2026-11-26',priority:'LOW'}
+        {id:'prev',title:'Moved yesterday',due:'2026-11-26',priority:'LOW'},
+        {id:'legacy',title:'Move without a saved day',due:'2026-11-25',priority:'LOW'}
       ],
-      movedTo:{'prev:2026-11-26':'2026-11-29'}
+      movedTo:{'prev:2026-11-26':'2026-11-29','legacy:2026-11-25':'2026-11-27'},
+      moveHistory:{'prev:2026-11-26':{day:'2026-11-26',from:'2026-11-26',to:'2026-11-29'}}
     };
     let state=JSON.parse(sessionStorage.getItem('tasks-moved-state'))||initial;
     window.TaskListNative={
@@ -43,6 +47,17 @@ try {
   const moved=page.locator('#pt-toggle-moved');
   const moveDates=id=>page.locator('#pt-moved-list [data-moved-task-id="'+id+'"] time')
     .evaluateAll(nodes=>nodes.map(node=>node.dateTime));
+  await page.setViewportSize({width:320,height:844});
+  const footer=page.locator('#pt-today .tl-history-toggles');
+  assert.deepEqual(await footer.getByRole('button').allTextContents(),['Done','Trash','Hidden','Moved']);
+  assert.equal(await footer.getByRole('button').evaluateAll(buttons=>{
+    const boxes=buttons.map(button=>button.getBoundingClientRect());
+    return boxes.every(box=>box.top===boxes[0].top&&box.right<=innerWidth);
+  }),true);
+  await page.setViewportSize({width:390,height:844});
+  await moved.tap();
+  assert.equal(await page.getByText('No tasks moved today.',{exact:true}).isVisible(),true);
+  await moved.tap();
 
   await time.tap();
   assert.equal(await dialog.getByRole('heading',{name:'Time',exact:true}).isVisible(),true);
@@ -56,22 +71,29 @@ try {
   await moved.tap();
   assert.equal(await moved.getAttribute('aria-expanded'),'true');
   assert.deepEqual(await moveDates('today'),['2026-11-27','2026-11-28']);
-  assert.deepEqual(await moveDates('prev'),['2026-11-26','2026-11-29']);
+  assert.deepEqual(await moveDates('prev'),[]);
+  assert.deepEqual(await moveDates('legacy'),[]);
 
   await page.getByRole('tab',{name:'Upcoming',exact:true}).tap();
   await page.locator('#pt-future-list [data-date="2026-11-28"] summary').tap();
   await page.getByRole('button',{name:'Move Future task to today',exact:true}).tap();
   await page.getByRole('tab',{name:'Today',exact:true}).tap();
   assert.deepEqual(await moveDates('future'),['2026-11-28','2026-11-27']);
+  await page.locator('#pt-list [data-task-id="future"] .tl-edit-button').tap();
+  await dialog.locator('input[type=date]').fill('2026-11-30');
+  await dialog.getByRole('button',{name:'Save task',exact:true}).tap();
+  assert.deepEqual(await moveDates('future'),['2026-11-27','2026-11-30']);
 
   await page.reload();
   await page.waitForFunction(()=>!!window.TaskListApp);
   assert.equal(await moved.getAttribute('aria-expanded'),'false');
   await moved.tap();
   assert.deepEqual(await moveDates('today'),['2026-11-27','2026-11-28']);
-  assert.deepEqual(await moveDates('future'),['2026-11-28','2026-11-27']);
+  assert.deepEqual(await moveDates('future'),['2026-11-27','2026-11-30']);
+  await page.evaluate(()=>advanceMovedFixture());
+  assert.equal(await page.getByText('No tasks moved today.',{exact:true}).isVisible(),true);
   assert.deepEqual(errors,[]);
-  console.log('Passed touch targets, forward and backward moves, and saved move history after reopening');
+  console.log('Passed one-line footer, touch targets, daily move filtering, date edits, reopening and midnight rollover');
 } finally {
   await browser.close();
   await fixture.close();
