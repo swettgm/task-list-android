@@ -35,6 +35,13 @@ try{
  await button('Workout A').click();
  await button('Edit sets/reps for Press').click();
  const targets=dialog().getByRole('textbox',{name:'Sets/Reps',exact:true});
+ for(const name of ['Weight','Sets/Reps']){
+  assert.equal(await button('Drag to adjust '+name,dialog()).evaluate(grip=>{
+   const control=grip.getBoundingClientRect(),field=grip.parentElement.getBoundingClientRect();
+   return control.right<=field.right&&field.right-control.right<=8&&
+    Math.abs(control.top+control.height/2-field.top-field.height/2)<.6;
+  }),true);
+ }
  await drag(button('Drag to adjust Sets/Reps',dialog()),0,-24);
  assert.equal(await targets.inputValue(),'7, 7+');
  await drag(button('Drag to adjust Weight',dialog()),0,-24);
@@ -46,13 +53,21 @@ try{
  const note=dialog().getByRole('textbox',{name:'Notes',exact:true});
  const grip=button('Resize Notes',dialog());
  const before=await note.boundingBox();
- await drag(grip,30,37);
+ await drag(grip,-30,37);
  const after=await note.boundingBox();
- assert.equal(after.width,before.width);
+ assert.equal(after.width,before.width-30);
  assert.equal(after.height,before.height+37);
+ await drag(grip,20,16);
+ const expanded=await note.boundingBox();
+ assert.equal(expanded.width,before.width-10);
+ assert.equal(expanded.height,before.height+53);
  await dismiss();
 
  await button('Settings').click();
+ const settings=page.locator('#settings-screen');
+ assert.equal(await settings.locator('.number-grip:visible').count(),0);
+ await settings.locator('.settings-changelog summary').click();
+ assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.39',exact:true}).isVisible(),true);
  await page.getByRole('combobox',{name:'Number controls'}).selectOption('− and + buttons');
  await number('Number adjustment step').fill('2');
  await page.getByRole('checkbox',{name:'Prompt for workout notes'}).uncheck();

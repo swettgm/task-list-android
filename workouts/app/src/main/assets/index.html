@@ -15,7 +15,8 @@ h1,h2,h3,p{margin:0}h1{font-size:22px;line-height:1.2;white-space:nowrap;-webkit
 .history-card{width:100%;text-align:left;justify-content:space-between;gap:8px;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:15px 0;align-items:center}.history-card strong,.history-card span{display:block}.history-card .history-date{font-size:13px;opacity:.7;margin-top:4px}.history-card .history-count{font-size:13px;opacity:.75;white-space:nowrap}.history-sets{display:grid;gap:5px;margin-top:8px;font-size:14px;opacity:.8}.history-exercise{padding:12px 0;border-bottom:1px solid var(--line)}.history-exercise strong{font-size:16px}.progress-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:13px;border-bottom:1px solid var(--line)}
 dialog{width:calc(100% - 24px);max-width:520px;max-height:calc(var(--height,100dvh) - 24px);margin:auto;padding:20px;border:1px solid var(--line);border-radius:20px;color:var(--text);background:linear-gradient(var(--top),var(--bottom));box-shadow:0 12px 40px #0004;overflow:hidden;outline:none}dialog::backdrop{background:#0009}dialog[open]{display:flex;flex-direction:column;gap:16px}dialog>h2{flex:none}dialog .fields{display:flex;flex-direction:column;gap:14px;overflow:auto;min-height:0;scrollbar-width:none;padding:1px 2px}dialog .fields>*{flex:none}.actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;padding-top:2px}.actions button{white-space:nowrap;font-size:14px;padding:7px 11px}.actions .trash{margin-right:auto;width:38px;min-width:38px;padding:8px}.field{display:flex;flex-direction:column;gap:6px;min-width:0}.field>span{font-size:14px;opacity:.7}input,textarea,select{border:2px solid var(--line);border-radius:12px;background:var(--surface);min-height:42px;width:100%;min-width:0;padding:8px 10px;line-height:1.3}input:focus,textarea:focus,select:focus{outline:0}body.keyboard-navigation input:focus-visible,body.keyboard-navigation textarea:focus-visible,body.keyboard-navigation select:focus-visible{border-color:var(--text)}textarea{resize:vertical;min-height:80px;max-height:260px}input[type=checkbox]{appearance:none;width:19px;height:19px;min-height:19px;flex:0 0 19px;padding:0;margin:0;border-radius:5px;position:relative}input[type=checkbox]:checked{background:var(--text);border-color:var(--text)}input[type=checkbox]:checked::after{content:'';position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(43deg)}.check-label{display:flex;gap:8px;align-items:center;min-height:32px;font-size:14px}select{appearance:none;padding-right:36px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath d='m5 9 7 7 7-7' fill='none' stroke='%23f4f7fa' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px}input[type=color]{width:44px;min-width:44px;height:42px;padding:4px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.error{font-size:13px;color:#ffb9c4;white-space:pre-wrap;flex:none}.error:empty{display:none}.choice-list{display:grid;gap:6px}.choice-list button{justify-content:flex-start;text-align:left;overflow-wrap:anywhere}.choice-list button[aria-pressed=true]{border:2px solid var(--text)}.toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);padding:9px 13px;border:1px solid var(--line);border-radius:11px;background:var(--top);font-size:13px;z-index:100}.slider-row{display:flex;align-items:center;gap:12px}.slider-row input{flex:1;padding:0;border:0;min-height:32px;accent-color:var(--text)}.slider-row output{width:52px;flex:none;font-size:14px;text-align:right}.drag-source{opacity:.22;border-top:2px solid var(--text)}.drag-ghost{position:fixed;z-index:100;pointer-events:none;background:var(--top);border:1.5px solid var(--text);border-radius:12px;padding:12px;box-shadow:0 10px 26px #0006;margin:0;opacity:.96}.dragging,.dragging *{cursor:grabbing!important;-webkit-user-select:none!important;user-select:none!important}
 @media(max-width:350px){body{padding-left:12px;padding-right:12px}dialog{padding:16px}.exercise-name{font-size:16px}.exercise-plan{font-size:12px}.set{width:48px;min-width:48px;height:48px;min-height:48px}.actions button{padding:7px 9px;font-size:13px}}
-.field>.weight-entry{display:flex;align-items:center;gap:4px;min-height:42px;padding:8px 10px;border:2px solid var(--line);border-radius:12px;background:var(--surface);font-size:inherit;line-height:1.3;opacity:1}
+.number-entry>.weight-entry{display:flex;align-items:center;gap:4px;min-height:42px;padding:8px 10px;border:2px solid var(--line);border-radius:12px;background:var(--surface);font-size:inherit;line-height:1.3}
+.weight-entry>span{flex:none}
 .weight-entry input{width:calc(var(--weight-length,1)*1ch + 2px);min-width:1ch;min-height:0;padding:0;border:0;border-radius:0;background:none;appearance:textfield;font-variant-numeric:tabular-nums}
 .weight-entry input::-webkit-inner-spin-button,.weight-entry input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 body.keyboard-navigation .weight-entry:has(input:focus-visible){border-color:var(--text)}
@@ -93,7 +94,7 @@ body,#page-stack{touch-action:pan-y}
 .session-bar{--action-size:2.5rem}
 .session-bar .primary{height:var(--action-size);min-height:var(--action-size)}
 .plate-calc-button{width:var(--action-size);min-width:var(--action-size);padding:0}
-.plate-calc-button svg{width:20px;height:20px;stroke-width:2.7}
+.plate-calc-button svg{width:20px;height:20px;stroke-width:2.5}
 .plate-calculator-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
 .plate-calculator-heading .icon{padding:0}
 .plate-calculator-heading svg{width:21px;height:21px;stroke-width:2.8}
@@ -103,7 +104,8 @@ dialog.plate-editor{
  max-height:calc(var(--height,100dvh) - var(--editor-top) - 12px);
 }
 @media(max-height:320px){dialog.plate-editor{gap:8px;padding-block:12px}}
-.blank-workout .actions{flex-wrap:wrap}
+.blank-workout .actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.35fr);gap:6px}
+.blank-workout .actions button{width:100%;min-width:0;height:100%;padding-inline:4px;white-space:normal;overflow-wrap:anywhere}
 .plate-card{display:grid;gap:6px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--text) 8%,transparent)}
 .plate-card-head{display:grid;grid-template-columns:minmax(0,1fr) 40px;align-items:center;gap:6px}
 .plate-card-head h3{overflow-wrap:anywhere}
@@ -112,17 +114,18 @@ dialog.plate-editor{
 .plate-summary{font-size:14px;color:var(--muted)}
 .plate-summary strong{color:var(--text)}
 .plate-diagram{min-width:0;overflow-x:auto;scrollbar-width:thin}
-.plate-bar{--sleeve-axis:38px;position:relative;isolation:isolate;display:flex;width:max-content;height:84px}
-.plate-bar::before{content:'';position:absolute;z-index:-1;left:23px;right:0;top:calc(var(--sleeve-axis) - 4px);height:8px;border-radius:3px;background:var(--muted)}
-.plate-shaft,.plate-collar,.plate-tip{flex:none;background:linear-gradient(var(--text),var(--muted) 68%);box-shadow:inset 0 -1px 0 #0003}
-.plate-shaft{width:30px;height:12px;margin-top:calc(var(--sleeve-axis) - 6px);border-radius:4px 1px 1px 4px}
-.plate-collar{width:7px;height:34px;margin-top:calc(var(--sleeve-axis) - 17px);border-radius:3px 2px 2px 3px}
+.plate-bar{--sleeve-axis:47px;--sleeve-height:13px;position:relative;isolation:isolate;display:flex;width:max-content;height:102px}
+.plate-bar::before,.plate-shaft,.plate-collar{background:linear-gradient(var(--text),var(--muted) 68%);box-shadow:inset 0 -1px 0 #0003}
+.plate-bar::before{content:'';position:absolute;z-index:-1;left:30px;right:0;top:calc(var(--sleeve-axis) - var(--sleeve-height)/2);height:var(--sleeve-height);border-radius:1px 4px 4px 1px}
+.plate-shaft,.plate-collar,.plate-tip{flex:none}
+.plate-shaft{width:30px;height:10px;margin-top:calc(var(--sleeve-axis) - 5px);border-radius:4px 1px 1px 4px}
+.plate-collar{width:7px;height:30px;margin-top:calc(var(--sleeve-axis) - 15px);border-radius:3px 2px 2px 3px}
 .plate-group{flex:none;height:100%;background-size:var(--plate-step) 100%;background-repeat:repeat-x}
-.plate-tip{width:24px;height:10px;margin-top:calc(var(--sleeve-axis) - 5px);border-radius:1px 4px 4px 1px}
+.plate-tip{width:24px;height:var(--sleeve-height);margin-top:calc(var(--sleeve-axis) - var(--sleeve-height)/2)}
 .plate-load-summary{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 .plate-equipment{display:grid;gap:10px}.plate-equipment summary{width:max-content;max-width:100%;padding:6px 0;cursor:pointer}
 .plate-inventory{display:grid;gap:6px;margin-top:6px}
-.plate-inventory-row{display:grid;grid-template-columns:minmax(0,1fr) 86px;align-items:center;gap:10px}
+.plate-inventory-row{display:grid;grid-template-columns:minmax(0,1fr) 98px;align-items:center;gap:10px}
 .plate-inventory-label{justify-content:space-between}
 .plate-inventory-label button{min-height:36px;width:36px;min-width:36px;padding:8px}
 .plate-inventory-label button svg{width:16px;height:16px}
@@ -139,13 +142,25 @@ dialog.plate-editor{
 .progress[open] summary svg{transform:none}
 .field-heading{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
 .number-tools{display:inline-flex;flex:none;align-items:center;gap:2px}
-.number-tools button,.textarea-grip{min-height:28px;width:28px;min-width:28px;padding:0;border:0;font-size:17px;background:transparent;color:var(--muted)}
-.number-tools svg,.textarea-grip svg{width:17px;height:17px;stroke-width:2.2}
-.vertical-grip{touch-action:none;cursor:ns-resize;user-select:none}
-[data-number-mode=drag] .number-step,[data-number-mode=buttons] .number-grip,[data-number-mode=keyboard] .number-tools{display:none}
-.textarea-entry{position:relative}
+.number-tools button,.number-grip,.textarea-grip{min-height:28px;width:28px;min-width:28px;padding:0;border:0;font-size:17px;background:transparent;color:var(--muted)}
+.number-grip,.textarea-grip{touch-action:none;user-select:none}
+.number-entry{position:relative;min-width:0}
+.number-entry>input{display:block}
+.number-grip{position:absolute;right:4px;top:50%;transform:translateY(-50%);min-height:34px;cursor:ns-resize}
+.number-grip svg{width:16px;height:16px;stroke-width:3.2}
+[data-number-mode=drag]:not(.settings-screen) .number-entry>input:not(:disabled),
+[data-number-mode=drag]:not(.settings-screen) .number-entry>.weight-entry{padding-right:36px}
+[data-number-mode=drag] .number-tools,[data-number-mode=buttons] .number-grip,[data-number-mode=keyboard] :is(.number-tools,.number-grip),
+.settings-screen .number-grip,.number-entry>input:disabled+.number-grip{display:none}
+.settings-screen .defaults-section .number-tools{gap:0}
+.settings-screen .defaults-section .number-step{width:22px;min-width:22px}
+.textarea-entry{position:relative;max-width:100%}
 .textarea-entry textarea{display:block;resize:none;padding-bottom:28px}
-.textarea-grip{position:absolute;right:4px;bottom:3px}
+.textarea-grip{position:absolute;right:4px;bottom:3px;cursor:nwse-resize}
+.textarea-grip svg{width:16px;height:16px;stroke-width:2.2}
+.settings-changelog summary{padding-block:8px;font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.settings-changelog section{margin-block:10px;padding-top:10px;border-top:1px solid var(--line)}
+.settings-changelog ul{margin:6px 0 0;padding-inline-start:18px;color:var(--muted);font-size:14px}
 </style>
 </head>
 <body>
@@ -178,8 +193,9 @@ const native=window.WorkoutNative, KEY='workouts-v1', $=id=>document.getElementB
 const clone=value=>JSON.parse(JSON.stringify(value));
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
 const paths={back:'m15 5-7 7 7 7',music:'M9 18V5l11-2v13M9 8l11-2M9 18a3 3 0 1 1-3-3M20 16a3 3 0 1 1-3-3',play:'M8 5v14l11-7Z',pause:'M6 5h4v14H6ZM14 5h4v14h-4Z',prev:'M4 5h3v14H4ZM19 5v14L8 12Z',next:'M17 5h3v14h-3ZM5 5l11 7-11 7Z',gear:'M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16',plus:'M12 5v14M5 12h14',routinePlus:'M12 2v20M2 12h20',pencil:'M4 20l4-1L21 6l-4-4L4 15ZM14 5l4 4',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',chevron:'m5 9 7 7 7-7',close:'m6 6 12 12M6 18 18 6'};
-paths.calculator='M6 2h12a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1ZM8 6h8M9 11h.01M15 11h.01M9 15h.01M15 15h.01M9 19h.01M15 19h.01';
-paths.grip='M6 8h12M6 12h12M6 16h12';
+paths.calculator='M7 2h10a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3Z M9 6h6 M9 10h.01M15 10h.01M9 14h.01M15 14h.01M9 18h.01M15 18h.01';
+paths.grip='M12 5h.01M12 12h.01M12 19h.01';
+paths.resize='M7 19 19 7m-6 12 6-6';
 function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(svg.namespaceURI,'path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');path.setAttribute('d',paths[name]);svg.append(path);return svg;}
 function button(label,action,cls=''){const node=el('button',cls,label);node.type='button';node.onclick=action;return node;}
 function id(){return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);}
@@ -265,16 +281,16 @@ container.addEventListener('pointerup',event=>{
  input.focus({preventScroll:true});showInput();
 });
 }
-function verticalDrag(control,start,move){
+function trackPointerDrag(control,start,move){
  let drag=null;
  control.addEventListener('pointerdown',event=>{
   if(event.isPrimary===false||event.button!==0||control.disabled)return;
-  drag={id:event.pointerId,y:event.clientY,value:start()};
+  drag={id:event.pointerId,x:event.clientX,y:event.clientY,value:start()};
   control.setPointerCapture(event.pointerId);
   event.preventDefault();
  });
  control.addEventListener('pointermove',event=>{
-  if(drag?.id===event.pointerId)move(drag.value,event.clientY-drag.y);
+  if(drag?.id===event.pointerId)move(drag.value,event.clientX-drag.x,event.clientY-drag.y);
  });
  for(const type of ['pointerup','pointercancel','lostpointercapture']){
   control.addEventListener(type,event=>{if(event.pointerId===drag?.id)drag=null;});
@@ -284,14 +300,20 @@ function field(parent,label,type,value=''){
  const wrap=el('div','field'),input=el(type==='textarea'?'textarea':'input');
  wrap.append(el('span','',label));
  if(type==='textarea'){
-  const entry=el('div','textarea-entry'),grip=button('',null,'textarea-grip vertical-grip');
-  grip.append(icon('grip'));grip.setAttribute('aria-label','Resize '+label);
-  const getHeight=()=>input.getBoundingClientRect().height;
-  const resize=(height,dy)=>input.style.height=Math.max(80,Math.min(260,height+dy))+'px';
-  verticalDrag(grip,getHeight,resize);
+  const entry=el('div','textarea-entry'),grip=button('',null,'textarea-grip');
+  grip.append(icon('resize'));grip.setAttribute('aria-label','Resize '+label);
+  const getSize=()=>input.getBoundingClientRect();
+  const resize=(size,dx,dy)=>{
+   const available=wrap.clientWidth;
+   const width=Math.max(Math.min(144,available),Math.min(available,size.width+dx));
+   entry.style.width=width<available?width+'px':'';
+   input.style.height=Math.max(80,Math.min(260,size.height+dy))+'px';
+  };
+  trackPointerDrag(grip,getSize,resize);
   grip.onkeydown=event=>{
-   if(event.key!=='ArrowUp'&&event.key!=='ArrowDown')return;
-   event.preventDefault();resize(getHeight(),event.key==='ArrowDown'?16:-16);
+   const step={ArrowUp:[0,-16],ArrowDown:[0,16],ArrowLeft:[-16,0],ArrowRight:[16,0]}[event.key];
+   if(!step)return;
+   event.preventDefault();resize(getSize(),...step);
   };
   entry.append(input,grip);wrap.append(entry);
  }else{input.type=type;wrap.append(input);}
@@ -325,14 +347,14 @@ function numberControls(input,heading,{repTargets=false}={}){
   if(input.type==='range')input.dispatchEvent(new Event('change',{bubbles:true}));
   haptic();
  }
- const grip=button('',event=>{if(event.detail===0)change(read(),1);},'number-grip vertical-grip');
+ const grip=button('',event=>{if(event.detail===0)change(read(),1);},'number-grip');
  grip.setAttribute('aria-label','Drag to adjust '+label);
  grip.append(icon('grip'));
  grip.onkeydown=event=>{
   if(event.key!=='ArrowUp'&&event.key!=='ArrowDown')return;
   event.preventDefault();change(read(),event.key==='ArrowUp'?1:-1);
  };
- verticalDrag(grip,()=>({value:read(),initial:input.value}),(start,dy)=>{
+ trackPointerDrag(grip,()=>({value:read(),initial:input.value}),(start,dx,dy)=>{
   const steps=-Math.trunc(dy/12);
   if(steps)change(start.value,steps);
   else if(input.value!==start.initial){
@@ -342,7 +364,10 @@ function numberControls(input,heading,{repTargets=false}={}){
  });
  const minus=button('−',()=>change(read(),-1),'number-step'),plus=button('+',()=>change(read(),1),'number-step');
  minus.setAttribute('aria-label','Decrease '+label);plus.setAttribute('aria-label','Increase '+label);
- if(input.type!=='range')tools.append(grip);
+ if(input.type!=='range'){
+  const entry=el('div','number-entry');
+  input.replaceWith(entry);entry.append(input,grip);
+ }
  tools.append(minus,plus);heading.append(tools);
  return tools;
 }
@@ -690,10 +715,11 @@ function equipmentFields(parent,unit,expanded=false){
     remove.setAttribute('aria-label','Remove custom '+size+' '+key+' plate');
     label.append(remove);
    }
+   row.append(label,count);
    const controls=numberControls(count,label);
    const updateAvailability=()=>controls.hidden=count.disabled=!checked.checked;
    checked.addEventListener('change',updateAvailability);updateAvailability();
-   row.append(label,count);rows.append(row);
+   rows.append(row);
    entries.set(size,{size,custom,checked,count});
   }
   // Previously enabled sizes that are no longer presets remain in the user's inventory.
@@ -793,12 +819,12 @@ function plateLoads(equipment,maximumWeight){
  };
 }
 function plateTile(size,height,colors){
- const label=displayWeight(size),width=Math.max(17,5+label.length*5),axis=38;
+ const label=displayWeight(size),width=Math.max(17,5+label.length*5),axis=47;
  const tile=el('canvas');
- tile.width=width*2;tile.height=84*2;
+ tile.width=width*2;tile.height=102*2;
  const ctx=tile.getContext('2d');
  ctx.scale(2,2);
- const diameter=Math.max(11,height),depth=height>=32?13:height>=16?10:7;
+ const diameter=Math.max(16,Math.round(height*1.25)),depth=height>=32?13:height>=16?10:7;
  const left=(width-depth)/2,top=axis-diameter/2;
  ctx.fillStyle=colors.text;
  ctx.beginPath();
@@ -814,9 +840,9 @@ function plateTile(size,height,colors){
  ctx.font='700 9px system-ui,sans-serif';
  ctx.textAlign='center';
  ctx.textBaseline='middle';
- const onPlate=height>=17&&ctx.measureText(label).width<=depth-1;
+ const onPlate=diameter>=21&&ctx.measureText(label).width<=depth-1;
  ctx.fillStyle=onPlate?colors.ink:colors.text;
- ctx.fillText(label,width/2,onPlate?axis:Math.min(79,axis+diameter/2+8));
+ ctx.fillText(label,width/2,onPlate?axis:Math.min(97,axis+diameter/2+8));
  return {width,image:tile.toDataURL()};
 }
 function plateBar(load){
@@ -1096,7 +1122,7 @@ function finish(){
   const m=modal('Finish blank workout?',{className:'blank-workout'});
   m.fields.append(el('p','muted small','No sets were logged.'));
   m.actions.append(button('Cancel',m.close),button('Discard',()=>endWorkout(session.id,m)),
-   button('Log as blank',()=>endWorkout(session.id,m,session.notes??''),'primary'));
+   button('Log blank',()=>endWorkout(session.id,m,session.notes??''),'primary'));
   return;
  }
  if(state.settings.promptWorkoutNotes===false){endWorkout(session.id,null,session.notes??'');return;}
@@ -1197,6 +1223,26 @@ function restVibrationSlider(parent,label,value,max,step){
  parent.append(wrap);
  return slider;
 }
+function settingsChangelog(){
+ const changelog=el('details','settings-changelog');
+ changelog.append(el('summary','','Changelog'));
+ const releases=[
+  ['1.0.39',[
+   'Added in-field numeric grips and diagonal notes resizing.',
+   'Refined the plate drawings and calculator icon.',
+   'Put all blank-workout actions on one row and renamed Log blank.'
+  ]],
+  ['1.0.38',['Refined the plate proportions and tightened the History Progress section.']],
+  ['1.0.37',['Added automatic progression, deload suggestions, numeric controls, and a persistent timer position.']]
+ ];
+ for(const [version,changes] of releases){
+  const release=el('section'),list=el('ul');
+  for(const change of changes)list.append(el('li','',change));
+  release.append(el('h3','','Exercise '+version),list);
+  changelog.append(release);
+ }
+ return changelog;
+}
 function settings(){const m=settingsScreen(),draft=clone(state.settings);const spotify=checkbox(m.fields,'Spotify player',draft.spotify!==false);const floating=checkbox(m.fields,'Floating rest timer',draft.floatingTimer!==false);if(native)m.fields.append(button('Connect Spotify controls',()=>native.spotifyAccess()));
 const promptNotes=checkbox(m.fields,'Prompt for workout notes',draft.promptWorkoutNotes!==false);
 const defaults=el('section','defaults-section'),grid=el('div','two'),defaultsHeading=el('h3','','Defaults');
@@ -1204,7 +1250,7 @@ defaultsHeading.id='defaults-heading';defaults.setAttribute('aria-labelledby',de
 defaults.append(defaultsHeading,grid);m.fields.append(defaults);
 const readDefaultWeight=hintOnFocus(numberField(grid,'Weight',draft.defaultWeight??0,0,5000,.25));
 const readDefaultReps=hintOnFocus(setsField(grid,draft.defaultRepTargets??DEFAULT_REP_TARGETS));
-const unit=selectField(grid,'Unit',WEIGHT_UNITS,draft.unit),rest=numberField(grid,'Rest (seconds)',draft.rest,0,1800);
+const unit=selectField(grid,'Unit',WEIGHT_UNITS,draft.unit),rest=numberField(grid,'Rest seconds',draft.rest,0,1800);
 const numberModes=['Drag handles','− and + buttons','Keyboard only'];
 const numberModeKeys=['drag','buttons','keyboard'];
 const numberMode=selectField(m.fields,'Number controls',numberModes,numberModes[numberModeKeys.indexOf(draft.numberMode??'drag')]);
@@ -1298,6 +1344,7 @@ function showScheduleFields(){
 mode.onchange=showScheduleFields;
 showScheduleFields();
 m.fields.append(el('h3','','Appearance'));const colors={};for(const [key,label]of [['top','First background color'],['bottom','Second background color'],['text','Text & buttons']]){const wrap=el('label','row'),input=el('input');input.type='color';input.value=draft[key];input.setAttribute('aria-label',label);wrap.append(input,el('span','small',label));m.fields.append(wrap);colors[key]=input;}const gradient=checkbox(m.fields,'Gradient background',draft.gradient);
+m.fields.append(settingsChangelog());
 cancelSave(m,()=>{
  const selectedDays=days.flatMap((day,index)=>day.checked?[index]:[]);
  const interval=Number(every.value);

@@ -213,8 +213,15 @@ try{
   await curlLoad().locator('.plate-load-summary').evaluate(summary=>getComputedStyle(summary).fontWeight==='700'),
  'The bold target and per-side line use the approved breakdown format');
  const [large,small]=await plateDimensions();
- check(large.height===70&&large.depth===13&&small.height===11&&small.depth===7,
- 'The largest and smallest plates are taller and thinner');
+ check(large.height===88&&large.depth===13&&small.height===16&&small.depth===7,
+ 'The plates are taller while retaining their thickness');
+ check(await curlLoad().locator('.plate-bar').evaluate(bar=>{
+  const inner=bar.querySelector('.plate-shaft').getBoundingClientRect();
+  const collar=bar.querySelector('.plate-collar').getBoundingClientRect();
+  const outer=bar.querySelector('.plate-tip').getBoundingClientRect();
+  return collar.height===30&&outer.height>inner.height&&
+   Math.abs(outer.top+outer.height/2-inner.top-inner.height/2)<.5;
+ }),'The shorter stopper sits between aligned inner and thicker outer bars');
  await equipmentButton().click();
  const bar=dialog().getByRole('spinbutton',{name:'Bar weight (lb)',exact:true});
  await bar.fill('40');
@@ -234,7 +241,7 @@ try{
   lighterLoad.includes('70 lb in plates')&&lighterLoad.includes('35 lb each side'),
  'The closest lighter load reports the plate weight actually shown on the bar');
  const [{height}]=await plateDimensions();
- check(Math.abs(height-70*35/45)<1,'Plates scale against the biggest available plate, including an unpaired plate');
+ check(Math.abs(height-87.5*35/45)<1,'Plates scale against the biggest available plate, including an unpaired plate');
  await equipmentButton().click();
  check(await dialog().getByRole('checkbox',{name:'0.5 lb',exact:true}).count()===0&&
   await dialog().getByRole('checkbox',{name:'0.25 lb',exact:true}).count()===0,'The two smallest sizes are no longer presets');

@@ -163,10 +163,16 @@ try{
  const finishWorkout=page.getByRole('button',{name:'Finish',exact:true});
  await startWorkout.tap();
  const blankId=(await data()).active.id;
+ await page.setViewportSize({width:320,height:650});
  await finishWorkout.tap();
  await dialog().waitFor({state:'visible'});
  check(await dialog().getByRole('heading',{name:'Finish blank workout?'}).isVisible(),
   'Finishing with no logged sets opens the blank workout prompt');
+ check(await dialog().locator('.actions').evaluate(actions=>{
+  const buttons=[...actions.querySelectorAll('button')].map(button=>button.getBoundingClientRect());
+  return buttons.length===3&&buttons.every(button=>button.top===buttons[0].top&&button.height===buttons[0].height)&&
+   actions.scrollWidth<=actions.clientWidth;
+ }),'The three blank workout actions stay on one row at 320px');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).tap();
  check((await data()).active.id===blankId,'Cancel returns to the same unfinished workout');
  await finishWorkout.tap();
@@ -175,11 +181,11 @@ try{
  await startWorkout.tap();
  const loggedBlankId=(await data()).active.id;
  await finishWorkout.tap();
- await dialog().getByRole('button',{name:'Log as blank',exact:true}).tap();
+ await dialog().getByRole('button',{name:'Log blank',exact:true}).tap();
  const blankHistory=await data();
  check(blankHistory.active===null&&blankHistory.history.length===2&&blankHistory.history[0].id===loggedBlankId&&
   blankHistory.history[0].exercises.every(exercise=>exercise.sets.every(set=>set.reps===null)),
- 'Log as blank archives the workout with its planned sets and no recorded reps');
+ 'Log blank archives the workout with its planned sets and no recorded reps');
  check(errors.length===0,'No errors during real touch rep editing');
  console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();await fixture.close();}
