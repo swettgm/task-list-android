@@ -160,6 +160,7 @@ try{
   const title=control.parentElement.querySelector('h2'),icon=control.querySelector('svg');
   const center=element=>{const box=element.getBoundingClientRect();return box.top+box.height/2;};
   return control.textContent===''&&Math.abs(center(control)-center(title))<.6&&
+   Math.abs(center(icon)-center(title)+1)<.6&&
    icon.getBoundingClientRect().height===parseFloat(getComputedStyle(title).fontSize)&&
    parseFloat(getComputedStyle(icon).strokeWidth)>2;
  })&&(await dialog().getByText('Match this load on both sides.').count())===0,
@@ -218,13 +219,14 @@ try{
   await curlLoad().locator('.plate-load-summary').evaluate(summary=>getComputedStyle(summary).fontWeight==='700'),
  'The bold target and per-side line use the approved breakdown format');
  const [large,small]=await plateDimensions();
- check(large.height===94&&large.depth===13&&small.height===17&&small.depth===7,
- 'The plates are taller while retaining their thickness');
+ check(large.height===94&&large.depth===13&&small.height===20&&small.depth===7,
+ 'The smallest plates gain height and the largest retain their proportions');
  check(await curlLoad().locator('.plate-bar').evaluate(bar=>{
   const inner=bar.querySelector('.plate-shaft').getBoundingClientRect();
   const collar=bar.querySelector('.plate-collar').getBoundingClientRect();
   const outer=bar.querySelector('.plate-tip').getBoundingClientRect();
-  return collar.height===30&&outer.height>inner.height&&
+  return collar.height===26&&outer.height>inner.height&&
+   Math.abs(collar.top+collar.height/2-inner.top-inner.height/2)<.5&&
    Math.abs(outer.top+outer.height/2-inner.top-inner.height/2)<.5;
  }),'The shorter stopper sits between aligned inner and thicker outer bars');
  await equipmentButton().click();
@@ -246,7 +248,7 @@ try{
   lighterLoad.includes('70 lb in plates')&&lighterLoad.includes('35 lb each side'),
  'The closest lighter load reports the plate weight actually shown on the bar');
  const [{height}]=await plateDimensions();
- check(Math.abs(height-93.8*35/45)<1,'Plates scale against the biggest available plate, including an unpaired plate');
+ check(height===76,'Intermediate plates get taller while scaling against the biggest available plate');
  await equipmentButton().click();
  check(await dialog().getByRole('checkbox',{name:'0.5 lb',exact:true}).count()===0&&
   await dialog().getByRole('checkbox',{name:'0.25 lb',exact:true}).count()===0,'The two smallest sizes are no longer presets');

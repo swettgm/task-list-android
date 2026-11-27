@@ -67,7 +67,7 @@ try{
  const settings=page.locator('#settings-screen');
  assert.equal(await settings.locator('.number-grip:visible').count(),0);
  await settings.locator('.settings-changelog summary').click();
- assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.40',exact:true}).isVisible(),true);
+ assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.41',exact:true}).isVisible(),true);
  await page.getByRole('combobox',{name:'Number controls'}).selectOption('− and + buttons');
  await number('Number adjustment step').fill('2');
  await page.getByRole('checkbox',{name:'Prompt for workout notes'}).uncheck();

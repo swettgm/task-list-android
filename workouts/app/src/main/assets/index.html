@@ -97,7 +97,7 @@ body,#page-stack{touch-action:pan-y}
 .plate-calc-button svg{width:20px;height:20px;stroke-width:2.5}
 .plate-calculator-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
 .plate-calculator-heading .icon{padding:0}
-.plate-calculator-heading svg{width:21px;height:21px;stroke-width:2.8}
+.plate-calculator-heading svg{width:21px;height:21px;stroke-width:2.8;transform:translateY(-1px)}
 dialog.plate-editor{
  --editor-top:clamp(12px,calc(var(--height,100dvh) - 200px),36px);
  position:fixed;inset:var(--editor-top) 0 auto;margin:0 auto;
@@ -119,7 +119,7 @@ dialog.plate-editor{
 .plate-bar::before{content:'';position:absolute;z-index:-1;left:30px;right:0;top:calc(var(--sleeve-axis) - var(--sleeve-height)/2);height:var(--sleeve-height);border-radius:1px 4px 4px 1px}
 .plate-shaft,.plate-collar,.plate-tip{flex:none}
 .plate-shaft{width:30px;height:10px;margin-top:calc(var(--sleeve-axis) - 5px);border-radius:4px 1px 1px 4px}
-.plate-collar{width:7px;height:30px;margin-top:calc(var(--sleeve-axis) - 15px);border-radius:3px 2px 2px 3px}
+.plate-collar{width:7px;height:26px;margin-top:calc(var(--sleeve-axis) - 13px);border-radius:3px 2px 2px 3px}
 .plate-group{flex:none;height:100%;background-size:var(--plate-step) 100%;background-repeat:repeat-x}
 .plate-tip{width:24px;height:var(--sleeve-height);margin-top:calc(var(--sleeve-axis) - var(--sleeve-height)/2)}
 .plate-load-summary{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -830,13 +830,13 @@ function plateLoads(equipment,maximumWeight){
   return {perSide:loaded*step/100,largest,plates:selected};
  };
 }
-function plateTile(size,height,colors){
+function plateTile(size,ratio,colors){
  const label=displayWeight(size),width=Math.max(17,5+label.length*5),axis=50;
  const tile=el('canvas');
  tile.width=width*2;tile.height=108*2;
  const ctx=tile.getContext('2d');
  ctx.scale(2,2);
- const diameter=Math.max(17,Math.round(height*1.34)),depth=height>=32?13:height>=16?10:7;
+ const diameter=Math.max(20,Math.round(94*ratio**.85)),depth=ratio>=32/70?13:ratio>=16/70?10:7;
  const left=(width-depth)/2,top=axis-diameter/2;
  ctx.fillStyle=colors.text;
  ctx.beginPath();
@@ -864,7 +864,7 @@ function plateBar(load){
  const colors={text:style.getPropertyValue('--text').trim(),ink:style.getPropertyValue('--ink').trim()};
  art.append(el('span','plate-shaft'),el('span','plate-collar'));
  for(const {size,count} of load.plates){
-  const height=70*size/load.largest,tile=plateTile(size,height,colors);
+  const tile=plateTile(size,size/load.largest,colors);
   const group=el('span','plate-group');
   group.style.setProperty('--plate-step',tile.width+'px');
   group.style.width=tile.width*count+'px';
@@ -1239,6 +1239,7 @@ function settingsChangelog(){
  const changelog=el('details','settings-changelog');
  changelog.append(el('summary','','Changelog'));
  const releases=[
+  ['1.0.41',['Shortened the inner plate stopper and made smaller plates a little taller.','Centered the Equipment pencil with the plate calculator title.']],
   ['1.0.40',['Prefer larger plates when choosing a load and draw the plates a little taller.']],
   ['1.0.39',[
    'Added in-field numeric grips and diagonal notes resizing.',
