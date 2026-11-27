@@ -72,7 +72,7 @@ try{
  check(await page.locator('#spotify-copy').evaluate(el=>el.getAnimations().length>0)&&
        await page.locator('#spotify-art').evaluate(el=>el.getAnimations().length===0),
        'Track text slides independently of the artwork');
- for(const [name,reps,weight] of [['Barbell Curl','8, 8, 8',45],['Front/Lateral Raise','10, 10, 10',10],['Triceps Pushdown','8, 8, 8',50],['Cable Crunch','15, 15, 15',50],['Leg Extension','6, 8, 10',50],['Leg Curl','6, 8, 10',65]]){
+ for(const [name,reps,weight] of [['Barbell Curl','8, 8, 8',45],['Front/Lateral Raise','10, 10, 10',10],['Deadlift','5, 5, 5',275],['Bench Press','5, 5, 5',165],['Leg Extension','6, 8, 10',50],['Leg Curl','6, 8, 10',65]]){
   await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
   if(name==='Barbell Curl'){
@@ -170,6 +170,11 @@ try{
   (await curlLoad().locator('.plate-load-summary').textContent())==='0 lb each side · Bar only'&&
   (await dialog().getByRole('region',{name:'Front/Lateral Raise',exact:true}).textContent()).includes('Target is lighter than the bar.'),
  'The calculator lists every exercise, shows zero plate weight for the 45 lb bar alone, and identifies targets below it');
+ const perSide=name=>dialog().getByRole('region',{name,exact:true}).locator('.plate-load-summary').textContent();
+ check(await perSide('Deadlift')==='115 lb each side · 2×45 lb + 1×25 lb',
+  'The 275 lb deadlift uses two 45s and a 25 on each side');
+ check(await perSide('Bench Press')==='60 lb each side · 1×45 lb + 1×10 lb + 1×5 lb',
+  'The calculator uses the largest plate for a matching load even when that takes more plates');
  const keyboardBeforeEdit=await page.evaluate(()=>[qa.keyboard,qa.keyboardHides]);
  await dialog().getByRole('button',{name:'Edit load for Barbell Curl'}).click();
  const loadInput=dialog().getByRole('spinbutton',{name:'Weight',exact:true});
@@ -213,7 +218,7 @@ try{
   await curlLoad().locator('.plate-load-summary').evaluate(summary=>getComputedStyle(summary).fontWeight==='700'),
  'The bold target and per-side line use the approved breakdown format');
  const [large,small]=await plateDimensions();
- check(large.height===88&&large.depth===13&&small.height===16&&small.depth===7,
+ check(large.height===94&&large.depth===13&&small.height===17&&small.depth===7,
  'The plates are taller while retaining their thickness');
  check(await curlLoad().locator('.plate-bar').evaluate(bar=>{
   const inner=bar.querySelector('.plate-shaft').getBoundingClientRect();
@@ -241,7 +246,7 @@ try{
   lighterLoad.includes('70 lb in plates')&&lighterLoad.includes('35 lb each side'),
  'The closest lighter load reports the plate weight actually shown on the bar');
  const [{height}]=await plateDimensions();
- check(Math.abs(height-87.5*35/45)<1,'Plates scale against the biggest available plate, including an unpaired plate');
+ check(Math.abs(height-93.8*35/45)<1,'Plates scale against the biggest available plate, including an unpaired plate');
  await equipmentButton().click();
  check(await dialog().getByRole('checkbox',{name:'0.5 lb',exact:true}).count()===0&&
   await dialog().getByRole('checkbox',{name:'0.25 lb',exact:true}).count()===0,'The two smallest sizes are no longer presets');
