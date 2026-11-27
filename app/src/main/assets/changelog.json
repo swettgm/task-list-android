@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.100.7",
+    "date": "2026-11-27",
+    "changes": [
+      "Record both directions when a task moves and moves back.",
+      "Match the gap between wrapped details to the gap above the action buttons.",
+      "Lift and drag tasks by holding anywhere on the card in Hold and drag mode."
+    ]
+  },
+  {
     "version": "0.100.6",
     "date": "2026-11-27",
     "changes": [

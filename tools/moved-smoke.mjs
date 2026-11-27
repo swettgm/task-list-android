@@ -59,8 +59,10 @@ try {
   const detailsGap=task=>task.evaluate(row=>{
     const details=row.querySelector(':scope > .tm-task-details');
     const action=row.querySelector(':scope > .tm-item-actions > button');
+    const meta=details.querySelector('.tl-meta-flow');
     return {
-      height:details.querySelector('.tl-meta-flow').getBoundingClientRect().height,
+      height:meta.getBoundingClientRect().height,
+      rowGap:parseFloat(getComputedStyle(meta).rowGap),
       gap:action.getBoundingClientRect().top-details.getBoundingClientRect().bottom
     };
   });
@@ -68,6 +70,7 @@ try {
   const wrapped=await detailsGap(page.locator('#pt-list [data-task-id="wrapped"]'));
   assert.ok(wrapped.height>singleLine.height,'The recurring fixture wraps to additional lines');
   assert.ok(singleLine.gap>=12&&Math.abs(wrapped.gap-singleLine.gap)<1,'Task actions start at the same distance below the final detail line');
+  assert.equal(wrapped.rowGap,wrapped.gap,'Wrapped lines use the same gap as the action buttons');
   await page.setViewportSize({width:390,height:844});
   await moved.tap();
   assert.equal(await page.getByText('No tasks moved today.',{exact:true}).isVisible(),true);
@@ -91,22 +94,26 @@ try {
 
   await page.getByRole('tab',{name:'Upcoming',exact:true}).tap();
   await page.locator('#pt-future-list [data-date="2026-11-28"] summary').tap();
+  await page.getByRole('button',{name:'Move Today task to today',exact:true}).tap();
   await page.getByRole('button',{name:'Move Future task to today',exact:true}).tap();
   await page.getByRole('tab',{name:'Today',exact:true}).tap();
+  const roundTrip=['2026-11-28','2026-11-27','2026-11-27','2026-11-28'];
+  assert.deepEqual(await moveDates('today'),roundTrip);
   assert.deepEqual(await moveDates('future'),['2026-11-28','2026-11-27']);
-  assert.equal(await moved.textContent(),'Moved (2)');
+  assert.equal(await moved.textContent(),'Moved (3)');
   await page.locator('#pt-list [data-task-id="future"] .tl-edit-button').tap();
   await dialog.locator('input[type=date]').fill('2026-11-30');
   await dialog.getByRole('button',{name:'Save task',exact:true}).tap();
-  assert.deepEqual(await moveDates('future'),['2026-11-27','2026-11-30']);
-  assert.equal(await moved.textContent(),'Moved (2)');
+  const futureMoves=['2026-11-27','2026-11-30','2026-11-28','2026-11-27'];
+  assert.deepEqual(await moveDates('future'),futureMoves);
+  assert.equal(await moved.textContent(),'Moved (4)');
 
   await page.reload();
   await page.waitForFunction(()=>!!window.TaskListApp);
   assert.equal(await moved.getAttribute('aria-expanded'),'false');
   await moved.tap();
-  assert.deepEqual(await moveDates('today'),['2026-11-27','2026-11-28']);
-  assert.deepEqual(await moveDates('future'),['2026-11-27','2026-11-30']);
+  assert.deepEqual(await moveDates('today'),roundTrip);
+  assert.deepEqual(await moveDates('future'),futureMoves);
   await page.evaluate(()=>advanceMovedFixture());
   assert.equal(await page.getByText('No tasks moved today.',{exact:true}).isVisible(),true);
   assert.equal(await moved.textContent(),'Moved');
