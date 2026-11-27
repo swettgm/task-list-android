@@ -20,6 +20,7 @@ dialog{width:calc(100% - 24px);max-width:520px;max-height:calc(var(--height,100d
 .weight-entry input::-webkit-inner-spin-button,.weight-entry input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 body.keyboard-navigation .weight-entry:has(input:focus-visible){border-color:var(--text)}
 .exercise-rep-hint{margin-top:-7px}
+.hint-on-focus::placeholder{color:var(--muted);opacity:1}
 .spotify{--art-size:48px;position:fixed;bottom:18px;left:0;right:0;width:min(700px,calc((100% - 18px)/1.1));margin:auto;transform:scale(1.1);transform-origin:bottom center;display:flex;align-items:center;gap:4px;padding:8px;border:1.5px solid var(--line);border-radius:14px;background:var(--top);box-shadow:0 4px 20px #0003;z-index:6}.spotify-track{flex:1;min-width:0;display:flex;align-items:flex-start;flex-direction:column;gap:2px;padding:2px 4px;font-size:13px;text-align:left}.spotify-track span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}#spotify-artist{font-size:11px;opacity:.7}.spotify .icon{width:32px;min-width:32px;min-height:36px;padding:6px}.spotify .icon svg{width:19px;height:19px}#spotify-connect{font-size:12px;min-height:32px;padding:5px 7px}body.has-player .fab,body.has-player .rest{bottom:88px}
 #settings svg{width:28px;height:28px}
 
@@ -124,7 +125,15 @@ function duration(ms){const seconds=Math.max(0,Math.floor(ms/1000));return Math.
 function hasLoggedReps(set){return Number.isInteger(set?.reps)&&set.reps>=0;}
 function completed(session){return session.exercises.reduce((n,e)=>n+e.sets.filter(hasLoggedReps).length,0);}
 function total(session){return session.exercises.reduce((n,e)=>n+e.sets.length,0);}
-function settingsDefault(){return {top:'#203747',bottom:'#5a5c61',text:'#f4f7fa',gradient:true,unit:'lb',rest:90,vibrationMs:350,notifications:false,spotify:true,floatingTimer:true};}
+const DEFAULT_REP_TARGETS=Array.from({length:3},()=>({target:5,amrap:false}));
+function settingsDefault(){return {top:'#203747',bottom:'#5a5c61',text:'#f4f7fa',gradient:true,unit:'lb',defaultWeight:0,defaultRepTargets:DEFAULT_REP_TARGETS,rest:90,vibrationMs:350,notifications:false,spotify:true,floatingTimer:true};}
+function repTargetsText(sets){return sets.map(set=>String(set.target)+(set.amrap?'+':'')).join(', ');}
+function parseRepTargets(value){
+ const tokens=value.trim().split(/[,/\s]+/).filter(Boolean);
+ if(!tokens.length||tokens.length>20||tokens.some(token=>!/^\d+\+?$/.test(token)))return null;
+ const sets=tokens.map(token=>({target:Number(token.replace('+','')),amrap:token.endsWith('+')}));
+ return sets.every(set=>set.target>=1&&set.target<=100)?sets:null;
+}
 function initialState(){
  const routine={id:id(),name:'Workout A',exercises:[]};
  return {version:1,revision:0,routines:[routine],selected:routine.id,active:null,history:[],restEndAt:0,restStartedAt:0,restDurationMs:0,settings:settingsDefault()};
@@ -165,6 +174,23 @@ input.addEventListener('focus',showInput);input.addEventListener('click',showInp
 wrap.addEventListener('pointerup',()=>{input.focus({preventScroll:true});showInput();});
 wrap.append(input);parent.append(wrap);return input;}
 function numberField(parent,label,value,min,max,step=1){const input=field(parent,label,'number',value);input.min=min;input.max=max;input.step=step;input.inputMode=step===1?'numeric':'decimal';return input;}
+function hintOnFocus(input,update=()=>{}){
+ let previous=input.value;
+ input.classList.add('hint-on-focus');
+ input.addEventListener('focus',()=>{
+  if(!input.validity.badInput)previous=input.value;
+  input.placeholder=previous;
+  input.value='';
+  update();
+ });
+ input.addEventListener('input',update);
+ input.addEventListener('blur',()=>{
+  if(!input.value.trim()&&!input.validity.badInput)input.value=previous;
+  update();
+ });
+ update();
+ return ()=>input.validity.badInput?'':input.value.trim()||previous;
+}
 function checkbox(parent,label,value){const wrap=el('label','check-label'),input=el('input');input.type='checkbox';input.checked=value;input.addEventListener('change',haptic);wrap.append(input,el('span','',label));parent.append(wrap);return input;}
 function selectField(parent,label,options,value){const wrap=el('label','field'),select=el('select');select.setAttribute('aria-label',label);wrap.append(el('span','',label),select);for(const item of options){const option=el('option','',item);option.value=item;select.append(option);}select.value=value;select.addEventListener('change',haptic);parent.append(wrap);return select;}
 function cancelSave(m,action,label='Save'){m.actions.append(button('Cancel',m.close),button(label,action,'primary'));}
@@ -357,23 +383,22 @@ function editExercise(routineId,exerciseId=null){
  const name=field(m.fields,'Exercise','text',original?.name||'');name.maxLength=160;
  const pair=el('div','two');m.fields.append(pair);
  const unit=original?.unit||state.settings.unit||'lb';
- const weight=numberField(pair,'Weight',original?.weight??0,0,5000,.25);
+ const weight=numberField(pair,'Weight',original?.weight??state.settings.defaultWeight??0,0,5000,.25);
  const entry=el('span','weight-entry'),suffix=el('span','',unit==='kg'?'kg':'lbs');
  suffix.id='exercise-weight-unit';
  weight.setAttribute('aria-describedby',suffix.id);
  weight.before(entry);entry.append(weight,suffix);
- const sizeWeight=()=>weight.style.setProperty('--weight-length',String(Math.max(1,weight.value.length)));
- weight.addEventListener('input',sizeWeight);sizeWeight();
- const targets=field(pair,'Sets/Reps','text',original?.sets.map(s=>String(s.target)+(s.amrap?'+':'')).join(', ')||'8, 8, 8');
- targets.placeholder='8, 8, 5+';
+ const readWeight=hintOnFocus(weight,()=>weight.style.setProperty('--weight-length',String(Math.max(1,(weight.value||weight.placeholder).length))));
+ const targets=field(pair,'Sets/Reps','text',repTargetsText(original?.sets??state.settings.defaultRepTargets??DEFAULT_REP_TARGETS));
+ const readTargets=hintOnFocus(targets);
  const hint=el('p','exercise-rep-hint small muted','+ ➜ AMRAP | 5, 5, 5+ ➜ 2 regular sets + 1 AMRAP.');
  hint.id='exercise-rep-hint';targets.setAttribute('aria-describedby',hint.id);
  m.fields.append(hint);
  const rest=numberField(m.fields,'Rest in seconds',original?.rest??state.settings.rest,0,1800),note=field(m.fields,'Notes','textarea',original?.notes||'');
  note.maxLength=20000;
 if(original)m.actions.append(deleteButton('exercise',()=>{if(active?.exercises.find(e=>e.id===exerciseId)?.sets.some(hasLoggedReps)){m.error.textContent='This exercise has logged sets. Clear them before removing it.';return;}if(save(next=>{const r=next.routines.find(r=>r.id===routineId);if(r)r.exercises=r.exercises.filter(e=>e.id!==exerciseId);const live=liveRoutine(next,routineId);if(live)live.exercises=live.exercises.filter(e=>e.id!==exerciseId);},m.error)){m.close();render();}}));
-cancelSave(m,()=>{const tokens=targets.value.trim().split(/[,/\s]+/).filter(Boolean),reps=tokens.map(token=>/^\d+\+?$/.test(token)?Number(token.replace('+','')):NaN),value=Number(weight.value),restValue=Number(rest.value);if(!name.value.trim()||!reps.length||reps.length>20||reps.some(n=>!Number.isInteger(n)||n<1||n>100)||weight.value===''||!Number.isFinite(value)||value<0||value>5000||!Number.isInteger(restValue)||restValue<0||restValue>1800){m.error.textContent='Enter a name, 1–20 sets of 1–100 reps, a valid weight and rest time.';return;}if(active&&original&&original.sets.some((s,i)=>i>=reps.length&&hasLoggedReps(s))){m.error.textContent='Keep all logged sets, or clear them first.';return;}
-const valueExercise={id:original?.id||id(),name:name.value.trim(),weight:value,unit,rest:restValue,notes:note.value,sets:reps.map((target,i)=>({target,amrap:tokens[i].endsWith('+'),weight:value,reps:null}))};
+cancelSave(m,()=>{const sets=parseRepTargets(readTargets()),weightText=readWeight(),value=Number(weightText),restValue=Number(rest.value);if(!name.value.trim()||!sets||weightText===''||!Number.isFinite(value)||value<0||value>5000||!Number.isInteger(restValue)||restValue<0||restValue>1800){m.error.textContent='Enter a name, 1–20 sets of 1–100 reps, a valid weight and rest time.';return;}if(active&&original&&original.sets.some((s,i)=>i>=sets.length&&hasLoggedReps(s))){m.error.textContent='Keep all logged sets, or clear them first.';return;}
+const valueExercise={id:original?.id||id(),name:name.value.trim(),weight:value,unit,rest:restValue,notes:note.value,sets:sets.map(set=>({...set,weight:value,reps:null}))};
 if(save(next=>{const r=next.routines.find(r=>r.id===routineId);if(r){const index=r.exercises.findIndex(e=>e.id===valueExercise.id);if(index<0)r.exercises.push(clone(valueExercise));else r.exercises[index]=clone(valueExercise);}const session=liveRoutine(next,routineId);if(session){const index=session.exercises.findIndex(e=>e.id===valueExercise.id);const live=clone(valueExercise);if(index>=0)live.sets=live.sets.map((set,i)=>hasLoggedReps(original.sets[i])?{...set,reps:original.sets[i].reps,weight:original.sets[i].weight}:set);if(index<0)session.exercises.push(live);else session.exercises[index]=live;}},m.error)){m.close();render();}},original?'Save':'Add');}
 function start(routineId,scheduledDay){const source=state.routines.find(r=>r.id===routineId);if(state.active||!source?.exercises.length)return;if(save(next=>{if(next.active)throw Error('Workout already active');next.active={id:id(),routineId:source.id,scheduledDay,name:source.name,startedAt:Date.now(),finishedAt:0,notes:'',exercises:clone(source.exercises).map(e=>({...e,sets:e.sets.map(s=>({...s,reps:null}))}))};next.restEndAt=0;})){haptic();render();}}
 function repLimit(set){return set.amrap?100:set.target;}
@@ -538,7 +563,11 @@ function restVibrationSlider(parent,label,value,max,step){
  parent.append(wrap);
  return slider;
 }
-function settings(){const m=settingsScreen(),draft=clone(state.settings);const spotify=checkbox(m.fields,'Spotify player',draft.spotify!==false);const floating=checkbox(m.fields,'Floating rest timer',draft.floatingTimer!==false);if(native)m.fields.append(button('Connect Spotify controls',()=>native.spotifyAccess()));const unit=selectField(m.fields,'Default unit',['lb','kg'],draft.unit),rest=numberField(m.fields,'Default rest in seconds',draft.rest,0,1800),notify=checkbox(m.fields,'Rest notifications',draft.notifications);
+function settings(){const m=settingsScreen(),draft=clone(state.settings);const spotify=checkbox(m.fields,'Spotify player',draft.spotify!==false);const floating=checkbox(m.fields,'Floating rest timer',draft.floatingTimer!==false);if(native)m.fields.append(button('Connect Spotify controls',()=>native.spotifyAccess()));const unit=selectField(m.fields,'Default unit',['lb','kg'],draft.unit);
+const defaults=el('div','two');m.fields.append(defaults);
+const readDefaultWeight=hintOnFocus(numberField(defaults,'Default weight',draft.defaultWeight??0,0,5000,.25));
+const readDefaultReps=hintOnFocus(field(defaults,'Default Sets/Reps','text',repTargetsText(draft.defaultRepTargets??DEFAULT_REP_TARGETS)));
+const rest=numberField(m.fields,'Default rest in seconds',draft.rest,0,1800),notify=checkbox(m.fields,'Rest notifications',draft.notifications);
 if(native&&!native.preciseTimers())m.fields.append(button('Allow precise rest alerts',()=>native.allowPreciseTimers()));
 m.fields.append(el('h3','','Rest timer'));
 const overlay=checkbox(m.fields,'Show rest timer over other apps',draft.floatOverApps===true);
@@ -625,7 +654,11 @@ cancelSave(m,()=>{
  const schedule=mode.selectedIndex===1?{mode:'weekdays',days:selectedDays}:mode.selectedIndex===2
   ?{mode:'interval',every:interval,anchor:oldSchedule?.mode==='interval'&&oldSchedule.every===interval?oldSchedule.anchor:localDay(new Date())}
   :{mode:'off'};
- const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,restCueVolume:Number(cueVolume.value),schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){m.close();theme();render();if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);else if(notify.checked&&!draft.notifications)native?.requestNotifications();}});}
+ const defaultWeightText=readDefaultWeight(),defaultWeight=Number(defaultWeightText);
+ const defaultRepTargets=parseRepTargets(readDefaultReps());
+ if(defaultWeightText===''||!Number.isFinite(defaultWeight)||defaultWeight<0||defaultWeight>5000){m.error.textContent='Choose a default weight from 0 to 5000.';return;}
+ if(!defaultRepTargets){m.error.textContent='Enter 1–20 default sets of 1–100 reps.';return;}
+ const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,defaultWeight,defaultRepTargets,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,restCueVolume:Number(cueVolume.value),schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){m.close();theme();render();if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);else if(notify.checked&&!draft.notifications)native?.requestNotifications();}});}
 let inferredTimer={end:0,length:1},timerDrag=null,suppressTimerClick=0;
 let nativeOverlayVisible=false;
 function remainingText(milliseconds=state.restEndAt-Date.now()){

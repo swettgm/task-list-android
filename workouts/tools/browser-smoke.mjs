@@ -80,6 +80,7 @@ try{
    const reps=await dialog().getByRole('textbox',{name:'Sets/Reps',exact:true}).boundingBox();
    check(weight.y===reps.y&&weight.height===reps.height&&weight.x<reps.x,'Weight and Sets/Reps are aligned on one row');
    check(await dialog().locator('#exercise-weight-unit').textContent()==='lbs','Pound weights show an inline lbs suffix');
+   check(await dialog().getByRole('textbox',{name:'Sets/Reps',exact:true}).inputValue()==='5, 5, 5','A fresh exercise starts at three sets of five');
    check(await dialog().locator('#exercise-rep-hint').textContent()==='+ ➜ AMRAP | 5, 5, 5+ ➜ 2 regular sets + 1 AMRAP.','The Sets/Reps hint uses the Tasks arrows and explains AMRAP');
   }
   await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill(name);
@@ -203,6 +204,10 @@ try{
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Barbell Curl',exact:true}).click();
  check(await dialog().locator('#exercise-weight-unit').textContent()==='lbs','Editing an existing exercise preserves its original weight unit');
+ const savedWeight=dialog().getByRole('spinbutton',{name:'Weight',exact:true});
+ const savedValue=await savedWeight.inputValue();
+ await savedWeight.focus();
+ check(await savedWeight.inputValue()===''&&await savedWeight.getAttribute('placeholder')===savedValue,'Existing weights show their saved value as a hint');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();

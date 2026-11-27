@@ -50,6 +50,8 @@ final class WorkoutStore {
             JSONObject settings=data.getJSONObject("settings");
             for(String key:new String[]{"top","bottom","text"})if(!settings.getString(key).matches("#[a-fA-F0-9]{6}"))throw new JSONException("Invalid color");
             if(!Arrays.asList("lb","kg").contains(settings.getString("unit")))throw new JSONException("Invalid unit");
+            if(settings.has("defaultWeight"))number(settings,"defaultWeight",0,5000);
+            if(settings.has("defaultRepTargets"))repTargets(settings.getJSONArray("defaultRepTargets"));
             if(settings.getInt("rest")<0||settings.getInt("rest")>1800)throw new JSONException("Invalid rest");
             if(settings.getInt("vibrationMs")<0||settings.getInt("vibrationMs")>2000)throw new JSONException("Invalid vibration");
             int countdown=settings.optInt("countdownSeconds");
@@ -96,13 +98,20 @@ final class WorkoutStore {
             number(row,"weight",0,5000);number(row,"rest",0,1800);
             if(row.optString("notes").length()>20000)throw new JSONException("Notes too long");
             JSONArray sets=row.getJSONArray("sets");
-            if(sets.length()<1||sets.length()>20)throw new JSONException("Invalid set count");
+            repTargets(sets);
             for(int j=0;j<sets.length();j++) {
                 JSONObject set=sets.getJSONObject(j);
-                number(set,"target",1,100);number(set,"weight",0,5000);
-                if(set.has("amrap")&&!(set.get("amrap") instanceof Boolean))throw new JSONException("Invalid AMRAP");
+                number(set,"weight",0,5000);
                 if(logged&&!set.isNull("reps"))number(set,"reps",0,100);
             }
+        }
+    }
+    private static void repTargets(JSONArray targets)throws JSONException {
+        if(targets.length()<1||targets.length()>20)throw new JSONException("Invalid set count");
+        for(int j=0;j<targets.length();j++){
+            JSONObject set=targets.getJSONObject(j);
+            number(set,"target",1,100);
+            if(set.has("amrap")&&!(set.get("amrap") instanceof Boolean))throw new JSONException("Invalid AMRAP");
         }
     }
     private static void number(JSONObject value,String key,double min,double max)throws JSONException {

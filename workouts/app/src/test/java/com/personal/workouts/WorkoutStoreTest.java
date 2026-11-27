@@ -36,6 +36,20 @@ public class WorkoutStoreTest {
         JSONObject data=fixture();data.getJSONArray("routines").getJSONObject(0).getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0).put("target",0);
         assertNull(store.write(data.toString()));assertEquals("{}",store.read().toString());
     }
+    @Test public void exerciseDefaultsRoundTripAndRejectInvalidValues()throws Exception {
+        JSONObject data=fixture(),settings=data.getJSONObject("settings");
+        settings.put("defaultWeight",25.5);
+        JSONArray targets=new JSONArray().put(new JSONObject().put("target",5).put("amrap",true));
+        settings.put("defaultRepTargets",targets);
+        assertNotNull(store.write(data.toString()));
+        JSONObject saved=store.read(),savedSettings=saved.getJSONObject("settings");
+        assertEquals(25.5,savedSettings.getDouble("defaultWeight"),0.0);
+        assertTrue(savedSettings.getJSONArray("defaultRepTargets").getJSONObject(0).getBoolean("amrap"));
+        savedSettings.put("defaultWeight",-1);
+        assertNull(store.write(saved.toString()));
+        savedSettings.put("defaultWeight",25.5).put("defaultRepTargets",new JSONArray());
+        assertNull(store.write(saved.toString()));
+    }
     @Test public void duplicateExerciseIdsAreRejected()throws Exception {
         JSONObject data=fixture();JSONArray exercises=data.getJSONArray("routines").getJSONObject(0).getJSONArray("exercises");
         exercises.put(new JSONObject(exercises.getJSONObject(0).toString()));assertNull(store.write(data.toString()));
