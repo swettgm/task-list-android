@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.100.9",
+    "date": "2026-11-27",
+    "changes": [
+      "Use the larger task-card spacing between individual lines of wrapped titles, details, and notes, and above the action buttons."
+    ]
+  },
+  {
     "version": "0.100.8",
     "date": "2026-11-27",
     "changes": [

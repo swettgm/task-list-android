@@ -58,7 +58,10 @@ try{
  const panelOffsets=()=>page.evaluate(()=>{const stack=document.querySelector('.tm-view-stack').getBoundingClientRect();return Object.fromEntries([...document.querySelectorAll('.tm-view-stack>[role=tabpanel]:not([hidden])')].map(panel=>[panel.id,panel.querySelector('.tm-summary,.tm-day-heading').getBoundingClientRect().top-stack.top]));});
  async function swipe(from,to,vertical=false,holdMs=0,startSelector=null){
   const before=await panelOffsets();
-  const startTarget=page.locator(startSelector||'[role=tabpanel]:not([hidden]) .tm-task-item .tm-title').first();await startTarget.scrollIntoViewIfNeeded();const box=await startTarget.boundingBox(),y=box.y+box.height/2;if(startSelector){const delta=to-from;from=box.x+box.width/2;to=from+delta;}
+  const startTarget=page.locator(startSelector||'[role=tabpanel]:not([hidden]) .tm-task-item .tm-title').first();
+  if(startSelector)await startTarget.evaluate(target=>target.scrollIntoView({block:'center',behavior:'instant'}));
+  else await startTarget.scrollIntoViewIfNeeded();
+  const box=await startTarget.boundingBox(),y=box.y+box.height/2;if(startSelector){const delta=to-from;from=box.x+box.width/2;to=from+delta;}
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from,y}]});
   const held=[];for(let step=1;step<=5;step++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:vertical?from:from+(to-from)*step/5,y:vertical?y+step*20:y}]});held.push(await page.evaluate(()=>{const stack=document.querySelector('.tm-view-stack').getBoundingClientRect();return{width:stack.width,panels:Object.fromEntries([...document.querySelectorAll('.tm-view-stack>[role=tabpanel]:not([hidden])')].map(n=>[n.id,n.getBoundingClientRect().left-stack.left]))};}));}
   if(holdMs===111)await page.screenshot({path:'build/browser-qa/aligned-text-top-swipe.png'});if(holdMs)await page.waitForTimeout(holdMs);

@@ -23,7 +23,8 @@ try {
       version:2026103022,
       customTasks:[
         {id:'today',title:'Today task',due:'2026-11-27',priority:'HIGH'},
-        {id:'wrapped',title:'Wrapped task',days:[0,1,2,3,4,5],startsOn:'2026-11-27',priority:'HIGH',
+        {id:'wrapped',title:'A longer task title that wraps onto the next line',days:[0,1,2,3,4,5],startsOn:'2026-11-27',priority:'HIGH',
+          notes:'First line of task notes.\nSecond line of task notes.',
           labels:['At home','On the computer','Outdoors','On the road','On the phone']},
         {id:'future',title:'Future task',due:'2026-11-28',priority:'LOW'},
         {id:'prev',title:'Moved yesterday',due:'2026-11-26',priority:'LOW'},
@@ -69,13 +70,25 @@ try {
     };
   });
   const singleLine=await detailsGap(row);
-  const wrapped=await detailsGap(page.locator('#pt-list [data-task-id="wrapped"]'));
+  const wrappedRow=page.locator('#pt-list [data-task-id="wrapped"]');
+  const wrapped=await detailsGap(wrappedRow);
   assert.ok(wrapped.height>singleLine.height,'The recurring fixture wraps to additional lines');
-  assert.ok(singleLine.titleGap>0,'The title has space below it');
+  assert.equal(singleLine.titleGap,13,'Task rows use the larger spacing');
   for(const spacing of [singleLine,wrapped]){
     assert.equal(spacing.gap,singleLine.titleGap,'Task actions match the gap below the title');
     assert.equal(spacing.rowGap,singleLine.titleGap,'Wrapped detail lines match the gap below the title');
     assert.equal(spacing.titleGap,singleLine.titleGap,'The title keeps the same gap above single and wrapped details');
+  }
+  const textGaps=await wrappedRow.evaluate(row=>['.tm-title','.tm-task-note'].map((selector,index)=>{
+    const text=row.querySelector(selector),range=document.createRange();
+    range.selectNodeContents(text);
+    const tops=[...new Set([...range.getClientRects()].map(rect=>rect.top))];
+    const base=parseFloat(getComputedStyle(text).fontSize)*(index===0?1.3:1.5);
+    return tops.slice(1).map((top,i)=>top-tops[i]-base);
+  }));
+  for(const gaps of textGaps){
+    assert.ok(gaps.length>0,'The test text spans multiple lines');
+    assert.ok(gaps.every(gap=>Math.abs(gap-singleLine.titleGap)<.1),'Each line within the text uses the larger gap');
   }
   await page.setViewportSize({width:390,height:844});
   await moved.tap();
