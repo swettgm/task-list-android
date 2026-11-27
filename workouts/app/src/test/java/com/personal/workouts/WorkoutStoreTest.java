@@ -71,6 +71,20 @@ public class WorkoutStoreTest {
         inventory.put("25",2).put("0",4);
         assertNull(store.write(saved.toString()));
     }
+    @Test public void customPlatesKeepFractionalAndDisabledSizes()throws Exception {
+        JSONObject data=fixture(),settings=data.getJSONObject("settings");
+        JSONArray customSizes=new JSONArray().put(50.37).put(.25);
+        JSONObject profile=new JSONObject().put("bar",39.26)
+            .put("plates",new JSONObject().put("50.37",2)).put("customSizes",customSizes);
+        settings.put("plateEquipment",new JSONObject().put("lb",profile));
+        assertNotNull(store.write(data.toString()));
+        JSONObject saved=store.read(),savedProfile=saved.getJSONObject("settings")
+            .getJSONObject("plateEquipment").getJSONObject("lb");
+        assertEquals(2,savedProfile.getJSONObject("plates").getInt("50.37"));
+        assertEquals(.25,savedProfile.getJSONArray("customSizes").getDouble(1),0);
+        savedProfile.getJSONArray("customSizes").put(.001);
+        assertNull(store.write(saved.toString()));
+    }
     @Test public void activeWorkoutPreservesActualRepsAndWeights()throws Exception {
         JSONObject data=fixture(),active=session(data);
         active.getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0).put("reps",6).put("weight",40);

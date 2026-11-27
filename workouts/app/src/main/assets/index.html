@@ -101,22 +101,28 @@ body,#page-stack{touch-action:pan-y}
 .plate-card-head button{padding:0}
 .plate-card-head button svg{width:18px;height:18px}
 .plate-summary{font-size:14px;color:var(--muted)}
+.plate-summary strong{color:var(--text)}
 .plate-diagram{min-width:0;overflow-x:auto;scrollbar-width:thin}
-.plate-bar{--sleeve-axis:32px;position:relative;isolation:isolate;display:flex;width:max-content;height:72px}
+.plate-bar{--sleeve-axis:36px;position:relative;isolation:isolate;display:flex;width:max-content;height:80px}
 .plate-bar::before{content:'';position:absolute;z-index:-1;left:23px;right:0;top:calc(var(--sleeve-axis) - 4px);height:8px;border-radius:3px;background:var(--muted)}
 .plate-shaft,.plate-collar,.plate-tip{flex:none;background:linear-gradient(var(--text),var(--muted) 68%);box-shadow:inset 0 -1px 0 #0003}
 .plate-shaft{width:30px;height:12px;margin-top:calc(var(--sleeve-axis) - 6px);border-radius:4px 1px 1px 4px}
 .plate-collar{width:7px;height:34px;margin-top:calc(var(--sleeve-axis) - 17px);border-radius:3px 2px 2px 3px}
 .plate-group{flex:none;height:100%;background-size:var(--plate-step) 100%;background-repeat:repeat-x}
 .plate-tip{width:24px;height:10px;margin-top:calc(var(--sleeve-axis) - 5px);border-radius:1px 4px 4px 1px}
-.plate-load-summary{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:13px}
-.plate-load-summary strong{flex:none;font-variant-numeric:tabular-nums}
+.plate-load-summary{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 .plate-equipment{display:grid;gap:10px}.plate-equipment summary{width:max-content;max-width:100%;padding:6px 0;cursor:pointer}
 .plate-inventory{display:grid;gap:6px;margin-top:6px}
 .plate-inventory-row{display:grid;grid-template-columns:minmax(0,1fr) 86px;align-items:center;gap:10px}
+.plate-inventory-label{justify-content:space-between}
+.plate-inventory-label button{min-height:36px;width:36px;min-width:36px;padding:8px}
+.plate-inventory-label button svg{width:16px;height:16px}
 .plate-inventory-row input[type=number]{min-height:36px;padding-block:5px}
 .plate-inventory-row input::placeholder{color:var(--muted);opacity:1}
 .plate-inventory-row input:disabled{opacity:.4}
+.plate-add{display:grid;grid-template-columns:minmax(0,1fr) 86px;align-items:end;gap:10px;margin-top:12px}
+.plate-add button{min-height:42px}
+.plate-add+.error{margin-top:6px}
 </style>
 </head>
 <body>
@@ -489,9 +495,10 @@ cancelSave(m,()=>{const plan=readPlan(),restValue=Number(rest.value);if(!name.va
 const {weight,unit,sets}=plan;
 const valueExercise={id:original?.id||id(),name:name.value.trim(),weight,unit,rest:restValue,notes:note.value,sets:sets.map(set=>({...set,weight,reps:null}))};
 if(save(next=>{const r=next.routines.find(r=>r.id===routineId);if(r){const index=r.exercises.findIndex(e=>e.id===valueExercise.id);if(index<0)r.exercises.push(clone(valueExercise));else r.exercises[index]=clone(valueExercise);}const session=liveRoutine(next,routineId);if(session){const index=session.exercises.findIndex(e=>e.id===valueExercise.id);const live=clone(valueExercise);if(index>=0)live.sets=live.sets.map((set,i)=>hasLoggedReps(original.sets[i])?{...set,reps:original.sets[i].reps,weight:original.sets[i].weight}:set);if(index<0)session.exercises.push(live);else session.exercises[index]=live;}},m.error)){m.close();render();}},original?'Save':'Add');}
-const PLATE_SIZES={lb:[55,45,35,25,15,10,5,2.5,1.25,.5,.25],kg:[25,20,15,10,5,2.5,1.25,1,.5,.25]};
+const PLATE_SIZES={lb:[55,45,35,25,15,10,5,2.5,1.25],kg:[25,20,15,10,5,2.5,1.25,1]};
 const GYM_PLATES={lb:[45,35,25,10,5,2.5],kg:[25,20,15,10,5,2.5,1.25]};
 const WEIGHT_UNITS=['lb','kg'];
+const MAX_PLATE_SIZES=16;
 function plateEquipment(unit){
  return state.settings.plateEquipment?.[unit]??{
   bar:unit==='kg'?20:45,
@@ -505,48 +512,101 @@ function equipmentFields(parent,unit,expanded=false){
   const details=el('details'),rows=el('div','plate-inventory');
   details.open=expanded;
   details.append(el('summary','','Available plates'),el('p','small muted','Total plates for both sides. Leave count blank for unlimited.'),rows);
-  const entries=PLATE_SIZES[key].map(size=>{
-   const row=el('div','plate-inventory-row'),available=Object.hasOwn(equipment.plates,size);
-   const checked=checkbox(row,size+' '+key,available),count=el('input');
+  const presets=PLATE_SIZES[key],entries=new Map();
+  function appendPlate(size,custom,available,savedCount){
+   const row=el('div','plate-inventory-row'),label=el('div','row plate-inventory-label');
+   const checked=checkbox(label,size+' '+key,available),count=el('input');
    count.type='number';count.min=0;count.max=10000;count.inputMode='numeric';
-   count.value=equipment.plates[size]??'';count.placeholder='Count';count.disabled=!available;
+   count.value=savedCount??'';count.placeholder='Count';count.disabled=!available;
    count.setAttribute('aria-label','Count for '+size+' '+key+' plates');
    keyboardFocus(count,count);
    checked.addEventListener('change',()=>count.disabled=!checked.checked);
-   row.append(count);rows.append(row);
-   return {size,checked,count};
+   if(custom){
+    const remove=button('',()=>{
+     entries.delete(size);
+     row.remove();
+     haptic();
+    },'icon bare');
+    remove.append(icon('close'));
+    remove.setAttribute('aria-label','Remove custom '+size+' '+key+' plate');
+    label.append(remove);
+   }
+   row.append(label,count);rows.append(row);
+   entries.set(size,{size,custom,checked,count});
+  }
+  // Previously enabled sizes that are no longer presets remain in the user's inventory.
+  const added=new Set([...(equipment.customSizes??[]),...Object.keys(equipment.plates).map(Number)]);
+  for(const size of new Set([...presets,...added])){
+   appendPlate(size,!presets.includes(size),Object.hasOwn(equipment.plates,size),equipment.plates[size]);
+  }
+  const addRow=el('div','plate-add'),addError=el('p','error');
+  const customWeight=numberField(addRow,'Custom plate ('+key+')','',.01,2500,.01);
+  function addPlate(){
+   const inputWeight=customWeight.valueAsNumber;
+   if(!customWeight.validity.valid||!Number.isFinite(inputWeight)){
+    return 'Enter a plate weight from 0.01 to 2500, with up to two decimal places.';
+   }
+   const size=Math.round(inputWeight*100)/100;
+   if(entries.has(size))return 'That plate size is already listed.';
+   if([...entries.values()].filter(entry=>entry.custom).length>=MAX_PLATE_SIZES){
+    return 'You can save up to 16 custom plate sizes per unit.';
+   }
+   appendPlate(size,true,true,null);
+   customWeight.value='';
+   addError.textContent='';
+   haptic();
+   return '';
+  }
+  const add=button('Add',()=>addError.textContent=addPlate());
+  add.setAttribute('aria-label','Add plate size');
+  addError.setAttribute('role','alert');
+  customWeight.addEventListener('input',()=>addError.textContent='');
+  customWeight.addEventListener('keydown',event=>{
+   if(event.key==='Enter'){event.preventDefault();add.click();}
   });
+  addRow.append(add);details.append(addRow,addError);
   panel.append(barRow,details);parent.append(panel);
-  return {key,panel,bar,entries};
+  return {key,panel,bar,entries,addPending(){
+   return customWeight.value!==''||customWeight.validity.badInput?addPlate():'';
+  }};
  });
  const showUnit=()=>{for(const profile of panels)profile.panel.hidden=profile.key!==unit.value;};
  unit.addEventListener('change',showUnit);
  showUnit();
  return ()=>{
   const profiles={};
-  for(const {key,bar,entries} of panels){
-   const weight=bar.valueAsNumber,plates={};
-   if(!Number.isFinite(weight)||weight<0||weight>5000)return null;
-   for(const {size,checked,count} of entries){
+  for(const {key,bar,entries,addPending} of panels){
+   const error=addPending();
+   if(error)return {error};
+   const weight=bar.valueAsNumber,plates={},customSizes=[];
+   if(!Number.isFinite(weight)||weight<0||weight>5000)return {error:'Enter a valid bar weight.'};
+   for(const {size,custom,checked,count} of entries.values()){
+    if(custom)customSizes.push(size);
     if(!checked.checked)continue;
-    if(count.validity.badInput||count.value!==''&&(!Number.isInteger(count.valueAsNumber)||count.valueAsNumber<0||count.valueAsNumber>10000))return null;
+    if(!count.validity.valid){
+     return {error:'Enter whole plate counts from 0 to 10,000, or leave counts blank.'};
+    }
     plates[size]=count.value===''?null:count.valueAsNumber;
    }
-   profiles[key]={bar:weight,plates};
+   if(Object.keys(plates).length>MAX_PLATE_SIZES)return {error:'Choose up to 16 available plate sizes per unit.'};
+   profiles[key]={bar:weight,plates,customSizes};
   }
-  return profiles;
+  return {equipment:profiles};
  };
 }
 function plateLoads(equipment,maximumWeight){
- // One index represents a pair of quarter-unit plates, one on each sleeve.
- const capacity=weight=>Math.max(0,Math.floor((weight-equipment.bar)*2+1e-8));
- const limit=capacity(maximumWeight),best=Array(limit+1).fill(null);
- best[0]={count:0};
  const available=Object.entries(equipment.plates).map(([size,count])=>[Number(size),count])
   .filter(([,count])=>count===null||count>0).sort(([left],[right])=>right-left);
- const largest=available[0]?.[0],plates=available.filter(([,count])=>count===null||count>=2);
+ const largest=available[0]?.[0],plates=available.filter(([size,count])=>
+  (count===null||count>=2)&&size*2<=maximumWeight-equipment.bar+1e-8);
+ // Reduce the hundredth-unit grid to the sizes this workout can actually load.
+ const gcd=(left,right)=>right?gcd(right,left%right):left;
+ const step=plates.reduce((common,[size])=>gcd(common,Math.round(size*100)),0)||100;
+ const capacity=weight=>Math.max(0,Math.floor((weight-equipment.bar)*50/step+1e-8));
+ const limit=capacity(maximumWeight),best=Array(limit+1).fill(null);
+ best[0]={count:0};
  for(const [size,count] of plates){
-  const pairUnits=size*4;
+  const pairUnits=Math.round(size*100)/step;
   let remaining=Math.min(count===null?Infinity:Math.floor(count/2),Math.floor(limit/pairUnits));
   // Bundle identical pairs so bounded and unlimited inventories use the same search.
   for(let bundle=1;remaining;bundle*=2){
@@ -567,17 +627,17 @@ function plateLoads(equipment,maximumWeight){
   for(let entry=best[loaded];entry.previous;entry=entry.previous){
    counts[entry.size]=(counts[entry.size]||0)+entry.quantity;
   }
-  return {perSide:loaded/4,largest,plates:plates.flatMap(([size])=>counts[size]?[{size,count:counts[size]}]:[])};
+  return {perSide:loaded*step/100,largest,plates:plates.flatMap(([size])=>counts[size]?[{size,count:counts[size]}]:[])};
  };
 }
 function plateTile(size,height,colors){
- const label=displayWeight(size),width=label.length>=4?25:20;
+ const label=displayWeight(size),width=Math.max(18,5+label.length*5);
  const tile=el('canvas');
- tile.width=width*2;tile.height=72*2;
+ tile.width=width*2;tile.height=80*2;
  const ctx=tile.getContext('2d');
  ctx.scale(2,2);
- const diameter=Math.max(10,height),depth=height>=32?16:height>=16?13:9;
- const left=(width-depth)/2,top=32-diameter/2;
+ const diameter=Math.max(10,height),depth=height>=32?14:height>=16?11:8;
+ const left=(width-depth)/2,top=36-diameter/2;
  ctx.fillStyle=colors.text;
  ctx.beginPath();
  ctx.roundRect(left,top,depth,diameter,Math.min(4,diameter/3));
@@ -592,9 +652,9 @@ function plateTile(size,height,colors){
  ctx.font='700 9px system-ui,sans-serif';
  ctx.textAlign='center';
  ctx.textBaseline='middle';
- const onPlate=height>=17&&ctx.measureText(label).width<=depth-4;
+ const onPlate=height>=17&&ctx.measureText(label).width<=depth-2;
  ctx.fillStyle=onPlate?colors.ink:colors.text;
- ctx.fillText(label,width/2,onPlate?32:Math.min(66,32+diameter/2+8));
+ ctx.fillText(label,width/2,onPlate?36:Math.min(75,36+diameter/2+8));
  return {width,image:tile.toDataURL()};
 }
 function plateBar(load){
@@ -604,7 +664,7 @@ function plateBar(load){
  const colors={text:style.getPropertyValue('--text').trim(),ink:style.getPropertyValue('--ink').trim()};
  art.append(el('span','plate-shaft'),el('span','plate-collar'));
  for(const {size,count} of load.plates){
-  const height=58*size/load.largest,tile=plateTile(size,height,colors);
+  const height=66*size/load.largest,tile=plateTile(size,height,colors);
   const group=el('span','plate-group');
   group.style.setProperty('--plate-step',tile.width+'px');
   group.style.width=tile.width*count+'px';
@@ -641,15 +701,17 @@ function showPlateCalculator(sessionId,scrollTop=0){
   const card=el('section','plate-card'),heading=el('div','plate-card-head');
   card.setAttribute('aria-label',name);
   heading.append(el('h3','',name),edit);
-  card.append(heading,el('p','plate-summary',displayWeight(weight)+' '+unit+' target · '+displayWeight(bar)+' '+unit+' bar'));
+  const plateWeight=load.perSide*2,loaded=bar+plateWeight;
+  const breakdown=el('p','plate-summary');
+  const barWeight=displayWeight(bar)+' '+unit+' bar';
+  breakdown.append(el('strong','',displayWeight(weight)+' '+unit+' ➜'),
+   ' '+barWeight+(weight<bar?'':' + '+displayWeight(plateWeight)+' '+unit+' in plates'));
+  card.append(heading,breakdown);
   if(weight<bar)card.append(el('p','small','Target is lighter than the bar.'));
   else{
-   const plateWeight=load.perSide*2,loaded=bar+plateWeight;
-   card.append(el('p','plate-summary',displayWeight(plateWeight)+' '+unit+' in plates'),plateBar(load));
    const stack=load.plates.map(({size,count})=>count+'×'+displayWeight(size)+' '+unit).join(' + ');
-   const summary=el('p','plate-load-summary');
-   summary.append(el('span','',stack||'Bar only'),el('strong','',displayWeight(load.perSide)+' '+unit+' per side'));
-   card.append(summary);
+   card.append(plateBar(load),el('p','plate-load-summary',
+    displayWeight(load.perSide)+' '+unit+' each side · '+(stack||'Bar only')));
    if(weight-loaded>1e-7)card.append(el('p','small muted',displayWeight(loaded)+' '+unit+' loaded · '+displayWeight(weight-loaded)+' '+unit+' short'));
   }
   m.fields.append(card);
@@ -661,8 +723,8 @@ function editPlateEquipment(selectedUnit,onClose){
  const m=modal('Plate equipment',{onClose}),unit=selectField(m.fields,'Unit',WEIGHT_UNITS,selectedUnit);
  const readEquipment=equipmentFields(m.fields,unit,true);
  cancelSave(m,()=>{
-  const equipment=readEquipment();
-  if(!equipment){m.error.textContent='Enter a valid bar weight and whole plate counts, or leave counts blank.';return;}
+  const {equipment,error}=readEquipment();
+  if(error){m.error.textContent=error;return;}
   if(save(next=>next.settings.plateEquipment=equipment,m.error))m.close();
  });
 }
@@ -931,8 +993,8 @@ cancelSave(m,()=>{
  const defaultRepTargets=parseRepTargets(readDefaultReps());
  if(defaultWeightText===''||!Number.isFinite(defaultWeight)||defaultWeight<0||defaultWeight>5000){m.error.textContent='Choose a default weight from 0 to 5000.';return;}
  if(!defaultRepTargets){m.error.textContent='Enter 1–20 default sets of 1–100 reps.';return;}
- const plateEquipment=readEquipment();
- if(!plateEquipment){m.error.textContent='Enter a valid bar weight and whole plate counts, or leave counts blank.';return;}
+ const {equipment:plateEquipment,error}=readEquipment();
+ if(error){m.error.textContent=error;return;}
  const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,defaultWeight,defaultRepTargets,plateEquipment,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,restCueVolume:Number(cueVolume.value),schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){m.close();theme();render();if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);else if(notify.checked&&!draft.notifications)native?.requestNotifications();}});}
 let inferredTimer={end:0,length:1},timerDrag=null,suppressTimerClick=0;
 let nativeOverlayVisible=false;
