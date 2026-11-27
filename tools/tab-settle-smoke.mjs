@@ -42,22 +42,23 @@ try {
   const panelsOpen=()=>page.evaluate(()=>[
     document.querySelector('#pt-toggle-all').getAttribute('aria-pressed')==='true',
     !document.querySelector('#pt-completed').hidden,
-    !document.querySelector('#pt-trash').hidden
+    !document.querySelector('#pt-trash').hidden,
+    !document.querySelector('#pt-moved').hidden
   ]);
   await page.evaluate(()=>{
-    for(const id of ['pt-toggle-all','pt-toggle-hidden','pt-toggle-trash'])document.getElementById(id).click();
+    for(const id of ['pt-toggle-all','pt-toggle-hidden','pt-toggle-trash','pt-toggle-moved'])document.getElementById(id).click();
   });
-  assert.deepEqual(await panelsOpen(),[true,true,true]);
+  assert.deepEqual(await panelsOpen(),[true,true,true,true]);
   await swipe(100,true);
   await finish();
   await page.waitForFunction(()=>!document.querySelector('.tm-view-animating'));
-  assert.deepEqual(await panelsOpen(),[true,true,true]);
+  assert.deepEqual(await panelsOpen(),[true,true,true,true]);
   await swipe(100);
   await moving();
   assert.equal(await selected(),'true');
   await finish();
   await page.waitForFunction(()=>document.querySelector('#pt-upcoming-tab').getAttribute('aria-selected')==='true');
-  assert.deepEqual(await panelsOpen(),[false,false,false]);
+  assert.deepEqual(await panelsOpen(),[false,false,false,false]);
   await swipe(-100,true);
   await moving();
   assert.equal(await selected(),'false');

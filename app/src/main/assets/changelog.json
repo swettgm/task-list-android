@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.100.4",
+    "date": "2026-11-27",
+    "changes": [
+      "Give Do tomorrow more space below inline time controls to prevent accidental time edits.",
+      "Add Moved to Today with the original and new dates of saved task moves."
+    ]
+  },
+  {
     "version": "0.100.2",
     "date": "2026-11-26",
     "changes": [
