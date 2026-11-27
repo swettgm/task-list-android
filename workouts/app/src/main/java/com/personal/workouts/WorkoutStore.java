@@ -52,6 +52,7 @@ final class WorkoutStore {
             if(!Arrays.asList("lb","kg").contains(settings.getString("unit")))throw new JSONException("Invalid unit");
             if(settings.has("defaultWeight"))number(settings,"defaultWeight",0,5000);
             if(settings.has("defaultRepTargets"))repTargets(settings.getJSONArray("defaultRepTargets"));
+            if(settings.has("plateEquipment"))validatePlateEquipment(settings.getJSONObject("plateEquipment"));
             if(settings.getInt("rest")<0||settings.getInt("rest")>1800)throw new JSONException("Invalid rest");
             if(settings.getInt("vibrationMs")<0||settings.getInt("vibrationMs")>2000)throw new JSONException("Invalid vibration");
             int countdown=settings.optInt("countdownSeconds");
@@ -62,6 +63,28 @@ final class WorkoutStore {
             if(settings.has("schedule"))validateSchedule(settings.getJSONObject("schedule"));
             settings.getBoolean("notifications");settings.getBoolean("gradient");settings.getBoolean("spotify");
         } catch(JSONException invalid) { throw new IllegalArgumentException("Invalid workout data",invalid); }
+    }
+    private static void validatePlateEquipment(JSONObject equipment)throws JSONException {
+        for(String unit:new String[]{"lb","kg"}) {
+            if(!equipment.has(unit))continue;
+            JSONObject profile=equipment.getJSONObject(unit);
+            if(!(profile.get("bar") instanceof Number))throw new JSONException("Invalid bar weight");
+            number(profile,"bar",0,5000);
+            JSONObject plates=profile.getJSONObject("plates");
+            if(plates.length()>16)throw new JSONException("Too many plate sizes");
+            Iterator<String> sizes=plates.keys();
+            while(sizes.hasNext()) {
+                String key=sizes.next();
+                if(!key.matches("(0|[1-9][0-9]?)(\\.(25|5|75))?"))throw new JSONException("Invalid plate size");
+                double size=Double.parseDouble(key);
+                if(size<.25||size>55)throw new JSONException("Invalid plate size");
+                if(plates.isNull(key))continue;
+                Object count=plates.get(key);
+                if(!(count instanceof Number))throw new JSONException("Invalid plate count");
+                double quantity=((Number)count).doubleValue();
+                if(quantity<0||quantity>10000||quantity!=Math.floor(quantity))throw new JSONException("Invalid plate count");
+            }
+        }
     }
     private static void validateSchedule(JSONObject schedule)throws JSONException {
         switch(schedule.getString("mode")) {

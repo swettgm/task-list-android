@@ -54,6 +54,23 @@ public class WorkoutStoreTest {
         JSONObject data=fixture();JSONArray exercises=data.getJSONArray("routines").getJSONObject(0).getJSONArray("exercises");
         exercises.put(new JSONObject(exercises.getJSONObject(0).toString()));assertNull(store.write(data.toString()));
     }
+    @Test public void plateEquipmentKeepsUnlimitedAndFiniteCounts()throws Exception {
+        JSONObject data=fixture(),settings=data.getJSONObject("settings");
+        JSONObject plates=new JSONObject().put("45",JSONObject.NULL).put("25",3).put("1.25",0);
+        settings.put("plateEquipment",new JSONObject().put("lb",new JSONObject().put("bar",45).put("plates",plates)));
+        assertNotNull(store.write(data.toString()));
+        JSONObject saved=store.read();
+        JSONObject inventory=saved.getJSONObject("settings").getJSONObject("plateEquipment")
+            .getJSONObject("lb").getJSONObject("plates");
+        assertTrue(inventory.has("45"));
+        assertTrue(inventory.isNull("45"));
+        assertEquals(3,inventory.getInt("25"));
+        assertEquals(0,inventory.getInt("1.25"));
+        inventory.put("25",2.5);
+        assertNull(store.write(saved.toString()));
+        inventory.put("25",2).put("0",4);
+        assertNull(store.write(saved.toString()));
+    }
     @Test public void activeWorkoutPreservesActualRepsAndWeights()throws Exception {
         JSONObject data=fixture(),active=session(data);
         active.getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0).put("reps",6).put("weight",40);

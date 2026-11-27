@@ -48,9 +48,10 @@ try{
  await page.getByRole('button',{name:'Add',exact:true}).tap();
  check(await page.getByRole('region',{name:'Workout B',exact:true}).isVisible(),'The new routine saves and becomes selected');
  await page.getByRole('button',{name:'Settings',exact:true}).tap();
- await page.getByRole('combobox',{name:'Default unit',exact:true}).selectOption('kg');
- const defaultWeight=page.getByRole('spinbutton',{name:'Default weight',exact:true});
- const defaultReps=page.getByRole('textbox',{name:'Default Sets/Reps',exact:true});
+ const defaults=page.getByRole('region',{name:'Defaults',exact:true});
+ await defaults.getByRole('combobox',{name:'Unit',exact:true}).selectOption('kg');
+ const defaultWeight=defaults.getByRole('spinbutton',{name:'Weight',exact:true});
+ const defaultReps=defaults.getByRole('textbox',{name:'Sets/Reps',exact:true});
  check(await defaultWeight.inputValue()==='0'&&await defaultReps.inputValue()==='5, 5, 5','Settings starts with zero weight and three sets of five');
  await defaultWeight.fill('25.5');
  await defaultReps.fill('6, 6, 6+');

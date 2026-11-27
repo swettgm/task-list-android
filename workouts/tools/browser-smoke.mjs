@@ -144,6 +144,56 @@ try{
  await page.waitForFunction(()=>document.querySelector('#elapsed')?.textContent.endsWith(' · 6%'));
  check(/^0:\d{2} · 6%$/.test(await page.locator('#elapsed').textContent()),'Elapsed workout time uses unpadded minutes and rounds completion to a whole percent');
  check((await state()).restEndAt>Date.now()&&await page.getByLabel('Rest timer').isVisible(),'A completed set starts the rest timer');
+ const calculator=page.getByRole('button',{name:'Plate calculator',exact:true});
+ check(await calculator.evaluate(control=>{
+  const text=document.querySelector('#elapsed'),box=element=>element.getBoundingClientRect();
+  return box(control).left>=box(text).right&&box(control.querySelector('svg')).width===parseFloat(getComputedStyle(text).fontSize);
+ }),'The calculator icon sits beside the percentage at the same scale');
+ await calculator.click();
+ check(await dialog().locator('.plate-card').count()===6&&
+  (await dialog().getByRole('region',{name:'Barbell Curl',exact:true}).textContent()).includes('45 lb barBar only')&&
+  (await dialog().getByRole('region',{name:'Front/Lateral Raise',exact:true}).textContent()).includes('Target is lighter than the bar.'),
+ 'The plate calculator lists every exercise, starts with a 45 lb bar, and identifies targets below it');
+ await dialog().getByRole('button',{name:'Edit load for Barbell Curl'}).click();
+ await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill('140');
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ const curlLoad=()=>dialog().getByRole('region',{name:'Barbell Curl',exact:true});
+ check((await curlLoad().textContent()).includes('Per side · 45 lb + 2.5 lb')&&await curlLoad().locator('.plate-stack').evaluateAll(stacks=>{
+  const heights=stacks.map(stack=>parseFloat(stack.style.getPropertyValue('--plate-height')));
+  return heights[0]===52&&Math.abs(heights[1]/heights[0]-2.5/45)<.001;
+ }),'Saving from the calculator pencil recalculates and scales plates by the largest available size');
+ await dialog().getByRole('button',{name:'Equipment',exact:true}).click();
+ const bar=dialog().getByRole('spinbutton',{name:'Bar weight (lb)',exact:true});
+ await bar.fill('40');
+ await dialog().getByRole('spinbutton',{name:'Count for 45 lb plates',exact:true}).fill('1');
+ await dialog().getByRole('spinbutton',{name:'Count for 25 lb plates',exact:true}).fill('4');
+ for(const size of [10,5,2.5])await dialog().getByRole('checkbox',{name:size+' lb',exact:true}).uncheck();
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ check((await curlLoad().textContent()).includes('Per side · 2×25 lb'),
+  'Finite inventories find an exact balanced load when a heavier enabled plate would not fit');
+ await dialog().getByRole('button',{name:'Equipment',exact:true}).click();
+ await dialog().getByRole('spinbutton',{name:'Count for 25 lb plates',exact:true}).fill('3');
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ const lighterLoad=await curlLoad().textContent();
+ check(lighterLoad.includes('110 lb loaded · 30 lb short')&&lighterLoad.includes('Per side · 35 lb'),
+  'Odd counts leave the spare plate off and report the closest lighter load');
+ check(await curlLoad().locator('.plate-stack').evaluate(stack=>{
+  const height=parseFloat(stack.style.getPropertyValue('--plate-height'));
+  return Math.abs(height/52-35/45)<.001;
+ }),'Plates scale against the biggest plate in inventory, even if it has no matching pair');
+ await dialog().getByRole('button',{name:'Done',exact:true}).click();
+ await page.getByRole('button',{name:'Edit sets/reps for Barbell Curl',exact:true}).click();
+ const quickTargets=dialog().getByRole('textbox',{name:'Sets/Reps',exact:true});
+ check(await quickTargets.getAttribute('placeholder')==='8, 8, 8','Tapping the workout targets opens the popup focused on Sets/Reps');
+ await quickTargets.fill('8, 7, 6+');
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ await page.getByRole('button',{name:'Edit weight for Barbell Curl',exact:true}).click();
+ check(await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).getAttribute('placeholder')==='140','Tapping the workout weight focuses Weight');
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ const quickSaved=await state();
+ check(quickSaved.active.exercises[0].sets[0].reps===8&&quickSaved.active.exercises[0].sets[0].weight===45&&
+  quickSaved.active.exercises[0].sets[1].weight===140&&quickSaved.active.exercises[0].sets[2].amrap&&
+  quickSaved.routines[0].exercises[0].sets[1].target===7,'Quick edits update the workout and its template while preserving logged weights and reps');
  await page.getByRole('button',{name:'Edit set 1 of Barbell Curl',exact:true}).click();
  await page.getByRole('button',{name:'Edit set 1 of Barbell Curl',exact:true}).click();
  check((await state()).active.exercises[0].sets[0].reps===6,'Repeated taps reduce actual reps without opening an editor');
@@ -198,7 +248,14 @@ try{
  await page.getByRole('button',{name:'Settings',exact:true}).click();
  check(await page.locator('dialog[open]').count()===0&&await page.locator('#app').isVisible()===false,'Settings opens as a separate screen');
  check(await page.locator('#settings-screen').getByRole('checkbox',{name:'Rest notifications'}).isChecked()===false,'Notification controls reflect opt-in defaults');
- await page.locator('#settings-screen').getByRole('combobox',{name:'Default unit'}).selectOption('kg');
+ const defaults=page.getByRole('region',{name:'Defaults',exact:true});
+ check(await defaults.evaluate(section=>{
+  const [weight,reps,unit,rest]=[...section.querySelectorAll('input,select')].map(e=>e.getBoundingClientRect());
+  return weight.top===reps.top&&unit.top===rest.top&&weight.left===unit.left&&reps.left===rest.left&&unit.width===rest.width;
+ }),'The four Defaults controls align in two equal columns');
+ check(await page.getByRole('spinbutton',{name:'Bar weight (lb)',exact:true}).inputValue()==='40','Settings and the calculator share bar weight');
+ await defaults.getByRole('combobox',{name:'Unit',exact:true}).selectOption('kg');
+ check(await page.getByRole('spinbutton',{name:'Bar weight (kg)',exact:true}).inputValue()==='20','Changing unit uses a separate metric bar and inventory');
  await page.locator('#settings-screen').getByRole('button',{name:'Save',exact:true}).click();
  check((await state()).settings.unit==='kg'&&(await state()).history[0].exercises[0].unit==='lb','Changing default units preserves historical units');
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
@@ -230,7 +287,9 @@ try{
  await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill('B-only exercise');
  await dialog().getByRole('button',{name:'Add',exact:true}).click();
- check(await page.getByRole('button',{name:'Add exercise',exact:true}).count()===0&&await page.locator('.exercise-head button').count()===0,'Today keeps workout editing behind the pencil');
+ check(await page.getByRole('button',{name:'Add exercise',exact:true}).count()===0&&
+  await page.locator('.exercise-head button').evaluateAll(controls=>controls.every(control=>control.closest('.exercise-plan'))),
+  'Today offers quick plan edits while keeping exercise management behind the pencil');
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  const cards=dialog().locator('.workout-edit-row');
  const a=await cards.nth(0).boundingBox(),b=await cards.nth(1).boundingBox();
