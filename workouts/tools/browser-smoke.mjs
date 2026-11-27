@@ -160,11 +160,15 @@ try{
   const title=control.parentElement.querySelector('h2'),icon=control.querySelector('svg');
   const center=element=>{const box=element.getBoundingClientRect();return box.top+box.height/2;};
   return control.textContent===''&&Math.abs(center(control)-center(title))<.6&&
-   Math.abs(center(icon)-center(title)+1)<.6&&
+   Math.abs(center(icon.querySelector('path'))-center(title))<.6&&
    icon.getBoundingClientRect().height===parseFloat(getComputedStyle(title).fontSize)&&
    parseFloat(getComputedStyle(icon).strokeWidth)>2;
  })&&(await dialog().getByText('Match this load on both sides.').count())===0,
  'A bold, icon-only pencil matches the calculator title size and alignment');
+ check(await dialog().locator('.plate-card-head').evaluateAll(rows=>rows.every(row=>{
+  const center=element=>{const box=element.getBoundingClientRect();return box.top+box.height/2;};
+  return Math.abs(center(row.querySelector('path'))-center(row.querySelector('h3')))<.6;
+ })),'Each exercise pencil aligns its visible path with the exercise name');
  const curlLoad=()=>dialog().getByRole('region',{name:'Barbell Curl',exact:true});
  check(await dialog().locator('.plate-card').count()===6&&
   (await curlLoad().locator('.plate-summary').textContent())==='45 lb ➜ 45 lb bar + 0 lb in plates'&&

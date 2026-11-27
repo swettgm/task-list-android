@@ -97,7 +97,7 @@ body,#page-stack{touch-action:pan-y}
 .plate-calc-button svg{width:20px;height:20px;stroke-width:2.5}
 .plate-calculator-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
 .plate-calculator-heading .icon{padding:0}
-.plate-calculator-heading svg{width:21px;height:21px;stroke-width:2.8;transform:translateY(-1px)}
+.plate-calculator-heading svg{width:21px;height:21px;stroke-width:2.8}
 dialog.plate-editor{
  --editor-top:clamp(12px,calc(var(--height,100dvh) - 200px),36px);
  position:fixed;inset:var(--editor-top) 0 auto;margin:0 auto;
@@ -111,6 +111,12 @@ dialog.plate-editor{
 .plate-card-head h3{overflow-wrap:anywhere}
 .plate-card-head button{padding:0}
 .plate-card-head button svg{width:18px;height:18px}
+.plate-calculator-heading h2,.plate-card-head h3{text-box:trim-both cap alphabetic}
+/* The pencil path sits one unit above the center of its 24-unit view box. */
+.plate-calculator-heading svg,.plate-card-head button svg{transform:translateY(4.1667%)}
+@supports not (text-box:trim-both cap alphabetic){
+ .plate-calculator-heading svg,.plate-card-head button svg{transform:translateY(-1px)}
+}
 .plate-summary{font-size:14px;color:var(--muted)}
 .plate-summary strong{color:var(--text)}
 .plate-diagram{min-width:0;overflow-x:auto;scrollbar-width:thin}
@@ -1240,6 +1246,7 @@ function settingsChangelog(){
  const changelog=el('details','settings-changelog');
  changelog.append(el('summary','','Changelog'));
  const releases=[
+  ['1.0.43',['Aligned the Equipment and exercise pencils with their text in the plate calculator.']],
   ['1.0.42',['Today’s scheduled workout opens automatically on the start screen.']],
   ['1.0.41',['Shortened the inner plate stopper and made smaller plates a little taller.','Centered the Equipment pencil with the plate calculator title.']],
   ['1.0.40',['Prefer larger plates when choosing a load and draw the plates a little taller.']],
