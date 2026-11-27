@@ -482,6 +482,11 @@ try{
  check(labels.length===3&&['Wednesday','Friday','Monday'].every((day,i)=>labels[i].startsWith(day)&&labels[i].includes('January')),'Three selected weekdays preview Wednesday, Friday and Monday');
  const scheduledNames=await page.locator('.routine').evaluateAll(cards=>cards.map(card=>card.getAttribute('aria-label')));
  check(scheduledNames.join('|')==='Workout B renamed|Workout A|Workout B renamed','Two routines rotate across all three upcoming days');
+ check(await page.locator('.routine-toggle[aria-expanded=true]').count()===0,'Future workouts stay collapsed by default');
+ await page.clock.setFixedTime(new Date(tuesday.getTime()+86400000));
+ await page.evaluate(()=>Workouts.refresh());
+ const scheduledToday=page.locator('.routine').filter({hasText:'Scheduled today'}).locator('.routine-toggle');
+ check(await scheduledToday.getAttribute('aria-expanded')==='true','The workout scheduled for the current weekday expands automatically');
 
  await page.getByRole('button',{name:'Settings',exact:true}).click();
  await settings.getByRole('combobox',{name:'Schedule',exact:true}).selectOption('Every few days');

@@ -467,9 +467,9 @@ function routineSlots(today){
  }
  return slots;
 }
-const expandedRoutines=new Set();
+const routineDisclosure=new Map();
 function renderToday(){
- const date=new Date();
+ const date=new Date(),today=localDay(date);
  const host=$('routine-list'),sessionBar=$('session-bar'),discard=$('discard');
  host.replaceChildren();
  const slots=routineSlots(date);
@@ -478,6 +478,7 @@ function renderToday(){
    ||slots.find(slot=>slot.routine.id===activeRoutineId);
  for(const slot of slots){
   const {routine,day}=slot;
+  const scheduledToday=day===today;
   const active=slot===activeSlot?state.active:null,source=active||routine;
   const cardKey=day===null?routine.id:routine.id+'-'+day;
   const section=el('section','routine');
@@ -486,7 +487,7 @@ function renderToday(){
   title.append(el('span','routine-name',source.name));
   if(day!==null){
    section.classList.add('has-date');
-   const label=day===localDay(date)?'Scheduled today':dateText(day*dayMs,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
+   const label=scheduledToday?'Scheduled today':dateText(day*dayMs,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
    title.append(el('span','routine-date small muted',label));
   }
   const edit=button('',()=>{haptic();editWorkout(routine.id);},'icon bare');
@@ -500,9 +501,10 @@ function renderToday(){
    titleBox.append(title);
    heading.append(titleBox,edit,discard||panel.querySelector('#discard'));
   }else{
+   let open=routineDisclosure.get(cardKey)??scheduledToday;
    const toggleOpen=()=>{
-    if(expandedRoutines.has(cardKey))expandedRoutines.delete(cardKey);
-    else expandedRoutines.add(cardKey);
+    open=!open;
+    routineDisclosure.set(cardKey,open);
     updateDisclosure();
     haptic();
    };
@@ -510,7 +512,6 @@ function renderToday(){
    const chevron=button('',toggleOpen,'icon bare routine-chevron');
    chevron.append(icon('chevron'));
    const updateDisclosure=()=>{
-    const open=expandedRoutines.has(cardKey);
     panel.hidden=!open;
     toggle.setAttribute('aria-expanded',String(open));
     chevron.setAttribute('aria-expanded',String(open));
@@ -1239,6 +1240,7 @@ function settingsChangelog(){
  const changelog=el('details','settings-changelog');
  changelog.append(el('summary','','Changelog'));
  const releases=[
+  ['1.0.42',['Today’s scheduled workout opens automatically on the start screen.']],
   ['1.0.41',['Shortened the inner plate stopper and made smaller plates a little taller.','Centered the Equipment pencil with the plate calculator title.']],
   ['1.0.40',['Prefer larger plates when choosing a load and draw the plates a little taller.']],
   ['1.0.39',[
