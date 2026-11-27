@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.100.13",
+    "date": "2026-11-27",
+    "changes": [
+      "Put the destination date on the left when the Moved arrow points left."
+    ]
+  },
+  {
     "version": "0.100.12",
     "date": "2026-11-27",
     "changes": [

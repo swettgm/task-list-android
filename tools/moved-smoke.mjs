@@ -148,17 +148,19 @@ try {
   await page.getByRole('button',{name:'Move Today task to today',exact:true}).tap();
   await page.getByRole('button',{name:'Move Future task to today',exact:true}).tap();
   await page.getByRole('tab',{name:'Today',exact:true}).tap();
-  const roundTrip=['2026-11-28','2026-11-27','2026-11-27','2026-11-28'];
+  const roundTrip=['2026-11-27','2026-11-28','2026-11-27','2026-11-28'];
   assert.deepEqual(await moveDates('today'),roundTrip);
+  assert.deepEqual(await page.locator('#pt-moved-list [data-moved-task-id="today"] .tl-moved-dates > span:not([aria-hidden])')
+    .evaluateAll(nodes=>nodes.map(node=>node.firstChild.textContent.trim())),['To','From','From','To']);
   const arrows=page.locator('#pt-moved-list [data-moved-task-id="today"] .tl-moved-dates > [aria-hidden="true"]');
   assert.deepEqual(await arrows.evaluateAll(nodes=>nodes.map(node=>getComputedStyle(node).transform)),
     ['matrix(-1, 0, 0, -1, 0, 0)','none'],'Moving back points left and moving forward points right');
-  assert.deepEqual(await moveDates('future'),['2026-11-28','2026-11-27']);
+  assert.deepEqual(await moveDates('future'),['2026-11-27','2026-11-28']);
   assert.equal(await moved.textContent(),'Moved (3)');
   await page.locator('#pt-list [data-task-id="future"] .tl-edit-button').tap();
   await dialog.locator('input[type=date]').fill('2026-11-30');
   await dialog.getByRole('button',{name:'Save task',exact:true}).tap();
-  const futureMoves=['2026-11-27','2026-11-30','2026-11-28','2026-11-27'];
+  const futureMoves=['2026-11-27','2026-11-30','2026-11-27','2026-11-28'];
   assert.deepEqual(await moveDates('future'),futureMoves);
   assert.equal(await moved.textContent(),'Moved (4)');
 
