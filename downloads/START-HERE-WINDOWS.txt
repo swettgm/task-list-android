@@ -1,35 +1,32 @@
-Tasks for Windows — simple companion
+Tasks for Windows 0.100.3
 
-Run Tasks-Setup.exe on Windows 10 or 11 (64-bit), then open Tasks from the Start
-menu or desktop shortcut. No administrator rights, Python installation or account is
-needed. Tasks opens its own native Windows window, powered by the WebView2 runtime.
-Setup installs Microsoft WebView2 if it is missing; that first-time step needs
-internet access. The window and shortcuts share one taskbar identity. If you pinned an
-older version, unpin its old icon once, then pin Tasks from the Start menu again.
+Install over the existing version. Tasks, theme, pairing and taskbar identity are
+retained. Open your current phone with Android Tasks 0.100.0 first and wait for
+Settings > Google sync to say Synced with Google. That phone initializes the cloud
+list; other clients restore it instead of importing their old task lists.
 
-Install the accompanying Tasks Android update first. On Windows choose Link phone,
-scan the QR code with your phone camera, choose Open Tasks, then confirm Link PC.
-You can also paste the pairing link under Android Settings > Windows companion.
+Google setup on Windows:
+1. Open https://console.cloud.google.com/auth/clients and select Tasks.
+2. Download the JSON for the Windows Desktop app client. If necessary create a
+   Desktop app client in the same project, then download its JSON.
+3. In Tasks choose Settings > Google sync > Set up Google and select that file.
+4. Sign into the same account as the phone. Your cloud tasks restore automatically.
 
-Your phone theme, colors, gradient and icon choices transfer during pairing and
-keep updating through sync. The Windows list waits for your phone on first use. It does not import an old
-bundled task list. Use Today or Upcoming, tick a checkbox to complete a task, and
-use Do now to toggle in progress. Linked tasks start and stop together. There are
-no task editors, adding, priority controls or Settings on the Windows screen.
+The JSON contains the client secret Google requires for desktop token exchange.
+It and your refresh token are encrypted with Windows DPAPI. Do not send the file
+through chat. Once connected, the account row has an X to remove it, plus Sync now.
+Old local task data is backed up privately before first cloud restore. Deleted
+tasks remain deleted across clients; offline changes merge after reconnection.
+The warning triangle beside the sync time means the latest Google sync failed
+or the last successful sync was more than an hour ago. Hover for the reason.
 
-Keep both devices on the same Wi-Fi, with Tasks open on the phone, to synchronize.
-PC changes save locally while the phone is away, then sync when the phone app is
-open again. Windows may ask you to allow Tasks on your private network.
+Tasks supports adding/editing tasks, Today/Upcoming, projects (hold the date at
+the top), priorities, labels, recurrence, notes, checklists, completion/progress,
+ordering, history/trash and theme settings. Local QR pairing remains available.
+Android reminder and widget controls remain phone features.
 
-Closing the window keeps local sync running. Open Tasks from its shortcut to return.
-Link phone > Quit PC companion stops the local server.
+Closing the window keeps PC sync running. Reopen from the same shortcut. Updates
+and uninstall retain private data in %LOCALAPPDATA%\Tasks. Backup copies made
+before cloud restores are under its cloud-backups directory.
 
-Setup installs the program under %LOCALAPPDATA%\Programs\Tasks. Run a newer
-installer to update it. Uninstall through Windows Settings > Apps. Updates and
-uninstall preserve your tasks, theme and pairing in %LOCALAPPDATA%\Tasks.
-The portable Tasks-PC.exe is still available as an optional alternative. Tasks needs no cloud account. The first download is not
-code-signed with a Microsoft publisher certificate, so Windows may identify it as
-an unrecognized app.
-
-Optional Python source ZIP: install requirements.txt, then run tasks_pc.py using
-Python 3.10 or later. The executable is the easier option.
+The home-screen Refresh button also requests Google sync, just like Sync now in Settings. Pending desktop edits are saved to the local host before requesting cloud sync. Without a Google account, Refresh still updates the local task list.

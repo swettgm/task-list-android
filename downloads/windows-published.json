@@ -1,31 +1,31 @@
 {
-  "version": "0.65.2",
-  "source_sha": "7a864511a648467ab764d99763e64d31ed7e4809",
-  "run_id": 42117912556,
+  "version": "0.100.3",
+  "source_sha": "d61fb75e7cc75862b1b50b382eb1acfdb9a1b224",
+  "run_id": 46033870855,
   "files": {
-    "Tasks-Setup-v0.65.2.exe": {
-      "sha256": "1f724c9eac6d103b33c32ef91d5bd902da4e08c598f1c6650f50711e21654ca9",
-      "bytes": 17282437
+    "Tasks-Setup-v0.100.3.exe": {
+      "sha256": "5d81ed6321831fdb88837d5f8167ff805df2c18f9c70056a33ec1ebc98c6d249",
+      "bytes": 17308492
     },
     "Tasks-Setup.exe": {
-      "sha256": "1f724c9eac6d103b33c32ef91d5bd902da4e08c598f1c6650f50711e21654ca9",
-      "bytes": 17282437
+      "sha256": "5d81ed6321831fdb88837d5f8167ff805df2c18f9c70056a33ec1ebc98c6d249",
+      "bytes": 17308492
     },
-    "Tasks-PC-v0.65.2.exe": {
-      "sha256": "a8aa7b478763a3594ded24d9bcc5f33835caed4ff698ee58644094698a41af57",
-      "bytes": 13734907
+    "Tasks-PC-v0.100.3.exe": {
+      "sha256": "d5e54bce987c943c2c8aa1d8f81b9b019c92b6d384cf556d25fd6287fc06e41b",
+      "bytes": 13800820
     },
     "Tasks-PC.exe": {
-      "sha256": "a8aa7b478763a3594ded24d9bcc5f33835caed4ff698ee58644094698a41af57",
-      "bytes": 13734907
+      "sha256": "d5e54bce987c943c2c8aa1d8f81b9b019c92b6d384cf556d25fd6287fc06e41b",
+      "bytes": 13800820
     },
-    "Tasks-PC-Windows-v0.65.2.zip": {
-      "sha256": "55a63d89addc9182441c4328f708fb405b905cedb771bec09f8f7264ce1872f1",
-      "bytes": 16489201
+    "Tasks-PC-Windows-v0.100.3.zip": {
+      "sha256": "c8f01f35ccdd43042ee2110cf5a31482997f16750375b4547fdb8969d775cb8b",
+      "bytes": 16514440
     },
     "Tasks-PC-Windows.zip": {
-      "sha256": "55a63d89addc9182441c4328f708fb405b905cedb771bec09f8f7264ce1872f1",
-      "bytes": 16489201
+      "sha256": "c8f01f35ccdd43042ee2110cf5a31482997f16750375b4547fdb8969d775cb8b",
+      "bytes": 16514440
     }
   }
 }
