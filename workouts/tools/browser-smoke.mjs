@@ -80,7 +80,7 @@ try{
    const reps=await dialog().getByRole('textbox',{name:'Sets/Reps',exact:true}).boundingBox();
    check(weight.y===reps.y&&weight.height===reps.height&&weight.x<reps.x,'Weight and Sets/Reps are aligned on one row');
    check(await dialog().locator('#exercise-weight-unit').textContent()==='lbs','Pound weights show an inline lbs suffix');
-   check(await dialog().locator('#exercise-rep-hint').textContent()==='8, 8, 5+ = 3 sets. + means max reps.','The hint explains set count and plus in one line');
+   check(await dialog().locator('#exercise-rep-hint').textContent()==='+ ➜ AMRAP | 5, 5, 5+ ➜ 2 regular sets + 1 AMRAP.','The Sets/Reps hint uses the Tasks arrows and explains AMRAP');
   }
   await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill(name);
   await dialog().getByRole('textbox',{name:'Sets/Reps'}).fill(reps);

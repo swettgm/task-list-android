@@ -366,7 +366,7 @@ function editExercise(routineId,exerciseId=null){
  weight.addEventListener('input',sizeWeight);sizeWeight();
  const targets=field(pair,'Sets/Reps','text',original?.sets.map(s=>String(s.target)+(s.amrap?'+':'')).join(', ')||'8, 8, 8');
  targets.placeholder='8, 8, 5+';
- const hint=el('p','exercise-rep-hint small muted','8, 8, 5+ = 3 sets. + means max reps.');
+ const hint=el('p','exercise-rep-hint small muted','+ ➜ AMRAP | 5, 5, 5+ ➜ 2 regular sets + 1 AMRAP.');
  hint.id='exercise-rep-hint';targets.setAttribute('aria-describedby',hint.id);
  m.fields.append(hint);
  const rest=numberField(m.fields,'Rest in seconds',original?.rest??state.settings.rest,0,1800),note=field(m.fields,'Notes','textarea',original?.notes||'');
