@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.100.8",
+    "date": "2026-11-27",
+    "changes": [
+      "Match the spacing between wrapped task details and above the action buttons to the gap below the title."
+    ]
+  },
+  {
     "version": "0.100.7",
     "date": "2026-11-27",
     "changes": [

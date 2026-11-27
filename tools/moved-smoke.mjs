@@ -58,19 +58,25 @@ try {
   }),true);
   const detailsGap=task=>task.evaluate(row=>{
     const details=row.querySelector(':scope > .tm-task-details');
+    const title=row.querySelector(':scope > .form-check');
     const action=row.querySelector(':scope > .tm-item-actions > button');
     const meta=details.querySelector('.tl-meta-flow');
     return {
       height:meta.getBoundingClientRect().height,
       rowGap:parseFloat(getComputedStyle(meta).rowGap),
-      gap:action.getBoundingClientRect().top-details.getBoundingClientRect().bottom
+      gap:action.getBoundingClientRect().top-details.getBoundingClientRect().bottom,
+      titleGap:details.getBoundingClientRect().top-title.getBoundingClientRect().bottom
     };
   });
   const singleLine=await detailsGap(row);
   const wrapped=await detailsGap(page.locator('#pt-list [data-task-id="wrapped"]'));
   assert.ok(wrapped.height>singleLine.height,'The recurring fixture wraps to additional lines');
-  assert.ok(singleLine.gap>=12&&Math.abs(wrapped.gap-singleLine.gap)<1,'Task actions start at the same distance below the final detail line');
-  assert.equal(wrapped.rowGap,wrapped.gap,'Wrapped lines use the same gap as the action buttons');
+  assert.ok(singleLine.titleGap>0,'The title has space below it');
+  for(const spacing of [singleLine,wrapped]){
+    assert.equal(spacing.gap,singleLine.titleGap,'Task actions match the gap below the title');
+    assert.equal(spacing.rowGap,singleLine.titleGap,'Wrapped detail lines match the gap below the title');
+    assert.equal(spacing.titleGap,singleLine.titleGap,'The title keeps the same gap above single and wrapped details');
+  }
   await page.setViewportSize({width:390,height:844});
   await moved.tap();
   assert.equal(await page.getByText('No tasks moved today.',{exact:true}).isVisible(),true);
@@ -80,7 +86,7 @@ try {
   assert.equal(await dialog.getByRole('heading',{name:'Time',exact:true}).isVisible(),true);
   await dialog.getByRole('button',{name:'Cancel',exact:true}).tap();
   const timeBox=await time.boundingBox(),tomorrowBox=await tomorrow.boundingBox();
-  assert.ok(tomorrowBox.y-timeBox.y-timeBox.height>=12);
+  assert.ok(tomorrowBox.y-timeBox.y-timeBox.height>=singleLine.titleGap);
   await tomorrow.tap({position:{x:tomorrowBox.width/2,y:2}});
   assert.equal(await dialog.count(),0);
   assert.equal(await row.count(),0);
