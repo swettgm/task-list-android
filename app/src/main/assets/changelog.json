@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.100.11",
+    "date": "2026-11-27",
+    "changes": [
+      "Show overdue tasks in Today after they were moved to an earlier date, even before their original due date."
+    ]
+  },
+  {
     "version": "0.100.10",
     "date": "2026-11-27",
     "changes": [
