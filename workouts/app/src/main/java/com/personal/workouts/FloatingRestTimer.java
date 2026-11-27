@@ -102,9 +102,7 @@ final class FloatingRestTimer extends View {
     }
 
     static JSONObject positionForRest(JSONObject state){
-        JSONObject position=state.optJSONObject("restPosition");
-        return position!=null&&state.optLong("restStartedAt")>0&&
-            position.optLong("started",-1)==state.optLong("restStartedAt")?position:null;
+        return state.optJSONObject("restPosition");
     }
 
     private void placeTimer(JSONObject state){

@@ -401,7 +401,7 @@ try{
  check(await page.locator('#rest-ring').evaluate((e,start)=>Number(e.style.strokeDashoffset)>start,ringStart),'The timer ring shrinks as time passes');
  await page.getByRole('button',{name:'Log set 2 of Front/Lateral Raise'}).click();
  const nextRest=await page.locator('#rest').boundingBox();
- check(Math.abs(nextRest.x-before.x)<1&&Math.abs(nextRest.y-before.y)<1,'The next rest returns to the right after the previous timer was dragged');
+ check(Math.abs(nextRest.x-after.x)<1&&Math.abs(nextRest.y-after.y)<1,'The next rest keeps the last dragged position');
  check(await page.locator('#spotify-art img').count()===1,'Album art is shown when Spotify provides it');
  check(await page.locator('#spotify-title').evaluate(e=>Number(getComputedStyle(e).fontWeight)>=700),'Spotify track text is bold');
  check(await page.locator('#spotify').evaluate(player=>{

@@ -52,6 +52,16 @@ final class WorkoutStore {
             if(!Arrays.asList("lb","kg").contains(settings.getString("unit")))throw new JSONException("Invalid unit");
             if(settings.has("defaultWeight"))number(settings,"defaultWeight",0,5000);
             if(settings.has("defaultRepTargets"))repTargets(settings.getJSONArray("defaultRepTargets"));
+            if(settings.has("numberMode")&&!Arrays.asList("drag","buttons","keyboard").contains(settings.getString("numberMode"))) {
+                throw new JSONException("Invalid number controls");
+            }
+            if(settings.has("numericStep"))number(settings,"numericStep",.01,5000);
+            if(settings.has("autoProgression"))settings.getBoolean("autoProgression");
+            if(settings.has("promptWorkoutNotes"))settings.getBoolean("promptWorkoutNotes");
+            if(settings.has("progression")) {
+                JSONObject progression=settings.getJSONObject("progression");
+                number(progression,"lb",0,5000);number(progression,"kg",0,5000);
+            }
             if(settings.has("plateEquipment"))validatePlateEquipment(settings.getJSONObject("plateEquipment"));
             if(settings.getInt("rest")<0||settings.getInt("rest")>1800)throw new JSONException("Invalid rest");
             if(settings.getInt("vibrationMs")<0||settings.getInt("vibrationMs")>2000)throw new JSONException("Invalid vibration");
@@ -103,6 +113,7 @@ final class WorkoutStore {
         return size>=.01&&size<=2500;
     }
     private static void validateSchedule(JSONObject schedule)throws JSONException {
+        if(schedule.has("trackingFrom"))number(schedule,"trackingFrom",0,200000);
         switch(schedule.getString("mode")) {
             case "off": return;
             case "interval":
@@ -135,6 +146,12 @@ final class WorkoutStore {
             text(row,"name",160);
             if(!Arrays.asList("lb","kg").contains(row.getString("unit")))throw new JSONException("Invalid unit");
             number(row,"weight",0,5000);number(row,"rest",0,1800);
+            if(row.has("progressionIncrement"))number(row,"progressionIncrement",0,5000);
+            if(row.has("progressionReduced"))row.getBoolean("progressionReduced");
+            if(row.has("doubleProgression")){
+                JSONObject suggestion=row.getJSONObject("doubleProgression");
+                number(suggestion,"weight",0,5000);number(suggestion,"extra",.01,5000);
+            }
             if(row.optString("notes").length()>20000)throw new JSONException("Notes too long");
             JSONArray sets=row.getJSONArray("sets");
             repTargets(sets);

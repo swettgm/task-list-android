@@ -132,6 +132,19 @@ dialog.plate-editor{
 .plate-add{display:grid;grid-template-columns:minmax(0,1fr) 86px;align-items:end;gap:10px;margin-top:12px}
 .plate-add button{min-height:42px}
 .plate-add+.error{margin-top:6px}
+.progress summary{display:flex;align-items:center;gap:6px;list-style:none}
+.progress summary::-webkit-details-marker{display:none}
+.progress summary svg{width:16px;height:16px;transform:rotate(-90deg)}
+.progress[open] summary svg{transform:none}
+.field-heading{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
+.number-tools{display:inline-flex;flex:none;align-items:center;gap:2px}
+.number-tools button,.textarea-grip{min-height:28px;width:28px;min-width:28px;padding:0;border:0;font-size:17px;background:transparent;color:var(--muted)}
+.number-tools svg,.textarea-grip svg{width:17px;height:17px;stroke-width:2.2}
+.vertical-grip{touch-action:none;cursor:ns-resize;user-select:none}
+[data-number-mode=drag] .number-step,[data-number-mode=buttons] .number-grip,[data-number-mode=keyboard] .number-tools{display:none}
+.textarea-entry{position:relative}
+.textarea-entry textarea{display:block;resize:none;padding-bottom:28px}
+.textarea-grip{position:absolute;right:4px;bottom:3px}
 </style>
 </head>
 <body>
@@ -165,6 +178,7 @@ const clone=value=>JSON.parse(JSON.stringify(value));
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
 const paths={back:'m15 5-7 7 7 7',music:'M9 18V5l11-2v13M9 8l11-2M9 18a3 3 0 1 1-3-3M20 16a3 3 0 1 1-3-3',play:'M8 5v14l11-7Z',pause:'M6 5h4v14H6ZM14 5h4v14h-4Z',prev:'M4 5h3v14H4ZM19 5v14L8 12Z',next:'M17 5h3v14h-3ZM5 5l11 7-11 7Z',gear:'M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16',plus:'M12 5v14M5 12h14',routinePlus:'M12 2v20M2 12h20',pencil:'M4 20l4-1L21 6l-4-4L4 15ZM14 5l4 4',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',chevron:'m5 9 7 7 7-7',close:'m6 6 12 12M6 18 18 6'};
 paths.calculator='M6 2h12a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1ZM8 6h8M9 11h.01M15 11h.01M9 15h.01M15 15h.01M9 19h.01M15 19h.01';
+paths.grip='M6 8h12M6 12h12M6 16h12';
 function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(svg.namespaceURI,'path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');path.setAttribute('d',paths[name]);svg.append(path);return svg;}
 function button(label,action,cls=''){const node=el('button',cls,label);node.type='button';node.onclick=action;return node;}
 function id(){return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);}
@@ -198,7 +212,7 @@ function theme(){const s=state.settings;for(const key of ['top','bottom','text']
 function modal(title,{onClose,focus,className}={}){
 const replace=closeDialog;
 if(replace)replace(false,true);
-const panel=$(view),oldY=panel.scrollTop,dialog=el('dialog',className),heading=el('h2','',title),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');dialog.setAttribute('aria-label',title);error.setAttribute('role','alert');dialog.append(heading,fields,error,actions);document.body.append(dialog);if(!replace)native?.setModalOpen(true);
+const panel=$(view),oldY=panel.scrollTop,dialog=el('dialog',className),heading=el('h2','',title),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');dialog.dataset.numberMode=state.settings.numberMode??'drag';dialog.setAttribute('aria-label',title);error.setAttribute('role','alert');dialog.append(heading,fields,error,actions);document.body.append(dialog);if(!replace)native?.setModalOpen(true);
 let keyboardUsed=false;
 dialog.addEventListener('focusin',event=>{
  if(event.target.matches('input[type=text],input[type=number],textarea'))keyboardUsed=true;
@@ -226,6 +240,7 @@ function settingsScreen(){
  if(closeDialog)closeDialog(false);
  const panel=$(view),oldY=panel.scrollTop,screen=el('section','settings-screen'),header=el('header'),back=button('',()=>close(),'icon bare'),heading=el('h1','','Settings'),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');
  screen.id='settings-screen';screen.setAttribute('aria-label','Settings');
+ screen.dataset.numberMode=state.settings.numberMode??'drag';
  back.append(icon('back'));back.setAttribute('aria-label','Back to Exercise');
  error.setAttribute('role','alert');header.append(back,heading);screen.append(header,fields,error,actions);
  document.body.append(screen);$('app').hidden=true;$('spotify').hidden=true;$('rest').hidden=true;
@@ -244,10 +259,103 @@ const showInput=()=>{
  });
 };
 input.addEventListener('focus',showInput);input.addEventListener('click',showInput);
-container.addEventListener('pointerup',()=>{input.focus({preventScroll:true});showInput();});
+container.addEventListener('pointerup',event=>{
+ if(event.target.closest('button'))return;
+ input.focus({preventScroll:true});showInput();
+});
 }
-function field(parent,label,type,value=''){const wrap=el('label','field');wrap.append(el('span','',label));const input=el(type==='textarea'?'textarea':'input');if(type!=='textarea')input.type=type;input.value=value;input.setAttribute('aria-label',label);keyboardFocus(input,wrap);wrap.append(input);parent.append(wrap);return input;}
-function numberField(parent,label,value,min,max,step=1){const input=field(parent,label,'number',value);input.min=min;input.max=max;input.step=step;input.inputMode=step===1?'numeric':'decimal';return input;}
+function verticalDrag(control,start,move){
+ let drag=null;
+ control.addEventListener('pointerdown',event=>{
+  if(event.isPrimary===false||event.button!==0||control.disabled)return;
+  drag={id:event.pointerId,y:event.clientY,value:start()};
+  control.setPointerCapture(event.pointerId);
+  event.preventDefault();
+ });
+ control.addEventListener('pointermove',event=>{
+  if(drag?.id===event.pointerId)move(drag.value,event.clientY-drag.y);
+ });
+ for(const type of ['pointerup','pointercancel','lostpointercapture']){
+  control.addEventListener(type,event=>{if(event.pointerId===drag?.id)drag=null;});
+ }
+}
+function field(parent,label,type,value=''){
+ const wrap=el('div','field'),input=el(type==='textarea'?'textarea':'input');
+ wrap.append(el('span','',label));
+ if(type==='textarea'){
+  const entry=el('div','textarea-entry'),grip=button('',null,'textarea-grip vertical-grip');
+  grip.append(icon('grip'));grip.setAttribute('aria-label','Resize '+label);
+  const getHeight=()=>input.getBoundingClientRect().height;
+  const resize=(height,dy)=>input.style.height=Math.max(80,Math.min(260,height+dy))+'px';
+  verticalDrag(grip,getHeight,resize);
+  grip.onkeydown=event=>{
+   if(event.key!=='ArrowUp'&&event.key!=='ArrowDown')return;
+   event.preventDefault();resize(getHeight(),event.key==='ArrowDown'?16:-16);
+  };
+  entry.append(input,grip);wrap.append(entry);
+ }else{input.type=type;wrap.append(input);}
+ input.value=value;input.setAttribute('aria-label',label);
+ keyboardFocus(input,wrap);parent.append(wrap);return input;
+}
+function numberControls(input,heading,{repTargets=false}={}){
+ const label=input.getAttribute('aria-label'),tools=el('span','number-tools');
+ const read=()=>input.value||(input.classList.contains('hint-on-focus')?input.placeholder:input.dataset.numericFallback??'');
+ function change(value,steps){
+  if(input.disabled||!steps)return;
+  const step=state.settings.numericStep??1;
+  const integer=repTargets||input.step==='1';
+  const units=input.type==='range'?Math.max(1,Math.round(step))*Number(input.step||1)
+   :integer?Math.max(1,Math.round(step)):step;
+  let result;
+  if(repTargets){
+   const sets=parseRepTargets(value);
+   if(!sets)return;
+   for(const set of sets)set.target=Math.max(1,Math.min(100,set.target+steps*units));
+   result=repTargetsText(sets);
+  }else{
+   if(input.validity.badInput)return;
+   const before=value===''?Math.max(0,Number(input.min)):Number(value);
+   const amount=Math.max(Number(input.min),Math.min(Number(input.max),before+steps*units));
+   result=String(Math.round(amount*100)/100);
+  }
+  if(result===input.value)return;
+  input.value=result;
+  input.dispatchEvent(new Event('input',{bubbles:true}));
+  if(input.type==='range')input.dispatchEvent(new Event('change',{bubbles:true}));
+  haptic();
+ }
+ const grip=button('',event=>{if(event.detail===0)change(read(),1);},'number-grip vertical-grip');
+ grip.setAttribute('aria-label','Drag to adjust '+label);
+ grip.append(icon('grip'));
+ grip.onkeydown=event=>{
+  if(event.key!=='ArrowUp'&&event.key!=='ArrowDown')return;
+  event.preventDefault();change(read(),event.key==='ArrowUp'?1:-1);
+ };
+ verticalDrag(grip,()=>({value:read(),initial:input.value}),(start,dy)=>{
+  const steps=-Math.trunc(dy/12);
+  if(steps)change(start.value,steps);
+  else if(input.value!==start.initial){
+   input.value=start.initial;
+   input.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+ });
+ const minus=button('−',()=>change(read(),-1),'number-step'),plus=button('+',()=>change(read(),1),'number-step');
+ minus.setAttribute('aria-label','Decrease '+label);plus.setAttribute('aria-label','Increase '+label);
+ if(input.type!=='range')tools.append(grip);
+ tools.append(minus,plus);heading.append(tools);
+ return tools;
+}
+function adjustableField(input,options){
+ const label=input.parentElement.firstElementChild,heading=el('span','field-heading');
+ label.replaceWith(heading);heading.append(label);numberControls(input,heading,options);
+ return input;
+}
+function numberField(parent,label,value,min,max,step=1){
+ const input=field(parent,label,'number',value);
+ input.min=min;input.max=max;input.step=step;input.inputMode=step===1?'numeric':'decimal';
+ return adjustableField(input);
+}
+function setsField(parent,sets){return adjustableField(field(parent,'Sets/Reps','text',repTargetsText(sets)),{repTargets:true});}
 function hintOnFocus(input,update=()=>{}){
  let previous=input.value;
  input.classList.add('hint-on-focus');
@@ -301,6 +409,16 @@ const dayMs=86400000;
 function localDay(date){
  return Math.floor(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())/dayMs);
 }
+function sameTrainingSchedule(left,right){
+ if(left?.mode!==right.mode)return false;
+ if(right.mode==='weekdays')return left.days.join()===right.days.join();
+ return right.mode==='off'||left.every===right.every;
+}
+function isTrainingDay(schedule,day){
+ return schedule.mode==='weekdays'
+  ?schedule.days.includes(new Date(day*dayMs).getUTCDay())
+  :(day-schedule.anchor)%schedule.every===0;
+}
 function routineSlots(today){
  const schedule=state.settings.schedule,routines=state.routines;
  const unscheduled=()=>routines.map(routine=>({routine,day:null}));
@@ -312,9 +430,7 @@ function routineSlots(today){
  }
  const startIndex=latest?(state.routines.findIndex(r=>r.id===latest.routineId)+1)%state.routines.length:0;
  let day=Math.max(todayDay,latest?localDay(new Date(latest.finishedAt))+1:todayDay);
- const isScheduled=schedule.mode==='weekdays'
-  ?candidate=>schedule.days.includes(new Date(candidate*dayMs).getUTCDay())
-  :candidate=>(candidate-schedule.anchor)%schedule.every===0;
+ const isScheduled=day=>isTrainingDay(schedule,day);
  const slots=[];
  const count=Math.max(routines.length,schedule.mode==='weekdays'?schedule.days.length:0);
  for(let i=0;i<count;i++){
@@ -470,7 +586,7 @@ function exercisePlanFields(m,original){
  weight.setAttribute('aria-describedby',suffix.id);
  weight.before(entry);entry.append(weight,suffix);
  const readWeight=hintOnFocus(weight,()=>weight.style.setProperty('--weight-length',String(Math.max(1,(weight.value||weight.placeholder).length))));
- const targets=field(pair,'Sets/Reps','text',repTargetsText(original?.sets??state.settings.defaultRepTargets??DEFAULT_REP_TARGETS));
+ const targets=setsField(pair,original?.sets??state.settings.defaultRepTargets??DEFAULT_REP_TARGETS);
  const readTargets=hintOnFocus(targets);
  const hint=el('p','exercise-rep-hint small muted','+ ➜ AMRAP | 5, 5, 5+ ➜ 2 regular sets + 1 AMRAP.');
  hint.id='exercise-rep-hint';targets.setAttribute('aria-describedby',hint.id);
@@ -521,12 +637,21 @@ function editExercise(routineId,exerciseId=null){
  const original=source.exercises.find(e=>e.id===exerciseId),m=modal(original?'Edit exercise':'Add exercise');
  const name=field(m.fields,'Exercise','text',original?.name||'');name.maxLength=160;
  const readPlan=exercisePlanFields(m,original);
- const rest=numberField(m.fields,'Rest in seconds',original?.rest??state.settings.rest,0,1800),note=field(m.fields,'Notes','textarea',original?.notes||'');
+ const rest=numberField(m.fields,'Rest in seconds',original?.rest??state.settings.rest,0,1800);
+ const unit=original?.unit||state.settings.unit||'lb';
+ const increment=numberField(m.fields,'Progression per workout ('+unit+')',original?.progressionIncrement??'',0,5000,.01);
+ increment.placeholder=String(defaultProgression(state.settings,unit));
+ increment.dataset.numericFallback=increment.placeholder;
+ const note=field(m.fields,'Notes','textarea',original?.notes||'');
  note.maxLength=20000;
 if(original)m.actions.append(deleteButton('exercise',()=>{if(active?.exercises.find(e=>e.id===exerciseId)?.sets.some(hasLoggedReps)){m.error.textContent='This exercise has logged sets. Clear them before removing it.';return;}if(save(next=>{const r=next.routines.find(r=>r.id===routineId);if(r)r.exercises=r.exercises.filter(e=>e.id!==exerciseId);const live=liveRoutine(next,routineId);if(live)live.exercises=live.exercises.filter(e=>e.id!==exerciseId);},m.error)){m.close();render();}}));
-cancelSave(m,()=>{const plan=readPlan(),restValue=Number(rest.value);if(!name.value.trim()||!plan||!Number.isInteger(restValue)||restValue<0||restValue>1800){m.error.textContent='Enter a name, 1–20 sets of 1–100 reps, a valid weight and rest time.';return;}if(active&&original&&original.sets.some((s,i)=>i>=plan.sets.length&&hasLoggedReps(s))){m.error.textContent='Keep all logged sets, or clear them first.';return;}
-const {weight,unit,sets}=plan;
+cancelSave(m,()=>{const plan=readPlan(),restValue=Number(rest.value);if(!name.value.trim()||!plan||!Number.isInteger(restValue)||restValue<0||restValue>1800){m.error.textContent='Enter a name, 1–20 sets of 1–100 reps, a valid weight and rest time.';return;}if(!increment.validity.valid){m.error.textContent='Enter a valid progression weight or leave it blank to use Settings.';return;}if(active&&original&&original.sets.some((s,i)=>i>=plan.sets.length&&hasLoggedReps(s))){m.error.textContent='Keep all logged sets, or clear them first.';return;}
+const {weight,sets}=plan;
 const valueExercise={id:original?.id||id(),name:name.value.trim(),weight,unit,rest:restValue,notes:note.value,sets:sets.map(set=>({...set,weight,reps:null}))};
+if(increment.value!=='')valueExercise.progressionIncrement=increment.valueAsNumber;
+if(original?.doubleProgression&&original.weight===weight&&original.progressionIncrement===valueExercise.progressionIncrement){
+ valueExercise.doubleProgression=original.doubleProgression;
+}
 if(save(next=>{const r=next.routines.find(r=>r.id===routineId);if(r){const index=r.exercises.findIndex(e=>e.id===valueExercise.id);if(index<0)r.exercises.push(clone(valueExercise));else r.exercises[index]=clone(valueExercise);}const session=liveRoutine(next,routineId);if(session){const index=session.exercises.findIndex(e=>e.id===valueExercise.id);const live=clone(valueExercise);if(index>=0)live.sets=live.sets.map((set,i)=>hasLoggedReps(original.sets[i])?{...set,reps:original.sets[i].reps,weight:original.sets[i].weight}:set);if(index<0)session.exercises.push(live);else session.exercises[index]=live;}},m.error)){m.close();render();}},original?'Save':'Add');}
 const PLATE_SIZES={lb:[55,45,35,25,15,10,5,2.5,1.25],kg:[25,20,15,10,5,2.5,1.25,1]};
 const GYM_PLATES={lb:[45,35,25,10,5,2.5],kg:[25,20,15,10,5,2.5,1.25]};
@@ -550,10 +675,10 @@ function equipmentFields(parent,unit,expanded=false){
    const row=el('div','plate-inventory-row'),label=el('div','row plate-inventory-label');
    const checked=checkbox(label,size+' '+key,available),count=el('input');
    count.type='number';count.min=0;count.max=10000;count.inputMode='numeric';
+   count.step=1;
    count.value=savedCount??'';count.placeholder='Count';count.disabled=!available;
    count.setAttribute('aria-label','Count for '+size+' '+key+' plates');
    keyboardFocus(count,count);
-   checked.addEventListener('change',()=>count.disabled=!checked.checked);
    if(custom){
     const remove=button('',()=>{
      entries.delete(size);
@@ -564,6 +689,9 @@ function equipmentFields(parent,unit,expanded=false){
     remove.setAttribute('aria-label','Remove custom '+size+' '+key+' plate');
     label.append(remove);
    }
+   const controls=numberControls(count,label);
+   const updateAvailability=()=>controls.hidden=count.disabled=!checked.checked;
+   checked.addEventListener('change',updateAvailability);updateAvailability();
    row.append(label,count);rows.append(row);
    entries.set(size,{size,custom,checked,count});
   }
@@ -764,7 +892,119 @@ function editPlateEquipment(selectedUnit,onClose){
   if(save(next=>next.settings.plateEquipment=equipment,m.error))m.close();
  });
 }
-function start(routineId,scheduledDay){const source=state.routines.find(r=>r.id===routineId);if(state.active||!source?.exercises.length)return;if(save(next=>{if(next.active)throw Error('Workout already active');next.active={id:id(),routineId:source.id,scheduledDay,name:source.name,startedAt:Date.now(),finishedAt:0,notes:'',exercises:clone(source.exercises).map(e=>({...e,sets:e.sets.map(s=>({...s,reps:null}))}))};next.restEndAt=0;})){haptic();render();}}
+function defaultProgression(settings,unit){return settings.progression?.[unit]??(unit==='kg'?2.5:5);}
+function setPlanWeight(exercise,weight){
+ exercise.weight=Math.max(0,Math.min(5000,Math.round(weight*100)/100));
+ for(const set of exercise.sets)set.weight=exercise.weight;
+}
+function metTargets(exercise){return exercise.sets.every(set=>hasLoggedReps(set)&&set.reps>=set.target);}
+function progressWorkout(data,session){
+ if(data.settings.autoProgression===false)return;
+ const routine=data.routines.find(item=>item.id===session.routineId);
+ if(!routine)return;
+ const attempted=new Set(session.exercises.filter(exercise=>exercise.sets.some(hasLoggedReps)).map(exercise=>exercise.id));
+ const previous=new Map();
+ const failed=new Set(session.exercises.filter(exercise=>attempted.has(exercise.id)&&!metTargets(exercise)).map(exercise=>exercise.id));
+ for(const workout of data.history){
+  if(previous.size===failed.size)break;
+  if(workout.routineId!==session.routineId)continue;
+  for(const exercise of workout.exercises){
+   if(failed.has(exercise.id)&&!previous.has(exercise.id)&&exercise.sets.some(hasLoggedReps)){
+    previous.set(exercise.id,exercise);
+   }
+  }
+ }
+ for(const exercise of session.exercises){
+  if(!attempted.has(exercise.id))continue;
+  const stored=routine.exercises.find(entry=>entry.id===exercise.id);
+  if(!stored||stored.weight!==exercise.weight||stored.unit!==exercise.unit)continue;
+  delete stored.doubleProgression;
+  const earnedIncrease=metTargets(exercise);
+  const increase=stored.progressionIncrement??defaultProgression(data.settings,stored.unit);
+  if(earnedIncrease){
+   setPlanWeight(stored,exercise.weight+increase);
+  }else{
+   const last=previous.get(exercise.id);
+   if(last&&!last.progressionReduced&&!metTargets(last)){
+    setPlanWeight(stored,exercise.weight*.9);
+    exercise.progressionReduced=true;
+   }
+  }
+  if(exercise.sets.some(set=>set.amrap&&set.reps>=set.target*2)){
+   const extra=Math.min(5000-stored.weight,increase*(earnedIncrease?1:2));
+   if(extra>=.01)stored.doubleProgression={weight:stored.weight,extra};
+  }
+ }
+}
+function missedTraining(data){
+ const schedule=data.settings.schedule;
+ if(!schedule||schedule.mode==='off')return null;
+ const today=localDay(new Date());
+ const last=data.history.find(workout=>completed(workout)>0);
+ const lastDay=last?localDay(new Date(last.finishedAt)):null;
+ const tracked=schedule.trackingFrom??lastDay??schedule.anchor??today;
+ const from=Math.max(tracked,schedule.anchor??tracked,lastDay===null?tracked:lastDay+1);
+ if(data.missedDeloadFrom===from)return null;
+ let count=0;
+ for(let day=from;day<today;day++)if(isTrainingDay(schedule,day))count++;
+ return count>=3?{from,count}:null;
+}
+function start(routineId,scheduledDay){
+ const source=state.routines.find(routine=>routine.id===routineId);
+ if(state.active||!source?.exercises.length)return;
+ const missed=missedTraining(state),suggestions=source.exercises.filter(exercise=>
+  state.settings.autoProgression!==false&&exercise.doubleProgression?.weight===exercise.weight);
+ function launch(m,deload=0,doubled=new Set()){
+  if(save(next=>{
+   const routine=next.routines.find(item=>item.id===routineId);
+   if(next.active||!routine?.exercises.length)throw Error('Workout changed');
+   if(missed)next.missedDeloadFrom=missed.from;
+   if(deload){
+    for(const plan of next.routines)for(const exercise of plan.exercises){
+     setPlanWeight(exercise,exercise.weight*(100-deload)/100);
+     delete exercise.doubleProgression;
+    }
+   }else{
+    for(const exercise of routine.exercises){
+     const suggestion=exercise.doubleProgression;
+     if(doubled.has(exercise.id)&&suggestion?.weight===exercise.weight)setPlanWeight(exercise,exercise.weight+suggestion.extra);
+     delete exercise.doubleProgression;
+    }
+   }
+   next.active={id:id(),routineId:routine.id,scheduledDay,name:routine.name,startedAt:Date.now(),finishedAt:0,notes:'',
+    exercises:clone(routine.exercises).map(exercise=>({...exercise,sets:exercise.sets.map(set=>({...set,reps:null}))}))};
+   next.restEndAt=0;
+  },m?.error)){m?.close();haptic();render();}
+ }
+ if(!missed&&!suggestions.length){launch();return;}
+ const m=modal('Before you start');
+ let applyDeload,percentage;
+ const choices=[];
+ if(missed){
+  m.fields.append(el('p','small muted','You missed '+missed.count+' scheduled workouts in a row.'));
+  applyDeload=checkbox(m.fields,'Deload all workouts',false);
+  const label=el('div','field'),row=el('div','slider-row'),value=el('output');
+  percentage=el('input');percentage.type='range';percentage.min=1;percentage.max=100;percentage.value=10;
+  percentage.setAttribute('aria-label','Deload percentage');
+  const update=()=>value.textContent=percentage.value+'%';
+  percentage.addEventListener('input',update);update();
+  const heading=el('span','field-heading');heading.append(el('span','','Deload percentage'));numberControls(percentage,heading);
+  row.append(percentage,value);label.append(heading,row);m.fields.append(label);
+ }
+ if(suggestions.length){
+  m.fields.append(el('h3','','Double progression after AMRAP'));
+  for(const exercise of suggestions){
+   const extra=displayWeight(Math.min(5000,exercise.weight+exercise.doubleProgression.extra));
+   const use=checkbox(m.fields,exercise.name+' · '+extra+' '+exercise.unit,false);
+   choices.push({use,id:exercise.id});
+  }
+  if(applyDeload)applyDeload.addEventListener('change',()=>{
+   for(const {use} of choices)use.disabled=applyDeload.checked;
+  });
+ }
+ cancelSave(m,()=>launch(m,applyDeload?.checked?Number(percentage.value):0,
+  new Set(choices.filter(({use})=>use.checked).map(({id})=>id))),'Start workout');
+}
 function repLimit(set){return set.amrap?100:set.target;}
 function repLabel(set,reps){
  return reps==null?String(set.target)+(set.amrap?'+':''):String(reps);
@@ -836,6 +1076,7 @@ function endWorkout(sessionId,m=null,notes=null){
   if(notes!==null){
    next.active.finishedAt=Date.now();
    next.active.notes=notes;
+   progressWorkout(next,next.active);
    next.history.unshift(next.active);
   }
   next.active=null;
@@ -857,6 +1098,7 @@ function finish(){
    button('Log as blank',()=>endWorkout(session.id,m,session.notes??''),'primary'));
   return;
  }
+ if(state.settings.promptWorkoutNotes===false){endWorkout(session.id,null,session.notes??'');return;}
  const m=modal('Finish workout');
  m.fields.append(el('p','muted small',logged+'/'+total(session)+' sets logged'));
  const note=field(m.fields,'Workout notes','textarea',session.notes);
@@ -905,7 +1147,7 @@ function renderProgress(){
  if(!state.history.length)return;
  const details=el('details','progress');
  details.open=wasOpen??true;
- details.append(el('summary','','Progress'));
+ const summary=el('summary');summary.append(icon('chevron'),el('span','','Progress'));details.append(summary);
  const records=new Map();
  const sessions=[...state.history].sort((a,b)=>a.finishedAt-b.finishedAt);
  for(const session of sessions){
@@ -937,7 +1179,7 @@ function renderProgress(){
 }
 function historyDetail(sessionId){const session=state.history.find(s=>s.id===sessionId),m=modal(session.name);m.fields.append(el('p','small muted',dateText(session.finishedAt)+' · '+Math.max(1,Math.round((session.finishedAt-session.startedAt)/60000))+' min'));for(const ex of session.exercises){const block=el('div','history-exercise'),sets=el('div','history-sets');block.append(el('strong','',ex.name));for(const [i,set]of ex.sets.entries())sets.append(el('div','',(i+1)+'. '+(set.reps||0)+' reps'+(hasLoggedReps(set)?' · '+set.weight+' '+ex.unit:'')));block.append(sets);m.fields.append(block);}const note=field(m.fields,'Workout notes','textarea',session.notes);note.maxLength=20000;m.actions.append(deleteButton('workout',()=>{if(save(next=>next.history=next.history.filter(s=>s.id!==sessionId),m.error)){m.close();render();}}));cancelSave(m,()=>{if(save(next=>next.history.find(s=>s.id===sessionId).notes=note.value,m.error)){m.close();render();}});}
 function restVibrationSlider(parent,label,value,max,step){
- const wrap=el('label','field'),row=el('div','slider-row'),slider=el('input'),output=el('output');
+ const wrap=el('div','field'),row=el('div','slider-row'),slider=el('input'),output=el('output');
  slider.type='range';
  slider.min=0;
  slider.max=max/1000;
@@ -949,17 +1191,30 @@ function restVibrationSlider(parent,label,value,max,step){
  slider.onchange=()=>native?.previewVibration(Math.round(Number(slider.value)*1000));
  update();
  row.append(slider,output);
- wrap.append(el('span','',label),row);
+ const heading=el('span','field-heading');heading.append(el('span','',label));numberControls(slider,heading);
+ wrap.append(heading,row);
  parent.append(wrap);
  return slider;
 }
 function settings(){const m=settingsScreen(),draft=clone(state.settings);const spotify=checkbox(m.fields,'Spotify player',draft.spotify!==false);const floating=checkbox(m.fields,'Floating rest timer',draft.floatingTimer!==false);if(native)m.fields.append(button('Connect Spotify controls',()=>native.spotifyAccess()));
+const promptNotes=checkbox(m.fields,'Prompt for workout notes',draft.promptWorkoutNotes!==false);
 const defaults=el('section','defaults-section'),grid=el('div','two'),defaultsHeading=el('h3','','Defaults');
 defaultsHeading.id='defaults-heading';defaults.setAttribute('aria-labelledby',defaultsHeading.id);
 defaults.append(defaultsHeading,grid);m.fields.append(defaults);
 const readDefaultWeight=hintOnFocus(numberField(grid,'Weight',draft.defaultWeight??0,0,5000,.25));
-const readDefaultReps=hintOnFocus(field(grid,'Sets/Reps','text',repTargetsText(draft.defaultRepTargets??DEFAULT_REP_TARGETS)));
+const readDefaultReps=hintOnFocus(setsField(grid,draft.defaultRepTargets??DEFAULT_REP_TARGETS));
 const unit=selectField(grid,'Unit',WEIGHT_UNITS,draft.unit),rest=numberField(grid,'Rest (seconds)',draft.rest,0,1800);
+const numberModes=['Drag handles','− and + buttons','Keyboard only'];
+const numberModeKeys=['drag','buttons','keyboard'];
+const numberMode=selectField(m.fields,'Number controls',numberModes,numberModes[numberModeKeys.indexOf(draft.numberMode??'drag')]);
+const numericStep=numberField(m.fields,'Number adjustment step',draft.numericStep??1,.01,5000,.01);
+numberMode.addEventListener('change',()=>m.dialog.dataset.numberMode=numberModeKeys[numberMode.selectedIndex]);
+m.fields.append(el('h3','','Progression'));
+const autoProgression=checkbox(m.fields,'Automatic weight progression',draft.autoProgression!==false);
+const progressionFields=el('div','two');
+const pounds=numberField(progressionFields,'Increase (lb)',defaultProgression(draft,'lb'),0,5000,.01);
+const kilos=numberField(progressionFields,'Increase (kg)',defaultProgression(draft,'kg'),0,5000,.01);
+m.fields.append(progressionFields);
 const equipment=el('section','defaults-section'),equipmentHeading=el('h3','','Plate calculator');
 equipmentHeading.id='plate-equipment-heading';equipment.setAttribute('aria-labelledby',equipmentHeading.id);
 equipment.append(equipmentHeading);m.fields.append(equipment);
@@ -976,8 +1231,8 @@ else overlay.closest('label').hidden=true;
 const countdownOptions=['Off','Last 3 seconds','Last 5 seconds'];
 const countdown=selectField(m.fields,'Rest countdown',countdownOptions,draft.countdownSeconds===5?countdownOptions[2]:draft.countdownSeconds===0?countdownOptions[0]:countdownOptions[1]);
 const headphones=checkbox(m.fields,'Headphone countdown and finish beeps',draft.headphoneCues!==false);
-const volumeField=el('label','field');
-const volumeLabel=el('span','','Rest beep volume');
+const volumeField=el('div','field');
+const volumeLabel=el('span','field-heading');volumeLabel.append(el('span','','Rest beep volume'));
 const volumeRow=el('div','slider-row');
 const cueVolume=el('input');
 cueVolume.type='range';
@@ -986,6 +1241,7 @@ cueVolume.min=0;
 cueVolume.max=100;
 cueVolume.step=1;
 cueVolume.value=draft.restCueVolume??40;
+numberControls(cueVolume,volumeLabel);
 const volumeValue=el('output');
 const showVolume=()=>volumeValue.textContent=cueVolume.value+'%';
 cueVolume.addEventListener('input',showVolume);
@@ -995,8 +1251,8 @@ volumeField.append(volumeLabel,volumeRow);
 m.fields.append(volumeField);
 const pulses=restVibrationSlider(m.fields,'Countdown pulse length',draft.countdownVibrationMs??80,500,.01);
 const slider=restVibrationSlider(m.fields,'Finish vibration length',draft.vibrationMs,2000,.05);
-pulses.closest('label').hidden=countdown.selectedIndex===0;
-countdown.onchange=()=>{pulses.closest('label').hidden=countdown.selectedIndex===0;};
+pulses.closest('.field').hidden=countdown.selectedIndex===0;
+countdown.onchange=()=>{pulses.closest('.field').hidden=countdown.selectedIndex===0;};
 if(typeof native?.previewRestSequence==='function'){
  const preview=el('div','row');
  const status=el('span','small muted');
@@ -1036,7 +1292,7 @@ m.fields.append(daysPanel);
 const every=numberField(m.fields,'Train every (days)',oldSchedule?.every??3,1,30);
 function showScheduleFields(){
  daysPanel.hidden=mode.selectedIndex!==1;
- every.closest('label').hidden=mode.selectedIndex!==2;
+ every.closest('.field').hidden=mode.selectedIndex!==2;
 }
 mode.onchange=showScheduleFields;
 showScheduleFields();
@@ -1051,13 +1307,43 @@ cancelSave(m,()=>{
  const schedule=mode.selectedIndex===1?{mode:'weekdays',days:selectedDays}:mode.selectedIndex===2
   ?{mode:'interval',every:interval,anchor:oldSchedule?.mode==='interval'&&oldSchedule.every===interval?oldSchedule.anchor:localDay(new Date())}
   :{mode:'off'};
+ if(schedule.mode!=='off'){
+  const today=localDay(new Date()),last=state.history.find(workout=>completed(workout)>0);
+  schedule.trackingFrom=sameTrainingSchedule(oldSchedule,schedule)
+   ?oldSchedule.trackingFrom??(last?localDay(new Date(last.finishedAt)):oldSchedule.anchor??today)
+   :today;
+ }
  const defaultWeightText=readDefaultWeight(),defaultWeight=Number(defaultWeightText);
  const defaultRepTargets=parseRepTargets(readDefaultReps());
  if(defaultWeightText===''||!Number.isFinite(defaultWeight)||defaultWeight<0||defaultWeight>5000){m.error.textContent='Choose a default weight from 0 to 5000.';return;}
  if(!defaultRepTargets){m.error.textContent='Enter 1–20 default sets of 1–100 reps.';return;}
  const {equipment:plateEquipment,error}=readEquipment();
  if(error){m.error.textContent=error;return;}
- const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,defaultWeight,defaultRepTargets,plateEquipment,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,restCueVolume:Number(cueVolume.value),schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){m.close();theme();render();if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);else if(notify.checked&&!draft.notifications)native?.requestNotifications();}});}
+ if([numericStep,pounds,kilos].some(input=>!input.validity.valid||!Number.isFinite(input.valueAsNumber))){
+  m.error.textContent='Enter valid number and progression increments.';
+  return;
+ }
+ const seconds=Number(rest.value);
+ if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){
+  m.error.textContent='Choose a rest time from 0 to 1800 seconds.';
+  return;
+ }
+ const preferences={
+  ...draft,unit:unit.value,defaultWeight,defaultRepTargets,plateEquipment,rest:seconds,
+  notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,
+  vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],
+  countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,restCueVolume:Number(cueVolume.value),
+  schedule,numberMode:numberModeKeys[numberMode.selectedIndex],numericStep:numericStep.valueAsNumber,
+  promptWorkoutNotes:promptNotes.checked,autoProgression:autoProgression.checked,
+  progression:{lb:pounds.valueAsNumber,kg:kilos.valueAsNumber},gradient:gradient.checked,
+  ...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))
+ };
+ if(save(next=>next.settings=preferences,m.error)){
+  m.close();theme();render();
+  if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);
+  else if(notify.checked&&!draft.notifications)native?.requestNotifications();
+ }
+});}
 let inferredTimer={end:0,length:1},timerDrag=null,suppressTimerClick=0;
 let nativeOverlayVisible=false;
 function remainingText(milliseconds=state.restEndAt-Date.now()){
@@ -1067,8 +1353,7 @@ function remainingText(milliseconds=state.restEndAt-Date.now()){
 function placeTimer(){
  const width=innerWidth,height=visualViewport?.height||innerHeight,size=76,margin=8;
  const roomX=Math.max(0,width-size-margin*2),roomY=Math.max(0,height-size-margin*2);
- const saved=state.restPosition;
- const position=saved?.started===state.restStartedAt?saved:null;
+ const position=state.restPosition;
  const left=margin+(Number.isFinite(position?.x)?Math.max(0,Math.min(1,position.x))*roomX:Math.max(0,roomX-margin));
  const top=margin+(Number.isFinite(position?.y)?Math.max(0,Math.min(1,position.y))*roomY:Math.min(310,roomY*.58));
  Object.assign($('rest').style,{left:left+'px',top:top+'px',right:'auto',bottom:'auto'});

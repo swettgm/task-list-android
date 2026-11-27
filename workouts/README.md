@@ -1,8 +1,8 @@
 # Exercise
 
-Each rest timer starts a little lower on the right side, clear of the dismissal zone. Dragging changes its position for that rest. Clearing a set cancels its rest timer. Drag the floating timer onto the X to hide it for the current set. The X appears when you drag the timer into the bottom third of the screen. Its drop zone expands and gives haptic feedback when you enter it. Use End timer in the rest notification to dismiss the current timer. The larger Spotify bar keeps the controls visible and opens Spotify when tapped while idle.
+The rest timer remembers its last position across workouts and app restarts. Clearing a set cancels its rest timer. Drag the floating timer onto the X to hide it for the current set. The X appears when you drag the timer into the bottom third of the screen. Its drop zone expands and gives haptic feedback when you enter it. Use End timer in the rest notification to dismiss the current timer. The larger Spotify bar keeps the controls visible and opens Spotify when tapped while idle.
 
-[Download Exercise 1.0.36](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.36.apk) for Android 8 or later. This updates Workouts and keeps its saved workouts and history.
+[Download Exercise 1.0.37](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.37.apk) for Android 8 or later. This updates Workouts and keeps its saved workouts and history.
 
 An offline workout logger in the blue-grey gradient and white-control theme shared with Tasks, RM and Meditation. New installations start with an empty workout and history.
 
@@ -11,8 +11,10 @@ An offline workout logger in the blue-grey gradient and white-control theme shar
 - Tap a circle to log target reps; each further tap reduces reps through zero. One more tap clears the set, and the next tap returns to target reps. Drag below zero to clear a circle. Each saved change restarts the full rest timer.
 - Use a + target such as 5+ for an AMRAP set. Hold any rep circle and drag up or down to select actual reps with haptics, then release to save and start rest. The circle displays the rep count as you drag. Regular sets cap reps at their target. AMRAP can go higher. Taps reduce recorded AMRAP reps in the same cycle.
 - Tap Sets/Reps or Weight in an expanded workout card to edit the plan. These changes preserve logged sets and update future sets and the saved workout. Extra sets can be added to the active workout.
-- Open the plate calculator beside the active workout percentage. It shows the target, the bar and plate weight breakdown, and the load for each side. Use the pencil to edit the exercise. The bar starts at 45 lb or 20 kg. Add custom plate weights to the inventory in Settings or the calculator. Plate counts are totals for both sides. Leave them blank for unlimited plates. The calculator shows the closest lighter load if you cannot build the target exactly.
-- Unfinished sessions survive reopening. Finish saves independent history with actual sets, weights, notes and duration. If no sets were logged, choose Log as blank or Discard. History displays blank sets as zero reps and charts the heaviest completed weight per exercise.
+- Number fields offer vertical drag handles or −/+ buttons with a shared adjustment step in Settings. Adjusting Sets/Reps changes each rep target while preserving the number of sets and AMRAP markers. Notes fields resize vertically.
+- Automatic progression updates each exercise's planned weight when every set meets its target. Choose the default rise for each unit in Settings or an override in the exercise editor. Two consecutive failed attempts reduce the planned weight by 10%. Doubling an AMRAP target offers a double increase at the next workout. After three missed scheduled workouts, the app offers a 10% deload with an adjustable percentage.
+- Open the plate calculator beside Finish. It shows the target, the bar and plate weight breakdown, and the load for each side. Use the pencil to edit the exercise. The bar starts at 45 lb or 20 kg. Add custom plate weights to the inventory in Settings or the calculator. Plate counts are totals for both sides. Leave them blank for unlimited plates. The calculator shows the closest lighter load if you cannot build the target exactly.
+- Unfinished sessions survive reopening. Finish saves independent history with actual sets, weights, notes and duration. Set whether Finish prompts for notes in Settings. If no sets were logged, choose Log as blank or Discard. History displays blank sets as zero reps and charts the heaviest completed weight per exercise.
 - Routine and exercise fields explicitly focus on touch and request the Android keyboard. The Exercise header and Today and History tabs stay visible while the content scrolls. Today lists every workout as a card. Tap a card to see its exercises and Start workout, and only the active workout shows rep circles. The plus beside Settings adds workouts. Use each pencil to rename its workout or add, edit and reorder its exercises.
 - Settings is a full screen with a borderless gear and visible Save/Cancel actions.
 - Rotate workouts by selected weekdays or a recurring interval in Settings. The weekday schedule previews at least one full week of selected training days, repeating workouts as needed.
@@ -42,6 +44,7 @@ cd workouts
 node tools/browser-smoke.mjs
 node tools/touch-input-smoke.mjs
 node tools/set-reps-smoke.mjs
+node tools/training-smoke.mjs
 ```
 
 For an update signed with the existing certificate, set WORKOUT_DEBUG_KEYSTORE and supply WORKOUT_KEYSTORE_PASSWORD, WORKOUT_KEY_ALIAS and WORKOUT_KEY_PASSWORD locally.
