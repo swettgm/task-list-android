@@ -189,7 +189,7 @@ try{
  await page.setViewportSize({width:390,height:844});
  await loadInput.fill('140');
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
- const plateHeights=()=>curlLoad().locator('.plate-group').evaluateAll(groups=>Promise.all(groups.map(async group=>{
+ const plateDimensions=()=>curlLoad().locator('.plate-group').evaluateAll(groups=>Promise.all(groups.map(async group=>{
   const image=new Image();
   image.src=group.style.backgroundImage.slice(5,-2);
   await image.decode();
@@ -198,18 +198,23 @@ try{
   const context=canvas.getContext('2d');
   context.drawImage(image,0,0);
   const {data}=context.getImageData(image.width/2,0,1,image.height);
-  let top=72,bottom=72;
+  const axis=2*parseFloat(getComputedStyle(group).getPropertyValue('--sleeve-axis'));
+  let top=axis,bottom=axis;
   while(top>0&&data[(top-1)*4+3]>128)top--;
   while(bottom<image.height&&data[bottom*4+3]>128)bottom++;
-  return (bottom-top)/2;
+  const {data:row}=context.getImageData(0,axis,image.width,1);
+  let depth=0;
+  for(let pixel=3;pixel<row.length;pixel+=4)if(row[pixel]>128)depth+=.5;
+  return {height:(bottom-top)/2,depth};
  })));
  check((await curlLoad().locator('.plate-summary').textContent())==='140 lb ➜ 45 lb bar + 95 lb in plates'&&
   (await curlLoad().locator('.plate-summary strong').textContent())==='140 lb ➜'&&
   (await curlLoad().locator('.plate-load-summary').textContent())==='47.5 lb each side · 1×45 lb + 1×2.5 lb'&&
   await curlLoad().locator('.plate-load-summary').evaluate(summary=>getComputedStyle(summary).fontWeight==='700'),
  'The bold target and per-side line use the approved breakdown format');
- const heights=await plateHeights();
- check(heights[0]===66&&heights[1]===10,'The largest plate is taller and the smallest stays visible above the sleeve');
+ const [large,small]=await plateDimensions();
+ check(large.height===70&&large.depth===13&&small.height===11&&small.depth===7,
+ 'The largest and smallest plates are taller and thinner');
  await equipmentButton().click();
  const bar=dialog().getByRole('spinbutton',{name:'Bar weight (lb)',exact:true});
  await bar.fill('40');
@@ -228,8 +233,8 @@ try{
  check(lighterLoad.includes('110 lb loaded · 30 lb short')&&lighterLoad.includes('1×35 lb')&&
   lighterLoad.includes('70 lb in plates')&&lighterLoad.includes('35 lb each side'),
  'The closest lighter load reports the plate weight actually shown on the bar');
- const [height]=await plateHeights();
- check(Math.abs(height-66*35/45)<1,'Plates scale against the biggest available plate, including an unpaired plate');
+ const [{height}]=await plateDimensions();
+ check(Math.abs(height-70*35/45)<1,'Plates scale against the biggest available plate, including an unpaired plate');
  await equipmentButton().click();
  check(await dialog().getByRole('checkbox',{name:'0.5 lb',exact:true}).count()===0&&
   await dialog().getByRole('checkbox',{name:'0.25 lb',exact:true}).count()===0,'The two smallest sizes are no longer presets');
@@ -309,6 +314,16 @@ try{
  check(await dialog().textContent().then(s=>s.includes('6 reps · 45 lb')),'Workout details display actual logged sets');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
  check(await page.locator('.progress-row').textContent().then(s=>s.includes('45 lb × 6')),'Progress uses completed sets');
+ const progress=page.locator('.progress summary');
+ await progress.click();
+ check(await progress.evaluate(summary=>{
+  const style=getComputedStyle(summary),label=summary.querySelector('span').getBoundingClientRect();
+  const title=document.querySelector('.history-card strong').getBoundingClientRect();
+  const gap=title.top-label.bottom;
+  return !summary.parentElement.open&&style.fontSize==='16px'&&style.fontWeight==='700'&&
+   style.borderBottomWidth==='1px'&&style.webkitTapHighlightColor==='rgba(0, 0, 0, 0)'&&gap>0&&gap<=22;
+ }),'The larger, bold Progress heading has a divider and a tighter gap to workout history');
+ await progress.click();
  await page.getByRole('tab',{name:'Today'}).click();
  await page.waitForFunction(()=>document.querySelector('#today-tab').getAttribute('aria-selected')==='true');
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
