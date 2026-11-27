@@ -150,18 +150,35 @@ try{
   return box(control).left>=box(text).right&&box(control.querySelector('svg')).width===parseFloat(getComputedStyle(text).fontSize);
  }),'The calculator icon sits beside the percentage at the same scale');
  await calculator.click();
+ const curlLoad=()=>dialog().getByRole('region',{name:'Barbell Curl',exact:true});
  check(await dialog().locator('.plate-card').count()===6&&
-  (await dialog().getByRole('region',{name:'Barbell Curl',exact:true}).textContent()).includes('45 lb barBar only')&&
+  await curlLoad().getByText('45 lb target · 45 lb bar',{exact:true}).isVisible()&&
+  await curlLoad().getByText('0 lb in plates',{exact:true}).isVisible()&&
+  await curlLoad().getByText('0 lb per side',{exact:true}).isVisible()&&
   (await dialog().getByRole('region',{name:'Front/Lateral Raise',exact:true}).textContent()).includes('Target is lighter than the bar.'),
- 'The plate calculator lists every exercise, starts with a 45 lb bar, and identifies targets below it');
+ 'The calculator lists every exercise, shows zero plate weight for the 45 lb bar alone, and identifies targets below it');
  await dialog().getByRole('button',{name:'Edit load for Barbell Curl'}).click();
  await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill('140');
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
- const curlLoad=()=>dialog().getByRole('region',{name:'Barbell Curl',exact:true});
- check((await curlLoad().textContent()).includes('Per side · 45 lb + 2.5 lb')&&await curlLoad().locator('.plate-stack').evaluateAll(stacks=>{
-  const heights=stacks.map(stack=>parseFloat(stack.style.getPropertyValue('--plate-height')));
-  return heights[0]===52&&Math.abs(heights[1]/heights[0]-2.5/45)<.001;
- }),'Saving from the calculator pencil recalculates and scales plates by the largest available size');
+ const plateHeights=()=>curlLoad().locator('.plate-group').evaluateAll(groups=>Promise.all(groups.map(async group=>{
+  const image=new Image();
+  image.src=group.style.backgroundImage.slice(5,-2);
+  await image.decode();
+  const canvas=document.createElement('canvas');
+  canvas.width=image.width;canvas.height=image.height;
+  const context=canvas.getContext('2d');
+  context.drawImage(image,0,0);
+  const {data}=context.getImageData(image.width/2,0,1,image.height);
+  let top=64,bottom=64;
+  while(top>0&&data[(top-1)*4+3]>128)top--;
+  while(bottom<image.height&&data[bottom*4+3]>128)bottom++;
+  return (bottom-top)/2;
+ })));
+ check((await curlLoad().textContent()).includes('1×45 lb + 1×2.5 lb')&&
+  await curlLoad().getByText('95 lb in plates',{exact:true}).isVisible()&&await curlLoad().getByText('47.5 lb per side',{exact:true}).isVisible(),
+ 'Single plates show 1× and both totals exclude the bar');
+ const heights=await plateHeights();
+ check(heights[0]===58&&heights[1]===10,'The largest plate is tall and the smallest stays visible above the sleeve');
  await dialog().getByRole('button',{name:'Equipment',exact:true}).click();
  const bar=dialog().getByRole('spinbutton',{name:'Bar weight (lb)',exact:true});
  await bar.fill('40');
@@ -169,18 +186,19 @@ try{
  await dialog().getByRole('spinbutton',{name:'Count for 25 lb plates',exact:true}).fill('4');
  for(const size of [10,5,2.5])await dialog().getByRole('checkbox',{name:size+' lb',exact:true}).uncheck();
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
- check((await curlLoad().textContent()).includes('Per side · 2×25 lb'),
-  'Finite inventories find an exact balanced load when a heavier enabled plate would not fit');
+ check((await curlLoad().textContent()).includes('2×25 lb')&&await curlLoad().locator('.plate-group').evaluate(group=>{
+  const style=getComputedStyle(group);
+  return style.backgroundRepeat==='repeat-x'&&group.getBoundingClientRect().width===2*parseFloat(style.backgroundSize);
+ }),'Two plates of the same weight are drawn as two individual plates');
  await dialog().getByRole('button',{name:'Equipment',exact:true}).click();
  await dialog().getByRole('spinbutton',{name:'Count for 25 lb plates',exact:true}).fill('3');
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
  const lighterLoad=await curlLoad().textContent();
- check(lighterLoad.includes('110 lb loaded · 30 lb short')&&lighterLoad.includes('Per side · 35 lb'),
-  'Odd counts leave the spare plate off and report the closest lighter load');
- check(await curlLoad().locator('.plate-stack').evaluate(stack=>{
-  const height=parseFloat(stack.style.getPropertyValue('--plate-height'));
-  return Math.abs(height/52-35/45)<.001;
- }),'Plates scale against the biggest plate in inventory, even if it has no matching pair');
+ check(lighterLoad.includes('110 lb loaded · 30 lb short')&&lighterLoad.includes('1×35 lb')&&
+  lighterLoad.includes('70 lb in plates')&&lighterLoad.includes('35 lb per side'),
+ 'The closest lighter load reports the plate weight actually shown on the bar');
+ const [height]=await plateHeights();
+ check(Math.abs(height-58*35/45)<1,'Plates scale against the biggest available plate, including an unpaired plate');
  await dialog().getByRole('button',{name:'Done',exact:true}).click();
  await page.getByRole('button',{name:'Edit sets/reps for Barbell Curl',exact:true}).click();
  const quickTargets=dialog().getByRole('textbox',{name:'Sets/Reps',exact:true});
