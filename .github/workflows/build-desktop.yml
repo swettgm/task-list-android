@@ -104,10 +104,12 @@ jobs:
           Copy-Item dist/Tasks-Setup-v0.100.3.exe desktop-download/Tasks-Setup-v0.100.3.exe
           $setupHash = (Get-FileHash desktop-download/Tasks-Setup-v0.100.3.exe -Algorithm SHA256).Hash.ToLower()
           "$setupHash  Tasks-Setup-v0.100.3.exe" | Out-File desktop-download/Tasks-Setup-v0.100.3.exe.sha256 -Encoding ascii
+          Write-Output "Installer SHA-256: $setupHash"
           Copy-Item dist/Tasks-PC.exe desktop-download/Tasks-PC.exe
           Copy-Item desktop/USING-TASKS-PC.txt desktop-download/START-HERE.txt
           $hash = (Get-FileHash desktop-download/Tasks-PC.exe -Algorithm SHA256).Hash.ToLower()
           "$hash  Tasks-PC.exe" | Out-File desktop-download/Tasks-PC.exe.sha256 -Encoding ascii
+          Write-Output "Portable SHA-256: $hash"
           New-Item -ItemType Directory -Force portable-source/assets | Out-Null
           Copy-Item desktop/tasks_pc.py,desktop/google_sync.py,desktop/cloud_state.py,desktop/windows_shell.py,desktop/desktop-bridge.js,desktop/pair.html,desktop/requirements.txt,desktop/start-tasks.cmd,desktop/USING-TASKS-PC.txt portable-source/
           Copy-Item desktop/tasks.ico portable-source/tasks.ico
