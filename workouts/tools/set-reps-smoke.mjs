@@ -19,7 +19,7 @@ try{
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).tap();
  await page.getByRole('button',{name:'Add exercise',exact:true}).tap();
  await page.getByRole('textbox',{name:'Exercise',exact:true}).fill('Squat');
- await page.getByRole('textbox',{name:'Reps per set'}).fill('5, 5+, 5');
+ await page.getByRole('textbox',{name:'Sets/Reps'}).fill('5, 5+, 5');
  await page.getByRole('spinbutton',{name:'Rest in seconds'}).fill('90');
  await dialog().getByRole('button',{name:'Add',exact:true}).tap();
  check((await data()).routines[0].exercises[0].sets[1].amrap,'A plus marks an AMRAP set in the routine editor');

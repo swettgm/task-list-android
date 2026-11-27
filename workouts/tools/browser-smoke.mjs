@@ -75,8 +75,15 @@ try{
  for(const [name,reps,weight] of [['Barbell Curl','8, 8, 8',45],['Front/Lateral Raise','10, 10, 10',10],['Triceps Pushdown','8, 8, 8',50],['Cable Crunch','15, 15, 15',50],['Leg Extension','6, 8, 10',50],['Leg Curl','6, 8, 10',65]]){
   await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
+  if(name==='Barbell Curl'){
+   const weight=await dialog().locator('.weight-entry').boundingBox();
+   const reps=await dialog().getByRole('textbox',{name:'Sets/Reps',exact:true}).boundingBox();
+   check(weight.y===reps.y&&weight.height===reps.height&&weight.x<reps.x,'Weight and Sets/Reps are aligned on one row');
+   check(await dialog().locator('#exercise-weight-unit').textContent()==='lbs','Pound weights show an inline lbs suffix');
+   check(await dialog().locator('#exercise-rep-hint').textContent()==='8, 8, 5+ = 3 sets. + means max reps.','The hint explains set count and plus in one line');
+  }
   await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill(name);
-  await dialog().getByRole('textbox',{name:'Reps per set'}).fill(reps);
+  await dialog().getByRole('textbox',{name:'Sets/Reps'}).fill(reps);
   await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill(String(weight));
   await dialog().getByRole('button',{name:'Add',exact:true}).click();
  }
@@ -123,7 +130,7 @@ try{
  await workoutPane.evaluate(pane=>pane.scrollTop=0);
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Leg Extension',exact:true}).click();
- check(await dialog().getByRole('textbox',{name:'Reps per set'}).inputValue()==='6, 8, 10','Variable rep targets are editable');
+ check(await dialog().getByRole('textbox',{name:'Sets/Reps'}).inputValue()==='6, 8, 10','Variable rep targets are editable');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
  const beforePencil=await pencil.boundingBox();
  const beforeChevron=await page.getByRole('button',{name:'Collapse Workout A',exact:true}).boundingBox();
@@ -194,9 +201,13 @@ try{
  await page.locator('#settings-screen').getByRole('button',{name:'Save',exact:true}).click();
  check((await state()).settings.unit==='kg'&&(await state()).history[0].exercises[0].unit==='lb','Changing default units preserves historical units');
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
+ await dialog().getByRole('button',{name:'Edit Barbell Curl',exact:true}).click();
+ check(await dialog().locator('#exercise-weight-unit').textContent()==='lbs','Editing an existing exercise preserves its original weight unit');
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill('New exercise');
- await dialog().getByRole('textbox',{name:'Reps per set'}).fill('0, 8');
+ await dialog().getByRole('textbox',{name:'Sets/Reps'}).fill('0, 8');
  await dialog().getByRole('button',{name:'Add',exact:true}).click();
  check(await dialog().locator('.error').textContent().then(s=>s.includes('1–100')),'Invalid rep targets are rejected');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
