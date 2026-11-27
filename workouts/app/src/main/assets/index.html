@@ -603,6 +603,7 @@ cancelSave(m,()=>{
   :{mode:'off'};
  const seconds=Number(rest.value);if(rest.value===''||!Number.isInteger(seconds)||seconds<0||seconds>1800){m.error.textContent='Choose a rest time from 0 to 1800 seconds.';return;}if(save(next=>{next.settings={...draft,unit:unit.value,rest:seconds,notifications:notify.checked,spotify:spotify.checked,floatingTimer:floating.checked,floatOverApps:overlay.checked,vibrationMs:Math.round(Number(slider.value)*1000),countdownSeconds:[0,3,5][countdown.selectedIndex],countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,restCueVolume:Number(cueVolume.value),schedule,gradient:gradient.checked,...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))};},m.error)){m.close();theme();render();if(overlay.checked&&overlaySupported&&!native.overlayAllowed())native.allowOverlay(notify.checked&&!draft.notifications);else if(notify.checked&&!draft.notifications)native?.requestNotifications();}});}
 let inferredTimer={end:0,length:1},timerDrag=null,suppressTimerClick=0;
+let nativeOverlayVisible=false;
 function remainingText(milliseconds=state.restEndAt-Date.now()){
  const seconds=milliseconds>0?Math.ceil(milliseconds/1000):Math.floor(-milliseconds/1000);
  return (milliseconds<=0?'-':'')+Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
@@ -616,15 +617,28 @@ function placeTimer(){
  const top=margin+(Number.isFinite(position?.y)?Math.max(0,Math.min(1,position.y))*roomY:Math.min(310,roomY*.58));
  Object.assign($('rest').style,{left:left+'px',top:top+'px',right:'auto',bottom:'auto'});
 }
+function syncNativeRest(){
+ if(!state||!native?.restState)return false;
+ try{
+  const rest=JSON.parse(native.restState());
+  if(!rest||!Number.isFinite(rest.end))return false;
+  state.restEndAt=rest.end;state.restDurationMs=rest.duration;state.restStartedAt=rest.started;
+  state.restDismissed=!!rest.dismissed;state.restPosition=rest.position;
+  return true;
+ }catch(_){return false;}
+}
 function tick(){
  if(!state)return;
+ const overlayVisible=native?.floatingRestVisible?.()===true;
+ // Refresh any native dismissal before the in-app timer can take over.
+ if(overlayVisible||!nativeOverlayVisible||syncNativeRest())nativeOverlayVisible=overlayVisible;
  if(state.active&&$('elapsed')){
   const setCount=total(state.active);
   const percent=setCount?Math.round(completed(state.active)*100/setCount):0;
   $('elapsed').textContent=duration(Date.now()-state.active.startedAt)+' · '+percent+'%';
  }
  const end=state.restEndAt,delta=end-Date.now(),remaining=Math.max(0,delta);
- $('rest').hidden=!end||state.restDismissed||!state.active||state.settings.floatingTimer===false||settingsOpen||native?.floatingRestVisible?.()===true;
+ $('rest').hidden=!end||state.restDismissed||!state.active||state.settings.floatingTimer===false||settingsOpen||nativeOverlayVisible;
  const label=remainingText(delta);
  $('rest-time').textContent=label;
  $('rest-time').classList.toggle('overdue',delta<=0);
@@ -960,14 +974,7 @@ function viewport(){document.documentElement.style.setProperty('--height',(visua
 function refresh(){if(closeDialog||settingsOpen||drag||slide||repDrag)return;try{const saved=read();if(saved){state=saved;theme();render();}}catch(_){toast('Couldn’t reload saved workouts.');}}
 window.Workouts=Object.freeze({refresh,openRestControls(){refresh();if(state?.restEndAt&&!closeDialog)openRest();},back(){if(settingsOpen&&!closeDialog){closeSettings();return true;}if(closeDialog){closeDialog();return true;}if(slide){finishSlide(false,false);return true;}if(view==='history'){switchView('today');return true;}return false;},debug:()=>clone(state)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();tick();}});setInterval(tick,250);setInterval(renderSpotify,1500);
-setInterval(()=>{
- if(!state||!native?.restState)return;
- try{
-  const rest=JSON.parse(native.restState());
-  state.restEndAt=rest.end;state.restDurationMs=rest.duration;state.restStartedAt=rest.started;state.restDismissed=!!rest.dismissed;state.restPosition=rest.position;
-  tick();
- }catch(_){}
-},1000);
+setInterval(()=>{if(syncNativeRest())tick();},1000);
 load();
 })();
 </script>

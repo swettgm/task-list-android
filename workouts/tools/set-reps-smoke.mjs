@@ -8,9 +8,11 @@ try{
  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{
-  let state=JSON.parse(localStorage.getItem('qa-state')||'{}');window.qa={haptics:0,fail:false};
+  let state=JSON.parse(localStorage.getItem('qa-state')||'{}');
+  window.qa={haptics:0,fail:false,overlayVisible:false,restReads:0,dismissOverlay(){state.restDismissed=true;qa.overlayVisible=false;}};
   window.WorkoutNative={readState:()=>JSON.stringify(state),writeState:raw=>{if(qa.fail)return null;state=JSON.parse(raw);state.revision=(state.revision||0)+1;localStorage.setItem('qa-state',JSON.stringify(state));return JSON.stringify(state);},
-   restState:()=>JSON.stringify({end:state.restEndAt,duration:state.restDurationMs,started:state.restStartedAt,dismissed:state.restDismissed,position:state.restPosition}),ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},restComplete(){},spotifyState:()=>JSON.stringify({connected:false}),preciseTimers:()=>true};
+   floatingRestVisible:()=>qa.overlayVisible,
+   restState:()=>{qa.restReads++;return JSON.stringify({end:state.restEndAt,duration:state.restDurationMs,started:state.restStartedAt,dismissed:state.restDismissed,position:state.restPosition});},ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},restComplete(){},spotifyState:()=>JSON.stringify({connected:false}),preciseTimers:()=>true};
  });
  await page.goto(fixture.url);await page.waitForFunction(()=>!!window.Workouts);
  const data=()=>page.evaluate(()=>Workouts.debug()),sets=()=>page.locator('.set:not(.set-add)'),dialog=()=>page.locator('dialog[open]');
@@ -59,6 +61,24 @@ try{
  check(!(await rest.isVisible())&&(await data()).restEndAt===deadline,'Dropping on the X hides only the current floating timer');
  await sets().nth(2).tap();
  check(await rest.isVisible()&&!(await data()).restDismissed,'Logging another set restores the floating timer');
+ await page.evaluate(()=>qa.overlayVisible=true);
+ await rest.waitFor({state:'hidden'});
+ const restReads=await page.evaluate(()=>qa.restReads);
+ await page.waitForFunction(reads=>qa.restReads>reads,restReads);
+ await page.evaluate(()=>{
+  const timer=document.querySelector('#rest');
+  qa.flashed=false;
+  qa.timerObserver=new MutationObserver(records=>{
+   if(!timer.hidden||records.some(record=>record.oldValue===null))qa.flashed=true;
+  });
+  qa.timerObserver.observe(timer,{attributeFilter:['hidden'],attributeOldValue:true});
+  qa.dismissOverlay();
+ });
+ await page.waitForFunction(()=>Workouts.debug().restDismissed);
+ check(await page.evaluate(()=>{qa.timerObserver.disconnect();return !qa.flashed;})&&!(await rest.isVisible()),
+   'Dismissing the Android overlay never flashes the in-app timer');
+ await sets().nth(2).tap();
+ check(await rest.isVisible()&&!(await data()).restDismissed,'The in-app timer returns for the next set without the Android overlay');
  deadline=(await data()).restEndAt;
  const touch=await page.context().newCDPSession(page);
  check(await sets().nth(1).evaluate(circle=>{
