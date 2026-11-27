@@ -25,6 +25,10 @@ try{
  const state=()=>page.evaluate(()=>Workouts.debug()),dialog=()=>page.locator('dialog[open]');
  check((await state()).routines[0].exercises.length===0&&(await state()).history.length===0,'Fresh install starts with an empty routine and no workout history');
  check(await page.getByLabel('Spotify player').isVisible(),'Compact Spotify player uses the app layout');
+ check(await page.locator('#spotify').evaluate(bar=>
+  [bar,...bar.querySelectorAll('button, span')].every(part=>getComputedStyle(part).webkitTapHighlightColor==='rgba(0, 0, 0, 0)')&&
+  getComputedStyle(bar.querySelector('#spotify-title')).userSelect==='none'
+ ),'The Spotify bar, controls, and track text have no touch selection highlight');
  await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Open Spotify');
  for(const id of ['spotify-art','spotify-prev','spotify-play','spotify-next']){
   await page.evaluate(()=>qa.openedSpotify=false);
