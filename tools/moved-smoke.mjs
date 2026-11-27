@@ -21,8 +21,11 @@ try {
     };
     const initial={
       version:2026103022,
+      metadataIcons:'symbols',
       customTasks:[
         {id:'today',title:'Today task',due:'2026-11-27',priority:'HIGH'},
+        {id:'spacing-reference',title:'Clean desk 🧼',days:[5],startsOn:'2026-11-27',priority:'HIGH',
+          labels:['At home','On the computer']},
         {id:'wrapped',title:'A longer task title that wraps onto the next line',days:[0,1,2,3,4,5],startsOn:'2026-11-27',priority:'HIGH',
           notes:'First line of task notes.\nSecond line of task notes.',
           labels:['At home','On the computer','Outdoors','On the road','On the phone']},
@@ -73,11 +76,11 @@ try {
   const wrappedRow=page.locator('#pt-list [data-task-id="wrapped"]');
   const wrapped=await detailsGap(wrappedRow);
   assert.ok(wrapped.height>singleLine.height,'The recurring fixture wraps to additional lines');
-  assert.equal(singleLine.titleGap,13,'Task rows use the larger spacing');
+  assert.ok(singleLine.titleGap<singleLine.gap,'The title gap accounts for the surrounding font and icon space');
   for(const spacing of [singleLine,wrapped]){
-    assert.equal(spacing.gap,singleLine.titleGap,'Task actions match the gap below the title');
-    assert.equal(spacing.rowGap,singleLine.titleGap,'Wrapped detail lines match the gap below the title');
-    assert.equal(spacing.titleGap,singleLine.titleGap,'The title keeps the same gap above single and wrapped details');
+    assert.equal(spacing.gap,13,'Preserve the reference gap above the task actions');
+    assert.equal(spacing.titleGap,singleLine.titleGap,'Titles use the same spacing above single and wrapped details');
+    assert.ok(spacing.rowGap<spacing.gap,'Wrapped details account for the whitespace inside each line');
   }
   const textGaps=await wrappedRow.evaluate(row=>['.tm-title','.tm-task-note'].map((selector,index)=>{
     const text=row.querySelector(selector),range=document.createRange();
@@ -88,8 +91,37 @@ try {
   }));
   for(const gaps of textGaps){
     assert.ok(gaps.length>0,'The test text spans multiple lines');
-    assert.ok(gaps.every(gap=>Math.abs(gap-singleLine.titleGap)<.1),'Each line within the text uses the larger gap');
+    assert.ok(gaps.every(gap=>Math.abs(gap-wrapped.rowGap)<.1),'Wrapped text keeps the same added leading on each line');
   }
+  const reference=page.locator('#pt-list [data-task-id="spacing-reference"]');
+  const screenshot=(await reference.screenshot()).toString('base64');
+  const visibleGaps=await reference.evaluate(async (row,base64)=>{
+    const image=new Image();
+    image.src='data:image/png;base64,'+base64;
+    await image.decode();
+    const canvas=document.createElement('canvas');
+    canvas.width=image.width;canvas.height=image.height;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(image,0,0);
+    const rect=row.getBoundingClientRect();
+    const button=row.querySelector('.tm-progress-control').getBoundingClientRect();
+    const left=Math.ceil(button.left-rect.left);
+    const bottom=Math.floor(button.top-rect.top);
+    const width=canvas.width-left;
+    const {data}=ctx.getImageData(left,0,width,bottom);
+    const bands=[];
+    for(let y=0;y<bottom;y++){
+      const start=y*width*4;
+      if(!data.subarray(start,start+width*4).some((value,i)=>i%4!==3&&value>160))continue;
+      const previous=bands.at(-1);
+      if(previous&&y-previous.end<=2)previous.end=y;
+      else bands.push({start:y,end:y});
+    }
+    return bands.map(({end},i)=>(bands[i+1]?.start??bottom)-end-1);
+  },screenshot);
+  assert.equal(visibleGaps.length,3,'The reference row has a title and two visible detail lines');
+  assert.ok(visibleGaps.every(gap=>Math.abs(gap-visibleGaps.at(-1))<=4),
+    'Visible gaps match the reference above the buttons: '+visibleGaps.join(', '));
   await page.setViewportSize({width:390,height:844});
   await moved.tap();
   assert.equal(await page.getByText('No tasks moved today.',{exact:true}).isVisible(),true);

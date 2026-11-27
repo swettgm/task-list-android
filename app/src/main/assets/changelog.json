@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.100.10",
+    "date": "2026-11-27",
+    "changes": [
+      "Preserve the space above task action buttons and tighten the gaps below titles and between wrapped lines to match visually."
+    ]
+  },
+  {
     "version": "0.100.9",
     "date": "2026-11-27",
     "changes": [
