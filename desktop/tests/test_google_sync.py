@@ -98,6 +98,25 @@ class CloudTests(unittest.TestCase):
   with patch.object(google.threading.Thread,'start'):
    cloud=google.CloudSync(store,tasks_pc.merge_state,tasks_pc.atomic_json,Vault(),lambda token:drive,config={'client_id':google.CLIENT_ID,'client_secret':'fake-client-secret'})
   cloud.token=lambda account:'private-access';self.addCleanup(cloud.close);return store,cloud
+ def test_sync_failure_preserves_last_success_until_recovery(self):
+  with tempfile.TemporaryDirectory() as folder:
+   drive=Drive({'customTasks':[]})
+   _,cloud=self.setup_cloud(folder,drive)
+   cloud.sync_once()
+   stamp=cloud.status()['lastSyncAt']
+   self.assertIsNotNone(stamp)
+   self.assertFalse(cloud.status()['lastSyncFailed'])
+   _,reopened=self.setup_cloud(folder,drive)
+   self.assertEqual(reopened.status()['lastSyncAt'],stamp)
+   with patch.object(drive,'files',side_effect=google.CloudError('Offline')):
+    reopened.sync_once()
+   self.assertTrue(reopened.status()['lastSyncFailed'])
+   self.assertEqual(reopened.status()['lastSyncAt'],stamp)
+   reopened.sync_once()
+   self.assertFalse(reopened.status()['lastSyncFailed'])
+   self.assertGreaterEqual(reopened.status()['lastSyncAt'],stamp)
+   reopened.sign_out()
+   self.assertIsNone(reopened.status()['lastSyncAt'])
  def test_web_client_json_is_rejected_without_changing_account_or_tasks(self):
   with tempfile.TemporaryDirectory()as folder:
    store,cloud=self.setup_cloud(folder,Drive());before=store.snapshot();configuration=copy.deepcopy(cloud.configuration)

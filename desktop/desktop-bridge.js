@@ -215,7 +215,8 @@
     .tl-pc-welcome{padding:48px 18px;max-width:500px}.tl-pc-welcome h1{color:var(--tl-text,#eef3fb);font-size:30px;margin:0 0 12px}
     html.tl-desktop body{padding-bottom:30px!important}
   `;document.head.append(style);
-  let bar,connectionLabel,lastGoogleSync;
+  const staleGoogleSyncMs = 60 * 60 * 1000;
+  let bar,connectionLabel,googleSyncSummary,lastGoogleSync,googleSyncWarning;
   let googleStatus={signedIn:false,message:'Not signed in'};
   async function googleRequest(path){
     const response=await fetch(new URL('/api/google/'+path,origin),{method:path==='status'?'GET':'POST',credentials:'omit',cache:'no-store',redirect:'error',headers:{Authorization:'Bearer '+boot.token}});
@@ -225,12 +226,34 @@
   function updateDesktop(){
     if(!document.body)return;
     document.documentElement.classList.toggle('tl-phone-linked',phoneLinked);
-    if(!bar){bar=document.createElement('div');bar.className='tl-pc-bar';connectionLabel=document.createElement('span');connectionLabel.setAttribute('role','status');const link=document.createElement('button');link.textContent='Connect';link.onclick=()=>global.TaskListApp?.showConnections();lastGoogleSync=document.createElement('time');lastGoogleSync.hidden=true;bar.append(connectionLabel,lastGoogleSync,link);document.body.prepend(bar);}
+    if(!bar){
+      bar=document.createElement('div');bar.className='tl-pc-bar';
+      connectionLabel=document.createElement('span');connectionLabel.setAttribute('role','status');
+      const link=document.createElement('button');link.textContent='Connect';link.onclick=()=>global.TaskListApp?.showConnections();
+      googleSyncSummary=document.createElement('span');
+      lastGoogleSync=document.createElement('time');
+      googleSyncWarning=document.createElement('span');googleSyncWarning.setAttribute('role','img');
+      googleSyncWarning.textContent='⚠️';
+      googleSyncSummary.append(googleSyncWarning,' ',lastGoogleSync);
+      bar.append(connectionLabel,googleSyncSummary,link);document.body.prepend(bar);
+    }
     connectionLabel.textContent=!connected?'PC connection unavailable — changes kept locally':googleStatus.signedIn?googleStatus.email+' · '+googleStatus.message:Date.now()/1000-phoneLastSeenAt<20?'Phone connected':'Saved on this PC';
     const synced=Number(googleStatus.lastSyncAt);
-    lastGoogleSync.hidden=!googleStatus.signedIn||!Number.isFinite(synced)||synced<=0;
-    if(!lastGoogleSync.hidden){
-      const stamp=new Date(synced*1000);
+    const stamp=new Date(synced*1000);
+    const hasSync=Number.isFinite(stamp.getTime())&&synced>0;
+    const warning=googleStatus.lastSyncFailed?'Latest Google sync failed':
+      hasSync&&Date.now()-stamp.getTime()>=staleGoogleSyncMs?'Last successful Google sync was over an hour ago':'';
+    googleSyncSummary.hidden=!googleStatus.signedIn||(!hasSync&&!warning);
+    googleSyncWarning.hidden=!warning;
+    if(warning){
+      googleSyncWarning.setAttribute('aria-label',warning);
+      googleSyncSummary.title=warning;
+    }else{
+      googleSyncWarning.removeAttribute('aria-label');
+      googleSyncSummary.removeAttribute('title');
+    }
+    lastGoogleSync.hidden=!hasSync;
+    if(hasSync){
       lastGoogleSync.dateTime=stamp.toISOString();
       lastGoogleSync.textContent='Last synced at '+stamp.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
     }

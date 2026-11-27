@@ -1,4 +1,4 @@
-Tasks for Windows 0.100.0
+Tasks for Windows 0.100.3
 
 Install over the existing version. Tasks, theme, pairing and taskbar identity are
 retained. Open your current phone with Android Tasks 0.100.0 first and wait for
@@ -17,6 +17,8 @@ It and your refresh token are encrypted with Windows DPAPI. Do not send the file
 through chat. Once connected, the account row has an X to remove it, plus Sync now.
 Old local task data is backed up privately before first cloud restore. Deleted
 tasks remain deleted across clients; offline changes merge after reconnection.
+The warning triangle beside the sync time means the latest Google sync failed
+or the last successful sync was more than an hour ago. Hover for the reason.
 
 Tasks supports adding/editing tasks, Today/Upcoming, projects (hold the date at
 the top), priorities, labels, recurrence, notes, checklists, completion/progress,

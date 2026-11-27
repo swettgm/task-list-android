@@ -245,10 +245,12 @@ class CloudSync:
         self.needs_reauth=False
         self.message = 'Not signed in'
         self.last_sync = None
+        self.sync_failed = False
         try:
             self.account = self.vault.load()
             if self.account:
                 self.message = 'Waiting to sync'
+                self.last_sync = self.load_last_sync(self.account)
         except Exception:
             self.message = 'The saved Google account could not be unlocked. Sign in again.'
         self.thread = threading.Thread(target=self.run, name='Tasks Google sync', daemon=True)
@@ -256,7 +258,19 @@ class CloudSync:
     def status(self):
         with self.lock:
             return {'signedIn': bool(self.account), 'email': self.account['email'] if self.account else '',
-                    'message': self.message, 'signingIn': self.auth_busy, 'lastSyncAt': self.last_sync,'needsSetup':self.configuration is None or self.configuration_invalid,'needsReauth':self.needs_reauth}
+                    'message': self.message, 'signingIn': self.auth_busy, 'lastSyncAt': self.last_sync,
+                    'lastSyncFailed': self.sync_failed, 'needsSetup':self.configuration is None or self.configuration_invalid,'needsReauth':self.needs_reauth}
+    def journal_path(self, account):
+        subject = hashlib.sha256(account['sub'].encode()).hexdigest()[:24]
+        return self.store.directory / ('google-v2-' + subject + '.json')
+    def load_last_sync(self, account):
+        try:
+            stamp = json.loads(self.journal_path(account).read_bytes()).get('lastSyncAt')
+            if type(stamp) in (float, int) and 0 < stamp <= time.time():
+                return stamp
+        except (OSError, ValueError, AttributeError):
+            pass
+        return None
     def sign_in(self):
         with self.lock:
             if self.auth_busy:
@@ -278,6 +292,8 @@ class CloudSync:
                         return
                     self.vault.save(account)
                     self.account, self.access_token, self.expiry = account, None, 0
+                    self.last_sync = self.load_last_sync(account)
+                    self.sync_failed = False
                     self.needs_reauth=False
                     self.message = 'Signed in. Syncing…'
                     self.wake.set()
@@ -300,6 +316,7 @@ class CloudSync:
             self.auth_busy = False
             self.needs_reauth=False
             self.message, self.last_sync = 'Signed out. Tasks remain on this PC.', None
+            self.sync_failed = False
     def close(self):
         self.closed.set()
         self.cancel_auth.set()
@@ -334,12 +351,15 @@ class CloudSync:
         try:
             drive=self.drive_factory(self.token(account));files=drive.files();seeds=[f for f in files if f['name']==NotebookDrive.SEED]
             if not seeds:
-                with self.lock:self.message='Open Tasks on your current phone to initialize the cloud list.'
+                with self.lock:
+                    if generation == self.generation:
+                        self.message = 'Open Tasks on your current phone to initialize the cloud list.'
+                        self.sync_failed = True
                 return
             seed=drive.read(seeds[0]['id'])
             if seed.get('kind')!='seed' or not isinstance(seed.get('state'),dict)or not isinstance(seed.get('epoch'),str):raise CloudError('The cloud task list is invalid. Local tasks are kept.')
             epoch=seed['epoch'];sent=self.store.snapshot()['state']
-            path=self.store.directory/('google-v2-'+hashlib.sha256(account['sub'].encode()).hexdigest()[:24]+'.json');self.base_path=path
+            path=self.journal_path(account);self.base_path=path
             journal=json.loads(path.read_bytes())if path.exists()else None
             fresh=not journal or journal.get('epoch')!=epoch
             restore=fresh or self.store.cloud_account!=account['sub']
@@ -368,11 +388,17 @@ class CloudSync:
                 if generation!=self.generation or self.closed.is_set():return
                 if restore:self.store.restore_cloud(sent,resolved,account['sub'])
                 else:self.store.apply_remote(sent,resolved)
-                journal.update(registers=own,counter=max(counter,journal['counter']),localHead=resolved)
-                self.atomic(path,journal);self.message='Synced with Google';self.last_sync=time.time();self.needs_reauth=False
+                synced_at = time.time()
+                journal.update(registers=own,counter=max(counter,journal['counter']),localHead=resolved,lastSyncAt=synced_at)
+                self.atomic(path,journal)
+                self.message = 'Synced with Google'
+                self.last_sync = synced_at
+                self.sync_failed = False
+                self.needs_reauth = False
         except Exception as error:
             with self.lock:
                 if generation==self.generation:
+                    self.sync_failed = True
                     self.message=str(error)if isinstance(error,CloudError)else'Google sync is unavailable. Your tasks remain saved locally.'
                     if isinstance(error,CloudError)and(error.status==401 or error.kind=='invalid_grant'):self.access_token=None;self.expiry=0;self.needs_reauth=True
                     if isinstance(error,CloudError)and error.kind in ('invalid_client','invalid_request'):self.configuration_invalid=True
