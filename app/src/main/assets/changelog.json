@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.100.12",
+    "date": "2026-11-27",
+    "changes": [
+      "Point the Moved arrow left when a task moves to an earlier date."
+    ]
+  },
+  {
     "version": "0.100.11",
     "date": "2026-11-27",
     "changes": [

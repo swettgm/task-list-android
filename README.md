@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.100.11](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.100.11.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.100.12](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.100.12.apk). Install over the existing app to retain your tasks and settings.
 
-Done, Moved, Hidden, and Trash share a row at the bottom of Today. Moved lists each reschedule from today and counts each change, including return moves. Task cards keep the gap above the action buttons and tighten the spacing below titles and between wrapped lines to match it visually. In Hold and drag mode, a long press anywhere on the task card picks it up. Do tomorrow has more space below the inline time control.
+Done, Moved, Hidden, and Trash share a row at the bottom of Today. Moved lists each reschedule from today and counts each change, including return moves. Its arrows point left for earlier dates and right for later dates. Task cards keep the gap above the action buttons and tighten the spacing below titles and between wrapped lines to match it visually. In Hold and drag mode, a long press anywhere on the task card picks it up. Do tomorrow has more space below the inline time control.
 
 Tasks moved to an earlier date appear as overdue in Today once the new date passes.
 
