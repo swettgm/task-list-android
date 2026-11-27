@@ -90,11 +90,20 @@ body,#page-stack{touch-action:pan-y}
 .exercise-plan button{font-size:inherit;min-height:32px;padding:2px 0;color:inherit;border-radius:4px}
 .exercise-plan button:first-child{min-width:0;white-space:normal;overflow-wrap:anywhere;text-align:right}
 .exercise-plan button:last-child{flex:none}
-.session-progress{display:flex;align-items:center;gap:5px}
-.plate-calc-button{font-size:14px;width:34px;min-width:34px;padding:0;color:var(--muted)}
-.plate-calc-button svg{width:1em;height:1em}
-.plate-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.plate-toolbar button{flex:none;font-size:13px}
+.session-bar{--action-size:2.5rem}
+.session-bar .primary{height:var(--action-size);min-height:var(--action-size)}
+.plate-calc-button{width:var(--action-size);min-width:var(--action-size);padding:0}
+.plate-calc-button svg{width:20px;height:20px;stroke-width:2.7}
+.plate-calculator-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
+.plate-calculator-heading .icon{padding:0}
+.plate-calculator-heading svg{width:21px;height:21px;stroke-width:2.8}
+dialog.plate-editor{
+ --editor-top:clamp(12px,calc(var(--height,100dvh) - 200px),36px);
+ position:fixed;inset:var(--editor-top) 0 auto;margin:0 auto;
+ max-height:calc(var(--height,100dvh) - var(--editor-top) - 12px);
+}
+@media(max-height:320px){dialog.plate-editor{gap:8px;padding-block:12px}}
+.blank-workout .actions{flex-wrap:wrap}
 .plate-card{display:grid;gap:6px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--text) 8%,transparent)}
 .plate-card-head{display:grid;grid-template-columns:minmax(0,1fr) 40px;align-items:center;gap:6px}
 .plate-card-head h3{overflow-wrap:anywhere}
@@ -132,7 +141,7 @@ body,#page-stack{touch-action:pan-y}
 <div id="page-stack">
 <section id="today" role="tabpanel" aria-labelledby="today-tab">
 <div id="routine-list"></div>
-<template id="session-template"><div id="session-bar" class="session-bar"><div class="session-progress"><span id="elapsed" class="elapsed"></span><button id="plate-calculator" class="bare plate-calc-button" aria-label="Plate calculator"></button></div><div class="row"><button id="discard" class="icon bare" aria-label="Discard workout"></button><button id="finish" class="primary">Finish</button></div></div></template>
+<template id="session-template"><div id="session-bar" class="session-bar"><span id="elapsed" class="elapsed"></span><div class="row"><button id="discard" class="icon bare" aria-label="Discard workout"></button><button id="plate-calculator" class="primary plate-calc-button" aria-label="Plate calculator"></button><button id="finish" class="primary">Finish</button></div></div></template>
 </section>
 <section id="history" role="tabpanel" aria-labelledby="history-tab" hidden><div id="progress"></div><div id="history-list"></div></section>
 </div></div>
@@ -186,18 +195,33 @@ function load(){try{state=read();if(!state){state=initialState();if(!save(()=>{}
 function save(change,errorNode){try{const next=clone(read()||state);change(next);if(native){const saved=native.writeState(JSON.stringify(next));if(!saved)throw Error('Save failed');state=JSON.parse(saved);}else{next.revision=(next.revision||0)+1;localStorage.setItem(KEY,JSON.stringify(next));state=next;}return true;}catch(_){const message='Couldn’t save. Your changes are still here; try again.';if(errorNode)errorNode.textContent=message;else toast(message);return false;}}
 function liveRoutine(data,routineId){return data.active?.routineId===routineId?data.active:null;}
 function theme(){const s=state.settings;for(const key of ['top','bottom','text'])document.documentElement.style.setProperty('--'+key,s[key]);document.documentElement.style.setProperty('--muted','color-mix(in srgb,'+s.text+' 70%,'+s.top+')');document.documentElement.style.setProperty('--line','color-mix(in srgb,'+s.text+' 27%,transparent)');const rgb=parseInt(s.text.slice(1),16);document.documentElement.style.setProperty('--ink',((rgb>>16)*.299+((rgb>>8)&255)*.587+(rgb&255)*.114)>160?'#172631':'#ffffff');document.body.classList.toggle('flat',!s.gradient);native?.setThemeColors(s.top,s.gradient?s.bottom:s.top);}
-function modal(title,{onClose,focus}={}){if(closeDialog)closeDialog(false);const panel=$(view),oldY=panel.scrollTop,dialog=el('dialog'),heading=el('h2','',title),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');dialog.setAttribute('aria-label',title);error.setAttribute('role','alert');dialog.append(heading,fields,error,actions);document.body.append(dialog);native?.setModalOpen(true);
-const close=(returnToParent=true)=>{if(!dialog.isConnected)return;if(drag?.modal.dialog===dialog)finishDrag(false);dialog.close();dialog.remove();closeDialog=null;panel.scrollTop=oldY;native?.setModalOpen(false);native?.hideKeyboard();if(returnToParent!==false)onClose?.();};
-closeDialog=close;dialog.addEventListener('cancel',event=>{event.preventDefault();close();});let outside=false;const isOutside=event=>{const box=dialog.getBoundingClientRect();return event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom;};dialog.onpointerdown=event=>outside=event.target===dialog&&isOutside(event);dialog.onclick=event=>{if(outside&&event.target===dialog&&isOutside(event))close();outside=false;};dialog.autofocus=true;
+function modal(title,{onClose,focus,className}={}){
+const replace=closeDialog;
+if(replace)replace(false,true);
+const panel=$(view),oldY=panel.scrollTop,dialog=el('dialog',className),heading=el('h2','',title),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');dialog.setAttribute('aria-label',title);error.setAttribute('role','alert');dialog.append(heading,fields,error,actions);document.body.append(dialog);if(!replace)native?.setModalOpen(true);
+let keyboardUsed=false;
+dialog.addEventListener('focusin',event=>{
+ if(event.target.matches('input[type=text],input[type=number],textarea'))keyboardUsed=true;
+});
+const close=(returnToParent=true,replacing=false)=>{
+ if(!dialog.isConnected)return;
+ if(drag?.modal.dialog===dialog)finishDrag(false);
+ dialog.close();dialog.remove();closeDialog=null;panel.scrollTop=oldY;
+ if(keyboardUsed)native?.hideKeyboard();
+ if(returnToParent!==false)onClose?.();
+ if(!replacing&&!closeDialog)native?.setModalOpen(false);
+};
+closeDialog=close;dialog.addEventListener('cancel',event=>{event.preventDefault();close();});let outside=false;const isOutside=event=>{const box=dialog.getBoundingClientRect();return event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom;};dialog.onpointerdown=event=>outside=event.target===dialog&&isOutside(event);dialog.onclick=event=>{if(outside&&event.target===dialog&&isOutside(event))close();outside=false;};
 requestAnimationFrame(()=>{
  if(!dialog.isConnected)return;
- dialog.showModal();dialog.focus({preventScroll:true});
- if(focus||title.startsWith('Add ')){
-  const input=focus?fields.querySelector('[aria-label="'+focus+'"]'):fields.querySelector('input[type=text],input[type=number],textarea');
-  if(input){input.focus({preventScroll:true});native?.showKeyboard();}
- }
+ const input=focus?fields.querySelector('[aria-label="'+focus+'"]')
+  :title.startsWith('Add ')?fields.querySelector('input[type=text],input[type=number],textarea'):null;
+ const initialFocus=input||dialog;
+ initialFocus.autofocus=true;
+ dialog.showModal();
+ if(document.activeElement!==initialFocus)initialFocus.focus({preventScroll:true});
 });
-return {dialog,fields,error,actions,close};}
+return {dialog,heading,fields,error,actions,close};}
 function settingsScreen(){
  if(closeDialog)closeDialog(false);
  const panel=$(view),oldY=panel.scrollTop,screen=el('section','settings-screen'),header=el('header'),back=button('',()=>close(),'icon bare'),heading=el('h1','','Settings'),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');
@@ -210,7 +234,15 @@ function settingsScreen(){
  closeSettings=close;return {fields,error,actions,close,dialog:screen};
 }
 function keyboardFocus(input,container){
-const showInput=()=>{if(input.isConnected&&document.activeElement===input)native?.showKeyboard();};
+let pending=false;
+const showInput=()=>{
+ if(!native||pending||document.activeElement!==input)return;
+ pending=true;
+ requestAnimationFrame(()=>{
+  pending=false;
+  if(input.isConnected&&document.activeElement===input)native.showKeyboard();
+ });
+};
 input.addEventListener('focus',showInput);input.addEventListener('click',showInput);
 container.addEventListener('pointerup',()=>{input.focus({preventScroll:true});showInput();});
 }
@@ -453,7 +485,8 @@ function editExercisePlan(routineId,exerciseId,sessionId,focus,onClose){
  const source=sessionId?state.active:state.routines.find(r=>r.id===routineId);
  const original=source?.exercises.find(e=>e.id===exerciseId);
  if(!original||(sessionId&&source.id!==sessionId))return;
- const m=modal(original.name,{focus,onClose}),readPlan=exercisePlanFields(m,original);
+ const className=onClose?'plate-editor':undefined;
+ const m=modal(original.name,{focus,onClose,className}),readPlan=exercisePlanFields(m,original);
  cancelSave(m,()=>{
   const plan=readPlan();
   if(!plan){m.error.textContent='Enter a valid weight and 1–20 sets of 1–100 reps.';return;}
@@ -679,15 +712,18 @@ const displayWeight=value=>new Intl.NumberFormat(undefined,{maximumFractionDigit
 function showPlateCalculator(sessionId,scrollTop=0){
  const session=state.active;
  if(session?.id!==sessionId)return;
- const m=modal('Plate calculator'),toolbar=el('div','plate-toolbar');
+ const m=modal('Plate calculator'),titleRow=el('div','plate-calculator-heading');
  let returnScroll=scrollTop;
  const back=()=>showPlateCalculator(sessionId,returnScroll);
- toolbar.append(el('p','small muted','Match this load on both sides.'),button('Equipment',()=>{
+ const equipmentButton=button('',()=>{
   const unit=session.exercises[0]?.unit||state.settings.unit;
   returnScroll=m.fields.scrollTop;
   haptic();editPlateEquipment(unit,back);
- }));
- m.fields.append(toolbar);
+ },'icon bare');
+ equipmentButton.setAttribute('aria-label','Edit plate equipment');
+ equipmentButton.append(icon('pencil'));
+ m.heading.replaceWith(titleRow);
+ titleRow.append(m.heading,equipmentButton);
  const equipmentByUnit=Object.fromEntries(WEIGHT_UNITS.map(unit=>[unit,plateEquipment(unit)]));
  const loads=Object.fromEntries(WEIGHT_UNITS.map(unit=>[unit,plateLoads(equipmentByUnit[unit],
   Math.max(0,...session.exercises.filter(ex=>ex.unit===unit).map(ex=>ex.weight)))]));
@@ -695,7 +731,7 @@ function showPlateCalculator(sessionId,scrollTop=0){
   const {id,name,weight,unit}=exercise,bar=equipmentByUnit[unit].bar,load=loads[unit](weight);
   const edit=button('',()=>{
    returnScroll=m.fields.scrollTop;
-   haptic();editExercisePlan(session.routineId,id,sessionId,undefined,back);
+   haptic();editExercisePlan(session.routineId,id,sessionId,'Weight',back);
   },'icon bare');
   edit.append(icon('pencil'));edit.setAttribute('aria-label','Edit load for '+name);
   const card=el('section','plate-card'),heading=el('div','plate-card-head');
@@ -720,7 +756,7 @@ function showPlateCalculator(sessionId,scrollTop=0){
  m.actions.append(button('Done',m.close,'primary'));
 }
 function editPlateEquipment(selectedUnit,onClose){
- const m=modal('Plate equipment',{onClose}),unit=selectField(m.fields,'Unit',WEIGHT_UNITS,selectedUnit);
+ const m=modal('Plate equipment',{onClose,className:'plate-editor'}),unit=selectField(m.fields,'Unit',WEIGHT_UNITS,selectedUnit);
  const readEquipment=equipmentFields(m.fields,unit,true);
  cancelSave(m,()=>{
   const {equipment,error}=readEquipment();
@@ -793,18 +829,44 @@ function finishRepDrag(commit){
 }
 function editSet(exerciseId,index){const ex=state.active.exercises.find(e=>e.id===exerciseId),set=ex.sets[index],m=modal('Set '+(index+1));const pair=el('div','two');m.fields.append(pair);const reps=numberField(pair,'Reps',set.reps,0,repLimit(set)),weight=numberField(pair,'Weight ('+ex.unit+')',set.weight,0,5000,.25);m.fields.append(button('Clear set',()=>{if(save(next=>{next.active.exercises.find(e=>e.id===exerciseId).sets[index].reps=null;next.restEndAt=next.restStartedAt=next.restDurationMs=0;next.restDismissed=false;},m.error)){m.close();render();}}));cancelSave(m,()=>{const r=Number(reps.value),w=Number(weight.value);if(reps.value===''||weight.value===''||!Number.isInteger(r)||r<0||r>repLimit(set)||!Number.isFinite(w)||w<0||w>5000){m.error.textContent='Enter 0–'+repLimit(set)+' reps and a valid weight.';return;}if(save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId).sets[index];live.reps=r;live.weight=w;},m.error)){m.close();render();}});}
 function appendSet(exerciseId){const ex=state.active.exercises.find(e=>e.id===exerciseId);if(ex.sets.length>=20){toast('Up to 20 sets per exercise.');return;}if(save(next=>{const e=next.active.exercises.find(e=>e.id===exerciseId);e.sets.push({target:e.sets.at(-1).target,amrap:!!e.sets.at(-1).amrap,weight:e.weight,reps:null});}))render();}
-function finish(){if(!state.active)return;if(!completed(state.active)){toast('Log a set first.');return;}const m=modal('Finish workout');m.fields.append(el('p','muted small',completed(state.active)+'/'+total(state.active)+' sets logged'));const note=field(m.fields,'Workout notes','textarea',state.active.notes);note.maxLength=20000;cancelSave(m,()=>{if(save(next=>{next.active.finishedAt=Date.now();next.active.notes=note.value;next.history.unshift(clone(next.active));next.active=null;next.restEndAt=0;},m.error)){m.close();haptic();render();}},'Save workout');}
+function endWorkout(sessionId,m=null,notes=null){
+ if(state.active?.id!==sessionId)return;
+ if(save(next=>{
+  if(next.active?.id!==sessionId)throw Error('Workout changed');
+  if(notes!==null){
+   next.active.finishedAt=Date.now();
+   next.active.notes=notes;
+   next.history.unshift(next.active);
+  }
+  next.active=null;
+  next.restEndAt=0;
+ },m?.error)){
+  m?.close();
+  haptic();
+  render();
+ }
+}
+function finish(){
+ const session=state.active;
+ if(!session)return;
+ const logged=completed(session);
+ if(!logged){
+  const m=modal('Finish blank workout?',{className:'blank-workout'});
+  m.fields.append(el('p','muted small','No sets were logged.'));
+  m.actions.append(button('Cancel',m.close),button('Discard',()=>endWorkout(session.id,m)),
+   button('Log as blank',()=>endWorkout(session.id,m,session.notes??''),'primary'));
+  return;
+ }
+ const m=modal('Finish workout');
+ m.fields.append(el('p','muted small',logged+'/'+total(session)+' sets logged'));
+ const note=field(m.fields,'Workout notes','textarea',session.notes);
+ note.maxLength=20000;
+ cancelSave(m,()=>endWorkout(session.id,m,note.value),'Save workout');
+}
 function updateDiscardButton(sessionId){
  const previous=$('discard');
  if(previous.dataset.sessionId===sessionId)return;
- const control=deleteButton('unfinished workout',()=>{
-  if(state.active?.id!==sessionId)return;
-  if(save(next=>{
-   if(next.active?.id!==sessionId)throw Error('Workout changed');
-   next.active=null;
-   next.restEndAt=0;
-  })){haptic();render();}
- });
+ const control=deleteButton('unfinished workout',()=>endWorkout(sessionId));
  control.id='discard';
  control.dataset.sessionId=sessionId;
  control.classList.remove('trash');

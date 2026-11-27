@@ -11,11 +11,11 @@ try{
  page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{
   let state=JSON.parse(localStorage.getItem('native-workouts')||'{}');
-  window.qa={fail:false,rest:0,haptics:0,music:{connected:false,available:false,title:'Spotify',artist:'',playing:false},commands:[]};
+  window.qa={fail:false,rest:0,haptics:0,keyboard:0,keyboardHides:0,music:{connected:false,available:false,title:'Spotify',artist:'',playing:false},commands:[]};
   window.WorkoutNative={
    readState:()=>JSON.stringify(state),
    writeState:raw=>{if(qa.fail)return null;const next=JSON.parse(raw);if((next.revision||0)!==(state.revision||0))return null;next.revision=(state.revision||0)+1;state=next;localStorage.setItem('native-workouts',JSON.stringify(state));return JSON.stringify(state);},
-   ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},
+   ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){qa.keyboardHides++;},showKeyboard(){qa.keyboard++;},haptic(){qa.haptics++;},
    spotifyState:()=>JSON.stringify(qa.music),spotifyCommand:command=>qa.commands.push(command),openSpotify:()=>qa.openedSpotify=true,spotifyAccess:()=>qa.connectedSpotify=true,preciseTimers:()=>true,restComplete(){qa.rest++;},previewVibration(){},requestNotifications(){},overlayAllowed(){return qa.overlayGranted===true;},allowOverlay(){qa.overlayRequests=(qa.overlayRequests||0)+1;},previewRestSequence(...args){qa.preview=args;},stopRestSequence(){qa.previewStopped=true;}
   };
  });
@@ -146,18 +146,48 @@ try{
  check((await state()).restEndAt>Date.now()&&await page.getByLabel('Rest timer').isVisible(),'A completed set starts the rest timer');
  const calculator=page.getByRole('button',{name:'Plate calculator',exact:true});
  check(await calculator.evaluate(control=>{
-  const text=document.querySelector('#elapsed'),box=element=>element.getBoundingClientRect();
-  return box(control).left>=box(text).right&&box(control.querySelector('svg')).width===parseFloat(getComputedStyle(text).fontSize);
- }),'The calculator icon sits beside the percentage at the same scale');
+  const finish=document.querySelector('#finish'),icon=control.querySelector('svg');
+  const square=control.getBoundingClientRect(),finishBox=finish.getBoundingClientRect();
+  const style=getComputedStyle(control),finishStyle=getComputedStyle(finish);
+  return control.nextElementSibling===finish&&square.right<finishBox.left&&square.width===square.height&&
+   square.height===finishBox.height&&square.top===finishBox.top&&style.backgroundColor===finishStyle.backgroundColor&&
+   getComputedStyle(icon).stroke===finishStyle.color&&icon.getBoundingClientRect().width>=20&&
+   parseFloat(getComputedStyle(icon).strokeWidth)>2;
+ }),'The larger, heavier calculator icon sits in a square button matching Finish');
  await calculator.click();
+ const equipmentButton=()=>dialog().getByRole('button',{name:'Edit plate equipment',exact:true});
+ check(await equipmentButton().evaluate(control=>{
+  const title=control.parentElement.querySelector('h2'),icon=control.querySelector('svg');
+  const center=element=>{const box=element.getBoundingClientRect();return box.top+box.height/2;};
+  return control.textContent===''&&Math.abs(center(control)-center(title))<.6&&
+   icon.getBoundingClientRect().height===parseFloat(getComputedStyle(title).fontSize)&&
+   parseFloat(getComputedStyle(icon).strokeWidth)>2;
+ })&&(await dialog().getByText('Match this load on both sides.').count())===0,
+ 'A bold, icon-only pencil matches the calculator title size and alignment');
  const curlLoad=()=>dialog().getByRole('region',{name:'Barbell Curl',exact:true});
  check(await dialog().locator('.plate-card').count()===6&&
   (await curlLoad().locator('.plate-summary').textContent())==='45 lb ➜ 45 lb bar + 0 lb in plates'&&
   (await curlLoad().locator('.plate-load-summary').textContent())==='0 lb each side · Bar only'&&
   (await dialog().getByRole('region',{name:'Front/Lateral Raise',exact:true}).textContent()).includes('Target is lighter than the bar.'),
  'The calculator lists every exercise, shows zero plate weight for the 45 lb bar alone, and identifies targets below it');
+ const keyboardBeforeEdit=await page.evaluate(()=>[qa.keyboard,qa.keyboardHides]);
  await dialog().getByRole('button',{name:'Edit load for Barbell Curl'}).click();
- await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill('140');
+ const loadInput=dialog().getByRole('spinbutton',{name:'Weight',exact:true});
+ await page.waitForFunction(count=>qa.keyboard>count,keyboardBeforeEdit[0]);
+ check(await loadInput.evaluate(input=>document.activeElement===input)&&
+  await page.evaluate(([shows,hides])=>qa.keyboard===shows+1&&qa.keyboardHides===hides,keyboardBeforeEdit),
+ 'The calculator opens the weight editor focused with one keyboard request');
+ const editorTop=await dialog().evaluate(editor=>editor.getBoundingClientRect().top);
+ for(const height of [690,540,390]){
+  await page.setViewportSize({width:390,height});
+  await page.waitForFunction(height=>Math.abs(parseFloat(document.documentElement.style.getPropertyValue('--height'))-height)<1,height);
+  check(await dialog().evaluate((editor,{top,height})=>{
+   const rect=editor.getBoundingClientRect();
+   return Math.abs(rect.top-top)<.6&&rect.bottom<=height&&document.activeElement?.getAttribute('aria-label')==='Weight';
+  },{top:editorTop,height}),'The editor stays anchored as the keyboard reduces the viewport to '+height+'px');
+ }
+ await page.setViewportSize({width:390,height:844});
+ await loadInput.fill('140');
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
  const plateHeights=()=>curlLoad().locator('.plate-group').evaluateAll(groups=>Promise.all(groups.map(async group=>{
   const image=new Image();
@@ -180,7 +210,7 @@ try{
  'The bold target and per-side line use the approved breakdown format');
  const heights=await plateHeights();
  check(heights[0]===66&&heights[1]===10,'The largest plate is taller and the smallest stays visible above the sleeve');
- await dialog().getByRole('button',{name:'Equipment',exact:true}).click();
+ await equipmentButton().click();
  const bar=dialog().getByRole('spinbutton',{name:'Bar weight (lb)',exact:true});
  await bar.fill('40');
  await dialog().getByRole('spinbutton',{name:'Count for 45 lb plates',exact:true}).fill('1');
@@ -191,7 +221,7 @@ try{
   const style=getComputedStyle(group);
   return style.backgroundRepeat==='repeat-x'&&group.getBoundingClientRect().width===2*parseFloat(style.backgroundSize);
  }),'Two plates of the same weight are drawn as two individual plates');
- await dialog().getByRole('button',{name:'Equipment',exact:true}).click();
+ await equipmentButton().click();
  await dialog().getByRole('spinbutton',{name:'Count for 25 lb plates',exact:true}).fill('3');
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
  const lighterLoad=await curlLoad().textContent();
@@ -200,7 +230,7 @@ try{
  'The closest lighter load reports the plate weight actually shown on the bar');
  const [height]=await plateHeights();
  check(Math.abs(height-66*35/45)<1,'Plates scale against the biggest available plate, including an unpaired plate');
- await dialog().getByRole('button',{name:'Equipment',exact:true}).click();
+ await equipmentButton().click();
  check(await dialog().getByRole('checkbox',{name:'0.5 lb',exact:true}).count()===0&&
   await dialog().getByRole('checkbox',{name:'0.25 lb',exact:true}).count()===0,'The two smallest sizes are no longer presets');
  const custom=dialog().getByRole('spinbutton',{name:'Custom plate (lb)',exact:true});
@@ -217,10 +247,10 @@ try{
  check((await curlLoad().locator('.plate-summary').textContent())==='140 lb ➜ 39.26 lb bar + 100.74 lb in plates'&&
   (await curlLoad().locator('.plate-load-summary').textContent())==='50.37 lb each side · 1×50.37 lb',
   'The calculator honors the count and exact weight of a custom plate');
- await dialog().getByRole('button',{name:'Equipment',exact:true}).click();
+ await equipmentButton().click();
  await dialog().getByRole('checkbox',{name:'50.37 lb',exact:true}).uncheck();
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
- await dialog().getByRole('button',{name:'Equipment',exact:true}).click();
+ await equipmentButton().click();
  check(!await dialog().getByRole('checkbox',{name:'50.37 lb',exact:true}).isChecked(),'Disabled custom plate sizes stay listed');
  await dialog().getByRole('button',{name:'Remove custom 50.37 lb plate',exact:true}).click();
  await bar.fill('40');
