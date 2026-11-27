@@ -2,7 +2,7 @@
 
 Add a relationship type in a person’s editor. Suggestions include common types and custom types you have saved before. Reminder notifications open RM, with Text and Call actions available for people with phone numbers.
 
-[Download RM 1.0.24](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Relationship-Manager-v1.0.24.apk). Android 8 or later.
+[Download RM 1.0.25](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Relationship-Manager-v1.0.25.apk). Android 8 or later.
 
 The tab selector matches Tasks with a filled selected tab, 40 px controls, 12 px corners and an inset inside a 2 px outer border. Holding the title opens Personal notes with the browser touch highlight disabled. Verified with 34 Android tests, lint and 161 browser checks.
 
