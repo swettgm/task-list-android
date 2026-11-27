@@ -1,8 +1,8 @@
 # Tasks — Android
 
-Download [Tasks 0.100.5](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.100.5.apk). Install over the existing app to retain your tasks and settings.
+Download [Tasks 0.100.6](https://github.com/swettgm/task-list-android/raw/refs/heads/main/downloads/Tasks-v0.100.6.apk). Install over the existing app to retain your tasks and settings.
 
-Done, Trash, Hidden, and Moved share a row at the bottom of Today. Moved shows tasks rescheduled that day and the dates they moved from and to. Do tomorrow has more space below the inline time control.
+Done, Moved, Hidden, and Trash share a row at the bottom of Today. Moved shows today’s rescheduled tasks and adds a count when there are any. Task details keep the same spacing above their action buttons on both single-line and wrapped rows. Do tomorrow has more space below the inline time control.
 
 Overdue tasks from the previous day show **Yesterday**. Completed and Trash show today’s counts when greater than zero. Task and project editors close on confirmation, with local saves and Google sync running in the background. Windows shows the time of its last successful Google sync.
 

@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.100.6",
+    "date": "2026-11-27",
+    "changes": [
+      "Order the Today buttons as Done, Moved, Hidden, Trash.",
+      "Keep the same gap below task details when they wrap or the task repeats.",
+      "Show the number of tasks moved today in parentheses."
+    ]
+  },
+  {
     "version": "0.100.5",
     "date": "2026-11-27",
     "changes": [

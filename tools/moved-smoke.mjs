@@ -23,6 +23,8 @@ try {
       version:2026103022,
       customTasks:[
         {id:'today',title:'Today task',due:'2026-11-27',priority:'HIGH'},
+        {id:'wrapped',title:'Wrapped task',days:[0,1,2,3,4,5],startsOn:'2026-11-27',priority:'HIGH',
+          labels:['At home','On the computer','Outdoors','On the road','On the phone']},
         {id:'future',title:'Future task',due:'2026-11-28',priority:'LOW'},
         {id:'prev',title:'Moved yesterday',due:'2026-11-26',priority:'LOW'},
         {id:'legacy',title:'Move without a saved day',due:'2026-11-25',priority:'LOW'}
@@ -49,11 +51,23 @@ try {
     .evaluateAll(nodes=>nodes.map(node=>node.dateTime));
   await page.setViewportSize({width:320,height:844});
   const footer=page.locator('#pt-today .tl-history-toggles');
-  assert.deepEqual(await footer.getByRole('button').allTextContents(),['Done','Trash','Hidden','Moved']);
+  assert.deepEqual(await footer.getByRole('button').allTextContents(),['Done','Moved','Hidden','Trash']);
   assert.equal(await footer.getByRole('button').evaluateAll(buttons=>{
     const boxes=buttons.map(button=>button.getBoundingClientRect());
     return boxes.every(box=>box.top===boxes[0].top&&box.right<=innerWidth);
   }),true);
+  const detailsGap=task=>task.evaluate(row=>{
+    const details=row.querySelector(':scope > .tm-task-details');
+    const action=row.querySelector(':scope > .tm-item-actions > button');
+    return {
+      height:details.querySelector('.tl-meta-flow').getBoundingClientRect().height,
+      gap:action.getBoundingClientRect().top-details.getBoundingClientRect().bottom
+    };
+  });
+  const singleLine=await detailsGap(row);
+  const wrapped=await detailsGap(page.locator('#pt-list [data-task-id="wrapped"]'));
+  assert.ok(wrapped.height>singleLine.height,'The recurring fixture wraps to additional lines');
+  assert.ok(singleLine.gap>=12&&Math.abs(wrapped.gap-singleLine.gap)<1,'Task actions start at the same distance below the final detail line');
   await page.setViewportSize({width:390,height:844});
   await moved.tap();
   assert.equal(await page.getByText('No tasks moved today.',{exact:true}).isVisible(),true);
@@ -67,6 +81,7 @@ try {
   await tomorrow.tap({position:{x:tomorrowBox.width/2,y:2}});
   assert.equal(await dialog.count(),0);
   assert.equal(await row.count(),0);
+  assert.equal(await moved.textContent(),'Moved (1)');
 
   await moved.tap();
   assert.equal(await moved.getAttribute('aria-expanded'),'true');
@@ -79,10 +94,12 @@ try {
   await page.getByRole('button',{name:'Move Future task to today',exact:true}).tap();
   await page.getByRole('tab',{name:'Today',exact:true}).tap();
   assert.deepEqual(await moveDates('future'),['2026-11-28','2026-11-27']);
+  assert.equal(await moved.textContent(),'Moved (2)');
   await page.locator('#pt-list [data-task-id="future"] .tl-edit-button').tap();
   await dialog.locator('input[type=date]').fill('2026-11-30');
   await dialog.getByRole('button',{name:'Save task',exact:true}).tap();
   assert.deepEqual(await moveDates('future'),['2026-11-27','2026-11-30']);
+  assert.equal(await moved.textContent(),'Moved (2)');
 
   await page.reload();
   await page.waitForFunction(()=>!!window.TaskListApp);
@@ -92,6 +109,7 @@ try {
   assert.deepEqual(await moveDates('future'),['2026-11-27','2026-11-30']);
   await page.evaluate(()=>advanceMovedFixture());
   assert.equal(await page.getByText('No tasks moved today.',{exact:true}).isVisible(),true);
+  assert.equal(await moved.textContent(),'Moved');
   assert.deepEqual(errors,[]);
   console.log('Passed one-line footer, touch targets, daily move filtering, date edits, reopening and midnight rollover');
 } finally {
