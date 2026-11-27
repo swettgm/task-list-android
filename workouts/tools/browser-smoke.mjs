@@ -344,6 +344,8 @@ try{
  await progress.click();
  await page.getByRole('tab',{name:'Today'}).click();
  await page.waitForFunction(()=>document.querySelector('#today-tab').getAttribute('aria-selected')==='true');
+ check(await page.locator('#today .exercise').count()>0&&await page.locator('#today').getByText(/^Last time /).count()===0,
+  'Today omits the last-workout line even when exercise history exists');
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Barbell Curl',exact:true}).click();
  await dialog().getByRole('spinbutton',{name:'Weight',exact:true}).fill('55');
