@@ -95,12 +95,13 @@ try{
  const pencil=page.getByRole('button',{name:'Edit Workout A',exact:true});
  check((await arrow.boundingBox()).x>(await pencil.boundingBox()).x&&await arrow.locator('svg').evaluate(svg=>{
   const icon=svg.getBoundingClientRect(),hit=svg.parentElement.getBoundingClientRect();
-  return icon.height===16&&Math.abs(icon.top+icon.height/2-hit.top-hit.height/2)<.6;
- }),'The History-style chevron is centered to the right of the pencil');
- const chevronPath=await arrow.locator('path').getAttribute('d');
+  return icon.height===26&&getComputedStyle(svg).transform==='none'&&Math.abs(icon.top+icon.height/2-hit.top-hit.height/2)<.6;
+ }),'The larger down chevron is centered to the right of the workout pencil');
  check(await page.locator('#today-date').count()===0,'Today opens straight into the routine cards');
  await arrow.click();
  check(await workoutA.getAttribute('aria-expanded')==='true','The right chevron opens the card');
+ check(await page.getByRole('button',{name:'Collapse Workout A',exact:true}).locator('svg').evaluate(svg=>
+  new DOMMatrix(getComputedStyle(svg).transform).d===-1),'The workout chevron points up when the card is open');
  check(await page.locator('.exercise:visible').count()===6&&(await state()).active===null,'Opening a card reveals exercise rows without starting a workout');
  check(await page.getByRole('region',{name:'Workout A',exact:true}).evaluate(card=>{
   const outer=card.getBoundingClientRect();
@@ -337,7 +338,7 @@ try{
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
  check(await page.locator('.progress-row').textContent().then(s=>s.includes('45 lb × 6')),'Progress uses completed sets');
  const progress=page.locator('.progress summary');
- check(await progress.locator('path').getAttribute('d')===chevronPath,'History and workout cards use the same chevron');
+ const chevronPath=await progress.locator('path').getAttribute('d');
  await progress.click();
  check(await progress.evaluate(summary=>{
   const style=getComputedStyle(summary),label=summary.querySelector('span').getBoundingClientRect();
