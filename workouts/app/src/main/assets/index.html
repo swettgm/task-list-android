@@ -7,7 +7,7 @@
 <title>Exercise</title>
 <style>
 :root{--top:#203747;--bottom:#5a5c61;--text:#f4f7fa;--ink:#172631;--line:#ffffff44;--surface:#ffffff0b;--muted:#ffffffb3;color-scheme:dark;font:16px system-ui,sans-serif;color:var(--text);background:var(--top)}
-*{box-sizing:border-box}html,body{overflow:hidden;overscroll-behavior:none}body{--page-inset:16px;margin:0;height:var(--height,100dvh);padding:16px var(--page-inset);background:linear-gradient(var(--top),var(--bottom));background-attachment:fixed}body.flat{background:var(--top)}
+*{box-sizing:border-box}html,body{overflow:hidden;overscroll-behavior:none}body{--page-inset:16px;margin:0;height:var(--height,100dvh);padding:16px var(--page-inset);background:linear-gradient(var(--top),var(--bottom)) top/100% var(--gradient-height,100lvh) no-repeat fixed}body.flat{background:var(--top)}
 [hidden]{display:none!important}button,input,textarea,select{font:inherit;color:inherit}button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;max-width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:12px;background:transparent;cursor:pointer;touch-action:manipulation;line-height:1.25;-webkit-tap-highlight-color:transparent}button:disabled{opacity:.45;cursor:default}button:focus,summary:focus{outline:none}body.keyboard-navigation button:focus-visible,body.keyboard-navigation summary:focus-visible{outline:2px solid var(--text);outline-offset:3px}button.primary{background:var(--text);border-color:var(--text);color:var(--ink);font-weight:700}.icon{width:40px;min-width:40px;padding:8px}.bare{border:0;background:transparent}.trash{color:#ff6b7c}.danger{background:#a52335;color:#fff;border-color:#ff7b8b}svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 h1,h2,h3,p{margin:0}h1{font-size:22px;line-height:1.2;white-space:nowrap;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}h2{font-size:21px;line-height:1.2}h3{font-size:17px}header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px}#app{max-width:700px;height:100%;margin:auto;display:flex;flex-direction:column}.tabs{height:50px;display:flex;align-items:center;padding:1px;gap:0;border:2px solid var(--line);border-radius:15px;overflow:hidden;margin-bottom:16px}.tabs button{flex:1;height:100%;min-height:0;border:0;border-radius:12px;font-size:14px;color:var(--muted)}.tabs button[aria-selected=true]{background:var(--text);color:var(--ink);font-weight:650}.row{display:flex;align-items:center;gap:8px;min-width:0}.spaced{justify-content:space-between}.muted{opacity:.7}.small{font-size:13px}.date{font-size:13px;opacity:.7;margin-bottom:10px}.routine-heading{display:grid;grid-template-columns:minmax(0,1fr) 40px 40px;align-items:center;gap:6px}.exercise{padding:8px 0;touch-action:pan-y;-webkit-user-select:none;user-select:none}.exercise-head{display:grid;grid-template-columns:minmax(0,1fr) max-content;gap:10px;align-items:center}.exercise-name{min-width:0;overflow-wrap:anywhere;font-size:17px;font-weight:650;text-align:left;padding:0;justify-content:flex-start}.exercise-plan{flex-shrink:0;font-size:14px;text-align:right;padding:0;min-height:32px;color:var(--muted)}.exercise-notes{font-size:14px;line-height:1.4;opacity:.75;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:7px}.exercise-notes a{color:inherit}.sets{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px}.set{width:54px;height:54px;min-height:54px;min-width:54px;padding:0;border-radius:50%;border:2px solid var(--line);font-size:17px}.set[aria-pressed=true]{background:var(--text);border-color:var(--text);color:var(--ink);font-weight:700}.set-add{opacity:.65}.set-add svg{width:16px;height:16px}.session-bar{margin:10px 0 0;display:flex;align-items:center;justify-content:space-between;gap:8px}.session-bar .row{gap:6px}.elapsed{font-variant-numeric:tabular-nums;font-size:14px;opacity:.75}.empty{font-size:15px;opacity:.7;line-height:1.5;padding:20px 0}.fab{position:fixed;right:max(18px,calc((100vw - 700px)/2));bottom:22px;width:58px;height:58px;border:0;border-radius:16px;background:var(--text);color:var(--ink);box-shadow:0 4px 20px #0003;padding:14px;z-index:5}.fab svg{width:30px;height:30px;stroke-width:3}#app>header,#app>.tabs{flex:none}#app>header{margin-bottom:5px}#page-stack{position:relative;flex:1;min-height:0;overflow:hidden}
 #page-stack>[role=tabpanel]{position:absolute;inset:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:none;scrollbar-width:none}
@@ -35,6 +35,8 @@ body.has-player{padding-bottom:104px}
 #spotify-copy>span{width:100%;text-overflow:clip}
 #spotify-copy .spotify-line{position:relative;display:block;width:max-content;max-width:none;overflow:visible}
 #spotify-copy .spotify-line[data-repeat]::after{content:attr(data-repeat) / "";position:absolute;top:0;left:var(--repeat-offset)}
+@property --spotify-left-fade{syntax:'<length>';inherits:false;initial-value:0px}
+#spotify-copy .marquee{mask-image:linear-gradient(to right,transparent,#000 var(--spotify-left-fade),#000 calc(100% - 10px),transparent)}
 @media(prefers-reduced-motion:reduce){#spotify-copy>span{text-overflow:ellipsis}#spotify-copy .spotify-line{display:inline}}
 .spotify-art{display:grid;place-items:center;flex:0 0 var(--art-size);width:var(--art-size);height:var(--art-size);border-radius:10px;overflow:hidden;background:var(--surface)}
 .spotify-art img{width:100%;height:100%;object-fit:cover}
@@ -1441,6 +1443,7 @@ function settingsChangelog(){
  const changelog=el('details','settings-changelog');
  changelog.append(disclosureSummary('Changelog'));
  const releases=[
+  ['1.0.58',['Synchronized the Spotify marquee and smoothed the edge fade. Play and pause update on tap, and the stopwatch toggles the rest timer.','Kept the background gradient anchored while the keyboard is open.']],
   ['1.0.57',['The music marquee pauses longer with a crisp left edge and restarts both lines when the song changes.']],
   ['1.0.56',['Long song titles and artist names fade at the edges and scroll in a continuous loop.']],
   ['1.0.55',['Tapping the music bar uses Spotify’s current playback shortcut when available.','Spotify labels loop in one direction and leave room for descenders.','Moved the Settings title closer to the back chevron.']],
@@ -1772,6 +1775,7 @@ function tick(){
   $('elapsed').textContent=duration(Date.now()-state.active.startedAt)+' · '+percent+'%';
  }
  const end=state.restEndAt,delta=end-Date.now(),remaining=Math.max(0,delta);
+ $('start-rest').setAttribute('aria-label',end&&!state.restDismissed?'End rest timer':'Start rest timer');
  $('rest').hidden=!end||state.restDismissed||(!state.active&&!state.restSource?.manual)||state.settings.floatingTimer===false||settingsOpen||nativeOverlayVisible;
  const label=remainingText(delta);
  $('rest-time').textContent=label;
@@ -1894,20 +1898,21 @@ function slideSpotifyText(direction){
 const spotifyReducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 const spotifyLines=['spotify-title','spotify-artist'].map(id=>({row:$(id),text:$(id).firstElementChild}));
 function layoutSpotifyMarquee(){
- for(const line of spotifyLines){
+ const widths=spotifyLines.map(line=>{
   const available=line.row.clientWidth;
   const width=line.text.offsetWidth;
-  const moving=available>0&&width>available&&!spotifyReducedMotion.matches;
-  const length=moving?width:0;
-  if(line.length===length&&line.available===available)continue;
-  line.length=length;line.available=available;
+  return available>0&&width>available&&!spotifyReducedMotion.matches?width:0;
+ });
+ if(spotifyLines.every((line,index)=>line.length===widths[index]))return;
+ const pause=2400,fadeTime=400,offset=Math.max(...widths)+36,duration=pause+offset*1000/16;
+ const hold=pause/duration,timing={duration,iterations:Infinity},start=document.timeline.currentTime;
+ for(const [index,line] of spotifyLines.entries()){
+  const width=widths[index];
+  line.length=width;
   line.animation?.cancel();
   line.fade?.cancel();
-  if(!moving){delete line.text.dataset.repeat;continue;}
-  const offset=width+36,pause=2400,duration=pause+offset*1000/16,hold=pause/duration;
-  const mask='linear-gradient(to right,transparent,#000 10px,#000 calc(100% - 10px),transparent)';
-  const restingMask='linear-gradient(to right,#000 calc(100% - 10px),transparent)';
-  const timing={duration,iterations:Infinity};
+  line.row.classList.toggle('marquee',width>0);
+  if(!width){delete line.text.dataset.repeat;continue;}
   line.text.dataset.repeat=line.text.textContent;
   line.text.style.setProperty('--repeat-offset',offset+'px');
   line.animation=line.text.animate([
@@ -1916,11 +1921,13 @@ function layoutSpotifyMarquee(){
    {transform:'translateX(-'+offset+'px)',offset:1}
   ],timing);
   line.fade=line.row.animate([
-   {maskImage:restingMask,offset:0},
-   {maskImage:restingMask,offset:hold},
-   {maskImage:mask,offset:hold},
-   {maskImage:mask,offset:1}
+   {'--spotify-left-fade':'0px',offset:0},
+   {'--spotify-left-fade':'0px',offset:hold,easing:'ease-in-out'},
+   {'--spotify-left-fade':'10px',offset:(pause+fadeTime)/duration},
+   {'--spotify-left-fade':'10px',offset:1-fadeTime/duration,easing:'ease-in-out'},
+   {'--spotify-left-fade':'0px',offset:1}
   ],timing);
+  if(start!==null)line.animation.startTime=line.fade.startTime=start;
  }
 }
 new ResizeObserver(layoutSpotifyMarquee).observe($('spotify-copy'));
@@ -1945,6 +1952,14 @@ function renderSpotifyText(title,artist){
   ],{duration:180,easing:'ease-out'});
  }
 }
+let spotifyPlaying=false,spotifyPlaybackRequest=null;
+function showSpotifyPlayback(playing,empty=false){
+ const control=$('spotify-play'),label=empty?'Open Spotify from play':(playing?'Pause':'Play')+' Spotify';
+ spotifyPlaying=playing;
+ if(control.getAttribute('aria-label')===label)return;
+ control.setAttribute('aria-label',label);
+ control.replaceChildren(icon(playing?'pause':'play'));
+}
 function renderSpotify(){
  if(!state)return;
  const enabled=state.settings.spotify!==false&&!settingsOpen;
@@ -1967,14 +1982,15 @@ function renderSpotify(){
   else art.append(icon('music'));
  }
 
- const labels={prev:'Previous Spotify track',play:(music.playing?'Pause':'Play')+' Spotify',next:'Next Spotify track'};
- const idleLabels={prev:'Open Spotify from previous track',play:'Open Spotify from play',next:'Open Spotify from next track'};
- for(const key of ['prev','play','next'])$('spotify-'+key).setAttribute('aria-label',empty?idleLabels[key]:labels[key]);
- $('spotify-play').replaceChildren(icon(!empty&&music.playing?'pause':'play'));
+ $('spotify-prev').setAttribute('aria-label',empty?'Open Spotify from previous track':'Previous Spotify track');
+ $('spotify-next').setAttribute('aria-label',empty?'Open Spotify from next track':'Next Spotify track');
+ const actualPlaying=!empty&&!!music.playing,request=spotifyPlaybackRequest,now=performance.now();
+ if(empty||(request&&(now>=request.expires||(now>=request.confirmAfter&&request.playing===actualPlaying))))spotifyPlaybackRequest=null;
+ showSpotifyPlayback(spotifyPlaybackRequest?.playing??actualPlaying,empty);
 }
 function openSpotify(){haptic();native?.openSpotify();}
 $('spotify-art').append(icon('music'));
-$('spotify').onclick=event=>{if(!event.target.closest('button'))openSpotify();};
+$('spotify').onclick=event=>{if(!event.composedPath().some(node=>node instanceof HTMLButtonElement))openSpotify();};
 $('spotify-prev').append(icon('prev'));
 $('spotify-next').append(icon('next'));
 $('spotify-play').append(icon('play'));
@@ -1982,7 +1998,13 @@ $('spotify-open').onclick=openSpotify;
 function spotifyTransport(command){
  if($('spotify').classList.contains('empty')){openSpotify();return;}
  haptic();
- native?.spotifyCommand(command);
+ if(command==='play'){
+  const playing=!spotifyPlaying,now=performance.now();
+  spotifyPlaybackRequest={playing,confirmAfter:now+250,expires:now+1800};
+  showSpotifyPlayback(playing);
+  native?.spotifyCommand(playing?'resume':'pause');
+  setTimeout(renderSpotify,1800);
+ }else native?.spotifyCommand(command);
  setTimeout(renderSpotify,250);
 }
 for(const command of ['prev','play','next'])$('spotify-'+command).onclick=()=>spotifyTransport(command);
@@ -2027,7 +2049,10 @@ $('add-routine').append(icon('routinePlus'));
 $('add-routine').onclick=()=>{haptic();newRoutine();};
 $('start-rest').append(icon('stopwatch'));
 $('start-rest').onclick=()=>{
- if(save(next=>startRest(next,next.settings.rest||settingsDefault().rest,{manual:true}))){haptic();tick();}
+ if(save(next=>{
+  if(next.restEndAt&&!next.restDismissed)clearRest(next);
+  else startRest(next,next.settings.rest||settingsDefault().rest,{manual:true});
+ })){haptic();tick();}
 };
 $('retry').onclick=load;
 document.addEventListener('pointerdown',()=>document.body.classList.remove('keyboard-navigation'),true);
@@ -2149,7 +2174,19 @@ function finishDrag(commit){
 }
 document.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;drag.y=event.clientY;if(!drag.active&&Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)>12){clearTimeout(drag.timer);drag=null;return;}if(drag.active&&event.cancelable)event.preventDefault();},{passive:false});
 document.addEventListener('pointerup',event=>{if(drag?.id===event.pointerId)finishDrag(true);});document.addEventListener('pointercancel',()=>finishDrag(false));window.addEventListener('blur',()=>{finishRepDrag(false);finishTimerDrag(false);gesture=null;finishSlide(false,false);finishDrag(false);});
-function viewport(){document.documentElement.style.setProperty('--height',(visualViewport?.height||innerHeight)+'px');if(state&&!timerDrag)placeTimer();}viewport();window.addEventListener('resize',viewport);visualViewport?.addEventListener('resize',viewport);
+let gradientWidth=0,gradientHeight=0;
+const touchViewport=matchMedia('(pointer:coarse)');
+function viewport(){
+ const height=visualViewport?.height||innerHeight,style=document.documentElement.style;
+ style.setProperty('--height',height+'px');
+ // On touch screens the keyboard can shrink the WebView without changing its width.
+ if(innerWidth!==gradientWidth||height>gradientHeight||!touchViewport.matches){
+  gradientWidth=innerWidth;gradientHeight=height;
+  style.setProperty('--gradient-height',height+'px');
+ }
+ if(state&&!timerDrag)placeTimer();
+}
+viewport();window.addEventListener('resize',viewport);visualViewport?.addEventListener('resize',viewport);
 function refresh(){if(closeDialog||settingsOpen||drag||slide||repDrag)return;try{const saved=read();if(saved){state=saved;theme();render();}}catch(_){toast('Couldn’t reload saved workouts.');}}
 window.Workouts=Object.freeze({
  refresh,

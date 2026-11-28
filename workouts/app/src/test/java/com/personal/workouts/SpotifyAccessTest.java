@@ -49,6 +49,8 @@ public class SpotifyAccessTest {
         SpotifyAccess.command(context,"play");assertEquals(PlaybackState.ACTION_PLAY,shadowOf(spotify.getTransportControls()).getLastPerformedAction());
         SpotifyAccess.command(context,"next");assertEquals(PlaybackState.ACTION_SKIP_TO_NEXT,shadowOf(spotify.getTransportControls()).getLastPerformedAction());
         SpotifyAccess.command(context,"prev");assertEquals(PlaybackState.ACTION_SKIP_TO_PREVIOUS,shadowOf(spotify.getTransportControls()).getLastPerformedAction());
+        SpotifyAccess.command(context,"pause");assertEquals(PlaybackState.ACTION_PAUSE,shadowOf(spotify.getTransportControls()).getLastPerformedAction());
+        SpotifyAccess.command(context,"resume");assertEquals(PlaybackState.ACTION_PLAY,shadowOf(spotify.getTransportControls()).getLastPerformedAction());
     }
     @Test public void openingPlaybackUsesTheActivityProvidedBySpotify() {
         Intent playback=new Intent("test.spotify.playback").setPackage(SpotifyAccess.PACKAGE_NAME);

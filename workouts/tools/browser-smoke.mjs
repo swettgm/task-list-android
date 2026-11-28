@@ -41,8 +41,9 @@ try{
  check(manualRest.active===null&&manualRest.restDurationMs===manualRest.settings.rest*1000&&
   await page.getByRole('button',{name:'Rest controls',exact:true}).isVisible()&&await dialog().count()===0,
   'The stopwatch starts the default countdown directly with no active workout');
- await page.getByRole('button',{name:'Rest controls',exact:true}).click();
- await dialog().getByRole('button',{name:'Skip rest',exact:true}).click();
+ await page.getByRole('button',{name:'End rest timer',exact:true}).click();
+ check((await state()).restEndAt===0&&!(await page.getByRole('button',{name:'Rest controls',exact:true}).isVisible()),
+  'Tapping the stopwatch again ends and hides the timer');
  check(await page.getByLabel('Spotify player').isVisible(),'Compact Spotify player uses the app layout');
  check(await page.locator('#spotify').evaluate(bar=>
   [bar,...bar.querySelectorAll('button, span')].every(part=>getComputedStyle(part).webkitTapHighlightColor==='rgba(0, 0, 0, 0)')&&
@@ -73,20 +74,26 @@ try{
  await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Training track');
  check(await page.locator('#spotify-progress').isVisible()&&await page.locator('#spotify-progress span').evaluate(bar=>bar.style.transform.startsWith('scaleX(0.25')),'Playback shows the track progress on the bottom edge');
  await page.getByRole('button',{name:'Pause Spotify',exact:true}).click();
+ check(await page.getByRole('button',{name:'Play Spotify',exact:true}).isVisible(), 'The button switches immediately without waiting for Spotify to pause');
+ await page.getByRole('button',{name:'Play Spotify',exact:true}).click();
+ check(await page.getByRole('button',{name:'Pause Spotify',exact:true}).isVisible(), 'A second tap switches back immediately');
  await page.getByRole('button',{name:'Next Spotify track',exact:true}).click();
  check(await page.evaluate(()=>qa.haptics>=3),'Spotify buttons provide haptic feedback');
- check(await page.evaluate(()=>qa.commands.join()==='play,next'),'Player forwards pause and next without changing workout state');
+ check(await page.evaluate(()=>qa.commands.join()==='pause,resume,next'),'Player forwards the requested playback state and next track');
  const playing=await playerGeometry();
  check(playing.height===idle.height&&playing.gaps.every(gap=>Math.abs(gap-playing.gaps[0])<.6),'Playback retains identical player height and even artwork padding');
  const spotifyTouch=await page.context().newCDPSession(page);
  const spotifyBox=await page.locator('#spotify-open').boundingBox();
  const x=spotifyBox.x+spotifyBox.width/2,y=spotifyBox.y+spotifyBox.height/2;
- for(const dx of [-64,64]){
+ for(const [index,dx] of [-64,64].entries()){
   await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
   for(const fraction of [.3,.6,1])await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*fraction,y}]});
   await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await page.waitForFunction(total=>qa.commands.length>=total,index+4);
  }
- check(await page.evaluate(()=>qa.commands.join()==='play,next,next,prev'&&!qa.openedSpotify),'Swiping the Spotify bar skips tracks without opening Spotify');
+ const swipeResult=await page.evaluate(()=>({commands:qa.commands,openedSpotify:qa.openedSpotify}));
+ assert.deepEqual(swipeResult,{commands:['pause','resume','next','next','prev'],openedSpotify:false});
+ checks.push('Swiping the Spotify bar skips tracks without opening Spotify');
  await page.evaluate(()=>{qa.music.title='Previous track';qa.music.artist='Another artist';qa.music.art='';});
  await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent==='Previous track');
  check(await page.locator('#spotify-copy').evaluate(el=>el.getAnimations().length>0)&&
@@ -97,16 +104,20 @@ try{
   qa.music.artist='An artist name long enough to scroll on its own line';
   Workouts.refresh();
  });
- check(await page.locator('#spotify-copy .spotify-line').evaluateAll(lines=>lines.every(line=>{
-  const [animation]=line.getAnimations(),width=line.offsetWidth,available=line.parentElement.clientWidth,offset=width+36;
+ check(await page.locator('#spotify-copy .spotify-line').evaluateAll(lines=>{
+  const offset=Math.max(...lines.map(line=>line.offsetWidth))+36,start=lines[0].getAnimations()[0]?.startTime;
+  return lines.every(line=>{
+  const [animation]=line.getAnimations(),width=line.offsetWidth,available=line.parentElement.clientWidth;
   const [fade]=line.parentElement.getAnimations();
   const frames=animation?.effect.getKeyframes();
   const fadeFrames=fade?.effect.getKeyframes();
   return width>available&&animation?.effect.getTiming().duration===2400+offset*1000/16&&
+   animation.startTime===start&&fade?.startTime===start&&
    frames[2].transform==='translateX(-'+offset+'px)'&&line.dataset.repeat===line.textContent&&
-   getComputedStyle(line,'::after').left===offset+'px'&&fadeFrames[0].maskImage===fadeFrames[1].maskImage&&
-   fadeFrames[1].offset===frames[1].offset&&fadeFrames[2].offset===frames[1].offset&&fadeFrames[2].maskImage!==fadeFrames[1].maskImage;
- })),'Long music labels loop with a longer pause and a left-edge fade only during movement');
+   getComputedStyle(line,'::after').left===offset+'px'&&fadeFrames[1]['--spotify-left-fade']==='0px'&&
+   fadeFrames[1].offset===frames[1].offset&&fadeFrames[2].offset>frames[1].offset&&fadeFrames[2]['--spotify-left-fade']==='10px';
+  });
+ }),'Long music labels share a cycle and fade in gradually after the pause');
  check(await page.locator('#spotify-title .spotify-line').evaluate(line=>{
   const [animation]=line.getAnimations();
   Workouts.refresh();
@@ -263,6 +274,7 @@ try{
   await page.evaluate(([shows,hides])=>qa.keyboard===shows+1&&qa.keyboardHides===hides,keyboardBeforeEdit),
  'The calculator opens the weight editor focused with one keyboard request');
  const editorTop=await dialog().evaluate(editor=>editor.getBoundingClientRect().top);
+ const gradientSize=await page.evaluate(()=>getComputedStyle(document.body).backgroundSize);
  for(const height of [690,540,390]){
   await page.setViewportSize({width:390,height});
   await page.waitForFunction(height=>Math.abs(parseFloat(document.documentElement.style.getPropertyValue('--height'))-height)<1,height);
@@ -270,6 +282,7 @@ try{
    const rect=editor.getBoundingClientRect();
    return Math.abs(rect.top-top)<.6&&rect.bottom<=height&&document.activeElement?.getAttribute('aria-label')==='Weight';
   },{top:editorTop,height}),'The editor stays anchored as the keyboard reduces the viewport to '+height+'px');
+  check(await page.evaluate(()=>getComputedStyle(document.body).backgroundSize)===gradientSize,'The background gradient stays anchored at '+height+'px');
  }
  await page.setViewportSize({width:390,height:844});
  await loadInput.fill('140');

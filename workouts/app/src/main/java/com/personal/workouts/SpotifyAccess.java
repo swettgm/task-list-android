@@ -95,6 +95,8 @@ public final class SpotifyAccess extends NotificationListenerService {
         switch(command) {
             case "prev":controls.skipToPrevious();break;
             case "next":controls.skipToNext();break;
+            case "pause":controls.pause();break;
+            case "resume":controls.play();break;
             case "play":
                 PlaybackState playback=controller.getPlaybackState();
                 if(playback!=null&&(playback.getState()==PlaybackState.STATE_PLAYING||playback.getState()==PlaybackState.STATE_BUFFERING))controls.pause();
