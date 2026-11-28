@@ -13,7 +13,7 @@ h1,h2,h3,p{margin:0}h1{font-size:22px;line-height:1.2;white-space:nowrap;-webkit
 #page-stack>[role=tabpanel]{position:absolute;inset:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:none;scrollbar-width:none}
 .rest{position:fixed;left:16px;right:90px;bottom:22px;max-width:580px;min-height:58px;margin:auto;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--line);border-radius:14px;background:var(--top);z-index:6;box-shadow:0 4px 20px #0003}.rest-time{flex:1;min-width:0;font-size:14px;line-height:1.25;font-variant-numeric:tabular-nums}.rest-time strong{display:block;font-size:18px}.rest button{min-height:34px;font-size:13px;padding:5px}.rest .icon{min-width:30px;width:30px}
 .history-card{width:100%;text-align:left;justify-content:space-between;gap:8px;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:15px 0;align-items:center}.history-card strong,.history-card span{display:block}.history-card .history-date{font-size:13px;opacity:.7;margin-top:4px}.history-card .history-count{font-size:13px;opacity:.75;white-space:nowrap}.history-sets{display:grid;gap:5px;margin-top:8px;font-size:14px;opacity:.8}.history-exercise{padding:12px 0;border-bottom:1px solid var(--line)}.history-exercise strong{font-size:16px}.progress-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:13px;border-bottom:1px solid var(--line)}
-dialog{width:calc(100% - 24px);max-width:520px;max-height:calc(var(--height,100dvh) - 24px);margin:auto;padding:20px;border:1px solid var(--line);border-radius:20px;color:var(--text);background:linear-gradient(var(--top),var(--bottom));box-shadow:0 12px 40px #0004;overflow:hidden;outline:none}dialog::backdrop{background:#0009}dialog[open]{display:flex;flex-direction:column;gap:16px}dialog>h2{flex:none}dialog .fields{display:flex;flex-direction:column;gap:14px;overflow:auto;min-height:0;scrollbar-width:none;padding:1px 2px}dialog .fields>*{flex:none}.actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;padding-top:2px}.actions button{white-space:nowrap;font-size:14px;padding:7px 11px}.actions .trash{margin-right:auto;width:38px;min-width:38px;padding:8px}.field{display:flex;flex-direction:column;gap:6px;min-width:0}.field>span{font-size:14px;opacity:.7}input,textarea,select{border:2px solid var(--line);border-radius:12px;background:var(--surface);min-height:42px;width:100%;min-width:0;padding:8px 10px;line-height:1.3}input:focus,textarea:focus,select:focus{outline:0}body.keyboard-navigation input:focus-visible,body.keyboard-navigation textarea:focus-visible,body.keyboard-navigation select:focus-visible{border-color:var(--text)}textarea{resize:vertical;min-height:80px;max-height:260px}input[type=checkbox]{appearance:none;width:19px;height:19px;min-height:19px;flex:0 0 19px;padding:0;margin:0;border-radius:5px;position:relative}input[type=checkbox]:checked{background:var(--text);border-color:var(--text)}input[type=checkbox]:checked::after{content:'';position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(43deg)}.check-label{display:flex;gap:8px;align-items:center;min-height:32px;font-size:14px}select{appearance:none;padding-right:36px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath d='m5 9 7 7 7-7' fill='none' stroke='%23f4f7fa' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px}input[type=color]{width:44px;min-width:44px;height:42px;padding:4px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.error{font-size:13px;color:#ffb9c4;white-space:pre-wrap;flex:none}.error:empty{display:none}.choice-list{display:grid;gap:6px}.choice-list button{justify-content:flex-start;text-align:left;overflow-wrap:anywhere}.choice-list button[aria-pressed=true]{border:2px solid var(--text)}.toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);padding:9px 13px;border:1px solid var(--line);border-radius:11px;background:var(--top);font-size:13px;z-index:100}.slider-row{display:flex;align-items:center;gap:12px}.slider-row input{flex:1;padding:0;border:0;min-height:32px;accent-color:var(--text)}.slider-row output{width:52px;flex:none;font-size:14px;text-align:right}.drag-source{opacity:.22;border-top:2px solid var(--text)}.drag-ghost{position:fixed;z-index:100;pointer-events:none;background:var(--top);border:1.5px solid var(--text);border-radius:12px;padding:12px;box-shadow:0 10px 26px #0006;margin:0;opacity:.96}.dragging,.dragging *{cursor:grabbing!important;-webkit-user-select:none!important;user-select:none!important}
+dialog{width:calc(100% - 24px);max-width:520px;max-height:calc(var(--height,100dvh) - 24px);margin:auto;padding:20px;border:1px solid var(--line);border-radius:20px;color:var(--text);background:linear-gradient(var(--top),var(--bottom));box-shadow:0 12px 40px #0004;overflow:hidden;outline:none}dialog::backdrop{background:#0009}dialog[open]{display:flex;flex-direction:column;gap:16px}dialog>h2{flex:none}dialog .fields{display:flex;flex-direction:column;gap:14px;overflow:auto;min-height:0;scrollbar-width:none;padding:1px 2px}dialog .fields>*{flex:none}.actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;padding-top:2px}.actions button{white-space:nowrap;font-size:14px;padding:7px 11px}.actions .trash{margin-right:auto;width:38px;min-width:38px;padding:8px}.field{display:flex;flex-direction:column;gap:6px;min-width:0}.field>span{font-size:14px;opacity:.7}input,textarea,select{border:2px solid var(--line);border-radius:12px;background:var(--surface);min-height:42px;width:100%;min-width:0;padding:8px 10px;line-height:1.3}input:focus,textarea:focus,select:focus{outline:0}body.keyboard-navigation input:focus-visible,body.keyboard-navigation textarea:focus-visible,body.keyboard-navigation select:focus-visible{border-color:var(--text)}textarea{resize:vertical;min-height:80px;max-height:260px}input[type=checkbox]{appearance:none;width:19px;height:19px;min-height:19px;flex:0 0 19px;padding:0;margin:0;border-radius:5px;position:relative}input[type=checkbox]:checked{background:var(--text);border-color:var(--text)}input[type=checkbox]:checked::after{content:'';position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(43deg)}.check-label{display:flex;gap:8px;align-items:center;min-height:32px;font-size:14px}select{appearance:none;display:block;padding-right:36px}input[type=color]{width:44px;min-width:44px;height:42px;padding:4px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.error{font-size:13px;color:#ffb9c4;white-space:pre-wrap;flex:none}.error:empty{display:none}.choice-list{display:grid;gap:6px}.choice-list button{justify-content:flex-start;text-align:left;overflow-wrap:anywhere}.choice-list button[aria-pressed=true]{border:2px solid var(--text)}.toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);padding:9px 13px;border:1px solid var(--line);border-radius:11px;background:var(--top);font-size:13px;z-index:100}.slider-row{display:flex;align-items:center;gap:12px}.slider-row input{flex:1;padding:0;border:0;min-height:32px;accent-color:var(--text)}.slider-row output{width:52px;flex:none;font-size:14px;text-align:right}.drag-source{opacity:.22;border-top:2px solid var(--text)}.drag-ghost{position:fixed;z-index:100;pointer-events:none;background:var(--top);border:1.5px solid var(--text);border-radius:12px;padding:12px;box-shadow:0 10px 26px #0006;margin:0;opacity:.96}.dragging,.dragging *{cursor:grabbing!important;-webkit-user-select:none!important;user-select:none!important}
 @media(max-width:350px){body{padding-left:12px;padding-right:12px}dialog{padding:16px}.exercise-name{font-size:16px}.exercise-plan{font-size:12px}.set{width:48px;min-width:48px;height:48px;min-height:48px}.actions button{padding:7px 9px;font-size:13px}}
 .number-entry>.weight-entry{display:flex;align-items:center;gap:4px;min-height:42px;padding:8px 10px;border:2px solid var(--line);border-radius:12px;background:var(--surface);font-size:inherit;line-height:1.3}
 .weight-entry>span{flex:none}
@@ -42,6 +42,8 @@ body.has-player .rest{bottom:112px;left:16px;right:16px;max-width:700px}
 .settings-screen{max-width:700px;margin:auto}
 .settings-screen>header{justify-content:flex-start;gap:10px;margin-bottom:22px}
 .settings-screen .fields{display:flex;flex-direction:column;gap:18px}
+.settings-section{display:grid;gap:12px;min-width:0}
+.settings-section+.settings-section,.settings-screen .settings-changelog{padding-top:14px;border-top:1px solid var(--line)}
 .settings-screen .actions{position:sticky;bottom:0;padding:14px 0;margin-top:12px;background:var(--bottom)}
 .settings-screen button{border-width:2px;min-height:42px}
 .settings-screen .bare{border:0}
@@ -72,7 +74,7 @@ body,#page-stack{touch-action:pan-y}
 #discard.danger{background:#a52335;color:#fff}
 .set[aria-pressed]{display:grid;place-items:center;touch-action:none}
 .training-days{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
-.routine{--routine-inset:12px;padding-block:10px;padding-inline:var(--routine-inset);border-radius:16px;background:color-mix(in srgb,var(--text) 8%,transparent)}.routine+.routine{margin-top:12px}.toolbar-actions{display:flex;align-items:center;gap:2px;flex:none}#app>header .toolbar-actions{gap:8px}#add-routine{padding:0}#add-routine svg{width:32px;height:32px;stroke-width:2.2}.routine-toggle{display:flex;align-items:center;min-height:40px;line-height:1.25;justify-content:space-between;text-align:left;min-width:0;padding:0}.routine-heading .icon{height:40px;min-height:40px;padding:0}.routine-chevron svg{width:26px;height:26px;opacity:.8}.routine-chevron[aria-expanded=true]>svg{transform:rotate(180deg)}.routine-name{display:block;font-size:21px;line-height:1.2;font-weight:700}.routine-start-row{display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:4px}.routine-start{font-size:14px}.routine-body .empty{padding:8px 0}.routine-title{flex:1;min-width:0;overflow-wrap:anywhere}.routine-date{display:block;margin-top:4px}.routine.has-date .routine-body>.exercise:first-child{padding-top:10px}
+.routine{--routine-inset:12px;padding-block:10px;padding-inline:var(--routine-inset);border-radius:16px;background:color-mix(in srgb,var(--text) 8%,transparent)}.routine+.routine{margin-top:12px}.toolbar-actions{display:flex;align-items:center;gap:2px;flex:none}#app>header .toolbar-actions{gap:8px}#add-routine{padding:0}#add-routine svg{width:32px;height:32px;stroke-width:2.2}.routine-toggle{display:flex;align-items:center;min-height:40px;line-height:1.25;justify-content:space-between;text-align:left;min-width:0;padding:0}.routine-heading .icon{height:40px;min-height:40px;padding:0}.routine-name{display:block;font-size:21px;line-height:1.2;font-weight:700}.routine-start-row{display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:4px}.routine-start{font-size:14px}.routine-body .empty{padding:8px 0}.routine-title{flex:1;min-width:0;overflow-wrap:anywhere}.routine-date{display:block;margin-top:4px}.routine.has-date .routine-body>.exercise:first-child{padding-top:10px}
 .set-reps{line-height:1;text-box:trim-both cap alphabetic;pointer-events:none}
 .workout-edit-actions{display:flex;flex-wrap:wrap;gap:8px}.workout-edit-list{display:grid;gap:6px}.workout-edit-row{display:flex;gap:8px;touch-action:pan-y}.workout-edit-exercise{flex:1;justify-content:flex-start;text-align:left;overflow-wrap:anywhere;min-width:0}.exercise-plan{min-height:0}
 .progress-info{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.progress-graph{width:72px;height:24px;flex:none}
@@ -84,7 +86,7 @@ body,#page-stack{touch-action:pan-y}
 .spotify{overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}.spotify.empty{cursor:pointer}.spotify.empty .icon{opacity:.55}
 .spotify-progress{position:absolute;bottom:0;left:0;right:0;height:2px;pointer-events:none}
 .spotify-progress span{display:block;width:100%;height:100%;background:#fff;transform:scaleX(0);transform-origin:left center}
-.defaults-section{display:grid;gap:10px}.defaults-section .two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.defaults-section .two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .defaults-section .two>.field{justify-content:space-between}
 .exercise-head{grid-template-columns:minmax(0,1fr) fit-content(60%)}
 .exercise-plan{display:flex;align-items:center;gap:5px;white-space:nowrap}
@@ -139,11 +141,15 @@ dialog.plate-editor{
 .plate-add{display:grid;grid-template-columns:minmax(0,1fr) 86px;align-items:end;gap:10px;margin-top:12px}
 .plate-add button{min-height:42px}
 .plate-add+.error{margin-top:6px}
-.progress summary{display:flex;align-items:center;gap:6px;min-height:38px;padding:7px 0;border-bottom:1px solid var(--line);list-style:none;cursor:pointer;font-size:16px;font-weight:700;-webkit-tap-highlight-color:transparent;user-select:none}
+.chevron{width:16px;height:16px}
+.routine-chevron[aria-expanded=false] .chevron,details:not([open])>summary .chevron{transform:rotate(-90deg)}
+.settings-back .chevron{transform:rotate(90deg)}
+.field>.select-entry{display:block;position:relative;font-size:inherit;opacity:1}
+.select-entry .chevron{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none}
+details>summary{display:flex;align-items:center;gap:6px;list-style:none;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+details>summary::-webkit-details-marker{display:none}
+.progress summary{min-height:38px;padding:7px 0;border-bottom:1px solid var(--line);font-size:16px;font-weight:700}
 .history-card:first-child{padding-top:10px}
-.progress summary::-webkit-details-marker{display:none}
-.progress summary svg{width:16px;height:16px;transform:rotate(-90deg)}
-.progress[open] summary svg{transform:none}
 .field-heading{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
 .number-tools{display:inline-flex;flex:none;align-items:center;gap:2px}
 .number-tools button,.number-grip,.textarea-grip{min-height:28px;width:28px;min-width:28px;padding:0;border:0;font-size:17px;background:transparent;color:var(--muted)}
@@ -151,13 +157,11 @@ dialog.plate-editor{
 .number-entry{position:relative;min-width:0}
 .number-entry>input{display:block}
 .number-grip{position:absolute;right:4px;top:50%;transform:translateY(-50%);min-height:34px;cursor:ns-resize}
-.number-grip svg{width:16px;height:16px;stroke-width:3.2}
-[data-number-mode=drag]:not(.settings-screen) .number-entry>input:not(:disabled),
-[data-number-mode=drag]:not(.settings-screen) .number-entry>.weight-entry{padding-right:36px}
+.number-grip svg{width:16px;height:16px;stroke-width:4}
+[data-number-mode=drag] .number-entry>input:not(:disabled),
+[data-number-mode=drag] .number-entry>.weight-entry{padding-right:36px}
 [data-number-mode=drag] .number-tools,[data-number-mode=buttons] .number-grip,[data-number-mode=keyboard] :is(.number-tools,.number-grip),
-.settings-screen .number-grip,.number-entry>input:disabled+.number-grip{display:none}
-.settings-screen .defaults-section .number-tools{gap:0}
-.settings-screen .defaults-section .number-step{width:22px;min-width:22px}
+.settings-screen :is(.number-tools,.number-grip),.number-entry>input:disabled+.number-grip{display:none}
 .textarea-entry{position:relative;max-width:100%}
 .textarea-entry textarea{display:block;resize:none;padding-bottom:28px}
 .textarea-grip{position:absolute;right:4px;bottom:3px;cursor:nwse-resize}
@@ -196,11 +200,14 @@ dialog.plate-editor{
 const native=window.WorkoutNative, KEY='workouts-v1', $=id=>document.getElementById(id);
 const clone=value=>JSON.parse(JSON.stringify(value));
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
-const paths={back:'m15 5-7 7 7 7',music:'M9 18V5l11-2v13M9 8l11-2M9 18a3 3 0 1 1-3-3M20 16a3 3 0 1 1-3-3',play:'M8 5v14l11-7Z',pause:'M6 5h4v14H6ZM14 5h4v14h-4Z',prev:'M4 5h3v14H4ZM19 5v14L8 12Z',next:'M17 5h3v14h-3ZM5 5l11 7-11 7Z',gear:'M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16',plus:'M12 5v14M5 12h14',routinePlus:'M12 2v20M2 12h20',pencil:'M3 21L4 16 17 3 21 7 8 20Z M14 6l4 4',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',chevron:'m5 9 7 7 7-7',close:'m6 6 12 12M6 18 18 6'};
+const paths={music:'M9 18V5l11-2v13M9 8l11-2M9 18a3 3 0 1 1-3-3M20 16a3 3 0 1 1-3-3',play:'M8 5v14l11-7Z',pause:'M6 5h4v14H6ZM14 5h4v14h-4Z',prev:'M4 5h3v14H4ZM19 5v14L8 12Z',next:'M17 5h3v14h-3ZM5 5l11 7-11 7Z',gear:'M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16',plus:'M12 5v14M5 12h14',routinePlus:'M12 2v20M2 12h20',pencil:'M3 21L4 16 17 3 21 7 8 20Z M14 6l4 4',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',chevron:'m5 8.5 7 7 7-7',close:'m6 6 12 12M6 18 18 6'};
 paths.calculator='M7 2h10a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3Z M9 6h6 M9 10h.01M15 10h.01M9 14h.01M15 14h.01M9 18h.01M15 18h.01';
 paths.grip='M12 5h.01M12 12h.01M12 19h.01';
 paths.resize='M7 19 19 7m-6 12 6-6';
-function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(svg.namespaceURI,'path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');path.setAttribute('d',paths[name]);svg.append(path);return svg;}
+function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(svg.namespaceURI,'path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');if(name==='chevron')svg.classList.add('chevron');path.setAttribute('d',paths[name]);svg.append(path);return svg;}
+function disclosureSummary(label){
+ const summary=el('summary');summary.append(icon('chevron'),el('span','',label));return summary;
+}
 function button(label,action,cls=''){const node=el('button',cls,label);node.type='button';node.onclick=action;return node;}
 function id(){return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);}
 function haptic(){try{native?.haptic();}catch(_){}}
@@ -259,10 +266,9 @@ requestAnimationFrame(()=>{
 return {dialog,heading,fields,error,actions,close};}
 function settingsScreen(){
  if(closeDialog)closeDialog(false);
- const panel=$(view),oldY=panel.scrollTop,screen=el('section','settings-screen'),header=el('header'),back=button('',()=>close(),'icon bare'),heading=el('h1','','Settings'),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');
+ const panel=$(view),oldY=panel.scrollTop,screen=el('section','settings-screen'),header=el('header'),back=button('',()=>close(),'icon bare settings-back'),heading=el('h1','','Settings'),fields=el('div','fields'),error=el('p','error'),actions=el('div','actions');
  screen.id='settings-screen';screen.setAttribute('aria-label','Settings');
- screen.dataset.numberMode=state.settings.numberMode??'drag';
- back.append(icon('back'));back.setAttribute('aria-label','Back to Exercise');
+ back.append(icon('chevron'));back.setAttribute('aria-label','Back to Exercise');
  error.setAttribute('role','alert');header.append(back,heading);screen.append(header,fields,error,actions);
  document.body.append(screen);$('app').hidden=true;$('spotify').hidden=true;$('rest').hidden=true;
  settingsOpen=true;document.body.classList.add('settings-open');
@@ -404,7 +410,14 @@ function hintOnFocus(input,update=()=>{}){
  return ()=>input.validity.badInput?'':input.value.trim()||previous;
 }
 function checkbox(parent,label,value){const wrap=el('label','check-label'),input=el('input');input.type='checkbox';input.checked=value;input.addEventListener('change',haptic);wrap.append(input,el('span','',label));parent.append(wrap);return input;}
-function selectField(parent,label,options,value){const wrap=el('label','field'),select=el('select');select.setAttribute('aria-label',label);wrap.append(el('span','',label),select);for(const item of options){const option=el('option','',item);option.value=item;select.append(option);}select.value=value;select.addEventListener('change',haptic);parent.append(wrap);return select;}
+function selectField(parent,label,options,value){
+ const wrap=el('label','field'),entry=el('span','select-entry'),select=el('select');
+ select.setAttribute('aria-label',label);
+ for(const item of options){const option=el('option','',item);option.value=item;select.append(option);}
+ select.value=value;select.addEventListener('change',haptic);
+ entry.append(select,icon('chevron'));wrap.append(el('span','',label),entry);parent.append(wrap);
+ return select;
+}
 function cancelSave(m,action,label='Save'){m.actions.append(button('Cancel',m.close),button(label,action,'primary'));}
 function deleteButton(label,remove){
  let armed=false,timer;
@@ -697,7 +710,7 @@ function equipmentFields(parent,unit,expanded=false){
   const bar=numberField(barRow,'Bar weight ('+key+')',equipment.bar,0,5000,'any');
   const details=el('details'),rows=el('div','plate-inventory');
   details.open=expanded;
-  details.append(el('summary','','Available plates'),el('p','small muted','Total plates for both sides. Leave count blank for unlimited.'),rows);
+  details.append(disclosureSummary('Available plates'),el('p','small muted','Total plates for both sides. Leave count blank for unlimited.'),rows);
   const presets=PLATE_SIZES[key],entries=new Map();
   function appendPlate(size,custom,available,savedCount){
    const row=el('div','plate-inventory-row'),label=el('div','row plate-inventory-label');
@@ -1188,7 +1201,7 @@ function renderProgress(){
  if(!state.history.length)return;
  const details=el('details','progress');
  details.open=wasOpen??true;
- const summary=el('summary');summary.append(icon('chevron'),el('span','','Progress'));details.append(summary);
+ details.append(disclosureSummary('Progress'));
  const records=new Map();
  const sessions=[...state.history].sort((a,b)=>a.finishedAt-b.finishedAt);
  for(const session of sessions){
@@ -1239,8 +1252,9 @@ function restVibrationSlider(parent,label,value,max,step){
 }
 function settingsChangelog(){
  const changelog=el('details','settings-changelog');
- changelog.append(el('summary','','Changelog'));
+ changelog.append(disclosureSummary('Changelog'));
  const releases=[
+  ['1.0.46',['Grouped related controls in Settings and show the progression increase for the selected unit.','Matched and centered chevrons and made the drag dots bolder.']],
   ['1.0.45',['Removed the Last time line from exercise cards on Today.']],
   ['1.0.44',['Refined the pencil shape and its visual alignment in the plate calculator.']],
   ['1.0.43',['Aligned the Equipment and exercise pencils with their text in the plate calculator.']],
@@ -1263,41 +1277,54 @@ function settingsChangelog(){
  }
  return changelog;
 }
-function settings(){const m=settingsScreen(),draft=clone(state.settings);const spotify=checkbox(m.fields,'Spotify player',draft.spotify!==false);const floating=checkbox(m.fields,'Floating rest timer',draft.floatingTimer!==false);if(native)m.fields.append(button('Connect Spotify controls',()=>native.spotifyAccess()));
-const promptNotes=checkbox(m.fields,'Prompt for workout notes',draft.promptWorkoutNotes!==false);
-const defaults=el('section','defaults-section'),grid=el('div','two'),defaultsHeading=el('h3','','Defaults');
-defaultsHeading.id='defaults-heading';defaults.setAttribute('aria-labelledby',defaultsHeading.id);
-defaults.append(defaultsHeading,grid);m.fields.append(defaults);
+function settingsSection(parent,title){
+ const section=el('section','settings-section'),heading=el('h3','',title);
+ heading.id='settings-'+title.toLowerCase().replaceAll(' ','-')+'-heading';
+ section.setAttribute('aria-labelledby',heading.id);
+ section.append(heading);parent.append(section);return section;
+}
+function settings(){
+const m=settingsScreen(),draft=clone(state.settings);
+const defaults=settingsSection(m.fields,'Defaults');
+const progressionSection=settingsSection(m.fields,'Progression');
+const scheduleSection=settingsSection(m.fields,'Training schedule');
+const timerSection=settingsSection(m.fields,'Rest timer');
+const cuesSection=settingsSection(m.fields,'Rest cues');
+const equipment=settingsSection(m.fields,'Plate calculator');
+const inputSection=settingsSection(m.fields,'Input controls');
+const spotifySection=settingsSection(m.fields,'Spotify');
+const appearance=settingsSection(m.fields,'Appearance');
+defaults.classList.add('defaults-section');
+const grid=el('div','two');
+defaults.append(grid);
 const readDefaultWeight=hintOnFocus(numberField(grid,'Weight',draft.defaultWeight??0,0,5000,.25));
 const readDefaultReps=hintOnFocus(setsField(grid,draft.defaultRepTargets??DEFAULT_REP_TARGETS));
-const unit=selectField(grid,'Unit',WEIGHT_UNITS,draft.unit),rest=numberField(grid,'Rest seconds',draft.rest,0,1800);
+const unit=selectField(grid,'Unit',WEIGHT_UNITS,draft.unit),rest=numberField(grid,'Rest (settings)',draft.rest,0,1800);
+const promptNotes=checkbox(defaults,'Prompt for workout notes',draft.promptWorkoutNotes!==false);
 const numberModes=['Drag handles','− and + buttons','Keyboard only'];
 const numberModeKeys=['drag','buttons','keyboard'];
-const numberMode=selectField(m.fields,'Number controls',numberModes,numberModes[numberModeKeys.indexOf(draft.numberMode??'drag')]);
-const numericStep=numberField(m.fields,'Number adjustment step',draft.numericStep??1,.01,5000,.01);
-numberMode.addEventListener('change',()=>m.dialog.dataset.numberMode=numberModeKeys[numberMode.selectedIndex]);
-m.fields.append(el('h3','','Progression'));
-const autoProgression=checkbox(m.fields,'Automatic weight progression',draft.autoProgression!==false);
-const progressionFields=el('div','two');
-const pounds=numberField(progressionFields,'Increase (lb)',defaultProgression(draft,'lb'),0,5000,.01);
-const kilos=numberField(progressionFields,'Increase (kg)',defaultProgression(draft,'kg'),0,5000,.01);
-m.fields.append(progressionFields);
-const equipment=el('section','defaults-section'),equipmentHeading=el('h3','','Plate calculator');
-equipmentHeading.id='plate-equipment-heading';equipment.setAttribute('aria-labelledby',equipmentHeading.id);
-equipment.append(equipmentHeading);m.fields.append(equipment);
+const numberMode=selectField(inputSection,'Number controls',numberModes,numberModes[numberModeKeys.indexOf(draft.numberMode??'drag')]);
+const numericStep=numberField(inputSection,'Number adjustment step',draft.numericStep??1,.01,5000,.01);
+const autoProgression=checkbox(progressionSection,'Automatic weight progression',draft.autoProgression!==false);
+const progressionInputs=Object.fromEntries(WEIGHT_UNITS.map(key=>
+ [key,numberField(progressionSection,'Increase ('+key+')',defaultProgression(draft,key),0,5000,.01)]));
+const showProgressionUnit=()=>{
+ for(const [key,input] of Object.entries(progressionInputs))input.closest('.field').hidden=key!==unit.value;
+};
+unit.addEventListener('change',showProgressionUnit);showProgressionUnit();
 const readEquipment=equipmentFields(equipment,unit);
-const notify=checkbox(m.fields,'Rest notifications',draft.notifications);
-if(native&&!native.preciseTimers())m.fields.append(button('Allow precise rest alerts',()=>native.allowPreciseTimers()));
-m.fields.append(el('h3','','Rest timer'));
-const overlay=checkbox(m.fields,'Show rest timer over other apps',draft.floatOverApps===true);
+const floating=checkbox(timerSection,'Floating rest timer',draft.floatingTimer!==false);
+const overlay=checkbox(timerSection,'Show rest timer over other apps',draft.floatOverApps===true);
 overlay.addEventListener('change',()=>{if(overlay.checked)floating.checked=true;});
 const overlaySupported=typeof native?.overlayAllowed==='function';
 const overlayNote=el('p','small muted','Android requires display-over-other-apps permission and an ongoing notification for this timer.');
-if(overlaySupported)m.fields.append(overlayNote);
+if(overlaySupported)timerSection.append(overlayNote);
 else overlay.closest('label').hidden=true;
+const notify=checkbox(timerSection,'Rest notifications',draft.notifications);
+if(native&&!native.preciseTimers())timerSection.append(button('Allow precise rest alerts',()=>native.allowPreciseTimers()));
 const countdownOptions=['Off','Last 3 seconds','Last 5 seconds'];
-const countdown=selectField(m.fields,'Rest countdown',countdownOptions,draft.countdownSeconds===5?countdownOptions[2]:draft.countdownSeconds===0?countdownOptions[0]:countdownOptions[1]);
-const headphones=checkbox(m.fields,'Headphone countdown and finish beeps',draft.headphoneCues!==false);
+const countdown=selectField(cuesSection,'Rest countdown',countdownOptions,draft.countdownSeconds===5?countdownOptions[2]:draft.countdownSeconds===0?countdownOptions[0]:countdownOptions[1]);
+const headphones=checkbox(cuesSection,'Headphone countdown and finish beeps',draft.headphoneCues!==false);
 const volumeField=el('div','field');
 const volumeLabel=el('span','field-heading');volumeLabel.append(el('span','','Rest beep volume'));
 const volumeRow=el('div','slider-row');
@@ -1315,9 +1342,9 @@ cueVolume.addEventListener('input',showVolume);
 showVolume();
 volumeRow.append(cueVolume,volumeValue);
 volumeField.append(volumeLabel,volumeRow);
-m.fields.append(volumeField);
-const pulses=restVibrationSlider(m.fields,'Countdown pulse length',draft.countdownVibrationMs??80,500,.01);
-const slider=restVibrationSlider(m.fields,'Finish vibration length',draft.vibrationMs,2000,.05);
+cuesSection.append(volumeField);
+const pulses=restVibrationSlider(cuesSection,'Countdown pulse length',draft.countdownVibrationMs??80,500,.01);
+const slider=restVibrationSlider(cuesSection,'Finish vibration length',draft.vibrationMs,2000,.05);
 pulses.closest('.field').hidden=countdown.selectedIndex===0;
 countdown.onchange=()=>{pulses.closest('.field').hidden=countdown.selectedIndex===0;};
 if(typeof native?.previewRestSequence==='function'){
@@ -1347,23 +1374,30 @@ if(typeof native?.previewRestSequence==='function'){
   status.textContent='';
  }
  preview.append(control,status);
- m.fields.append(preview);
+ cuesSection.append(preview);
 }
-m.fields.append(el('h3','','Training schedule'));
 const modes=['Off','Selected weekdays','Every few days'];
 const oldSchedule=draft.schedule;
-const mode=selectField(m.fields,'Schedule',modes,oldSchedule?.mode==='weekdays'?modes[1]:oldSchedule?.mode==='interval'?modes[2]:modes[0]);
+const mode=selectField(scheduleSection,'Schedule',modes,oldSchedule?.mode==='weekdays'?modes[1]:oldSchedule?.mode==='interval'?modes[2]:modes[0]);
 const daysPanel=el('div','training-days');
 const days=weekdays.map((name,index)=>checkbox(daysPanel,name,oldSchedule?.days?.includes(index)??[1,3,5].includes(index)));
-m.fields.append(daysPanel);
-const every=numberField(m.fields,'Train every (days)',oldSchedule?.every??3,1,30);
+scheduleSection.append(daysPanel);
+const every=numberField(scheduleSection,'Train every (days)',oldSchedule?.every??3,1,30);
 function showScheduleFields(){
  daysPanel.hidden=mode.selectedIndex!==1;
  every.closest('.field').hidden=mode.selectedIndex!==2;
 }
 mode.onchange=showScheduleFields;
 showScheduleFields();
-m.fields.append(el('h3','','Appearance'));const colors={};for(const [key,label]of [['top','First background color'],['bottom','Second background color'],['text','Text & buttons']]){const wrap=el('label','row'),input=el('input');input.type='color';input.value=draft[key];input.setAttribute('aria-label',label);wrap.append(input,el('span','small',label));m.fields.append(wrap);colors[key]=input;}const gradient=checkbox(m.fields,'Gradient background',draft.gradient);
+const spotify=checkbox(spotifySection,'Spotify player',draft.spotify!==false);
+if(native)spotifySection.append(button('Connect Spotify controls',()=>native.spotifyAccess()));
+const colors={};
+for(const [key,label] of [['top','First background color'],['bottom','Second background color'],['text','Text & buttons']]){
+ const wrap=el('label','row'),input=el('input');
+ input.type='color';input.value=draft[key];input.setAttribute('aria-label',label);
+ wrap.append(input,el('span','small',label));appearance.append(wrap);colors[key]=input;
+}
+const gradient=checkbox(appearance,'Gradient background',draft.gradient);
 m.fields.append(settingsChangelog());
 cancelSave(m,()=>{
  const selectedDays=days.flatMap((day,index)=>day.checked?[index]:[]);
@@ -1387,7 +1421,8 @@ cancelSave(m,()=>{
  if(!defaultRepTargets){m.error.textContent='Enter 1–20 default sets of 1–100 reps.';return;}
  const {equipment:plateEquipment,error}=readEquipment();
  if(error){m.error.textContent=error;return;}
- if([numericStep,pounds,kilos].some(input=>!input.validity.valid||!Number.isFinite(input.valueAsNumber))){
+ const validNumber=input=>input.validity.valid&&Number.isFinite(input.valueAsNumber);
+ if(!validNumber(numericStep)||!validNumber(progressionInputs[unit.value])){
   m.error.textContent='Enter valid number and progression increments.';
   return;
  }
@@ -1403,7 +1438,9 @@ cancelSave(m,()=>{
   countdownVibrationMs:Math.round(Number(pulses.value)*1000),headphoneCues:headphones.checked,restCueVolume:Number(cueVolume.value),
   schedule,numberMode:numberModeKeys[numberMode.selectedIndex],numericStep:numericStep.valueAsNumber,
   promptWorkoutNotes:promptNotes.checked,autoProgression:autoProgression.checked,
-  progression:{lb:pounds.valueAsNumber,kg:kilos.valueAsNumber},gradient:gradient.checked,
+  progression:Object.fromEntries(Object.entries(progressionInputs).map(([key,input])=>
+   [key,validNumber(input)?input.valueAsNumber:defaultProgression(draft,key)])),
+  gradient:gradient.checked,
   ...Object.fromEntries(Object.entries(colors).map(([key,input])=>[key,input.value]))
  };
  if(save(next=>next.settings=preferences,m.error)){

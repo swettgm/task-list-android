@@ -93,7 +93,11 @@ try{
  check(await workoutA.getAttribute('aria-expanded')==='false','Routine cards begin collapsed');
  const arrow=page.getByRole('button',{name:'Expand Workout A',exact:true});
  const pencil=page.getByRole('button',{name:'Edit Workout A',exact:true});
- check((await arrow.boundingBox()).x>(await pencil.boundingBox()).x&&await arrow.locator('svg').evaluate(svg=>svg.getBoundingClientRect().height===26),'The larger chevron sits to the right of the pencil');
+ check((await arrow.boundingBox()).x>(await pencil.boundingBox()).x&&await arrow.locator('svg').evaluate(svg=>{
+  const icon=svg.getBoundingClientRect(),hit=svg.parentElement.getBoundingClientRect();
+  return icon.height===16&&Math.abs(icon.top+icon.height/2-hit.top-hit.height/2)<.6;
+ }),'The History-style chevron is centered to the right of the pencil');
+ const chevronPath=await arrow.locator('path').getAttribute('d');
  check(await page.locator('#today-date').count()===0,'Today opens straight into the routine cards');
  await arrow.click();
  check(await workoutA.getAttribute('aria-expanded')==='true','The right chevron opens the card');
@@ -333,6 +337,7 @@ try{
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
  check(await page.locator('.progress-row').textContent().then(s=>s.includes('45 lb × 6')),'Progress uses completed sets');
  const progress=page.locator('.progress summary');
+ check(await progress.locator('path').getAttribute('d')===chevronPath,'History and workout cards use the same chevron');
  await progress.click();
  check(await progress.evaluate(summary=>{
   const style=getComputedStyle(summary),label=summary.querySelector('span').getBoundingClientRect();
@@ -359,15 +364,34 @@ try{
  check(await page.locator('dialog[open]').count()===0&&await page.locator('#app').isVisible()===false,'Settings opens as a separate screen');
  check(await page.locator('#settings-screen').getByRole('checkbox',{name:'Rest notifications'}).isChecked()===false,'Notification controls reflect opt-in defaults');
  const defaults=page.getByRole('region',{name:'Defaults',exact:true});
+ check(await defaults.getByRole('spinbutton',{name:'Rest (settings)',exact:true}).isVisible(),'Defaults shows the requested rest label');
+ check(await page.locator('#settings-screen .settings-section>h3').allTextContents().then(titles=>
+  titles.join('|')==='Defaults|Progression|Training schedule|Rest timer|Rest cues|Plate calculator|Input controls|Spotify|Appearance'),
+ 'Settings groups related controls in the intended order');
+ check(await page.locator('#settings-screen .chevron:visible').evaluateAll((icons,path)=>icons.every(icon=>{
+  const box=icon.getBoundingClientRect(),row=icon.parentElement.getBoundingClientRect();
+  return icon.querySelector('path').getAttribute('d')===path&&box.width===16&&box.height===16&&
+   Math.abs(box.top+box.height/2-row.top-row.height/2)<.6;
+ }),chevronPath),'Settings chevrons match History and are centered in their controls');
  check(await defaults.evaluate(section=>{
   const [weight,reps,unit,rest]=[...section.querySelectorAll('input,select')].map(e=>e.getBoundingClientRect());
   return weight.top===reps.top&&unit.top===rest.top&&weight.left===unit.left&&reps.left===rest.left&&unit.width===rest.width;
  }),'The four Defaults controls align in two equal columns');
  check(await page.getByRole('spinbutton',{name:'Bar weight (lb)',exact:true}).inputValue()==='40','Settings and the calculator share bar weight');
- await defaults.getByRole('combobox',{name:'Unit',exact:true}).selectOption('kg');
+ const unit=defaults.getByRole('combobox',{name:'Unit',exact:true});
+ const increase=key=>page.getByRole('spinbutton',{name:'Increase ('+key+')',exact:true});
+ check(await increase('lb').isVisible()&&await increase('kg').count()===0,'Only the pound increase is shown with pounds selected');
+ await increase('lb').fill('7.5');
+ await unit.selectOption('kg');
+ check(await increase('kg').isVisible()&&await increase('lb').count()===0,'Switching to kilos shows only the kilo increase');
+ await increase('kg').fill('1.75');
+ await unit.selectOption('lb');
+ check(await increase('lb').inputValue()==='7.5','The pound increase draft survives a unit switch');
+ await unit.selectOption('kg');
  check(await page.getByRole('spinbutton',{name:'Bar weight (kg)',exact:true}).inputValue()==='20','Changing unit uses a separate metric bar and inventory');
  await page.locator('#settings-screen').getByRole('button',{name:'Save',exact:true}).click();
  check((await state()).settings.unit==='kg'&&(await state()).history[0].exercises[0].unit==='lb','Changing default units preserves historical units');
+ check((await state()).settings.progression.lb===7.5&&(await state()).settings.progression.kg===1.75,'Each valid progression increase saves for its own unit');
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Edit Barbell Curl',exact:true}).click();
  check(await dialog().locator('#exercise-weight-unit').textContent()==='lbs','Editing an existing exercise preserves its original weight unit');
