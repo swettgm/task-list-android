@@ -321,6 +321,8 @@ try{
  check((await state()).restEndAt===0,'Rest can be skipped');
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  await dialog().getByRole('button',{name:'Add set to Barbell Curl'}).click();
+ check(await dialog().getByRole('button',{name:'Edit Barbell Curl',exact:true}).locator('small').textContent()==='8/7/6+/6+ · 50 lb',
+  'Adding a set updates its exercise summary in the editor');
  await dialog().getByRole('button',{name:'Done'}).click();
  check((await state()).active.exercises[0].sets.length===4,'Extra sets can be added to the active workout');
  await page.getByRole('button',{name:'Finish',exact:true}).click();
@@ -427,8 +429,16 @@ try{
   'Today offers quick plan edits while keeping exercise management behind the pencil');
  await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
  const cards=dialog().locator('.workout-edit-row');
+ check(await dialog().getByRole('button',{name:'Rename workout',exact:true}).textContent()==='Workout A'&&
+  (await cards.first().locator('.workout-edit-copy small').textContent()).includes(' · '),
+  'Edit workout shows the workout name and the sets and weight for each exercise');
+ const footer=dialog().locator('.actions');
+ check(await footer.getByRole('button',{name:'Add exercise',exact:true}).isVisible()&&
+  await footer.getByRole('button',{name:'Done',exact:true}).isVisible(),
+  'Add exercise and Done share the workout editor footer');
  const a=await cards.nth(0).boundingBox(),b=await cards.nth(1).boundingBox();
- await page.mouse.move(a.x+20,a.y+a.height/2);await page.mouse.down();await page.waitForTimeout(430);await page.mouse.move(b.x+20,b.y+b.height-2,{steps:12});await page.waitForTimeout(220);await page.mouse.up();await page.waitForTimeout(480);
+ const grip=await cards.first().locator('.workout-edit-grip').boundingBox(),gripX=grip.x+grip.width/2;
+ await page.mouse.move(gripX,a.y+a.height/2);await page.mouse.down();await page.waitForTimeout(430);await page.mouse.move(gripX,b.y+b.height-2,{steps:12});await page.waitForTimeout(220);await page.mouse.up();await page.waitForTimeout(480);
  check((await state()).routines[0].exercises[0].name==='Front/Lateral Raise','Hold and drag reorders exercises');
  await dialog().getByRole('button',{name:'Done'}).click();
  await page.reload();await page.waitForFunction(()=>!!window.Workouts);

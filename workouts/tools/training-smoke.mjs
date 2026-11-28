@@ -68,7 +68,7 @@ try{
  const settings=page.locator('#settings-screen');
  assert.equal(await settings.locator('.number-grip:visible').count(),0);
  await settings.locator('.settings-changelog summary').click();
- assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.48',exact:true}).isVisible(),true);
+ assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.49',exact:true}).isVisible(),true);
  await page.getByRole('combobox',{name:'Number controls'}).selectOption('− and + buttons');
  assert.equal(await settings.locator('.number-step:visible, .number-grip:visible').count(),0);
  await number('Number adjustment step').fill('2');
@@ -173,7 +173,7 @@ try{
  assert.deepEqual(await shownWeights(repeated.nth(0)),['135 lb','225 lb']);
  const later=repeated.nth(1);
  await button('Bench & Squat',later).click();
- assert.match(await later.locator('.routine-date').textContent(),/ · Projected$/);
+ assert.equal(await later.locator('.routine-date').textContent(),'Wednesday, December 2');
  assert.deepEqual(await shownWeights(later),['137.5 lb','230 lb']);
  assert.equal((await previewData()).revision,0);
 
@@ -188,7 +188,6 @@ try{
  await button('Finish',previewPage).click();
  assert.deepEqual((await previewData()).routines[0].exercises.map(exercise=>exercise.weight),[135,230]);
  assert.deepEqual(await shownWeights(repeated.first()),['135 lb','230 lb']);
- assert.doesNotMatch(await repeated.first().locator('.routine-date').textContent(),/Projected/);
  console.log('Scheduled repeats preview progression without saving it and reflect the actual result after logging.');
 }finally{
  await browser.close();

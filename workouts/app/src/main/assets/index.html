@@ -76,7 +76,24 @@ body,#page-stack{touch-action:pan-y}
 .training-days{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
 .routine{--routine-inset:12px;padding-block:10px;padding-inline:var(--routine-inset);border-radius:16px;background:color-mix(in srgb,var(--text) 8%,transparent)}.routine+.routine{margin-top:12px}.toolbar-actions{display:flex;align-items:center;gap:2px;flex:none}#app>header .toolbar-actions{gap:8px}#add-routine{padding:0}#add-routine svg{width:32px;height:32px;stroke-width:2.2}.routine-toggle{display:flex;align-items:center;min-height:40px;line-height:1.25;justify-content:space-between;text-align:left;min-width:0;padding:0}.routine-heading .icon{height:40px;min-height:40px;padding:0}.routine-name{display:block;font-size:21px;line-height:1.2;font-weight:700}.routine-start-row{display:flex;justify-content:flex-end;margin-top:8px;padding-bottom:4px}.routine-start{font-size:14px}.routine-body .empty{padding:8px 0}.routine-title{flex:1;min-width:0;overflow-wrap:anywhere}.routine-date{display:block;margin-top:4px}.routine.has-date .routine-body>.exercise:first-child{padding-top:10px}
 .set-reps{line-height:1;text-box:trim-both cap alphabetic;pointer-events:none}
-.workout-edit-actions{display:flex;flex-wrap:wrap;gap:8px}.workout-edit-list{display:grid;gap:6px}.workout-edit-row{display:flex;gap:8px;touch-action:pan-y}.workout-edit-exercise{flex:1;justify-content:flex-start;text-align:left;overflow-wrap:anywhere;min-width:0}.exercise-plan{min-height:0}
+.workout-editor .fields{gap:12px}
+.workout-edit-name,.workout-edit-list{border-radius:14px;background:color-mix(in srgb,var(--text) 8%,transparent)}
+.workout-edit-name{justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:9px 12px;font-size:17px;font-weight:700;text-align:left;overflow-wrap:anywhere}
+.workout-edit-name svg,.workout-edit-exercise svg{width:18px;height:18px}
+.workout-edit-list{display:grid;padding-inline:8px}
+.workout-edit-row{display:flex;align-items:center;min-width:0;gap:4px;touch-action:pan-y;user-select:none}
+.workout-edit-row+.workout-edit-row{border-top:1px solid var(--line)}
+.workout-edit-grip{display:grid;place-items:center;align-self:stretch;width:26px;flex:none;color:var(--muted);cursor:grab;touch-action:none}
+.workout-edit-grip svg{width:17px;height:17px;stroke-width:3.2}
+.workout-edit-exercise{flex:1;justify-content:space-between;gap:12px;min-width:0;min-height:54px;padding:8px 4px 8px 0;text-align:left;overflow-wrap:anywhere}
+.workout-edit-copy{display:grid;gap:3px;min-width:0}
+.workout-edit-copy strong{font-size:16px;font-weight:650}
+.workout-edit-copy small{font-size:13px;color:var(--muted)}
+.workout-edit-set.icon{width:34px;min-width:34px;min-height:36px;padding:0;margin-inline-start:3px}
+.workout-edit-set svg,.workout-edit-add svg{width:17px;height:17px;stroke-width:2.5}
+.workout-edit-add{margin-right:auto}
+.workout-edit-list>.empty{padding:12px 6px}
+.exercise-plan{min-height:0}
 .progress-info{display:grid;gap:3px;min-width:0;overflow-wrap:anywhere}.progress-graph{width:72px;height:24px;flex:none}
 .timer-dismiss{visibility:hidden;position:fixed;z-index:15;left:50%;bottom:24px;translate:-50% 0;width:52px;height:52px;display:grid;place-items:center;border:2px solid var(--text);border-radius:50%;background:var(--top);color:var(--text);pointer-events:none}
 .timer-dismiss.near{visibility:visible}
@@ -501,7 +518,6 @@ function renderToday(){
   const scheduledToday=day===today;
   const active=slot===activeSlot?state.active:null,source=active||routine;
   const preview=active?undefined:previews.get(routine.id);
-  const projected=preview&&source.exercises.some(exercise=>preview.get(exercise.id)!==exercise.weight);
   if(day!==null&&state.settings.autoProgression!==false){
    previews.set(routine.id,nextScheduledWeights(routine,active,preview,state.settings));
   }
@@ -513,7 +529,7 @@ function renderToday(){
   if(day!==null){
    section.classList.add('has-date');
    const label=scheduledToday?'Scheduled today':dateText(day*dayMs,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
-   title.append(el('span','routine-date small muted',label+(projected?' · Projected':'')));
+   title.append(el('span','routine-date small muted',label));
   }
   const edit=button('',()=>{haptic();editWorkout(routine.id);},'icon bare');
   edit.setAttribute('aria-label','Edit '+routine.name);
@@ -603,18 +619,30 @@ function editWorkout(routineId){
  const active=liveRoutine(state,routineId);
  const source=active||state.routines.find(r=>r.id===routineId);
  if(!source){newRoutine();return;}
- const m=modal('Edit workout');
- const actions=el('div','workout-edit-actions');
- actions.append(button('Rename workout',()=>editRoutineName(routineId)),button('Add exercise',()=>editExercise(routineId)));
+ const m=modal('Edit workout',{className:'workout-editor'});
+ const rename=button('',()=>editRoutineName(routineId),'bare workout-edit-name');
+ rename.setAttribute('aria-label','Rename workout');
+ rename.append(el('span','',source.name),icon('pencil'));
  const list=el('div','workout-edit-list');
+ if(!source.exercises.length)list.append(el('p','empty','No exercises yet.'));
  for(const ex of source.exercises){
   const row=el('div','workout-edit-row');
   row.dataset.exerciseId=ex.id;
-  const edit=button(ex.name,()=>editExercise(routineId,ex.id),'workout-edit-exercise');
+  const grip=el('span','workout-edit-grip'),copy=el('span','workout-edit-copy');
+  grip.append(icon('grip'));
+  grip.setAttribute('aria-hidden','true');
+  const details=el('small','',plan(ex));
+  copy.append(el('strong','',ex.name),details);
+  const edit=button('',()=>editExercise(routineId,ex.id),'bare workout-edit-exercise');
   edit.setAttribute('aria-label','Edit '+ex.name);
-  row.append(edit);
+  edit.setAttribute('aria-description','Hold and drag to reorder.');
+  edit.append(copy,icon('pencil'));
+  row.append(grip,edit);
   if(active){
-   const add=button('',()=>appendSet(ex.id),'icon');
+   const add=button('',()=>{
+    const updated=appendSet(ex.id);
+    if(updated)details.textContent=plan(updated);
+   },'icon workout-edit-set');
    add.append(icon('plus'));
    add.setAttribute('aria-label','Add set to '+ex.name);
    row.append(add);
@@ -622,8 +650,10 @@ function editWorkout(routineId){
   list.append(row);
  }
  list.addEventListener('pointerdown',event=>startExerciseDrag(event,list,m,routineId));
- m.fields.append(actions,list);
- m.actions.append(button('Done',m.close,'primary'));
+ m.fields.append(rename,list);
+ const addExercise=button('',()=>editExercise(routineId),'workout-edit-add');
+ addExercise.append(icon('plus'),'Add exercise');
+ m.actions.append(addExercise,button('Done',m.close,'primary'));
 }
 function editRoutineName(routineId){const source=state.routines.find(r=>r.id===routineId);if(!source)return;const m=modal('Edit workout'),input=field(m.fields,'Name','text',source.name);input.maxLength=160;m.actions.append(deleteButton('workout',()=>{if(state.active?.routineId===source.id){m.error.textContent='Finish or discard this workout first.';return;}if(save(next=>{next.routines=next.routines.filter(r=>r.id!==source.id);next.selected=next.routines[0]?.id||'';},m.error)){m.close();render();}}));cancelSave(m,()=>{if(!input.value.trim()){m.error.textContent='Enter a workout name.';return;}if(save(next=>{const routine=next.routines.find(r=>r.id===source.id);routine.name=input.value.trim();if(next.active?.routineId===source.id)next.active.name=routine.name;},m.error)){m.close();render();}});}
 function newRoutine(){const m=modal('Add workout'),input=field(m.fields,'Name','text');input.maxLength=160;cancelSave(m,()=>{if(!input.value.trim()){m.error.textContent='Enter a workout name.';return;}if(save(next=>{const r={id:id(),name:input.value.trim(),exercises:[]};next.routines.push(r);next.selected=r.id;},m.error)){m.close();if(view!=='today')selectView('today');render();}},'Add');}
@@ -1142,7 +1172,17 @@ function finishRepDrag(commit){
  if(commit){if(!recordSet(d.exerciseId,d.index,d.reps))renderToday();}else renderToday();
 }
 function editSet(exerciseId,index){const ex=state.active.exercises.find(e=>e.id===exerciseId),set=ex.sets[index],m=modal('Set '+(index+1));const pair=el('div','two');m.fields.append(pair);const reps=numberField(pair,'Reps',set.reps,0,repLimit(set)),weight=numberField(pair,'Weight ('+ex.unit+')',set.weight,0,5000,.25);m.fields.append(button('Clear set',()=>{if(save(next=>{next.active.exercises.find(e=>e.id===exerciseId).sets[index].reps=null;next.restEndAt=next.restStartedAt=next.restDurationMs=0;next.restDismissed=false;},m.error)){m.close();render();}}));cancelSave(m,()=>{const r=Number(reps.value),w=Number(weight.value);if(reps.value===''||weight.value===''||!Number.isInteger(r)||r<0||r>repLimit(set)||!Number.isFinite(w)||w<0||w>5000){m.error.textContent='Enter 0–'+repLimit(set)+' reps and a valid weight.';return;}if(save(next=>{const live=next.active.exercises.find(e=>e.id===exerciseId).sets[index];live.reps=r;live.weight=w;},m.error)){m.close();render();}});}
-function appendSet(exerciseId){const ex=state.active.exercises.find(e=>e.id===exerciseId);if(ex.sets.length>=20){toast('Up to 20 sets per exercise.');return;}if(save(next=>{const e=next.active.exercises.find(e=>e.id===exerciseId);e.sets.push({target:e.sets.at(-1).target,amrap:!!e.sets.at(-1).amrap,weight:e.weight,reps:null});}))render();}
+function appendSet(exerciseId){
+ const exercise=state.active.exercises.find(e=>e.id===exerciseId);
+ if(exercise.sets.length>=20){toast('Up to 20 sets per exercise.');return;}
+ const saved=save(next=>{
+  const entry=next.active.exercises.find(e=>e.id===exerciseId),last=entry.sets.at(-1);
+  entry.sets.push({target:last.target,amrap:!!last.amrap,weight:entry.weight,reps:null});
+ });
+ if(!saved)return;
+ render();
+ return state.active.exercises.find(e=>e.id===exerciseId);
+}
 function endWorkout(sessionId,m=null,notes=null){
  if(state.active?.id!==sessionId)return;
  if(save(next=>{
@@ -1274,6 +1314,7 @@ function settingsChangelog(){
  const changelog=el('details','settings-changelog');
  changelog.append(disclosureSummary('Changelog'));
  const releases=[
+  ['1.0.49',['Simplified the date labels on Today.','Restyled Edit workout to match Today and show sets, reps, and weight on each exercise row.']],
   ['1.0.48',['Repeated workout cards preview the weights you would reach with normal progression.']],
   ['1.0.47',['Restored the larger chevrons on the Today workout cards.']],
   ['1.0.46',['Grouped related controls in Settings and show the progression increase for the selected unit.','Matched and centered chevrons and made the drag dots bolder.']],
