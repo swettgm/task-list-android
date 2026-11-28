@@ -1,6 +1,7 @@
 package com.personal.workouts;
 
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.*;
 import android.media.MediaMetadata;
 import android.media.session.*;
@@ -48,6 +49,25 @@ public class SpotifyAccessTest {
         SpotifyAccess.command(context,"play");assertEquals(PlaybackState.ACTION_PLAY,shadowOf(spotify.getTransportControls()).getLastPerformedAction());
         SpotifyAccess.command(context,"next");assertEquals(PlaybackState.ACTION_SKIP_TO_NEXT,shadowOf(spotify.getTransportControls()).getLastPerformedAction());
         SpotifyAccess.command(context,"prev");assertEquals(PlaybackState.ACTION_SKIP_TO_PREVIOUS,shadowOf(spotify.getTransportControls()).getLastPerformedAction());
+    }
+    @Test public void openingPlaybackUsesTheActivityProvidedBySpotify() {
+        Intent playback=new Intent("test.spotify.playback").setPackage(SpotifyAccess.PACKAGE_NAME);
+        PendingIntent action=PendingIntent.getActivity(context,1,playback,PendingIntent.FLAG_IMMUTABLE);
+        shadowOf(action).setCreatorPackage(SpotifyAccess.PACKAGE_NAME);
+        shadowOf(spotify).setSessionActivity(action);
+        assertTrue(SpotifyAccess.openSession(context));
+        Intent started=shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();
+        assertNotNull(started);
+        assertTrue(started.filterEquals(playback));
+    }
+    @Test public void missingCanceledAndUnrelatedPlaybackActivitiesFallBack() {
+        assertFalse(SpotifyAccess.openSession(context));
+        PendingIntent action=PendingIntent.getActivity(context,2,new Intent("test.spotify.playback"),PendingIntent.FLAG_IMMUTABLE);
+        shadowOf(spotify).setSessionActivity(action);
+        assertFalse(SpotifyAccess.openSession(context));
+        shadowOf(action).setCreatorPackage(SpotifyAccess.PACKAGE_NAME);
+        action.cancel();
+        assertFalse(SpotifyAccess.openSession(context));
     }
     @Test public void otherPlayersAreNotUsed()throws Exception {
         shadowOf(spotify).setPackageName("another.player");

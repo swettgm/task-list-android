@@ -1,6 +1,7 @@
 package com.personal.workouts;
 
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.*;
 import android.media.MediaMetadata;
 import android.graphics.Bitmap;
@@ -13,6 +14,7 @@ import org.json.JSONObject;
 
 /** Uses Spotify's active media session. Notification contents are never read or stored. */
 public final class SpotifyAccess extends NotificationListenerService {
+    static final String PACKAGE_NAME="com.spotify.music";
     private static Bitmap lastArt;
     private static String artData="";
     private static synchronized String artwork(MediaMetadata metadata) {
@@ -42,10 +44,22 @@ public final class SpotifyAccess extends NotificationListenerService {
         if(!allowed(context))return null;
         try {
             for(MediaController controller:context.getSystemService(MediaSessionManager.class).getActiveSessions(new ComponentName(context,SpotifyAccess.class))) {
-                if("com.spotify.music".equals(controller.getPackageName()))return controller;
+                if(PACKAGE_NAME.equals(controller.getPackageName()))return controller;
             }
         } catch(SecurityException denied) { }
         return null;
+    }
+    static boolean openSession(Context context) {
+        MediaController controller=controller(context);
+        if(controller==null)return false;
+        PendingIntent activity=controller.getSessionActivity();
+        if(activity==null||!PACKAGE_NAME.equals(activity.getCreatorPackage()))return false;
+        try {
+            activity.send();
+            return true;
+        } catch(PendingIntent.CanceledException|SecurityException unavailable) {
+            return false;
+        }
     }
     static JSONObject state(Context context) {
         JSONObject value=new JSONObject();

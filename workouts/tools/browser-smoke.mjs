@@ -98,16 +98,23 @@ try{
   Workouts.refresh();
  });
  check(await page.locator('#spotify-copy .spotify-line').evaluateAll(lines=>lines.every(line=>{
-  const [animation]=line.getAnimations(),distance=line.scrollWidth-line.parentElement.clientWidth;
-  return distance>0&&animation?.effect.getTiming().duration===2*(1600+distance*1000/16);
- })),'Long titles and artist names marquee slowly at the same speed');
+  const [animation]=line.getAnimations(),width=line.scrollWidth,available=line.parentElement.clientWidth;
+  const frames=animation?.effect.getKeyframes();
+  return width>available&&animation?.effect.getTiming().duration===1600+(width+available)*1000/16&&
+   frames[2].transform==='translateX(-'+width+'px)'&&frames[3].transform==='translateX('+available+'px)'&&
+   frames[2].offset===frames[3].offset;
+ })),'Long titles and artist names loop slowly out of the left edge and back in from the right');
  check(await page.locator('#spotify-title .spotify-line').evaluate(line=>{
   const [animation]=line.getAnimations();
   Workouts.refresh();
   return line.getAnimations()[0]===animation;
  }),'Metadata refresh preserves the current marquee position');
- await page.evaluate(()=>{qa.music.artist='Gorillaz';Workouts.refresh();});
+ await page.evaluate(()=>{qa.music.artist='Dr. Dog';Workouts.refresh();});
  check(await page.locator('#spotify-artist .spotify-line').evaluate(line=>line.getAnimations().length===0),'Short artist names remain still');
+ check(await page.locator('#spotify-artist .spotify-line').evaluate(line=>{
+  const copy=line.closest('#spotify-open').getBoundingClientRect(),row=line.parentElement.getBoundingClientRect();
+  return row.bottom<=copy.bottom&&line.clientHeight>=16;
+ }),'The artist line fits inside the bar with enough space for descenders');
  for(const [name,reps,weight] of [['Barbell Curl','8, 8, 8',45],['Front/Lateral Raise','10, 10, 10',10],['Deadlift','5, 5, 5',275],['Bench Press','5, 5, 5',165],['Leg Extension','6, 8, 10',50],['Leg Curl','6, 8, 10',65]]){
   await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
@@ -442,7 +449,8 @@ try{
  }),chevronPath),'Settings chevrons match History and are centered in their controls');
  check(await page.getByRole('button',{name:'Back to Exercise'}).evaluate(button=>{
   const icon=button.querySelector('svg'),hit=button.getBoundingClientRect(),box=icon.getBoundingClientRect();
-  return icon.querySelector('path').getAttribute('d')==='m15 5-7 7 7 7'&&box.width===22&&Math.abs(box.left-hit.left)<.6;
+  const title=button.nextElementSibling.getBoundingClientRect();
+  return icon.querySelector('path').getAttribute('d')==='m15 5-7 7 7 7'&&box.width===22&&Math.abs(box.left-hit.left)<.6&&title.left-box.right===10;
  }),'The Settings back chevron uses its older shape and aligns left');
  check(await defaults.evaluate(section=>{
   const [weight,reps,unit,rest]=[...section.querySelectorAll('input,select')].map(e=>e.getBoundingClientRect());

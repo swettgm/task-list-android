@@ -241,7 +241,8 @@ public final class MainActivity extends Activity {
         }
         @JavascriptInterface public void openSpotify() {
             runOnUiThread(()->{
-                Intent launch=getPackageManager().getLaunchIntentForPackage("com.spotify.music");
+                if(SpotifyAccess.openSession(MainActivity.this))return;
+                Intent launch=getPackageManager().getLaunchIntentForPackage(SpotifyAccess.PACKAGE_NAME);
                 if(launch!=null)startActivity(launch);
                 else Toast.makeText(MainActivity.this,"Install Spotify to use the player.",Toast.LENGTH_SHORT).show();
             });

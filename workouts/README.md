@@ -2,7 +2,7 @@
 
 The rest timer remembers its last position across workouts and app restarts. Clearing a set cancels its rest timer. Drag the floating timer onto the X to hide it for the current set. The X appears when you drag the timer into the lower half of the screen. Its drop zone expands and gives haptic feedback when you enter it. Use End timer in the rest notification to dismiss the current timer. The larger Spotify bar keeps the controls visible and opens Spotify when tapped while idle.
 
-[Download Exercise 1.0.54](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.54.apk) for Android 8 or later. This updates Workouts and keeps its saved workouts and history.
+[Download Exercise 1.0.55](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.55.apk) for Android 8 or later. This updates Workouts and keeps its saved workouts and history.
 
 An offline workout logger in the blue-grey gradient and white-control theme shared with Tasks, RM and Meditation. New installations start with an empty workout and history.
 
@@ -22,7 +22,7 @@ An offline workout logger in the blue-grey gradient and white-control theme shar
 - Tap the stopwatch in the header to start rest manually using the default duration. The draggable timer has a shrinking progress ring, saved position, +30 seconds and Skip controls. Turn it off with Floating rest timer in Settings.
 - Enable Show rest timer over other apps in Settings and grant Android overlay permission. One timer window stays in place inside and outside Exercise and remembers its position. Tap it from another app to return to Today, or from inside Exercise to open Rest timer.
 - Enable Rest notifications in Settings for a one-line countdown notification with progress. The timer popup has +30 seconds and Skip controls. Android notification permission is required. Precise-alarm access improves completion timing while the device sleeps.
-- The compact Spotify bar fits around the album art and has solid controls, bold text and haptics. Tap Connect and enable Exercise under Android notification access, then start Spotify. Tapping the track opens Spotify. Swipe left or right on the bar to skip forward or back. The title and artist slide while artwork updates in place. Full Spotify playlist browsing is omitted.
+- The compact Spotify bar fits around the album art and has solid controls, bold text and haptics. Tap Connect and enable Exercise under Android notification access, then start Spotify. Tapping the track opens the current playback screen when Spotify provides a shortcut and opens the app normally otherwise. Swipe left or right on the bar to skip forward or back. The title and artist slide while artwork updates in place. Full Spotify playlist browsing is omitted.
 - Only Spotify media sessions are used. Notification contents are never read or stored. No Spotify OAuth credentials are required.
 - The Defaults section in Settings groups Weight, Sets/Reps, Unit and Rest. Appearance and stepped vibration-length controls are also available in Settings.
 - Today and History support swiping with delayed tab selection and haptics. Dialogs dismiss on outside tap and Android Back.
