@@ -68,7 +68,7 @@ try{
  const settings=page.locator('#settings-screen');
  assert.equal(await settings.locator('.number-grip:visible').count(),0);
  await settings.locator('.settings-changelog summary').click();
- assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.47',exact:true}).isVisible(),true);
+ assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.48',exact:true}).isVisible(),true);
  await page.getByRole('combobox',{name:'Number controls'}).selectOption('− and + buttons');
  assert.equal(await settings.locator('.number-step:visible, .number-grip:visible').count(),0);
  await number('Number adjustment step').fill('2');
@@ -149,6 +149,47 @@ try{
  const restored=await timer.boundingBox();
  assert.ok(Math.abs(moved.x-restored.x)<1&&Math.abs(moved.y-restored.y)<1);
  console.log('Number controls, note resize, progression, failures, AMRAP, missed-workout deload and persistent timer position passed.');
+
+ const previewPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,timezoneId:'UTC'});
+ await previewPage.clock.setFixedTime(day);
+ await previewPage.addInitScript(()=>{
+  if(localStorage.getItem('workouts-v1'))return;
+  const exercise=(id,name,weight)=>({id,name,weight,unit:'lb',rest:0,notes:'',
+   sets:[{target:5,amrap:false,weight,reps:null}]});
+  const bench={...exercise('bench','Bench Press',135),progressionIncrement:2.5};
+  const squat=exercise('squat','Squat',225);
+  const press=exercise('press','Overhead Press',95);
+  localStorage.setItem('workouts-v1',JSON.stringify({version:1,revision:0,
+   routines:[{id:'bench-squat',name:'Bench & Squat',exercises:[bench,squat]},
+    {id:'press',name:'Press & Deadlift',exercises:[press]}],
+   selected:'bench-squat',active:null,history:[],restEndAt:0,
+   settings:{top:'#203747',bottom:'#5a5c61',text:'#f4f7fa',gradient:true,spotify:false,notifications:false,
+    promptWorkoutNotes:false,schedule:{mode:'weekdays',days:[1,3,5]}}}));
+ });
+ await previewPage.goto(fixture.url);
+ const previewData=()=>previewPage.evaluate(()=>Workouts.debug());
+ const repeated=previewPage.getByRole('region',{name:'Bench & Squat',exact:true});
+ const shownWeights=card=>card.locator('button[aria-label^="Edit weight for "]').allTextContents();
+ assert.deepEqual(await shownWeights(repeated.nth(0)),['135 lb','225 lb']);
+ const later=repeated.nth(1);
+ await button('Bench & Squat',later).click();
+ assert.match(await later.locator('.routine-date').textContent(),/ · Projected$/);
+ assert.deepEqual(await shownWeights(later),['137.5 lb','230 lb']);
+ assert.equal((await previewData()).revision,0);
+
+ await button('Start workout',later).click();
+ assert.deepEqual((await previewData()).active.exercises.map(exercise=>exercise.weight),[135,225]);
+ await button('Finish',previewPage).click();
+ await button('Discard',previewPage.locator('dialog[open]')).click();
+ await button('Start workout',repeated.first()).click();
+ await button('Log set 1 of Bench Press',previewPage).click();
+ await button('Edit set 1 of Bench Press',previewPage).click();
+ await button('Log set 1 of Squat',previewPage).click();
+ await button('Finish',previewPage).click();
+ assert.deepEqual((await previewData()).routines[0].exercises.map(exercise=>exercise.weight),[135,230]);
+ assert.deepEqual(await shownWeights(repeated.first()),['135 lb','230 lb']);
+ assert.doesNotMatch(await repeated.first().locator('.routine-date').textContent(),/Projected/);
+ console.log('Scheduled repeats preview progression without saving it and reflect the actual result after logging.');
 }finally{
  await browser.close();
  await fixture.close();

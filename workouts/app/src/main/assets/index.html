@@ -495,10 +495,16 @@ function renderToday(){
  const activeRoutineId=state.active?.routineId;
  const activeSlot=slots.find(slot=>slot.routine.id===activeRoutineId&&slot.day===state.active?.scheduledDay)
    ||slots.find(slot=>slot.routine.id===activeRoutineId);
+ const previews=new Map();
  for(const slot of slots){
   const {routine,day}=slot;
   const scheduledToday=day===today;
   const active=slot===activeSlot?state.active:null,source=active||routine;
+  const preview=active?undefined:previews.get(routine.id);
+  const projected=preview&&source.exercises.some(exercise=>preview.get(exercise.id)!==exercise.weight);
+  if(day!==null&&state.settings.autoProgression!==false){
+   previews.set(routine.id,nextScheduledWeights(routine,active,preview,state.settings));
+  }
   const cardKey=day===null?routine.id:routine.id+'-'+day;
   const section=el('section','routine');
   section.setAttribute('aria-label',routine.name);
@@ -507,7 +513,7 @@ function renderToday(){
   if(day!==null){
    section.classList.add('has-date');
    const label=scheduledToday?'Scheduled today':dateText(day*dayMs,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
-   title.append(el('span','routine-date small muted',label));
+   title.append(el('span','routine-date small muted',label+(projected?' · Projected':'')));
   }
   const edit=button('',()=>{haptic();editWorkout(routine.id);},'icon bare');
   edit.setAttribute('aria-label','Edit '+routine.name);
@@ -544,7 +550,7 @@ function renderToday(){
    section.addEventListener('click',event=>{if(event.target===section&&panel.hidden)toggle.click();});
   }
   if(!source.exercises.length)panel.append(el('p','empty','Tap the pencil to add exercises.'));
-  for(const exercise of source.exercises)panel.append(renderExercise(exercise,routine.id,active));
+  for(const exercise of source.exercises)panel.append(renderExercise(exercise,routine.id,active,preview?.get(exercise.id)));
   if(!active&&source.exercises.length){
    const footer=el('div','routine-start-row');
    const startButton=button('Start workout',()=>start(routine.id,day),'primary routine-start');
@@ -563,13 +569,13 @@ function renderToday(){
   calculator.onclick=()=>{haptic();showPlateCalculator(state.active.id);};
  }
 }
-function renderExercise(ex,routineId,active){
+function renderExercise(ex,routineId,active,shownWeight=ex.weight){
  const card=el('article','exercise');
  card.dataset.exerciseId=ex.id;
  const head=el('div','exercise-head');
  const targets=button(setsLabel(ex),()=>{haptic();editExercisePlan(routineId,ex.id,active?.id,'Sets/Reps');},'bare');
  targets.setAttribute('aria-label','Edit sets/reps for '+ex.name);
- const weight=button(ex.weight+' '+ex.unit,()=>{haptic();editExercisePlan(routineId,ex.id,active?.id,'Weight');},'bare');
+ const weight=button(shownWeight+' '+ex.unit,()=>{haptic();editExercisePlan(routineId,ex.id,active?.id,'Weight');},'bare');
  weight.setAttribute('aria-label','Edit weight for '+ex.name);
  const summary=el('div','exercise-plan'),separator=el('span','','·');
  separator.setAttribute('aria-hidden','true');
@@ -950,9 +956,20 @@ function editPlateEquipment(selectedUnit,onClose){
  });
 }
 function defaultProgression(settings,unit){return settings.progression?.[unit]??(unit==='kg'?2.5:5);}
+function progressionIncrease(exercise,settings){return exercise.progressionIncrement??defaultProgression(settings,exercise.unit);}
+function planWeight(weight){return Math.max(0,Math.min(5000,Math.round(weight*100)/100));}
 function setPlanWeight(exercise,weight){
- exercise.weight=Math.max(0,Math.min(5000,Math.round(weight*100)/100));
+ exercise.weight=planWeight(weight);
  for(const set of exercise.sets)set.weight=exercise.weight;
+}
+function nextScheduledWeights(routine,active,preview,settings){
+ return new Map(routine.exercises.map(exercise=>{
+  const current=active?.exercises.find(item=>item.id===exercise.id);
+  const weight=preview?.get(exercise.id)??exercise.weight;
+  // An active workout starts at the saved weight, even when opened from a later card.
+  const canProgress=!active||(current?.weight===exercise.weight&&current.unit===exercise.unit);
+  return [exercise.id,canProgress?planWeight(weight+progressionIncrease(exercise,settings)):weight];
+ }));
 }
 function metTargets(exercise){return exercise.sets.every(set=>hasLoggedReps(set)&&set.reps>=set.target);}
 function progressWorkout(data,session){
@@ -977,7 +994,7 @@ function progressWorkout(data,session){
   if(!stored||stored.weight!==exercise.weight||stored.unit!==exercise.unit)continue;
   delete stored.doubleProgression;
   const earnedIncrease=metTargets(exercise);
-  const increase=stored.progressionIncrement??defaultProgression(data.settings,stored.unit);
+  const increase=progressionIncrease(stored,data.settings);
   if(earnedIncrease){
    setPlanWeight(stored,exercise.weight+increase);
   }else{
@@ -1257,6 +1274,7 @@ function settingsChangelog(){
  const changelog=el('details','settings-changelog');
  changelog.append(disclosureSummary('Changelog'));
  const releases=[
+  ['1.0.48',['Repeated workout cards preview the weights you would reach with normal progression.']],
   ['1.0.47',['Restored the larger chevrons on the Today workout cards.']],
   ['1.0.46',['Grouped related controls in Settings and show the progression increase for the selected unit.','Matched and centered chevrons and made the drag dots bolder.']],
   ['1.0.45',['Removed the Last time line from exercise cards on Today.']],
