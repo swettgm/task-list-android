@@ -28,9 +28,15 @@ try{
  check(await stopwatch.evaluate(control=>{
   const plus=control.previousElementSibling,gear=control.nextElementSibling;
   const a=plus.getBoundingClientRect(),b=control.getBoundingClientRect(),c=gear.getBoundingClientRect();
+  const heights=[plus,control,gear].map(button=>button.querySelector('path').getBoundingClientRect().height);
   return plus.id==='add-routine'&&gear.id==='settings'&&b.left-a.right===c.left-b.right&&
-   a.width===b.width&&b.width===c.width&&getComputedStyle(plus.querySelector('svg')).strokeWidth===getComputedStyle(control.querySelector('svg')).strokeWidth;
- }),'The stopwatch matches the other toolbar controls and is equally spaced between them');
+   a.width===40&&a.width===b.width&&b.width===c.width&&Math.min(...heights)>=18&&Math.max(...heights)<=21&&
+   Math.max(...heights)-Math.min(...heights)<3;
+ }),'The three header glyphs are smaller and balanced within evenly spaced 40 px controls');
+ check(await page.getByRole('tablist').evaluate(bar=>{
+  const bounds=bar.getBoundingClientRect(),tabs=[...bar.children].map(tab=>tab.getBoundingClientRect());
+  return bounds.height===50&&tabs.every(tab=>tab.height===44&&tab.top-bounds.top===bounds.bottom-tab.bottom);
+ }),'Today and History fill the slightly taller tab bar evenly');
  await stopwatch.click();
  const manualRest=await state();
  check(manualRest.active===null&&manualRest.restDurationMs===manualRest.settings.rest*1000&&
