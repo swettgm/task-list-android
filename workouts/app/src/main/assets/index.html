@@ -69,8 +69,9 @@ body.settings-open{padding-bottom:16px}
 body,#page-stack{touch-action:pan-y}
 #app>header .toolbar-actions button{padding:0}
 #app>header .toolbar-actions svg{width:24px;height:24px}
-#app>header #settings svg{width:22px;height:22px}
+#app>header #start-rest svg,#app>header #settings svg{width:26px;height:26px}
 #start-rest svg{transform:translateY(-.5px)}
+#settings svg{fill:currentColor;fill-rule:evenodd;stroke:none}
 .spotify .icon svg{fill:currentColor;stroke:none}
 @media(max-width:350px){.spotify .icon{min-height:40px}}
 #discard.danger{background:#a52335;color:#fff}
@@ -225,7 +226,18 @@ details>summary::-webkit-details-marker{display:none}
 const native=window.WorkoutNative, KEY='workouts-v1', $=id=>document.getElementById(id);
 const clone=value=>JSON.parse(JSON.stringify(value));
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
-const paths={music:'M9 18V5l11-2v13M9 8l11-2M9 18a3 3 0 1 1-3-3M20 16a3 3 0 1 1-3-3',play:'M8 5v14l11-7Z',pause:'M6 5h4v14H6ZM14 5h4v14h-4Z',prev:'M4 5h3v14H4ZM19 5v14L8 12Z',next:'M17 5h3v14h-3ZM5 5l11 7-11 7Z',gear:'M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M12 4a8 8 0 1 0 0 16a8 8 0 0 0 0-16',plus:'M12 5v14M5 12h14',routinePlus:'M12 2v20M2 12h20',pencil:'M3 21L4 16 17 3 21 7 8 20Z M14 6l4 4',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',chevron:'m5 8.5 7 7 7-7',close:'m6 6 12 12M6 18 18 6'};
+const paths={music:'M9 18V5l11-2v13M9 8l11-2M9 18a3 3 0 1 1-3-3M20 16a3 3 0 1 1-3-3',play:'M8 5v14l11-7Z',pause:'M6 5h4v14H6ZM14 5h4v14h-4Z',prev:'M4 5h3v14H4ZM19 5v14L8 12Z',next:'M17 5h3v14h-3ZM5 5l11 7-11 7Z',plus:'M12 5v14M5 12h14',routinePlus:'M12 2v20M2 12h20',pencil:'M3 21L4 16 17 3 21 7 8 20Z M14 6l4 4',trash:'M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',chevron:'m5 8.5 7 7 7-7',close:'m6 6 12 12M6 18 18 6'};
+paths.gear=
+ 'M12.84 4.04' +
+ 'Q13.23 4.11 13.45 3.8L14.32 1.7Q14.5 1.27 14.93 1.45L17.39 2.47Q17.82 2.65 17.64 3.08L16.77 5.18Q16.71 5.55 17.03 5.78A8 8 0 0 1 18.22 6.97' +
+ 'Q18.45 7.29 18.82 7.23L20.92 6.36Q21.35 6.18 21.53 6.61L22.55 9.07Q22.73 9.5 22.3 9.68L20.2 10.55Q19.89 10.77 19.96 11.16A8 8 0 0 1 19.96 12.84' +
+ 'Q19.89 13.23 20.2 13.45L22.3 14.32Q22.73 14.5 22.55 14.93L21.53 17.39Q21.35 17.82 20.92 17.64L18.82 16.77Q18.45 16.71 18.22 17.03A8 8 0 0 1 17.03 18.22' +
+ 'Q16.71 18.45 16.77 18.82L17.64 20.92Q17.82 21.35 17.39 21.53L14.93 22.55Q14.5 22.73 14.32 22.3L13.45 20.2Q13.23 19.89 12.84 19.96A8 8 0 0 1 11.16 19.96' +
+ 'Q10.77 19.89 10.55 20.2L9.68 22.3Q9.5 22.73 9.07 22.55L6.61 21.53Q6.18 21.35 6.36 20.92L7.23 18.82Q7.29 18.45 6.97 18.22A8 8 0 0 1 5.78 17.03' +
+ 'Q5.55 16.71 5.18 16.77L3.08 17.64Q2.65 17.82 2.47 17.39L1.45 14.93Q1.27 14.5 1.7 14.32L3.8 13.45Q4.11 13.23 4.04 12.84A8 8 0 0 1 4.04 11.16' +
+ 'Q4.11 10.77 3.8 10.55L1.7 9.68Q1.27 9.5 1.45 9.07L2.47 6.61Q2.65 6.18 3.08 6.36L5.18 7.23Q5.55 7.29 5.78 6.97A8 8 0 0 1 6.97 5.78' +
+ 'Q7.29 5.55 7.23 5.18L6.36 3.08Q6.18 2.65 6.61 2.47L9.07 1.45Q9.5 1.27 9.68 1.7L10.55 3.8Q10.77 4.11 11.16 4.04A8 8 0 0 1 12.84 4.04' +
+ 'ZM17 12a5 5 0 1 0-10 0 5 5 0 1 0 10 0Z';
 paths.calculator='M7 2h10a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3Z M9 6h6 M9 10h.01M15 10h.01M9 14h.01M15 14h.01M9 18h.01M15 18h.01';
 paths.routineChevron='m5 9 7 7 7-7';
 paths.grip='M12 5h.01M12 12h.01M12 19h.01';
@@ -239,6 +251,7 @@ function disclosureSummary(label){
 function button(label,action,cls=''){const node=el('button',cls,label);node.type='button';node.onclick=action;return node;}
 function id(){return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);}
 function haptic(){try{native?.haptic();}catch(_){}}
+function dropZoneHaptic(){try{native?.dropZoneHaptic();}catch(_){}}
 function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,2400);}
 function dateText(value,options={month:'long',day:'numeric',weekday:'short'}){return new Intl.DateTimeFormat(undefined,options).format(new Date(value));}
 function duration(ms){const seconds=Math.max(0,Math.floor(ms/1000));return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');}
@@ -1411,6 +1424,7 @@ function settingsChangelog(){
  const changelog=el('details','settings-changelog');
  changelog.append(disclosureSummary('Changelog'));
  const releases=[
+  ['1.0.52',['Enlarged the stopwatch and gave Settings a solid gear with a thinner ring. Strengthened the rest timer drop-zone feedback.']],
   ['1.0.51',['Made the header icons smaller and balanced their sizes. Gave the Today and History tabs a little more height.']],
   ['1.0.50',['Edit workout titles in place and use Back or Cancel to return from the exercise editor.','Made the reorder dots bolder, adjusted smaller pound plates, and gave the sleeve a minimum length.','Start rest with the first input for each set or tap the stopwatch to start it manually. Show the timer drop target in the lower half. Tapping the timer from another app opens Today.']],
   ['1.0.49',['Simplified the date labels on Today.','Restyled Edit workout to match Today and show sets, reps, and weight on each exercise row.']],
@@ -1688,7 +1702,7 @@ function updateTimerHover(d,x,y,feedback){
  dismissTarget.classList.toggle('near',inLowerHalf);
  if(d.needsExit){if(distance>entryRadius)d.needsExit=false;return false;}
  const over=inLowerHalf&&distance<=(d.over?holdRadius:entryRadius);
- if(over&&!d.over&&feedback)haptic();
+ if(over&&!d.over&&feedback)dropZoneHaptic();
  d.over=over;
  dismissTarget.classList.toggle('over',over);
  return over;
@@ -1715,7 +1729,7 @@ function finishTimerDrag(commit,event){
  dismissTarget.hidden=true;
  dismissTarget.classList.remove('near','over');
  if(d.moved){suppressTimerClick=performance.now()+450;if(dismissed){
-  if(save(next=>{if(next.restEndAt&&next.restStartedAt===d.started)next.restDismissed=true;}))haptic();
+  if(save(next=>{if(next.restEndAt&&next.restStartedAt===d.started)next.restDismissed=true;}))dropZoneHaptic();
   tick();
  }else if(commit){
   const box=$('rest').getBoundingClientRect(),x=Math.max(0,Math.min(1,(box.left-8)/Math.max(1,innerWidth-92))),y=Math.max(0,Math.min(1,(box.top-8)/Math.max(1,(visualViewport?.height||innerHeight)-92)));

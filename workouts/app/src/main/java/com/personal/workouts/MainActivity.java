@@ -157,6 +157,9 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void haptic() {
             runOnUiThread(()->{if(web!=null)web.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);});
         }
+        @JavascriptInterface public void dropZoneHaptic() {
+            runOnUiThread(()->{if(web!=null)web.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);});
+        }
         @JavascriptInterface public String restState() {
             try {
                 org.json.JSONObject value=store.read();

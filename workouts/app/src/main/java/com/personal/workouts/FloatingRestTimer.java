@@ -243,7 +243,7 @@ final class FloatingRestTimer extends View {
         boolean previous=dropHover.over;
         boolean over=dropHover.update(Math.hypot(startX-centerX,startY-centerY),
             inLowerHalf?distance:Double.POSITIVE_INFINITY,dp(38),dp(50));
-        if(over&&!previous&&feedback)performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        if(over&&!previous&&feedback)performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
         if(over!=previous)dismissTarget.invalidate();
         return over;
     }
@@ -262,7 +262,7 @@ final class FloatingRestTimer extends View {
             try {
                 state.put("restDismissed",true);
                 if(store.write(state.toString())!=null){
-                    performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     remove();
                 }
             }catch(org.json.JSONException ignored){ }

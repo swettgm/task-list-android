@@ -111,7 +111,12 @@ try{
  await swipe(70,320,false,historyCard.y+historyCard.height/2);
  await page.waitForFunction(()=>document.querySelector('#today-tab').getAttribute('aria-selected')==='true');
  check(await page.locator('dialog').count()===0,'Swiping across a history card returns to Today without opening it');
- check(await page.locator('#settings svg').evaluate(gear=>getComputedStyle(gear).stroke===getComputedStyle(gear.parentElement).color),'The settings gear uses the toolbar color');
+ check(await page.locator('#settings svg').evaluate(gear=>{
+  const style=getComputedStyle(gear);
+  const shape=gear.querySelector('path');
+  return style.fill===getComputedStyle(gear.parentElement).color&&style.stroke==='none'&&
+   !shape.isPointInFill(new DOMPoint(12,12))&&shape.isPointInFill(new DOMPoint(12,6));
+ }),'The solid settings gear uses the toolbar color and has an open center');
  check(await page.locator('#spotify-play svg').evaluate(e=>getComputedStyle(e).stroke==='none'&&getComputedStyle(e).fill!=='none'),'Spotify transport icons use solid shapes');
  for(const width of [390,320]){
   await page.setViewportSize({width,height:844});

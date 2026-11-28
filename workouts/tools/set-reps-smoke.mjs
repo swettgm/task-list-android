@@ -9,9 +9,9 @@ try{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{
   let state=JSON.parse(localStorage.getItem('qa-state')||'{}');
-  window.qa={haptics:0,fail:false,overlayVisible:false,restReads:0,dismissOverlay(){state.restDismissed=true;qa.overlayVisible=false;}};
+  window.qa={haptics:0,dropHaptics:0,fail:false,overlayVisible:false,restReads:0,dismissOverlay(){state.restDismissed=true;qa.overlayVisible=false;}};
   window.WorkoutNative={readState:()=>JSON.stringify(state),writeState:raw=>{if(qa.fail)return null;state=JSON.parse(raw);state.revision=(state.revision||0)+1;localStorage.setItem('qa-state',JSON.stringify(state));return JSON.stringify(state);},
-   floatingRestVisible:()=>qa.overlayVisible,
+   floatingRestVisible:()=>qa.overlayVisible,dropZoneHaptic(){qa.dropHaptics++;},
    restState:()=>{qa.restReads++;return JSON.stringify({end:state.restEndAt,duration:state.restDurationMs,started:state.restStartedAt,dismissed:state.restDismissed,position:state.restPosition});},ready(){},setThemeColors(){},setModalOpen(){},hideKeyboard(){},showKeyboard(){},haptic(){qa.haptics++;},restComplete(){},spotifyState:()=>JSON.stringify({connected:false}),preciseTimers:()=>true};
  });
  await page.goto(fixture.url);await page.waitForFunction(()=>!!window.Workouts);
@@ -48,20 +48,21 @@ try{
   const box=element.getBoundingClientRect();
   return {cx:box.x+box.width/2,cy:box.y+box.height/2};
  });
- const beforeHover=await page.evaluate(()=>qa.haptics);
+ const beforeHover=await page.evaluate(()=>qa.dropHaptics);
  const boundary=await page.evaluate(()=>innerHeight/2);
  await page.mouse.move(x,boundary+2,{steps:5});
- check(await target.isVisible()&&await page.evaluate(()=>qa.haptics)===beforeHover,'The X appears as soon as the drag enters the lower half, even at the side of the screen');
+ check(await target.isVisible()&&await page.evaluate(()=>qa.dropHaptics)===beforeHover,'The X appears as soon as the drag enters the lower half, even at the side of the screen');
  await page.mouse.move(x,boundary-2,{steps:4});
  check(!(await target.isVisible()),'The X disappears again above the midpoint');
  await page.mouse.move(cx,cy,{steps:5});
  check(await page.locator('#timer-dismiss').evaluate(target=>target.classList.contains('over')&&getComputedStyle(target,'::before').content!=='none'),'Entering the X expands its drop zone');
- check(await page.evaluate(()=>qa.haptics)===beforeHover+1,'The X gives one haptic on entry');
+ check(await page.evaluate(()=>qa.dropHaptics)===beforeHover+1,'The X gives one stronger haptic on entry');
  await page.mouse.move(cx+44,cy,{steps:4});
  check(await page.locator('#timer-dismiss').evaluate(target=>target.classList.contains('over'))&&
-       await page.evaluate(()=>qa.haptics)===beforeHover+1,'The expanded zone retains hover without repeated haptics');
+       await page.evaluate(()=>qa.dropHaptics)===beforeHover+1,'The expanded zone retains hover without repeated haptics');
  await page.mouse.up();
  check(!(await rest.isVisible())&&(await data()).restEndAt===deadline,'Dropping on the X hides only the current floating timer');
+ check(await page.evaluate(()=>qa.dropHaptics)===beforeHover+2,'Dropping on the X confirms with a stronger haptic');
  await sets().first().tap();
  check(!(await rest.isVisible())&&(await data()).restEndAt===deadline,'Editing the same set does not revive a dismissed timer');
  await sets().nth(2).tap();

@@ -28,11 +28,10 @@ try{
  check(await stopwatch.evaluate(control=>{
   const plus=control.previousElementSibling,gear=control.nextElementSibling;
   const a=plus.getBoundingClientRect(),b=control.getBoundingClientRect(),c=gear.getBoundingClientRect();
-  const heights=[plus,control,gear].map(button=>button.querySelector('path').getBoundingClientRect().height);
-  return plus.id==='add-routine'&&gear.id==='settings'&&b.left-a.right===c.left-b.right&&
-   a.width===40&&a.width===b.width&&b.width===c.width&&Math.min(...heights)>=18&&Math.max(...heights)<=21&&
-   Math.max(...heights)-Math.min(...heights)<3;
- }),'The three header glyphs are smaller and balanced within evenly spaced 40 px controls');
+  const iconWidths=[plus,control,gear].map(button=>button.querySelector('svg').getBoundingClientRect().width);
+  return plus.id==='add-routine'&&gear.id==='settings'&&b.left-a.right===8&&c.left-b.right===8&&
+   a.width===40&&a.width===b.width&&b.width===c.width&&iconWidths.join() === '24,26,26';
+ }),'The stopwatch and gear gain size while the plus and toolbar gaps stay the same');
  check(await page.getByRole('tablist').evaluate(bar=>{
   const bounds=bar.getBoundingClientRect(),tabs=[...bar.children].map(tab=>tab.getBoundingClientRect());
   return bounds.height===50&&tabs.every(tab=>tab.height===44&&tab.top-bounds.top===bounds.bottom-tab.bottom);
