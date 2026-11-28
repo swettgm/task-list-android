@@ -31,7 +31,10 @@ dialog .actions .trash{width:42px;min-width:42px}
 
 body.has-player{padding-bottom:104px}
 .spotify-track{font-size:14px;font-weight:750;height:var(--art-size);min-height:0;justify-content:center;line-height:1.2;gap:2px;overflow:hidden}
-#spotify-artist{font-size:12px;font-weight:600;opacity:.8}#spotify-artist:empty{display:none}#spotify-copy{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px}.spotify,.spotify button{touch-action:pan-y}
+#spotify-artist{font-size:12px;font-weight:600;opacity:.8}#spotify-copy{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px}.spotify,.spotify button{touch-action:pan-y}
+#spotify-copy>span{width:100%;text-overflow:clip}
+#spotify-copy .spotify-line{display:inline-block;max-width:none;overflow:visible}
+@media(prefers-reduced-motion:reduce){#spotify-copy>span{text-overflow:ellipsis}#spotify-copy .spotify-line{display:inline}}
 .spotify-art{display:grid;place-items:center;flex:0 0 var(--art-size);width:var(--art-size);height:var(--art-size);border-radius:10px;overflow:hidden;background:var(--surface)}
 .spotify-art img{width:100%;height:100%;object-fit:cover}
 .spotify-art svg{width:27px;height:27px}
@@ -224,7 +227,7 @@ details>summary::-webkit-details-marker{display:none}
 <aside id="rest" class="rest-floater" aria-label="Rest timer" hidden><button id="rest-float" aria-label="Rest controls"><svg viewBox="0 0 84 84" aria-hidden="true"><circle class="timer-track" cx="42" cy="42" r="36"/><circle id="rest-ring" class="timer-ring" cx="42" cy="42" r="36" pathLength="100"/></svg><strong id="rest-time"></strong></button></aside>
 <div id="timer-dismiss" class="timer-dismiss" hidden aria-hidden="true"></div>
 <aside id="spotify" class="spotify" aria-label="Spotify player">
-<span id="spotify-art" class="spotify-art" aria-hidden="true"></span><button id="spotify-open" class="spotify-track bare" aria-label="Open Spotify"><span id="spotify-copy"><span id="spotify-title">Spotify</span><span id="spotify-artist"></span></span></button>
+<span id="spotify-art" class="spotify-art" aria-hidden="true"></span><button id="spotify-open" class="spotify-track bare" aria-label="Open Spotify"><span id="spotify-copy"><span id="spotify-title"><span class="spotify-line">Spotify</span></span><span id="spotify-artist" hidden><span class="spotify-line"></span></span></span></button>
 <div id="spotify-progress" class="spotify-progress" aria-hidden="true" hidden><span></span></div>
 <button id="spotify-prev" class="icon bare" aria-label="Previous Spotify track"></button>
 <button id="spotify-play" class="icon bare" aria-label="Play Spotify"></button>
@@ -562,7 +565,7 @@ function renderToday(){
   title.append(el('span','routine-name',source.name));
   if(day!==null){
    section.classList.add('has-date');
-   const label=scheduledToday?'Scheduled today':dateText(day*dayMs,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
+   const label=scheduledToday?'Scheduled today':day===today+1?'Tomorrow':dateText(day*dayMs,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
    title.append(el('span','routine-date small muted',label));
   }
   const edit=button('',()=>{haptic();editWorkout(routine.id);},'icon bare');
@@ -1437,6 +1440,7 @@ function settingsChangelog(){
  const changelog=el('details','settings-changelog');
  changelog.append(disclosureSummary('Changelog'));
  const releases=[
+  ['1.0.54',['Long song titles and artist names scroll slowly when they exceed the music bar.','Workouts scheduled for the next day show Tomorrow.']],
   ['1.0.53',['Restored the Settings back chevron, balanced the tab spacing, aligned the music bar with the workout cards, and reinforced timer drop feedback.','Added the Meditation-style color picker.']],
   ['1.0.52',['Enlarged the stopwatch and gave Settings a solid gear with a thinner ring. Strengthened the rest timer drop-zone feedback.']],
   ['1.0.51',['Made the header icons smaller and balanced their sizes. Gave the Today and History tabs a little more height.']],
@@ -1883,11 +1887,40 @@ function slideSpotifyText(direction){
   renderSpotify();
  },850);
 }
+const spotifyReducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+const spotifyLines=['spotify-title','spotify-artist'].map(id=>({row:$(id),text:$(id).firstElementChild}));
+function layoutSpotifyMarquee(){
+ for(const line of spotifyLines){
+  const available=line.row.clientWidth;
+  const distance=available>0&&!spotifyReducedMotion.matches?Math.max(0,line.text.scrollWidth-available):0;
+  if(line.distance===distance)continue;
+  line.distance=distance;
+  line.animation?.cancel();
+  if(distance===0)continue;
+  const pause=1600,travel=distance*1000/16,duration=2*(pause+travel);
+  const end='translateX(-'+distance+'px)';
+  line.animation=line.text.animate([
+   {transform:'none',offset:0},
+   {transform:'none',offset:pause/duration},
+   {transform:end,offset:.5},
+   {transform:end,offset:.5+pause/duration},
+   {transform:'none',offset:1}
+  ],{duration,iterations:Infinity});
+ }
+}
+new ResizeObserver(layoutSpotifyMarquee).observe($('spotify-copy'));
+spotifyReducedMotion.addEventListener('change',layoutSpotifyMarquee);
 function renderSpotifyText(title,artist){
  const slide=spotifyTextSlide;
  if(slide&&(!slide.ready||(title===slide.title&&artist===slide.artist)))return;
- $('spotify-title').textContent=title;
- $('spotify-artist').textContent=artist;
+ for(const [index,value] of [title,artist].entries()){
+  const line=spotifyLines[index];
+  if(line.text.textContent===value)continue;
+  line.text.textContent=value;
+  line.row.hidden=!value;
+  line.distance=undefined;
+ }
+ layoutSpotifyMarquee();
  if(slide){
   resetSpotifyText();
   spotifyTextAnimation=$('spotify-copy').animate([

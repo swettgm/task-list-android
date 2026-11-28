@@ -92,6 +92,22 @@ try{
  check(await page.locator('#spotify-copy').evaluate(el=>el.getAnimations().length>0)&&
        await page.locator('#spotify-art').evaluate(el=>el.getAnimations().length===0),
        'Track text slides independently of the artwork');
+ await page.evaluate(()=>{
+  qa.music.title='A long song title that needs the full music bar and more';
+  qa.music.artist='An artist name long enough to scroll on its own line';
+  Workouts.refresh();
+ });
+ check(await page.locator('#spotify-copy .spotify-line').evaluateAll(lines=>lines.every(line=>{
+  const [animation]=line.getAnimations(),distance=line.scrollWidth-line.parentElement.clientWidth;
+  return distance>0&&animation?.effect.getTiming().duration===2*(1600+distance*1000/16);
+ })),'Long titles and artist names marquee slowly at the same speed');
+ check(await page.locator('#spotify-title .spotify-line').evaluate(line=>{
+  const [animation]=line.getAnimations();
+  Workouts.refresh();
+  return line.getAnimations()[0]===animation;
+ }),'Metadata refresh preserves the current marquee position');
+ await page.evaluate(()=>{qa.music.artist='Gorillaz';Workouts.refresh();});
+ check(await page.locator('#spotify-artist .spotify-line').evaluate(line=>line.getAnimations().length===0),'Short artist names remain still');
  for(const [name,reps,weight] of [['Barbell Curl','8, 8, 8',45],['Front/Lateral Raise','10, 10, 10',10],['Deadlift','5, 5, 5',275],['Bench Press','5, 5, 5',165],['Leg Extension','6, 8, 10',50],['Leg Curl','6, 8, 10',65]]){
   await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
   await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
@@ -587,7 +603,8 @@ try{
  await settings.getByRole('checkbox',{name:'Friday',exact:true}).check();
  await settings.getByRole('button',{name:'Save',exact:true}).click();
  const labels=await page.locator('.routine-date').allTextContents();
- check(labels.length===3&&['Wednesday','Friday','Monday'].every((day,i)=>labels[i].startsWith(day)&&labels[i].includes('January')),'Three selected weekdays preview Wednesday, Friday and Monday');
+ check(labels.length===3&&labels[0]==='Tomorrow'&&['Friday','Monday'].every((day,i)=>labels[i+1].startsWith(day)&&labels[i+1].includes('January')),
+  'The next calendar day reads Tomorrow while later workouts retain their dates');
  const scheduledNames=await page.locator('.routine').evaluateAll(cards=>cards.map(card=>card.getAttribute('aria-label')));
  check(scheduledNames.join('|')==='Workout B renamed|Workout A|Workout B renamed','Two routines rotate across all three upcoming days');
  check(await page.locator('.routine-toggle[aria-expanded=true]').count()===0,'Future workouts stay collapsed by default');
