@@ -6,6 +6,9 @@ import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.graphics.*;
 import android.os.Build;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.provider.Settings;
 import android.view.*;
 import java.util.Locale;
 import org.json.JSONObject;
@@ -243,7 +246,7 @@ final class FloatingRestTimer extends View {
         boolean previous=dropHover.over;
         boolean over=dropHover.update(Math.hypot(startX-centerX,startY-centerY),
             inLowerHalf?distance:Double.POSITIVE_INFINITY,dp(38),dp(50));
-        if(over&&!previous&&feedback)performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        if(over&&!previous&&feedback)pulseDropZone(this);
         if(over!=previous)dismissTarget.invalidate();
         return over;
     }
@@ -262,10 +265,21 @@ final class FloatingRestTimer extends View {
             try {
                 state.put("restDismissed",true);
                 if(store.write(state.toString())!=null){
-                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    pulseDropZone(this);
                     remove();
                 }
             }catch(org.json.JSONException ignored){ }
+        }
+    }
+
+    static void pulseDropZone(View view) {
+        Context context=view.getContext();
+        if(Settings.System.getInt(context.getContentResolver(),Settings.System.HAPTIC_FEEDBACK_ENABLED,1)==0)return;
+        Vibrator vibrator=context.getSystemService(Vibrator.class);
+        if(vibrator!=null&&vibrator.hasVibrator()){
+            vibrator.vibrate(VibrationEffect.createOneShot(40,255));
+        }else{
+            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
         }
     }
 

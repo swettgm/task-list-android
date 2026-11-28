@@ -158,7 +158,7 @@ public final class MainActivity extends Activity {
             runOnUiThread(()->{if(web!=null)web.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);});
         }
         @JavascriptInterface public void dropZoneHaptic() {
-            runOnUiThread(()->{if(web!=null)web.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);});
+            runOnUiThread(()->{if(web!=null)FloatingRestTimer.pulseDropZone(web);});
         }
         @JavascriptInterface public String restState() {
             try {

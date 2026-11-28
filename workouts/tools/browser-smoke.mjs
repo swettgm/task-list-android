@@ -57,8 +57,9 @@ try{
  await page.evaluate(()=>qa.openedSpotify=false);
  check(await page.locator('#spotify').evaluate(bar=>{
   const box=bar.getBoundingClientRect(),scale=new DOMMatrix(getComputedStyle(bar).transform).a;
-  return Math.abs(scale-1.1)<.001&&box.left>=8&&box.right<=innerWidth-8;
- }),'The entire player is scaled 10% and stays inside the screen');
+  const card=document.querySelector('.routine').getBoundingClientRect();
+  return Math.abs(scale-1.1)<.001&&Math.abs(box.left-card.left)<.6&&Math.abs(box.right-card.right)<.6;
+ }),'The player is scaled 10% and lines up with the workout cards');
  const playerGeometry=()=>page.locator('#spotify').evaluate(player=>{
   const bar=player.getBoundingClientRect();
   const art=player.querySelector('#spotify-art').getBoundingClientRect();
@@ -357,6 +358,7 @@ try{
  check(await page.locator('#rest-time.overdue').textContent()==='-0:03','The rest circle counts negative time after the deadline');
  const restDeadline=(await state()).restEndAt;
  await page.getByRole('button',{name:'Rest controls',exact:true}).click();
+ await dialog().getByRole('heading',{name:'Rest timer',exact:true}).waitFor();
  check(await dialog().getByRole('heading',{name:'Rest timer',exact:true}).isVisible(),'Tapping the timer inside Exercise opens its controls');
  await page.evaluate(()=>Workouts.openToday());
  check(await dialog().count()===0&&await page.locator('#today').isVisible()&&(await state()).restEndAt===restDeadline,
@@ -422,6 +424,10 @@ try{
   return icon.querySelector('path').getAttribute('d')===path&&box.width===16&&box.height===16&&
    Math.abs(box.top+box.height/2-row.top-row.height/2)<.6;
  }),chevronPath),'Settings chevrons match History and are centered in their controls');
+ check(await page.getByRole('button',{name:'Back to Exercise'}).evaluate(button=>{
+  const icon=button.querySelector('svg'),hit=button.getBoundingClientRect(),box=icon.getBoundingClientRect();
+  return icon.querySelector('path').getAttribute('d')==='m15 5-7 7 7 7'&&box.width===22&&Math.abs(box.left-hit.left)<.6;
+ }),'The Settings back chevron uses its older shape and aligns left');
  check(await defaults.evaluate(section=>{
   const [weight,reps,unit,rest]=[...section.querySelectorAll('input,select')].map(e=>e.getBoundingClientRect());
   return weight.top===reps.top&&unit.top===rest.top&&weight.left===unit.left&&reps.left===rest.left&&unit.width===rest.width;
@@ -604,6 +610,23 @@ try{
  check(await settings.getByRole('checkbox',{name:'Show rest timer over other apps',exact:true}).isChecked(),'The overlay choice persists');
  await settings.getByRole('button',{name:'Save',exact:true}).click();
  check(await page.evaluate(()=>qa.overlayRequests)===1,'Saving with permission already granted leaves Android settings closed');
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ const appearance=settings.getByRole('region',{name:'Appearance',exact:true});
+ await appearance.getByRole('button',{name:'Background color',exact:true}).click();
+ const hex=dialog().getByRole('textbox',{name:'Hex color'});
+ const originalColor=(await state()).settings.top;
+ check(await dialog().getByRole('slider',{name:'Color wheel'}).isVisible()&&
+  await dialog().getByRole('slider',{name:'Brightness'}).isVisible()&&await hex.inputValue()===originalColor.toUpperCase(),
+  'The color picker opens with a wheel, brightness slider, and the current hex value');
+ await hex.fill('#102030');
+ await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ check((await appearance.getByRole('button',{name:'Background color',exact:true}).textContent()).includes(originalColor.toUpperCase()),'Cancel preserves the original color');
+ await appearance.getByRole('button',{name:'Background color',exact:true}).click();
+ await hex.fill('#123456');
+ await dialog().getByRole('button',{name:'Use color',exact:true}).click();
+ check((await state()).settings.top===originalColor,'Use color stages the edit until Settings is saved');
+ await settings.getByRole('button',{name:'Save',exact:true}).click();
+ check((await state()).settings.top==='#123456','Settings saves the color selected in the picker');
  check(errors.length===0,'No browser errors');
  console.log(JSON.stringify({passed:checks.length,checks},null,2));
 }finally{await browser.close();await fixture.close();}
