@@ -98,19 +98,20 @@ try{
   Workouts.refresh();
  });
  check(await page.locator('#spotify-copy .spotify-line').evaluateAll(lines=>lines.every(line=>{
-  const [animation]=line.getAnimations(),width=line.scrollWidth,available=line.parentElement.clientWidth;
+  const [animation]=line.getAnimations(),width=line.offsetWidth,available=line.parentElement.clientWidth,offset=width+36;
   const frames=animation?.effect.getKeyframes();
-  return width>available&&animation?.effect.getTiming().duration===1600+(width+available)*1000/16&&
-   frames[2].transform==='translateX(-'+width+'px)'&&frames[3].transform==='translateX('+available+'px)'&&
-   frames[2].offset===frames[3].offset;
- })),'Long titles and artist names loop slowly out of the left edge and back in from the right');
+  return width>available&&animation?.effect.getTiming().duration===1600+offset*1000/16&&
+   frames[2].transform==='translateX(-'+offset+'px)'&&line.dataset.repeat===line.textContent&&
+   getComputedStyle(line,'::after').left===offset+'px'&&getComputedStyle(line.parentElement).maskImage.startsWith('linear-gradient');
+ })),'Long music labels loop continuously with a fade at each edge');
  check(await page.locator('#spotify-title .spotify-line').evaluate(line=>{
   const [animation]=line.getAnimations();
   Workouts.refresh();
   return line.getAnimations()[0]===animation;
  }),'Metadata refresh preserves the current marquee position');
  await page.evaluate(()=>{qa.music.artist='Dr. Dog';Workouts.refresh();});
- check(await page.locator('#spotify-artist .spotify-line').evaluate(line=>line.getAnimations().length===0),'Short artist names remain still');
+ check(await page.locator('#spotify-artist .spotify-line').evaluate(line=>line.getAnimations().length===0&&
+  getComputedStyle(line.parentElement).maskImage==='none'),'Short artist names stay still with no edge fade');
  check(await page.locator('#spotify-artist .spotify-line').evaluate(line=>{
   const copy=line.closest('#spotify-open').getBoundingClientRect(),row=line.parentElement.getBoundingClientRect();
   return row.bottom<=copy.bottom&&line.clientHeight>=16;
