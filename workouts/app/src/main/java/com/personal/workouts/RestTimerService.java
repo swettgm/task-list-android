@@ -27,10 +27,15 @@ public final class RestTimerService extends Service {
         return settings!=null&&settings.optBoolean("floatingTimer",true)&&settings.optBoolean("floatOverApps")&&Settings.canDrawOverlays(context);
     }
 
+    static boolean hasRest(JSONObject state) {
+        JSONObject source=state.optJSONObject("restSource");
+        return state.optLong("restEndAt")>0&&(!state.isNull("active")||(source!=null&&source.optBoolean("manual")));
+    }
+
     private static boolean shouldRun(Context context,JSONObject state,long now) {
         JSONObject settings=state.optJSONObject("settings");
         long end=state.optLong("restEndAt");
-        if(state.isNull("active")||settings==null||end==0)return false;
+        if(settings==null||!hasRest(state))return false;
         return (canFloat(context,settings)&&!state.optBoolean("restDismissed"))||(end>now&&settings.optBoolean("notifications"));
     }
 
@@ -82,7 +87,7 @@ public final class RestTimerService extends Service {
         long now=System.currentTimeMillis(),end=state.optLong("restEndAt"),remaining=end-now;
         boolean allowed=canFloat(this,settings)&&!state.optBoolean("restDismissed");
         if(!shouldRun(this,state,now)){
-            if(remaining<=0&&end>0&&!state.isNull("active"))RestAlarm.complete(this);
+            if(remaining<=0&&hasRest(state))RestAlarm.complete(this);
             stopSelf();
             clearOverlay();
             return;

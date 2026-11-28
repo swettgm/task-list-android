@@ -63,12 +63,13 @@ try{
  assert.equal(expanded.width,before.width-10);
  assert.equal(expanded.height,before.height+53);
  await dismiss();
+ await button('Done',dialog()).click();
 
  await button('Settings').click();
  const settings=page.locator('#settings-screen');
  assert.equal(await settings.locator('.number-grip:visible').count(),0);
  await settings.locator('.settings-changelog summary').click();
- assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.49',exact:true}).isVisible(),true);
+ assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.50',exact:true}).isVisible(),true);
  await page.getByRole('combobox',{name:'Number controls'}).selectOption('− and + buttons');
  assert.equal(await settings.locator('.number-step:visible, .number-grip:visible').count(),0);
  await number('Number adjustment step').fill('2');
@@ -145,6 +146,9 @@ try{
  await drag(timer,195-(reopened.x+reopened.width/2),794-(reopened.y+reopened.height/2));
  assert.equal((await data()).restDismissed,true);
  await button('Edit set 1 of Squat').click();
+ assert.equal(await timer.isVisible(),false);
+ for(let i=0;i<5;i++)await button('Edit set 1 of Squat').click();
+ await button('Log set 1 of Squat').click();
  await timer.waitFor();
  const restored=await timer.boundingBox();
  assert.ok(Math.abs(moved.x-restored.x)<1&&Math.abs(moved.y-restored.y)<1);

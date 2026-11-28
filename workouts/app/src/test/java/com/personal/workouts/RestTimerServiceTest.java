@@ -59,6 +59,24 @@ public class RestTimerServiceTest {
         assertEquals(0,ended.getLong("restEndAt"));
         assertEquals(workout,ended.getJSONObject("active").toString());
     }
+    @Test public void manualTimerNotifiesAndCanBeEndedWithoutAnActiveWorkout()throws Exception {
+        runningTimer();
+        JSONObject manual=store.read().put("active",JSONObject.NULL)
+            .put("restSource",new JSONObject().put("manual",true));
+        assertNotNull(store.write(manual.toString()));
+        ServiceController<RestTimerService> controller=Robolectric.buildService(RestTimerService.class).create();
+        try {
+            controller.startCommand(0,1);
+            Notification notification=shadowOf(controller.get()).getLastForegroundNotification();
+            assertNotNull(notification);
+            Intent end=shadowOf(notification.actions[0].actionIntent).getSavedIntent();
+            new RestAlarm().onReceive(context,end);
+            JSONObject ended=store.read();
+            assertTrue(ended.isNull("active"));
+            assertEquals(0,ended.getLong("restEndAt"));
+            assertFalse(ended.has("restSource"));
+        }finally{controller.destroy();}
+    }
     @Test public void oneOverlayStaysAttachedAcrossAppsAndOvertime()throws Exception {
         runningTimer();
         JSONObject inProgress=store.read();
@@ -76,9 +94,13 @@ public class RestTimerServiceTest {
             MainActivity.visible=false;
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
             assertSame(timer,windows.getViews().get(0));
+            assertTrue(timer.performClick());
+            assertEquals(MainActivity.OPEN_TODAY,shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity().getAction());
             MainActivity.visible=true;
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
             assertSame(timer,windows.getViews().get(0));
+            assertTrue(timer.performClick());
+            assertEquals(RestTimerService.OPEN_CONTROLS,shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity().getAction());
 
             JSONObject overdue=store.read().put("restEndAt",System.currentTimeMillis()-3000);
             assertNotNull(store.write(overdue.toString()));

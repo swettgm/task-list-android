@@ -24,6 +24,20 @@ try{
  check(await page.locator('#settings').evaluate(e=>parseFloat(getComputedStyle(e).borderWidth)===0),'The settings gear has no border');
  const state=()=>page.evaluate(()=>Workouts.debug()),dialog=()=>page.locator('dialog[open]');
  check((await state()).routines[0].exercises.length===0&&(await state()).history.length===0,'Fresh install starts with an empty routine and no workout history');
+ const stopwatch=page.getByRole('button',{name:'Start rest timer',exact:true});
+ check(await stopwatch.evaluate(control=>{
+  const plus=control.previousElementSibling,gear=control.nextElementSibling;
+  const a=plus.getBoundingClientRect(),b=control.getBoundingClientRect(),c=gear.getBoundingClientRect();
+  return plus.id==='add-routine'&&gear.id==='settings'&&b.left-a.right===c.left-b.right&&
+   a.width===b.width&&b.width===c.width&&getComputedStyle(plus.querySelector('svg')).strokeWidth===getComputedStyle(control.querySelector('svg')).strokeWidth;
+ }),'The stopwatch matches the other toolbar controls and is equally spaced between them');
+ await stopwatch.click();
+ const manualRest=await state();
+ check(manualRest.active===null&&manualRest.restDurationMs===manualRest.settings.rest*1000&&
+  await page.getByRole('button',{name:'Rest controls',exact:true}).isVisible()&&await dialog().count()===0,
+  'The stopwatch starts the default countdown directly with no active workout');
+ await page.getByRole('button',{name:'Rest controls',exact:true}).click();
+ await dialog().getByRole('button',{name:'Skip rest',exact:true}).click();
  check(await page.getByLabel('Spotify player').isVisible(),'Compact Spotify player uses the app layout');
  check(await page.locator('#spotify').evaluate(bar=>
   [bar,...bar.querySelectorAll('button, span')].every(part=>getComputedStyle(part).webkitTapHighlightColor==='rgba(0, 0, 0, 0)')&&
@@ -138,6 +152,10 @@ try{
  await dialog().getByRole('button',{name:'Edit Leg Extension',exact:true}).click();
  check(await dialog().getByRole('textbox',{name:'Sets/Reps'}).inputValue()==='6, 8, 10','Variable rep targets are editable');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await dialog().getByRole('button',{name:'Edit Leg Extension',exact:true}).waitFor();
+ check(await dialog().getByRole('button',{name:'Edit Leg Extension',exact:true}).isVisible(),
+  'Cancel from Edit exercise returns to its workout');
+ await dialog().getByRole('button',{name:'Done',exact:true}).click();
  const beforePencil=await pencil.boundingBox();
  const beforeChevron=await page.getByRole('button',{name:'Collapse Workout A',exact:true}).boundingBox();
  await page.getByRole('region',{name:'Workout A',exact:true}).getByRole('button',{name:'Start workout',exact:true}).click();
@@ -148,7 +166,7 @@ try{
  check((await state()).active.exercises[0].sets[0].reps===8,'One tap records the target reps');
  await page.waitForFunction(()=>document.querySelector('#elapsed')?.textContent.endsWith(' · 6%'));
  check(/^0:\d{2} · 6%$/.test(await page.locator('#elapsed').textContent()),'Elapsed workout time uses unpadded minutes and rounds completion to a whole percent');
- check((await state()).restEndAt>Date.now()&&await page.getByLabel('Rest timer').isVisible(),'A completed set starts the rest timer');
+ check((await state()).restEndAt>Date.now()&&await page.getByLabel('Rest timer',{exact:true}).isVisible(),'A completed set starts the rest timer');
  const calculator=page.getByRole('button',{name:'Plate calculator',exact:true});
  check(await calculator.evaluate(control=>{
   const finish=document.querySelector('#finish'),icon=control.querySelector('svg');
@@ -185,6 +203,11 @@ try{
   'The 275 lb deadlift uses two 45s and a 25 on each side');
  check(await perSide('Bench Press')==='60 lb each side · 1×45 lb + 1×10 lb + 1×5 lb',
   'The calculator uses the largest plate for a matching load even when that takes more plates');
+ const two45Width=await dialog().getByRole('region',{name:'Deadlift',exact:true}).locator('.plate-group').first().evaluate(plates=>plates.getBoundingClientRect().width);
+ check(await curlLoad().locator('.plate-bar').evaluate((bar,platesWidth)=>{
+  const collar=bar.querySelector('.plate-collar'),tip=bar.querySelector('.plate-tip');
+  return bar.getBoundingClientRect().right-collar.getBoundingClientRect().right===platesWidth+parseFloat(getComputedStyle(tip).flexBasis);
+ },two45Width),'An empty sleeve has the same length as the sleeve for two 45 lb plates');
  const keyboardBeforeEdit=await page.evaluate(()=>[qa.keyboard,qa.keyboardHides]);
  await dialog().getByRole('button',{name:'Edit load for Barbell Curl'}).click();
  const loadInput=dialog().getByRole('spinbutton',{name:'Weight',exact:true});
@@ -204,7 +227,7 @@ try{
  await page.setViewportSize({width:390,height:844});
  await loadInput.fill('140');
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
- const plateDimensions=()=>curlLoad().locator('.plate-group').evaluateAll(groups=>Promise.all(groups.map(async group=>{
+ const plateDimensions=(card=curlLoad())=>card.locator('.plate-group').evaluateAll(groups=>Promise.all(groups.map(async group=>{
   const image=new Image();
   image.src=group.style.backgroundImage.slice(5,-2);
   await image.decode();
@@ -228,8 +251,11 @@ try{
   await curlLoad().locator('.plate-load-summary').evaluate(summary=>getComputedStyle(summary).fontWeight==='700'),
  'The bold target and per-side line use the approved breakdown format');
  const [large,small]=await plateDimensions();
- check(large.height===94&&large.depth===13&&small.height===20&&small.depth===7,
- 'The smallest plates gain height and the largest retain their proportions');
+ const bench=dialog().getByRole('region',{name:'Bench Press',exact:true});
+ const [,ten,five]=await plateDimensions(bench);
+ const oldTen=Math.round(94*(10/45)**.85);
+ check(large.height===94&&large.depth===13&&ten.height===32&&five.height===29&&small.height===oldTen&&small.depth===7,
+ 'The 10 and 5 lb plates grow and the 2.5 lb plate uses the old 10 lb height');
  check(await curlLoad().locator('.plate-bar').evaluate(bar=>{
   const inner=bar.querySelector('.plate-shaft').getBoundingClientRect();
   const collar=bar.querySelector('.plate-collar').getBoundingClientRect();
@@ -239,11 +265,19 @@ try{
    Math.abs(outer.top+outer.height/2-inner.top-inner.height/2)<.5;
  }),'The shorter stopper sits between aligned inner and thicker outer bars');
  await equipmentButton().click();
+ await dialog().getByRole('checkbox',{name:'1.25 lb',exact:true}).check();
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ await dialog().getByRole('button',{name:'Edit load for Bench Press'}).click();
+ await loadInput.fill('167.5');
+ await dialog().getByRole('button',{name:'Save',exact:true}).click();
+ const [, , ,oneQuarter]=await plateDimensions(bench);
+ check(oneQuarter.height===23&&oneQuarter.height<small.height,'The 1.25 lb plate is slightly shorter than the 2.5 lb plate');
+ await equipmentButton().click();
  const bar=dialog().getByRole('spinbutton',{name:'Bar weight (lb)',exact:true});
  await bar.fill('40');
  await dialog().getByRole('spinbutton',{name:'Count for 45 lb plates',exact:true}).fill('1');
  await dialog().getByRole('spinbutton',{name:'Count for 25 lb plates',exact:true}).fill('4');
- for(const size of [10,5,2.5])await dialog().getByRole('checkbox',{name:size+' lb',exact:true}).uncheck();
+ for(const size of [10,5,2.5,1.25])await dialog().getByRole('checkbox',{name:size+' lb',exact:true}).uncheck();
  await dialog().getByRole('button',{name:'Save',exact:true}).click();
  check((await curlLoad().textContent()).includes('2×25 lb')&&await curlLoad().locator('.plate-group').evaluate(group=>{
   const style=getComputedStyle(group);
@@ -316,6 +350,12 @@ try{
  });
  await page.waitForFunction(()=>document.querySelector('#rest-time').textContent==='-0:03');
  check(await page.locator('#rest-time.overdue').textContent()==='-0:03','The rest circle counts negative time after the deadline');
+ const restDeadline=(await state()).restEndAt;
+ await page.getByRole('button',{name:'Rest controls',exact:true}).click();
+ check(await dialog().getByRole('heading',{name:'Rest timer',exact:true}).isVisible(),'Tapping the timer inside Exercise opens its controls');
+ await page.evaluate(()=>Workouts.openToday());
+ check(await dialog().count()===0&&await page.locator('#today').isVisible()&&(await state()).restEndAt===restDeadline,
+  'The external timer route opens Today directly and keeps the timer running');
  await page.getByRole('button',{name:'Rest controls',exact:true}).click();
  await dialog().getByRole('button',{name:'Skip rest',exact:true}).click();
  check((await state()).restEndAt===0,'Rest can be skipped');
@@ -363,6 +403,7 @@ try{
  check((await state()).routines[0].exercises[0].weight===50,'Save failures leave saved data intact');
  await page.evaluate(()=>qa.fail=false);
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await dialog().getByRole('button',{name:'Done',exact:true}).click();
  await page.getByRole('button',{name:'Settings',exact:true}).click();
  check(await page.locator('dialog[open]').count()===0&&await page.locator('#app').isVisible()===false,'Settings opens as a separate screen');
  check(await page.locator('#settings-screen').getByRole('checkbox',{name:'Rest notifications'}).isChecked()===false,'Notification controls reflect opt-in defaults');
@@ -403,24 +444,38 @@ try{
  await savedWeight.focus();
  check(await savedWeight.inputValue()===''&&await savedWeight.getAttribute('placeholder')===savedValue,'Existing weights show their saved value as a hint');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
- await page.getByRole('button',{name:'Edit Workout A',exact:true}).click();
-  await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
+ await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill('New exercise');
  await dialog().getByRole('textbox',{name:'Sets/Reps'}).fill('0, 8');
  await dialog().getByRole('button',{name:'Add',exact:true}).click();
  check(await dialog().locator('.error').textContent().then(s=>s.includes('1–100')),'Invalid rep targets are rejected');
- await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await page.evaluate(()=>Workouts.back());
+ await dialog().getByRole('button',{name:'Add exercise',exact:true}).waitFor();
+ check(await dialog().getByRole('button',{name:'Add exercise',exact:true}).isVisible(),
+  'Android Back from Add exercise returns to the workout pop-up');
+ await page.evaluate(()=>Workouts.back());
+ check(await dialog().count()===0,'A second Back returns to Today');
  const old=await state();
  await page.getByRole('button',{name:'Add workout',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Name',exact:true}).fill('Workout B');
  await dialog().getByRole('button',{name:'Add',exact:true}).click();
  check((await state()).routines.length===old.routines.length+1&&await page.locator('.routine:visible').count()===2,'Multiple routines are visible as cards');
  await page.getByRole('button',{name:'Edit Workout B',exact:true}).click();
+ const workoutEditor=await dialog().elementHandle();
  await dialog().getByRole('button',{name:'Rename workout',exact:true}).click();
- await dialog().getByRole('textbox',{name:'Name',exact:true}).fill('Workout B renamed');
- await dialog().getByRole('button',{name:'Save',exact:true}).click();
- check((await state()).routines.find(r=>r.id===(old.routines[0].id))?.name==='Workout A'&&await page.getByRole('region',{name:'Workout B renamed',exact:true}).isVisible(),'The pencil renames the selected workout');
- await page.getByRole('button',{name:'Edit Workout B renamed',exact:true}).click();
+ const workoutTitle=dialog().getByRole('textbox',{name:'Workout title',exact:true});
+ check(await workoutEditor.evaluate(editor=>editor.open&&editor.contains(document.activeElement))&&await workoutTitle.inputValue()==='Workout B',
+  'The rename pencil opens the focused title field in the same pop-up');
+ await workoutTitle.fill('   ');
+ await dialog().getByRole('button',{name:'Save workout title',exact:true}).click();
+ check(await dialog().locator('.error').textContent()==='Enter a workout name.'&&(await state()).routines[1].name==='Workout B',
+  'A blank title displays validation without changing the workout');
+ await workoutTitle.fill('Workout B renamed');
+ await workoutTitle.press('Enter');
+ check((await state()).routines.find(r=>r.id===(old.routines[0].id))?.name==='Workout A'&&
+  (await state()).routines[1].name==='Workout B renamed'&&
+  await dialog().getByRole('button',{name:'Rename workout',exact:true}).textContent()==='Workout B renamed',
+  'The keyboard confirms the title and stays in Edit workout');
  await dialog().getByRole('button',{name:'Add exercise',exact:true}).click();
  await dialog().getByRole('textbox',{name:'Exercise',exact:true}).fill('B-only exercise');
  await dialog().getByRole('button',{name:'Add',exact:true}).click();
@@ -484,6 +539,7 @@ try{
  check(await dialog().evaluate(d=>d.scrollWidth<=d.clientWidth+1),'Exercise editor fits a narrow phone');
  check(await dialog().getByRole('button',{name:'Save',exact:true}).evaluate(b=>{const r=b.getBoundingClientRect();return r.bottom<=innerHeight&&r.top>=0;}),'Editor actions remain visible with limited keyboard space');
  await dialog().getByRole('button',{name:'Cancel',exact:true}).click();
+ await dialog().getByRole('button',{name:'Done',exact:true}).click();
  await page.getByRole('button',{name:'Settings',exact:true}).click();
  check(await page.locator('#settings-screen').evaluate(d=>d.scrollWidth<=d.clientWidth+1),'Settings fit a narrow phone');
  check(await page.locator('#settings-screen').getByRole('button',{name:'Save',exact:true}).evaluate(b=>b.getBoundingClientRect().bottom<=innerHeight),'Settings actions remain visible while fields scroll');

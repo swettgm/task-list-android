@@ -17,7 +17,7 @@ public final class RestAlarm extends BroadcastReceiver {
 
     private static void scheduleCountdown(Context context, JSONObject state) {
         JSONObject settings = state.optJSONObject("settings");
-        long end = state.isNull("active") ? 0 : state.optLong("restEndAt");
+        long end = RestTimerService.hasRest(state) ? state.optLong("restEndAt") : 0;
         int seconds = settings == null ? 0 : settings.optInt("countdownSeconds",3);
         int duration = settings == null ? 0 : settings.optInt("countdownVibrationMs", 80);
         boolean audio = settings != null && settings.optBoolean("headphoneCues", true);
@@ -80,10 +80,10 @@ public final class RestAlarm extends BroadcastReceiver {
         synchronized(WorkoutStore.LOCK){
             WorkoutStore store=new WorkoutStore(context);
             JSONObject state=store.read();
-            if(expected<=0||state.isNull("active")||state.optLong("restEndAt")==0||
-                restId(state)!=expected)return;
+            if(expected<=0||!RestTimerService.hasRest(state)||restId(state)!=expected)return;
             try{
                 state.put("restEndAt",0).put("restStartedAt",0).put("restDurationMs",0);
+                state.remove("restSource");
                 state.remove("restPosition");
                 if(store.write(state.toString())==null)return;
             }catch(org.json.JSONException invalid){return;}

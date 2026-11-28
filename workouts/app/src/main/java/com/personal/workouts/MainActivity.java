@@ -14,6 +14,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public final class MainActivity extends Activity {
+    static final String OPEN_TODAY="com.personal.workouts.OPEN_TODAY";
     static volatile boolean visible;
     private WebView web;
     private FrameLayout root;
@@ -23,12 +24,12 @@ public final class MainActivity extends Activity {
     private Object backCallback;
     private final Handler restPreviewHandler=new Handler(Looper.getMainLooper());
     private volatile Object restPreview;
-    private boolean openRestOnReady;
+    private String pendingOpenAction;
     private final java.util.concurrent.atomic.AtomicInteger keyboardRequest=new java.util.concurrent.atomic.AtomicInteger();
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);
         store=new WorkoutStore(this);
-        openRestOnReady=RestTimerService.OPEN_CONTROLS.equals(getIntent().getAction());
+        pendingOpenAction=getIntent().getAction();
         root=new FrameLayout(this);root.setBackgroundColor(top);
         root.setOnApplyWindowInsetsListener((view,insets)->{
             view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),
@@ -83,14 +84,16 @@ public final class MainActivity extends Activity {
     @Override protected void onPause() {visible=false;stopRestPreview();super.onPause();}
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        if(RestTimerService.OPEN_CONTROLS.equals(intent.getAction())){
-            openRestOnReady=true;
-            openRestControlsIfReady();
-        }
+        pendingOpenAction=intent.getAction();
+        openRequestedScreenIfReady();
     }
-    private void openRestControlsIfReady(){
-        if(ready&&openRestOnReady&&web!=null){
-            openRestOnReady=false;
+    private void openRequestedScreenIfReady(){
+        if(!ready||web==null)return;
+        String action=pendingOpenAction;
+        pendingOpenAction=null;
+        if(OPEN_TODAY.equals(action)){
+            web.evaluateJavascript("window.Workouts&&Workouts.openToday()",null);
+        }else if(RestTimerService.OPEN_CONTROLS.equals(action)){
             web.evaluateJavascript("window.Workouts&&Workouts.openRestControls()",null);
         }
     }
@@ -243,7 +246,7 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public void spotifyCommand(String command) {
             runOnUiThread(()->SpotifyAccess.command(MainActivity.this,command));
         }
-        @JavascriptInterface public void ready() { runOnUiThread(()->{ready=true;if(web!=null)web.setAlpha(1);openRestControlsIfReady();}); }
+        @JavascriptInterface public void ready() { runOnUiThread(()->{ready=true;if(web!=null)web.setAlpha(1);openRequestedScreenIfReady();}); }
     }
     @android.annotation.TargetApi(33) private static final class BackApi33 {
         static Object register(Activity activity,Runnable action) {

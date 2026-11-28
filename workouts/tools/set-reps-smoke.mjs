@@ -31,7 +31,10 @@ try{
  for(const reps of [5,4,3,2,1,0,null,5]){
   await sets().first().tap();const d=await data();
   check(d.active.exercises[0].sets[0].reps===reps,'Tap cycle records '+reps);
-  check(reps===null?d.restEndAt===0&&d.restDurationMs===0:d.restEndAt>deadline&&d.restDurationMs===90000,'Logging reps restarts rest and clearing cancels it');deadline=d.restEndAt;
+  const expected=reps===null?d.restEndAt===0&&d.restDurationMs===0:
+   (deadline?d.restEndAt===deadline:d.restEndAt>Date.now())&&d.restDurationMs===90000;
+  check(expected,'Only the first input starts rest and clearing the set cancels it');
+  deadline=d.restEndAt;
  }
  check(await dialog().count()===0&&await page.getByLabel('Rest timer', {exact:true}).isVisible(),'Rep taps keep the rest timer visible without an editor');
  await page.waitForTimeout(1100);
@@ -46,11 +49,11 @@ try{
   return {cx:box.x+box.width/2,cy:box.y+box.height/2};
  });
  const beforeHover=await page.evaluate(()=>qa.haptics);
- const boundary=await page.evaluate(()=>innerHeight*2/3);
+ const boundary=await page.evaluate(()=>innerHeight/2);
  await page.mouse.move(x,boundary+2,{steps:5});
- check(await target.isVisible()&&await page.evaluate(()=>qa.haptics)===beforeHover,'The X appears as soon as the drag enters the bottom third, even at the side of the screen');
+ check(await target.isVisible()&&await page.evaluate(()=>qa.haptics)===beforeHover,'The X appears as soon as the drag enters the lower half, even at the side of the screen');
  await page.mouse.move(x,boundary-2,{steps:4});
- check(!(await target.isVisible()),'The X disappears again above the bottom third');
+ check(!(await target.isVisible()),'The X disappears again above the midpoint');
  await page.mouse.move(cx,cy,{steps:5});
  check(await page.locator('#timer-dismiss').evaluate(target=>target.classList.contains('over')&&getComputedStyle(target,'::before').content!=='none'),'Entering the X expands its drop zone');
  check(await page.evaluate(()=>qa.haptics)===beforeHover+1,'The X gives one haptic on entry');
@@ -59,6 +62,8 @@ try{
        await page.evaluate(()=>qa.haptics)===beforeHover+1,'The expanded zone retains hover without repeated haptics');
  await page.mouse.up();
  check(!(await rest.isVisible())&&(await data()).restEndAt===deadline,'Dropping on the X hides only the current floating timer');
+ await sets().first().tap();
+ check(!(await rest.isVisible())&&(await data()).restEndAt===deadline,'Editing the same set does not revive a dismissed timer');
  await sets().nth(2).tap();
  check(await rest.isVisible()&&!(await data()).restDismissed,'Logging another set restores the floating timer');
  await page.evaluate(()=>qa.overlayVisible=true);
@@ -78,7 +83,7 @@ try{
  check(await page.evaluate(()=>{qa.timerObserver.disconnect();return !qa.flashed;})&&!(await rest.isVisible()),
    'Dismissing the Android overlay never flashes the in-app timer');
  await sets().nth(2).tap();
- check(await rest.isVisible()&&!(await data()).restDismissed,'The in-app timer returns for the next set without the Android overlay');
+ check(!(await rest.isVisible())&&(await data()).restDismissed,'Rep edits keep a timer dismissed by the Android overlay hidden');
  deadline=(await data()).restEndAt;
  const touch=await page.context().newCDPSession(page);
  check(await sets().nth(1).evaluate(circle=>{
@@ -114,7 +119,7 @@ try{
  await holdAndDrag(48);
  let saved=await data();
  check(saved.active.exercises[0].sets[1].reps===9,'Holding and dragging upward logs the chosen AMRAP reps on release');
- check(saved.restEndAt>deadline&&saved.restDurationMs===90000,'Releasing AMRAP restarts the full timer');
+ check(await rest.isVisible()&&saved.restEndAt>deadline&&saved.restDurationMs===90000,'The first AMRAP drag starts a new full timer on release');
  check(await page.locator('#today-tab').getAttribute('aria-selected')==='true','AMRAP dragging does not switch pages');
  const before=JSON.stringify(saved.active.exercises[0].sets[1]);deadline=saved.restEndAt;
  await holdAndDrag(24,true);
@@ -122,8 +127,9 @@ try{
  for(const reps of [8,7,6,5,4,3,2,1,0,null]){await sets().nth(1).tap();check((await data()).active.exercises[0].sets[1].reps===reps,'AMRAP taps count down to '+reps);}
  check(await sets().nth(1).textContent()==='5+','Clearing restores the AMRAP target and plus');
  await sets().nth(1).tap();check((await data()).active.exercises[0].sets[1].reps===5,'A cleared AMRAP circle cycles back to its target');
+ const amrapDeadline=(await data()).restEndAt;
  await holdAndDrag(-24,false,0);
- check((await data()).active.exercises[0].sets[0].reps===3,'Dragging down on a regular set logs fewer reps');
+ check((await data()).active.exercises[0].sets[0].reps===2,'Dragging down on a regular set logs fewer reps');
  await holdAndDrag(48,false,0);
  check((await data()).active.exercises[0].sets[0].reps===5,'Dragging up on a regular set stops at the target');
  await page.evaluate(()=>qa.fail=true);const snapshot=await data();await sets().first().tap();
@@ -132,6 +138,10 @@ try{
  check((await data()).active.exercises[0].sets[0].reps===0&&await sets().first().getAttribute('aria-pressed')==='true','Dragging to zero logs zero as a selected count');
  await holdAndDrag(-12,false,0);
  check((await data()).active.exercises[0].sets[0].reps===null&&await sets().first().getAttribute('aria-pressed')==='false','Dragging below zero clears the set');
+ check((await data()).restEndAt===amrapDeadline,'Clearing an earlier set leaves the current set’s timer running');
+ await holdAndDrag(-60,false,0);
+ await holdAndDrag(-12,false,0);
+ check((await data()).restEndAt===0&&!(await rest.isVisible()),'Dragging the current set below zero cancels its timer');
  await holdAndDrag(-60,false,0);
  await page.reload();await page.waitForFunction(()=>!!window.Workouts);
  check(await sets().first().textContent()==='0','An explicit zero survives reopening');

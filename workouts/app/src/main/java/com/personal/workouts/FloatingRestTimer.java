@@ -51,7 +51,8 @@ final class FloatingRestTimer extends View {
         });
         setElevation(dp(6));
         setOnClickListener(v->{
-            Intent intent=new Intent(context,MainActivity.class).setAction(RestTimerService.OPEN_CONTROLS)
+            String action=MainActivity.visible?RestTimerService.OPEN_CONTROLS:MainActivity.OPEN_TODAY;
+            Intent intent=new Intent(context,MainActivity.class).setAction(action)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
             try {context.startActivity(intent);}catch(RuntimeException ignored){ /* Android may restrict launches. */ }
         });
@@ -237,11 +238,11 @@ final class FloatingRestTimer extends View {
         float centerX=location[0]+dismissTarget.getWidth()/2f,centerY=location[1]+dismissTarget.getHeight()/2f;
         double distance=Math.hypot(x-centerX,y-centerY);
         float screenBottom=location[1]+dismissTarget.getHeight();
-        boolean inBottomThird=y>=screenBottom-availableHeight/3f;
-        dismissTarget.setVisibility(inBottomThird?View.VISIBLE:View.INVISIBLE);
+        boolean inLowerHalf=y>=screenBottom-availableHeight/2f;
+        dismissTarget.setVisibility(inLowerHalf?View.VISIBLE:View.INVISIBLE);
         boolean previous=dropHover.over;
         boolean over=dropHover.update(Math.hypot(startX-centerX,startY-centerY),
-            inBottomThird?distance:Double.POSITIVE_INFINITY,dp(38),dp(50));
+            inLowerHalf?distance:Double.POSITIVE_INFINITY,dp(38),dp(50));
         if(over&&!previous&&feedback)performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
         if(over!=previous)dismissTarget.invalidate();
         return over;
