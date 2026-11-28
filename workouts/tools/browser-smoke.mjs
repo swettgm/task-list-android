@@ -99,16 +99,33 @@ try{
  });
  check(await page.locator('#spotify-copy .spotify-line').evaluateAll(lines=>lines.every(line=>{
   const [animation]=line.getAnimations(),width=line.offsetWidth,available=line.parentElement.clientWidth,offset=width+36;
+  const [fade]=line.parentElement.getAnimations();
   const frames=animation?.effect.getKeyframes();
-  return width>available&&animation?.effect.getTiming().duration===1600+offset*1000/16&&
+  const fadeFrames=fade?.effect.getKeyframes();
+  return width>available&&animation?.effect.getTiming().duration===2400+offset*1000/16&&
    frames[2].transform==='translateX(-'+offset+'px)'&&line.dataset.repeat===line.textContent&&
-   getComputedStyle(line,'::after').left===offset+'px'&&getComputedStyle(line.parentElement).maskImage.startsWith('linear-gradient');
- })),'Long music labels loop continuously with a fade at each edge');
+   getComputedStyle(line,'::after').left===offset+'px'&&fadeFrames[0].maskImage===fadeFrames[1].maskImage&&
+   fadeFrames[1].offset===frames[1].offset&&fadeFrames[2].offset===frames[1].offset&&fadeFrames[2].maskImage!==fadeFrames[1].maskImage;
+ })),'Long music labels loop with a longer pause and a left-edge fade only during movement');
  check(await page.locator('#spotify-title .spotify-line').evaluate(line=>{
   const [animation]=line.getAnimations();
   Workouts.refresh();
   return line.getAnimations()[0]===animation;
  }),'Metadata refresh preserves the current marquee position');
+ await page.evaluate(()=>{
+  const artist=document.querySelector('#spotify-artist .spotify-line');
+  qa.previousArtistAnimation=artist.getAnimations()[0];
+  qa.previousArtistAnimation.currentTime=4000;
+ });
+ await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+ for(const fraction of [.3,.6,1])await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-64*fraction,y}]});
+ await spotifyTouch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await page.evaluate(()=>{qa.music.title='Another long title that needs the entire music bar';});
+ await page.waitForFunction(()=>document.querySelector('#spotify-title').textContent===qa.music.title);
+ check(await page.locator('#spotify-artist .spotify-line').evaluate(line=>{
+  const [animation]=line.getAnimations();
+  return !!animation&&animation!==qa.previousArtistAnimation&&(animation.currentTime??0)<2400;
+ }),'Swiping to a new song restarts the artist marquee even if the artist stays the same');
  await page.evaluate(()=>{qa.music.artist='Dr. Dog';Workouts.refresh();});
  check(await page.locator('#spotify-artist .spotify-line').evaluate(line=>line.getAnimations().length===0&&
   getComputedStyle(line.parentElement).maskImage==='none'),'Short artist names stay still with no edge fade');

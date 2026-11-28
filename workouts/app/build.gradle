@@ -3,7 +3,7 @@ android {
     namespace 'com.personal.workouts'
     compileSdk 35
     buildToolsVersion '35.0.0'
-    defaultConfig { applicationId 'com.personal.workouts'; minSdk 26; targetSdk 35; versionCode 57; versionName '1.0.56' }
+    defaultConfig { applicationId 'com.personal.workouts'; minSdk 26; targetSdk 35; versionCode 58; versionName '1.0.57' }
     signingConfigs { debug { def keyStorePath=System.getenv('WORKOUT_DEBUG_KEYSTORE'); if(keyStorePath) storeFile file(keyStorePath) } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     testOptions { unitTests { includeAndroidResources = true; all { systemProperty 'robolectric.dependency.repo.url','https://repo.maven.apache.org/maven2' } } }

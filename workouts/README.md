@@ -2,7 +2,7 @@
 
 The rest timer remembers its last position across workouts and app restarts. Clearing a set cancels its rest timer. Drag the floating timer onto the X to hide it for the current set. The X appears when you drag the timer into the lower half of the screen. Its drop zone expands and gives haptic feedback when you enter it. Use End timer in the rest notification to dismiss the current timer. The larger Spotify bar keeps the controls visible and opens Spotify when tapped while idle.
 
-[Download Exercise 1.0.56](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.56.apk) for Android 8 or later. This updates Workouts and keeps its saved workouts and history.
+[Download Exercise 1.0.57](https://github.com/swettgm/task-list-android/raw/main/downloads/Exercise-v1.0.57.apk) for Android 8 or later. This updates Workouts and keeps its saved workouts and history.
 
 An offline workout logger in the blue-grey gradient and white-control theme shared with Tasks, RM and Meditation. New installations start with an empty workout and history.
 

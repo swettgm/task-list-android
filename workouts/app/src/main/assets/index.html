@@ -34,7 +34,6 @@ body.has-player{padding-bottom:104px}
 #spotify-artist{font-size:12px;font-weight:600;opacity:.8;padding-bottom:1px}#spotify-copy{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px}.spotify,.spotify button{touch-action:pan-y}
 #spotify-copy>span{width:100%;text-overflow:clip}
 #spotify-copy .spotify-line{position:relative;display:block;width:max-content;max-width:none;overflow:visible}
-#spotify-copy .marquee{mask-image:linear-gradient(to right,transparent,#000 10px,#000 calc(100% - 10px),transparent)}
 #spotify-copy .spotify-line[data-repeat]::after{content:attr(data-repeat) / "";position:absolute;top:0;left:var(--repeat-offset)}
 @media(prefers-reduced-motion:reduce){#spotify-copy>span{text-overflow:ellipsis}#spotify-copy .spotify-line{display:inline}}
 .spotify-art{display:grid;place-items:center;flex:0 0 var(--art-size);width:var(--art-size);height:var(--art-size);border-radius:10px;overflow:hidden;background:var(--surface)}
@@ -1442,6 +1441,7 @@ function settingsChangelog(){
  const changelog=el('details','settings-changelog');
  changelog.append(disclosureSummary('Changelog'));
  const releases=[
+  ['1.0.57',['The music marquee pauses longer with a crisp left edge and restarts both lines when the song changes.']],
   ['1.0.56',['Long song titles and artist names fade at the edges and scroll in a continuous loop.']],
   ['1.0.55',['Tapping the music bar uses Spotify’s current playback shortcut when available.','Spotify labels loop in one direction and leave room for descenders.','Moved the Settings title closer to the back chevron.']],
   ['1.0.54',['Long song titles and artist names scroll slowly when they exceed the music bar.','Workouts scheduled for the next day show Tomorrow.']],
@@ -1902,16 +1902,25 @@ function layoutSpotifyMarquee(){
   if(line.length===length&&line.available===available)continue;
   line.length=length;line.available=available;
   line.animation?.cancel();
-  line.row.classList.toggle('marquee',moving);
+  line.fade?.cancel();
   if(!moving){delete line.text.dataset.repeat;continue;}
-  const offset=width+36,pause=1600,duration=pause+offset*1000/16;
+  const offset=width+36,pause=2400,duration=pause+offset*1000/16,hold=pause/duration;
+  const mask='linear-gradient(to right,transparent,#000 10px,#000 calc(100% - 10px),transparent)';
+  const restingMask='linear-gradient(to right,#000 calc(100% - 10px),transparent)';
+  const timing={duration,iterations:Infinity};
   line.text.dataset.repeat=line.text.textContent;
   line.text.style.setProperty('--repeat-offset',offset+'px');
   line.animation=line.text.animate([
    {transform:'translateX(0px)',offset:0},
-   {transform:'translateX(0px)',offset:pause/duration},
+   {transform:'translateX(0px)',offset:hold},
    {transform:'translateX(-'+offset+'px)',offset:1}
-  ],{duration,iterations:Infinity});
+  ],timing);
+  line.fade=line.row.animate([
+   {maskImage:restingMask,offset:0},
+   {maskImage:restingMask,offset:hold},
+   {maskImage:mask,offset:hold},
+   {maskImage:mask,offset:1}
+  ],timing);
  }
 }
 new ResizeObserver(layoutSpotifyMarquee).observe($('spotify-copy'));
@@ -1919,12 +1928,13 @@ spotifyReducedMotion.addEventListener('change',layoutSpotifyMarquee);
 function renderSpotifyText(title,artist){
  const slide=spotifyTextSlide;
  if(slide&&(!slide.ready||(title===slide.title&&artist===slide.artist)))return;
- for(const [index,value] of [title,artist].entries()){
-  const line=spotifyLines[index];
-  if(line.text.textContent===value)continue;
-  line.text.textContent=value;
-  line.row.hidden=!value;
-  line.length=undefined;
+ const labels=[title,artist];
+ if(spotifyLines.some((line,index)=>line.text.textContent!==labels[index])){
+  for(const [index,line] of spotifyLines.entries()){
+   if(line.text.textContent!==labels[index])line.text.textContent=labels[index];
+   line.row.hidden=!labels[index];
+   line.length=undefined;
+  }
  }
  layoutSpotifyMarquee();
  if(slide){

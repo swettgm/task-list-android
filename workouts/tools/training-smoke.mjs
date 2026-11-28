@@ -69,7 +69,7 @@ try{
  const settings=page.locator('#settings-screen');
  assert.equal(await settings.locator('.number-grip:visible').count(),0);
  await settings.locator('.settings-changelog summary').click();
- assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.56',exact:true}).isVisible(),true);
+ assert.equal(await settings.getByRole('heading',{name:'Exercise 1.0.57',exact:true}).isVisible(),true);
  await page.getByRole('combobox',{name:'Number controls'}).selectOption('− and + buttons');
  assert.equal(await settings.locator('.number-step:visible, .number-grip:visible').count(),0);
  await number('Number adjustment step').fill('2');
